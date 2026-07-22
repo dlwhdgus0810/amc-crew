@@ -1,7 +1,7 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
-import {Format, Selections, Showtime} from '@/lib/types';
+import { useEffect, useMemo, useState } from 'react';
+import { Showtime, Selections, Format } from '@/lib/types';
 
 const FORMAT_ORDER: Format[] = ['IMAX with Laser', 'Dolby Cinema', 'PRIME', 'Laser'];
 const FORMAT_CLASS: Record<Format, string> = {
@@ -34,6 +34,15 @@ export default function PickPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [openTip, setOpenTip] = useState<string | null>(null);
+
+  // 툴팁 열린 상태에서 다른 곳을 탭하면 닫기
+  useEffect(() => {
+    if (!openTip) return;
+    const close = () => setOpenTip(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [openTip]);
 
   useEffect(() => {
     fetch('/api/schedule')
@@ -60,12 +69,13 @@ export default function PickPage() {
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [schedule]);
 
-  const countFor = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const ids of Object.values(selections)) {
-      for (const id of ids) counts[id] = (counts[id] ?? 0) + 1;
+  const membersFor = useMemo(() => {
+    const members: Record<string, string[]> = {};
+    for (const [user, ids] of Object.entries(selections)) {
+      for (const id of ids) (members[id] ??= []).push(user);
     }
-    return counts;
+    for (const names of Object.values(members)) names.sort((a, b) => a.localeCompare(b, 'ko'));
+    return members;
   }, [selections]);
 
   function toggle(id: string) {
@@ -112,7 +122,7 @@ export default function PickPage() {
         <div className="field-row">
           <input
             type="text"
-            placeholder="이름 (예: 홍길동)"
+            placeholder="이름 (예: 현)"
             value={name}
             maxLength={20}
             onChange={(e) => setName(e.target.value)}
@@ -142,7 +152,7 @@ export default function PickPage() {
                   <div className={`format-label ${FORMAT_CLASS[fmt]}`}>{fmt.toUpperCase()}</div>
                   <div className="times">
                     {times.map((s) => {
-                      const n = countFor[s.id] ?? 0;
+                      const members = membersFor[s.id] ?? [];
                       const selected = picked.has(s.id);
                       return (
                         <div
@@ -152,8 +162,25 @@ export default function PickPage() {
                         >
                           <span>{to12h(s.time)}</span>
                           {selected && <span style={{ fontWeight: 800 }}>✓</span>}
-                          {n > 0 && <span className="count">🙋{n}</span>}
+                          {members.length > 0 && (
+                            <span
+                              className="count"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenTip((cur) => (cur === s.id ? null : s.id));
+                              }}
+                            >
+                              🙋{members.length}
+                            </span>
+                          )}
                           {s.note && <span className="note">{s.note}</span>}
+                          {members.length > 0 && (
+                            <div className={`chip-tip ${openTip === s.id ? 'open' : ''}`}>
+                              {members.map((m) => (
+                                <span key={m} className="chip-tip-name">{m}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

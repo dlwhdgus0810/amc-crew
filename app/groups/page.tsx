@@ -1,7 +1,7 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
-import {Selections, Showtime} from '@/lib/types';
+import { useEffect, useMemo, useState } from 'react';
+import { Showtime, Selections } from '@/lib/types';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
