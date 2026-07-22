@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+import type {Metadata} from 'next';
 import Link from 'next/link';
+import NavLinks from './nav';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -16,10 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="logo">
               🎬 Odyssey&nbsp;Crew
             </Link>
-            <nav>
-              <Link href="/">시간 고르기</Link>
-              <Link href="/groups">그룹 보기</Link>
-            </nav>
+            <NavLinks />
           </div>
         </header>
         <main className="container">{children}</main>

@@ -13,10 +13,10 @@ const FORMAT_CLASS: Record<Format, string> = {
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-function formatDateHeading(date: string): { label: string; weekday: string } {
+function formatDateHeading(date: string): { label: string; weekday: string; short: string; wd: string } {
   const [y, m, d] = date.split('-').map(Number);
   const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
-  return { label: `${m}월 ${d}일`, weekday: `${wd}요일` };
+  return { label: `${m}월 ${d}일`, weekday: `${wd}요일`, short: `${m}/${d}`, wd };
 }
 
 function to12h(time: string): string {
@@ -117,17 +117,21 @@ export default function PickPage() {
             maxLength={20}
             onChange={(e) => setName(e.target.value)}
           />
-          <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>
+          <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 600 }}>
             {picked.size > 0 ? `${picked.size}개 회차 선택됨` : '가능한 회차를 골라주세요'}
           </span>
         </div>
       </div>
 
       {byDate.map(([date, shows]) => {
-        const { label, weekday } = formatDateHeading(date);
+        const { label, weekday, short, wd } = formatDateHeading(date);
         return (
           <section key={date} className="card date-section">
             <div className="date-heading">
+              <span className="date-badge">
+                {short}
+                <small>{wd}</small>
+              </span>
               {label} <span className="weekday">{weekday}</span>
             </div>
             {FORMAT_ORDER.map((fmt) => {
@@ -135,20 +139,20 @@ export default function PickPage() {
               if (times.length === 0) return null;
               return (
                 <div key={fmt} className="format-row">
-                  <div className={`format-label ${FORMAT_CLASS[fmt]}`}>
-                    <span className="format-dot" /> {fmt.toUpperCase()}
-                  </div>
+                  <div className={`format-label ${FORMAT_CLASS[fmt]}`}>{fmt.toUpperCase()}</div>
                   <div className="times">
                     {times.map((s) => {
                       const n = countFor[s.id] ?? 0;
+                      const selected = picked.has(s.id);
                       return (
                         <div
                           key={s.id}
-                          className={`time-chip ${picked.has(s.id) ? 'selected' : ''}`}
+                          className={`time-chip ${selected ? 'selected' : ''}`}
                           onClick={() => toggle(s.id)}
                         >
-                          {to12h(s.time)}
-                          {n > 0 && <span className="count">👥{n}</span>}
+                          <span>{to12h(s.time)}</span>
+                          {selected && <span style={{ fontWeight: 800 }}>✓</span>}
+                          {n > 0 && <span className="count">🙋{n}</span>}
                           {s.note && <span className="note">{s.note}</span>}
                         </div>
                       );
@@ -163,8 +167,12 @@ export default function PickPage() {
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      <button onClick={submit} disabled={saving || !name.trim() || picked.size === 0}>
-        {saving ? '저장 중…' : '내 스케줄 저장하기'}
+      <button style={{ width: '100%' }} onClick={submit} disabled={saving || !name.trim() || picked.size === 0}>
+        {saving
+          ? '저장 중…'
+          : picked.size > 0
+            ? `내 스케줄 저장하기 · ${picked.size}개 선택됨`
+            : '내 스케줄 저장하기'}
       </button>
     </>
   );

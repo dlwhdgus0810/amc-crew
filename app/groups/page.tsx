@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Showtime, Selections } from '@/lib/types';
+import {useEffect, useMemo, useState} from 'react';
+import {Selections, Showtime} from '@/lib/types';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -80,7 +80,7 @@ export default function GroupsPage() {
         <div key={g.showtime.id} className="card group-card matched">
           <div className="group-title">
             {describe(g.showtime)}
-            <span className="badge match">{g.members.length}명 가능</span>
+            <span className="badge match">🙋{g.members.length}명 가능</span>
           </div>
           {g.showtime.note && <div className="group-sub">⚠️ {g.showtime.note} — 예매를 서두르세요!</div>}
           <div className="member-chips">
