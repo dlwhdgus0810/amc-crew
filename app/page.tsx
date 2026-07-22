@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Showtime, Selections, Format } from '@/lib/types';
+import {useEffect, useMemo, useState} from 'react';
+import {Format, Selections, Showtime} from '@/lib/types';
 
 const FORMAT_ORDER: Format[] = ['IMAX with Laser', 'Dolby Cinema', 'PRIME', 'Laser'];
 const FORMAT_CLASS: Record<Format, string> = {
@@ -112,7 +112,7 @@ export default function PickPage() {
         <div className="field-row">
           <input
             type="text"
-            placeholder="이름 (예: 현)"
+            placeholder="이름 (예: 홍길동)"
             value={name}
             maxLength={20}
             onChange={(e) => setName(e.target.value)}
