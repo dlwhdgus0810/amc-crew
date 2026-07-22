@@ -1,21 +1,27 @@
-import { Redis } from '@upstash/redis';
-import { Showtime, Selections } from './types';
-import { SEED_SCHEDULE } from './seed';
+import {Redis} from '@upstash/redis';
+import {Selections, Showtime} from './types';
+import {SEED_SCHEDULE} from './seed';
 
 const SCHEDULE_KEY = 'odyssey:schedule';
 const SELECTIONS_KEY = 'odyssey:selections';
 
 // ── Upstash Redis가 설정되어 있으면 사용, 아니면 메모리 저장소 (로컬 개발용) ──
 
+// Vercel KV(마켓플레이스) 연동 시에는 KV_REST_API_*, 직접 Upstash 연동 시에는 UPSTASH_REDIS_REST_* 이름으로 들어온다
+function redisUrl(): string | undefined {
+  return process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+}
+
+function redisToken(): string | undefined {
+  return process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+}
+
 function hasRedis(): boolean {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  return Boolean(redisUrl() && redisToken());
 }
 
 function redis(): Redis {
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  });
+  return new Redis({ url: redisUrl()!, token: redisToken()! });
 }
 
 // 메모리 폴백 (로컬 개발 전용 — 서버리스 환경에서는 인스턴스 간 공유 안 됨)
