@@ -122,7 +122,7 @@ export default function PickPage() {
         <div className="field-row">
           <input
             type="text"
-            placeholder="이름 (예: 이종현)"
+            placeholder="이름 (예: 홍길동)"
             value={name}
             maxLength={20}
             onChange={(e) => setName(e.target.value)}
