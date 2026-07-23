@@ -8,9 +8,14 @@ export interface Showtime {
   note?: string; // e.g. "Almost Full"
 }
 
+export interface UserSelection {
+  name: string; // 카카오 닉네임 (표시용)
+  showtimeIds: string[];
+}
+
 export interface Selections {
-  // userName -> array of showtime ids
-  [userName: string]: string[];
+  // 카카오 회원번호 -> 선택 정보
+  [userId: string]: UserSelection;
 }
 
 export interface GroupResult {

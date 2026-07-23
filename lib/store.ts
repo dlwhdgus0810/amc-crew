@@ -1,5 +1,5 @@
 import {Redis} from '@upstash/redis';
-import {Selections, Showtime} from './types';
+import {Selections, Showtime, UserSelection} from './types';
 import {SEED_SCHEDULE} from './seed';
 
 const SCHEDULE_KEY = 'odyssey:schedule';
@@ -25,10 +25,28 @@ function redis(): Redis {
 }
 
 // 메모리 폴백 (로컬 개발 전용 — 서버리스 환경에서는 인스턴스 간 공유 안 됨)
-const memory: { schedule: Showtime[] | null; selections: Selections } = {
-  schedule: null,
-  selections: {},
+// dev 모드에서 라우트별 번들이 모듈을 각자 로드해도 저장소가 공유되도록 globalThis에 붙인다
+const globalMemory = globalThis as typeof globalThis & {
+  __odysseyMemory?: { schedule: Showtime[] | null; selections: Selections };
 };
+const memory = (globalMemory.__odysseyMemory ??= { schedule: null, selections: {} });
+
+// 카카오 로그인 도입 이전의 이름 키 데이터(string[])는 걸러낸다
+function normalize(raw: Record<string, unknown> | null | undefined): Selections {
+  const out: Selections = {};
+  for (const [userId, value] of Object.entries(raw ?? {})) {
+    if (
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      typeof (value as UserSelection).name === 'string' &&
+      Array.isArray((value as UserSelection).showtimeIds)
+    ) {
+      out[userId] = value as UserSelection;
+    }
+  }
+  return out;
+}
 
 export async function getSchedule(): Promise<Showtime[]> {
   if (hasRedis()) {
@@ -51,28 +69,28 @@ export async function setSchedule(schedule: Showtime[]): Promise<void> {
 
 export async function getSelections(): Promise<Selections> {
   if (hasRedis()) {
-    return (await redis().get<Selections>(SELECTIONS_KEY)) ?? {};
+    return normalize(await redis().get<Record<string, unknown>>(SELECTIONS_KEY));
   }
   return memory.selections;
 }
 
-export async function setUserSelection(name: string, showtimeIds: string[]): Promise<void> {
+export async function setUserSelection(userId: string, name: string, showtimeIds: string[]): Promise<void> {
   if (hasRedis()) {
     // 간단한 read-modify-write. 소규모 친구 그룹 용도로 충분.
-    const all = (await redis().get<Selections>(SELECTIONS_KEY)) ?? {};
-    all[name] = showtimeIds;
+    const all = normalize(await redis().get<Record<string, unknown>>(SELECTIONS_KEY));
+    all[userId] = { name, showtimeIds };
     await redis().set(SELECTIONS_KEY, all);
   } else {
-    memory.selections[name] = showtimeIds;
+    memory.selections[userId] = { name, showtimeIds };
   }
 }
 
-export async function removeUser(name: string): Promise<void> {
+export async function removeUser(userId: string): Promise<void> {
   if (hasRedis()) {
-    const all = (await redis().get<Selections>(SELECTIONS_KEY)) ?? {};
-    delete all[name];
+    const all = normalize(await redis().get<Record<string, unknown>>(SELECTIONS_KEY));
+    delete all[userId];
     await redis().set(SELECTIONS_KEY, all);
   } else {
-    delete memory.selections[name];
+    delete memory.selections[userId];
   }
 }
