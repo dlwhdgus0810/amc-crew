@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Showtime, Selections } from '@/lib/types';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -18,8 +18,15 @@ export default function GroupsPage() {
   const [schedule, setSchedule] = useState<Showtime[]>([]);
   const [selections, setSelections] = useState<Selections>({});
   const [me, setMe] = useState<{ id: string; name: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
+
+  // 관리자 편집 상태
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editPicked, setEditPicked] = useState<Set<string>>(new Set());
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editMsg, setEditMsg] = useState<string | null>(null);
 
   async function load() {
     const data = await fetch('/api/schedule').then((r) => r.json());
@@ -32,7 +39,10 @@ export default function GroupsPage() {
     load();
     fetch('/api/auth/me')
       .then((r) => r.json())
-      .then((auth) => setMe(auth.user ?? null));
+      .then((auth) => {
+        setMe(auth.user ?? null);
+        setIsAdmin(Boolean(auth.isAdmin));
+      });
   }, []);
 
   const groups = useMemo(() => {
@@ -65,6 +75,52 @@ export default function GroupsPage() {
     if (!confirm(`${me.name}님의 선택을 삭제할까요?`)) return;
     setRemoving(true);
     await fetch('/api/selections', { method: 'DELETE' });
+    await load();
+    setRemoving(false);
+  }
+
+  function startEdit(userId: string) {
+    setEditMsg(null);
+    setEditingId(userId);
+    setEditPicked(new Set(selections[userId]?.showtimeIds ?? []));
+  }
+
+  function toggleEditPick(id: string) {
+    setEditPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    if (editPicked.size === 0 && !confirm('회차를 모두 해제하면 이 참여자가 목록에서 삭제돼요. 계속할까요?')) return;
+    setSavingEdit(true);
+    setEditMsg(null);
+    try {
+      const res = await fetch('/api/admin/selections', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: editingId, showtimeIds: [...editPicked] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '저장 실패');
+      setEditingId(null);
+      await load();
+    } catch (e) {
+      setEditMsg(e instanceof Error ? e.message : '저장 실패');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function removeParticipant(userId: string, name: string) {
+    if (!confirm(`${name}님의 선택을 삭제할까요?`)) return;
+    setRemoving(true);
+    await fetch(`/api/admin/selections?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
+    if (editingId === userId) setEditingId(null);
     await load();
     setRemoving(false);
   }
@@ -127,17 +183,80 @@ export default function GroupsPage() {
               </thead>
               <tbody>
                 {participants.map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.name}{me?.id === p.id && ' (나)'}</td>
-                    <td>{p.count}개</td>
-                    <td style={{ textAlign: 'right' }}>
-                      {me?.id === p.id && (
-                        <button className="danger" disabled={removing} onClick={removeMine}>
-                          내 선택 삭제
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                  <React.Fragment key={p.id}>
+                    <tr>
+                      <td>{p.name}{me?.id === p.id && ' (나)'}</td>
+                      <td>{p.count}개</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <span style={{ display: 'inline-flex', gap: 6 }}>
+                          {isAdmin && (
+                            <button
+                              className="secondary"
+                              style={{ padding: '6px 15px', fontSize: 13 }}
+                              disabled={removing || savingEdit}
+                              onClick={() => (editingId === p.id ? setEditingId(null) : startEdit(p.id))}
+                            >
+                              {editingId === p.id ? '닫기' : '회차 수정'}
+                            </button>
+                          )}
+                          {(me?.id === p.id || isAdmin) && (
+                            <button
+                              className="danger"
+                              disabled={removing || savingEdit}
+                              onClick={() => (me?.id === p.id ? removeMine() : removeParticipant(p.id, p.name))}
+                            >
+                              {me?.id === p.id ? '내 선택 삭제' : '삭제'}
+                            </button>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                    {isAdmin && editingId === p.id && (
+                      <tr>
+                        <td colSpan={3} style={{ background: 'var(--surface-2)', borderRadius: 12 }}>
+                          <div style={{ padding: '6px 2px' }}>
+                            <div style={{ fontWeight: 800, fontSize: 13.5, marginBottom: 10 }}>
+                              {p.name}님의 가능 회차 ({editPicked.size}개 선택됨)
+                            </div>
+                            <div className="member-chips" style={{ marginTop: 0 }}>
+                              {schedule.map((s) => {
+                                const on = editPicked.has(s.id);
+                                return (
+                                  <span
+                                    key={s.id}
+                                    className="member-chip"
+                                    style={{
+                                      cursor: 'pointer',
+                                      userSelect: 'none',
+                                      background: on ? 'var(--accent)' : '#fff',
+                                      color: on ? '#fff' : 'var(--text)',
+                                    }}
+                                    onClick={() => toggleEditPick(s.id)}
+                                  >
+                                    {on && '✓ '}{describe(s)}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                            {editMsg && <div className="msg err" style={{ marginBottom: 0 }}>{editMsg}</div>}
+                            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                              <button className="secondary" disabled={savingEdit} onClick={saveEdit}>
+                                {savingEdit ? '저장 중…' : '저장'}
+                              </button>
+                              <button
+                                className="secondary"
+                                style={{ background: '#fff' }}
+                                disabled={savingEdit}
+                                onClick={() => setEditingId(null)}
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
