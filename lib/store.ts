@@ -85,6 +85,14 @@ export async function setUserSelection(userId: string, name: string, showtimeIds
   }
 }
 
+export async function clearSelections(): Promise<void> {
+  if (hasRedis()) {
+    await redis().set(SELECTIONS_KEY, {});
+  } else {
+    memory.selections = {};
+  }
+}
+
 export async function removeUser(userId: string): Promise<void> {
   if (hasRedis()) {
     const all = normalize(await redis().get<Record<string, unknown>>(SELECTIONS_KEY));

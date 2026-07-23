@@ -46,3 +46,13 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   return verifySessionToken(token);
 }
+
+/** ADMIN_KAKAO_ID(쉼표로 여러 명 가능)에 등록된 카카오 회원번호만 관리자로 인정 */
+export function isAdmin(user: SessionUser | null): boolean {
+  if (!user) return false;
+  const ids = (process.env.ADMIN_KAKAO_ID ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return ids.includes(user.id);
+}

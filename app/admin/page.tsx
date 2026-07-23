@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [schedule, setSchedule] = useState<Showtime[]>([]);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [isKakaoAdmin, setIsKakaoAdmin] = useState(false);
 
   // 새 회차 입력 폼
   const [nDate, setNDate] = useState('');
@@ -26,7 +27,26 @@ export default function AdminPage() {
     fetch('/api/schedule')
       .then((r) => r.json())
       .then((data) => setSchedule(data.schedule ?? []));
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((auth) => setIsKakaoAdmin(Boolean(auth.isAdmin)));
   }, []);
+
+  async function clearAllSelections() {
+    if (!window.confirm('정말 모든 사람의 선택을 삭제할까요? 되돌릴 수 없어요.')) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/selections', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '삭제 실패');
+      setMsg({ type: 'ok', text: '모든 선택을 삭제했어요.' });
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : '삭제 실패' });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function addShowtime() {
     if (!nDate || !nTime) {
@@ -153,6 +173,18 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+
+      {isKakaoAdmin && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>선택 데이터 관리</h2>
+          <p className="subtitle" style={{ marginBottom: 14 }}>
+            카카오 관리자 계정으로 로그인되어 있어요. 모든 사람의 회차 선택을 삭제할 수 있어요.
+          </p>
+          <button className="danger" disabled={busy} onClick={clearAllSelections}>
+            🗑 모든 선택 삭제
+          </button>
+        </div>
+      )}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
