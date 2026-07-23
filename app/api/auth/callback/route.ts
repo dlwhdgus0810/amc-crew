@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, STATE_COOKIE } from '@/lib/auth';
+import { updateProfile } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +50,13 @@ export async function GET(req: NextRequest) {
   const id = String(me.id);
   const name: string =
     me.kakao_account?.profile?.nickname ?? me.properties?.nickname ?? `카카오${id.slice(-4)}`;
+
+  // 카카오 닉네임을 프로필에 기록 (변경 이력 포함). 실패해도 로그인은 진행.
+  try {
+    await updateProfile(id, { kakaoName: name });
+  } catch (e) {
+    console.error('[kakao] profile upsert failed:', e);
+  }
 
   const res = NextResponse.redirect(`${origin}/`);
   res.cookies.set(SESSION_COOKIE, createSessionToken({ id, name }), {

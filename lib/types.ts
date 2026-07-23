@@ -9,8 +9,19 @@ export interface Showtime {
 }
 
 export interface UserSelection {
-  name: string; // 카카오 닉네임 (표시용)
+  name: string; // 저장 시점 이름 스냅샷 (프로필이 없을 때 표시 폴백)
   showtimeIds: string[];
+}
+
+export interface UserProfile {
+  kakaoName: string; // 최신 카카오 닉네임 (로그인마다 갱신)
+  nickname?: string; // 사용자가 앱에서 설정한 닉네임 (있으면 표시에 우선 사용)
+  kakaoNameHistory: { name: string; at: string }[]; // 카카오 닉네임 변경 이력 (보관용)
+}
+
+export interface Profiles {
+  // 카카오 회원번호 -> 프로필
+  [userId: string]: UserProfile;
 }
 
 export interface Selections {

@@ -147,8 +147,8 @@ export default function GroupsPage() {
           </div>
           {g.showtime.note && <div className="group-sub">⚠️ {g.showtime.note} — 예매를 서두르세요!</div>}
           <div className="member-chips">
-            {g.members.map((m) => (
-              <span key={m} className="member-chip">{m}</span>
+            {g.members.map((m, i) => (
+              <span key={i} className="member-chip">{m}</span>
             ))}
           </div>
         </div>
@@ -162,8 +162,8 @@ export default function GroupsPage() {
             <span className="badge solo">1명</span>
           </div>
           <div className="member-chips">
-            {g.members.map((m) => (
-              <span key={m} className="member-chip">{m}</span>
+            {g.members.map((m, i) => (
+              <span key={i} className="member-chip">{m}</span>
             ))}
           </div>
         </div>

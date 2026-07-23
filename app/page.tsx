@@ -52,6 +52,13 @@ export default function PickPage() {
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [openTip, setOpenTip] = useState<string | null>(null);
 
+  // 앱 닉네임 편집
+  const [nickname, setNickname] = useState<string | null>(null);
+  const [kakaoName, setKakaoName] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
   // 툴팁 열린 상태에서 다른 곳을 탭하면 닫기
   useEffect(() => {
     if (!openTip) return;
@@ -79,6 +86,8 @@ export default function PickPage() {
         setSchedule(data.schedule ?? []);
         setSelections(data.selections ?? {});
         setUser(auth.user ?? null);
+        setNickname(auth.nickname ?? null);
+        setKakaoName(auth.kakaoName ?? '');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -149,6 +158,31 @@ export default function PickPage() {
     setMsg(null);
   }
 
+  async function saveNickname() {
+    setSavingName(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: nameInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '닉네임 저장 실패');
+      setUser((u) => (u ? { ...u, name: data.name } : u));
+      setNickname(data.nickname ?? null);
+      setKakaoName(data.kakaoName ?? '');
+      setEditingName(false);
+      // 툴팁 등에 표시되는 이름 갱신
+      const refreshed = await fetch('/api/schedule').then((r) => r.json());
+      setSelections(refreshed.selections ?? {});
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : '닉네임 저장 실패' });
+    } finally {
+      setSavingName(false);
+    }
+  }
+
   if (loading) return <p className="subtitle">스케줄 불러오는 중…</p>;
 
   return (
@@ -161,15 +195,55 @@ export default function PickPage() {
 
       <div className="card">
         {user ? (
-          <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 700 }}>
-              👋 {user.name}님
-              <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 600, marginLeft: 10 }}>
-                {picked.size > 0 ? `${picked.size}개 회차 선택됨` : '가능한 회차를 골라주세요'}
+          editingName ? (
+            <div>
+              <div className="field-row">
+                <input
+                  type="text"
+                  placeholder="닉네임"
+                  value={nameInput}
+                  maxLength={20}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !savingName && saveNickname()}
+                  autoFocus
+                />
+                <button className="secondary" disabled={savingName} onClick={saveNickname}>
+                  {savingName ? '저장 중…' : '저장'}
+                </button>
+                <button
+                  className="secondary"
+                  style={{ background: 'var(--surface-2)' }}
+                  disabled={savingName}
+                  onClick={() => setEditingName(false)}
+                >
+                  취소
+                </button>
+              </div>
+              <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600, margin: '10px 2px 0' }}>
+                비워두고 저장하면 카카오 닉네임({kakaoName})을 사용해요.
+              </p>
+            </div>
+          ) : (
+            <div className="field-row" style={{ justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 700 }}>
+                👋 {user.name}님
+                <button
+                  className="secondary"
+                  style={{ padding: '4px 12px', fontSize: 12.5, marginLeft: 8, verticalAlign: 'middle' }}
+                  onClick={() => {
+                    setNameInput(nickname ?? '');
+                    setEditingName(true);
+                  }}
+                >
+                  ✏️ 닉네임
+                </button>
+                <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 600, marginLeft: 10 }}>
+                  {picked.size > 0 ? `${picked.size}개 회차 선택됨` : '가능한 회차를 골라주세요'}
+                </span>
               </span>
-            </span>
-            <button className="secondary" onClick={logout}>로그아웃</button>
-          </div>
+              <button className="secondary" onClick={logout}>로그아웃</button>
+            </div>
+          )
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
@@ -226,8 +300,8 @@ export default function PickPage() {
                           {s.note && <span className="note">{s.note}</span>}
                           {members.length > 0 && (
                             <div className={`chip-tip ${openTip === s.id ? 'open' : ''}`}>
-                              {members.map((m) => (
-                                <span key={m} className="chip-tip-name">{m}</span>
+                              {members.map((m, i) => (
+                                <span key={i} className="chip-tip-name">{m}</span>
                               ))}
                             </div>
                           )}
