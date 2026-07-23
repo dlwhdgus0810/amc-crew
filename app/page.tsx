@@ -3,6 +3,11 @@
 import {useEffect, useMemo, useState} from 'react';
 import {Format, Selections, Showtime} from '@/lib/types';
 
+interface SessionUser {
+  id: string;
+  name: string;
+}
+
 const FORMAT_ORDER: Format[] = ['IMAX with Laser', 'Dolby Cinema', 'PRIME', 'Laser'];
 const FORMAT_CLASS: Record<Format, string> = {
   'IMAX with Laser': 'f-imax',
@@ -26,10 +31,21 @@ function to12h(time: string): string {
   return `${ampm} ${h12}:${String(min).padStart(2, '0')}`;
 }
 
+function KakaoIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M12 3C6.48 3 2 6.54 2 10.9c0 2.8 1.86 5.26 4.66 6.66l-.95 3.52c-.08.31.27.56.54.38l4.19-2.78c.51.06 1.03.1 1.56.1 5.52 0 10-3.54 10-7.88C22 6.54 17.52 3 12 3z"
+      />
+    </svg>
+  );
+}
+
 export default function PickPage() {
   const [schedule, setSchedule] = useState<Showtime[]>([]);
   const [selections, setSelections] = useState<Selections>({});
-  const [name, setName] = useState('');
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,21 +60,35 @@ export default function PickPage() {
     return () => document.removeEventListener('click', close);
   }, [openTip]);
 
+  // 카카오 로그인 실패 시 콜백에서 넘어온 에러 표시
   useEffect(() => {
-    fetch('/api/schedule')
-      .then((r) => r.json())
-      .then((data) => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get('login_error');
+    if (err) {
+      setMsg({ type: 'err', text: err });
+      window.history.replaceState(null, '', '/');
+    }
+  }, []);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/schedule').then((r) => r.json()),
+      fetch('/api/auth/me').then((r) => r.json()),
+    ])
+      .then(([data, auth]) => {
         setSchedule(data.schedule ?? []);
         setSelections(data.selections ?? {});
+        setUser(auth.user ?? null);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  // 이름 입력 시 기존 선택 불러오기
+  // 로그인한 사용자의 기존 선택 불러오기
   useEffect(() => {
-    const existing = selections[name.trim()];
-    if (existing) setPicked(new Set(existing));
-  }, [name, selections]);
+    if (!user) return;
+    const existing = selections[user.id];
+    if (existing) setPicked(new Set(existing.showtimeIds));
+  }, [user, selections]);
 
   const byDate = useMemo(() => {
     const map = new Map<string, Showtime[]>();
@@ -71,14 +101,18 @@ export default function PickPage() {
 
   const membersFor = useMemo(() => {
     const members: Record<string, string[]> = {};
-    for (const [user, ids] of Object.entries(selections)) {
-      for (const id of ids) (members[id] ??= []).push(user);
+    for (const sel of Object.values(selections)) {
+      for (const id of sel.showtimeIds) (members[id] ??= []).push(sel.name);
     }
     for (const names of Object.values(members)) names.sort((a, b) => a.localeCompare(b, 'ko'));
     return members;
   }, [selections]);
 
   function toggle(id: string) {
+    if (!user) {
+      setMsg({ type: 'err', text: '카카오 로그인 후 회차를 선택할 수 있어요.' });
+      return;
+    }
     setPicked((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -94,7 +128,7 @@ export default function PickPage() {
       const res = await fetch('/api/selections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), showtimeIds: [...picked] }),
+        body: JSON.stringify({ showtimeIds: [...picked] }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '저장 실패');
@@ -108,6 +142,13 @@ export default function PickPage() {
     }
   }
 
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
+    setPicked(new Set());
+    setMsg(null);
+  }
+
   if (loading) return <p className="subtitle">스케줄 불러오는 중…</p>;
 
   return (
@@ -119,18 +160,27 @@ export default function PickPage() {
       </p>
 
       <div className="card">
-        <div className="field-row">
-          <input
-            type="text"
-            placeholder="이름 (예: 홍길동)"
-            value={name}
-            maxLength={20}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 600 }}>
-            {picked.size > 0 ? `${picked.size}개 회차 선택됨` : '가능한 회차를 골라주세요'}
-          </span>
-        </div>
+        {user ? (
+          <div className="field-row" style={{ justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 700 }}>
+              👋 {user.name}님
+              <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 600, marginLeft: 10 }}>
+                {picked.size > 0 ? `${picked.size}개 회차 선택됨` : '가능한 회차를 골라주세요'}
+              </span>
+            </span>
+            <button className="secondary" onClick={logout}>로그아웃</button>
+          </div>
+        ) : (
+          <div className="field-row" style={{ justifyContent: 'space-between' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
+              카카오 로그인 후 가능한 회차를 선택할 수 있어요.
+            </span>
+            <a className="kakao-btn" href="/api/auth/login">
+              <KakaoIcon />
+              카카오 로그인
+            </a>
+          </div>
+        )}
       </div>
 
       {byDate.map(([date, shows]) => {
@@ -194,13 +244,20 @@ export default function PickPage() {
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      <button style={{ width: '100%' }} onClick={submit} disabled={saving || !name.trim() || picked.size === 0}>
-        {saving
-          ? '저장 중…'
-          : picked.size > 0
-            ? `내 스케줄 저장하기 · ${picked.size}개 선택됨`
-            : '내 스케줄 저장하기'}
-      </button>
+      {user ? (
+        <button style={{ width: '100%' }} onClick={submit} disabled={saving || picked.size === 0}>
+          {saving
+            ? '저장 중…'
+            : picked.size > 0
+              ? `내 스케줄 저장하기 · ${picked.size}개 선택됨`
+              : '내 스케줄 저장하기'}
+        </button>
+      ) : (
+        <a className="kakao-btn" href="/api/auth/login" style={{ width: '100%' }}>
+          <KakaoIcon />
+          카카오 로그인하고 시작하기
+        </a>
+      )}
     </>
   );
 }

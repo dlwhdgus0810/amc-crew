@@ -190,6 +190,16 @@ button.danger:hover { background: #faf0f0; filter: none; }
 }
 .time-chip.selected .count { background: rgba(255, 255, 255, 0.22); color: #fff; }
 
+.kakao-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: #fee500; color: #191919;
+  border: none; border-radius: 12px;
+  padding: 13px 22px; font-size: 15px; font-weight: 800;
+  font-family: inherit; text-decoration: none; cursor: pointer;
+  box-sizing: border-box;
+}
+.kakao-btn:hover { filter: brightness(0.96); }
+
 .field-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .field-row input[type='text'], .field-row input[type='password'] { max-width: 260px; }
 
@@ -227,7 +237,7 @@ th { color: var(--text-dim); font-size: 12.5px; border-bottom: 1px solid var(--b
   nav a { padding: 10px 12px; }
   .card, .date-section { padding: 16px; }
   .time-chip { flex: 1 1 calc(50% - 4px); justify-content: center; }
-  main > button { position: sticky; bottom: 14px; box-shadow: 0 6px 20px rgba(51, 48, 42, 0.2); }
+  main > button, main > .kakao-btn { position: sticky; bottom: 14px; box-shadow: 0 6px 20px rgba(51, 48, 42, 0.2); }
   table { min-width: 480px; }
   .card:has(table) { overflow-x: auto; }
 }

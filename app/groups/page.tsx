@@ -17,8 +17,9 @@ function describe(s: Showtime): string {
 export default function GroupsPage() {
   const [schedule, setSchedule] = useState<Showtime[]>([]);
   const [selections, setSelections] = useState<Selections>({});
+  const [me, setMe] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [removing, setRemoving] = useState('');
+  const [removing, setRemoving] = useState(false);
 
   async function load() {
     const data = await fetch('/api/schedule').then((r) => r.json());
@@ -29,20 +30,23 @@ export default function GroupsPage() {
 
   useEffect(() => {
     load();
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((auth) => setMe(auth.user ?? null));
   }, []);
 
   const groups = useMemo(() => {
     const byId = new Map(schedule.map((s) => [s.id, s]));
     const map = new Map<string, string[]>();
-    for (const [user, ids] of Object.entries(selections)) {
-      for (const id of ids) {
+    for (const sel of Object.values(selections)) {
+      for (const id of sel.showtimeIds) {
         if (!byId.has(id)) continue;
         if (!map.has(id)) map.set(id, []);
-        map.get(id)!.push(user);
+        map.get(id)!.push(sel.name);
       }
     }
     return [...map.entries()]
-      .map(([id, members]) => ({ showtime: byId.get(id)!, members: members.sort() }))
+      .map(([id, members]) => ({ showtime: byId.get(id)!, members: members.sort((a, b) => a.localeCompare(b, 'ko')) }))
       .sort((a, b) => {
         // 인원 많은 순 → 날짜/시간 순
         if (b.members.length !== a.members.length) return b.members.length - a.members.length;
@@ -52,14 +56,17 @@ export default function GroupsPage() {
 
   const matched = groups.filter((g) => g.members.length >= 2);
   const solo = groups.filter((g) => g.members.length === 1);
-  const participants = Object.keys(selections).sort();
+  const participants = Object.entries(selections)
+    .map(([id, sel]) => ({ id, name: sel.name, count: sel.showtimeIds.length }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
-  async function remove(user: string) {
-    if (!confirm(`${user}님의 선택을 삭제할까요?`)) return;
-    setRemoving(user);
-    await fetch(`/api/selections?name=${encodeURIComponent(user)}`, { method: 'DELETE' });
+  async function removeMine() {
+    if (!me) return;
+    if (!confirm(`${me.name}님의 선택을 삭제할까요?`)) return;
+    setRemoving(true);
+    await fetch('/api/selections', { method: 'DELETE' });
     await load();
-    setRemoving('');
+    setRemoving(false);
   }
 
   if (loading) return <p className="subtitle">불러오는 중…</p>;
@@ -72,7 +79,7 @@ export default function GroupsPage() {
       </p>
 
       {participants.length === 0 && (
-        <div className="card">아직 아무도 선택하지 않았어요. 먼저 &quot;시간 고르기&quot;에서 스케줄을 저장해보세요!</div>
+        <div className="card">아직 아무도 선택하지 않았어요. 먼저 &quot;시간 고르기&quot;에서 카카오 로그인 후 스케줄을 저장해보세요!</div>
       )}
 
       {matched.length > 0 && <h2>✅ 매칭된 그룹 ({matched.length})</h2>}
@@ -108,7 +115,7 @@ export default function GroupsPage() {
 
       {participants.length > 0 && (
         <>
-          <h2>참여자 관리</h2>
+          <h2>참여자</h2>
           <div className="card">
             <table>
               <thead>
@@ -120,13 +127,15 @@ export default function GroupsPage() {
               </thead>
               <tbody>
                 {participants.map((p) => (
-                  <tr key={p}>
-                    <td>{p}</td>
-                    <td>{selections[p].length}개</td>
+                  <tr key={p.id}>
+                    <td>{p.name}{me?.id === p.id && ' (나)'}</td>
+                    <td>{p.count}개</td>
                     <td style={{ textAlign: 'right' }}>
-                      <button className="danger" disabled={removing === p} onClick={() => remove(p)}>
-                        삭제
-                      </button>
+                      {me?.id === p.id && (
+                        <button className="danger" disabled={removing} onClick={removeMine}>
+                          내 선택 삭제
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
