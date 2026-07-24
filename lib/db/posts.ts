@@ -55,8 +55,22 @@ export async function listPosts(category: string, past = false): Promise<PostVie
         .from(posts)
         .where(and(eq(posts.category, category), gte(posts.date, today)))
         .orderBy(posts.date, posts.startTime);
-  if (postRows.length === 0) return [];
+  return buildViews(postRows);
+}
 
+/** 공유 링크(/p/[id])용 단건 뷰 조회 */
+export async function getPostView(postId: string): Promise<PostView | null> {
+  // 외부에서 들어오는 id이므로 uuid 형태가 아니면 캐스팅 에러 대신 404 처리
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) return null;
+  const db = await getDb();
+  const row = (await db.select().from(posts).where(eq(posts.id, postId)))[0];
+  if (!row) return null;
+  return (await buildViews([row]))[0];
+}
+
+async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<PostView[]> {
+  if (postRows.length === 0) return [];
+  const db = await getDb();
   const postIds = postRows.map((p) => p.id);
   const userRows = await db.select().from(users);
   const userById = new Map(userRows.map((u) => [u.id, u]));

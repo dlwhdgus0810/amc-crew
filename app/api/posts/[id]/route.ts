@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
-import { countParticipants, deletePost, getPost, updatePost } from '@/lib/db/posts';
+import { countParticipants, deletePost, getPost, getPostView, updatePost } from '@/lib/db/posts';
 
 export const dynamic = 'force-dynamic';
 
 async function displayNameOf(user: { id: string; name: string }): Promise<string> {
   const profile = (await getProfiles())[user.id];
   return resolveDisplayName(profile, user.name);
+}
+
+/** 공유 링크 상세 페이지용 단건 조회 (비로그인 허용) */
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const post = await getPostView(id);
+  if (!post) {
+    return NextResponse.json({ error: '포스트를 찾을 수 없어요.' }, { status: 404 });
+  }
+  return NextResponse.json({ post });
 }
 
 /** 모임 수정 (작성자·관리자). 참가자에게 변경 알림 발송 */
