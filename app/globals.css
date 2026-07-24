@@ -306,6 +306,30 @@ nav a.bell { position: relative; padding: 7px 12px; font-size: 16px; }
 .post-meta { color: var(--text-dim); font-size: 13.5px; font-weight: 600; margin-top: 6px; }
 .post-desc { margin-top: 4px; }
 
+/* ── 프로필/온보딩 ── */
+.field-label { font-size: 13px; font-weight: 800; color: var(--text-dim); margin-bottom: 8px; }
+.seg-group { display: flex; gap: 8px; }
+.seg {
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.seg:hover { filter: none; background: var(--border); }
+.seg.on { background: var(--accent); color: #fff; }
+.profile-link {
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 999px;
+}
+.profile-link:hover { filter: brightness(0.97); }
+
 /* 모바일 */
 @media (max-width: 560px) {
   .container { padding: 0 14px; }

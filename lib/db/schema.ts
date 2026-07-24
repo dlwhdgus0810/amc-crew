@@ -5,6 +5,8 @@ export const users = pgTable('users', {
   kakaoName: text('kakao_name').notNull(),
   nickname: text('nickname'), // null이면 카카오 닉네임 폴백
   kakaoNameHistory: jsonb('kakao_name_history').$type<{ name: string; at: string }[]>().notNull().default([]),
+  birthday: text('birthday'), // YYYY-MM-DD, null이면 온보딩 미완료
+  gender: text('gender'), // 'male' | 'female', null이면 온보딩 미완료
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

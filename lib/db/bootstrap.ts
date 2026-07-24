@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   kakao_name text NOT NULL,
   nickname text,
   kakao_name_history jsonb NOT NULL DEFAULT '[]',
+  birthday text,
+  gender text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 

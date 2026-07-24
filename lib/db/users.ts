@@ -19,13 +19,19 @@ export async function dbGetProfiles(): Promise<Profiles> {
   return out;
 }
 
+/** me 라우트용 단건 조회 */
+export async function dbGetUser(userId: string) {
+  const db = await getDb();
+  return (await db.select().from(users).where(eq(users.id, userId)))[0];
+}
+
 /**
  * 프로필 upsert. nickname: null 이면 커스텀 닉네임 해제(카카오 닉네임 폴백 복귀).
  * kakaoName이 직전 이력과 다르면 kakaoNameHistory에 스냅샷을 쌓는다.
  */
 export async function dbUpdateProfile(
   userId: string,
-  patch: { kakaoName?: string; nickname?: string | null }
+  patch: { kakaoName?: string; nickname?: string | null; birthday?: string; gender?: string }
 ): Promise<UserProfile> {
   const db = await getDb();
   const existing = (await db.select().from(users).where(eq(users.id, userId)))[0];
@@ -33,6 +39,8 @@ export async function dbUpdateProfile(
   let kakaoName = existing?.kakaoName ?? '';
   let nickname: string | null = existing?.nickname ?? null;
   let history = existing?.kakaoNameHistory ?? [];
+  const birthday = patch.birthday ?? existing?.birthday ?? null;
+  const gender = patch.gender ?? existing?.gender ?? null;
 
   if (patch.kakaoName !== undefined) {
     kakaoName = patch.kakaoName;
@@ -51,10 +59,10 @@ export async function dbUpdateProfile(
 
   await db
     .insert(users)
-    .values({ id: userId, kakaoName, nickname, kakaoNameHistory: history })
+    .values({ id: userId, kakaoName, nickname, kakaoNameHistory: history, birthday, gender })
     .onConflictDoUpdate({
       target: users.id,
-      set: { kakaoName, nickname, kakaoNameHistory: history },
+      set: { kakaoName, nickname, kakaoNameHistory: history, birthday, gender },
     });
 
   return { kakaoName, ...(nickname ? { nickname } : {}), kakaoNameHistory: history };

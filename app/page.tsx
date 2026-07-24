@@ -26,13 +26,6 @@ export default function HubPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  // 앱 닉네임 편집
-  const [nickname, setNickname] = useState<string | null>(null);
-  const [kakaoName, setKakaoName] = useState('');
-  const [editingName, setEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState('');
-  const [savingName, setSavingName] = useState(false);
-
   // 카카오 로그인 실패 시 콜백에서 넘어온 에러 표시
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -50,41 +43,10 @@ export default function HubPage() {
     ])
       .then(([auth, sub]) => {
         setUser(auth.user ?? null);
-        setNickname(auth.nickname ?? null);
-        setKakaoName(auth.kakaoName ?? '');
         setSubs(new Set(sub.subscriptions ?? []));
       })
       .finally(() => setLoading(false));
   }, []);
-
-  async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
-    setSubs(new Set());
-    setMsg(null);
-  }
-
-  async function saveNickname() {
-    setSavingName(true);
-    setMsg(null);
-    try {
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: nameInput }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? '닉네임 저장 실패');
-      setUser((u) => (u ? { ...u, name: data.name } : u));
-      setNickname(data.nickname ?? null);
-      setKakaoName(data.kakaoName ?? '');
-      setEditingName(false);
-    } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : '닉네임 저장 실패' });
-    } finally {
-      setSavingName(false);
-    }
-  }
 
   async function toggleSub(category: string) {
     if (!user) {
@@ -121,52 +83,12 @@ export default function HubPage() {
 
       <div className="card">
         {user ? (
-          editingName ? (
-            <div>
-              <div className="field-row">
-                <input
-                  type="text"
-                  placeholder="닉네임"
-                  value={nameInput}
-                  maxLength={20}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !savingName && saveNickname()}
-                  autoFocus
-                />
-                <button className="secondary" disabled={savingName} onClick={saveNickname}>
-                  {savingName ? '저장 중…' : '저장'}
-                </button>
-                <button
-                  className="secondary"
-                  style={{ background: 'var(--surface-2)' }}
-                  disabled={savingName}
-                  onClick={() => setEditingName(false)}
-                >
-                  취소
-                </button>
-              </div>
-              <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600, margin: '10px 2px 0' }}>
-                비워두고 저장하면 카카오 닉네임({kakaoName})을 사용해요.
-              </p>
-            </div>
-          ) : (
-            <div className="field-row" style={{ justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 700 }}>
-                👋 {user.name}님
-                <button
-                  className="secondary"
-                  style={{ padding: '4px 12px', fontSize: 12.5, marginLeft: 8, verticalAlign: 'middle' }}
-                  onClick={() => {
-                    setNameInput(nickname ?? '');
-                    setEditingName(true);
-                  }}
-                >
-                  ✏️ 닉네임
-                </button>
-              </span>
-              <button className="secondary" onClick={logout}>로그아웃</button>
-            </div>
-          )
+          <div className="field-row" style={{ justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 700 }}>👋 {user.name}님</span>
+            <Link href="/profile" className="profile-link">
+              프로필 관리 →
+            </Link>
+          </div>
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
