@@ -26,6 +26,10 @@ body {
   font-family: 'SUIT Variable', 'Pretendard Variable', Pretendard, -apple-system, 'Malgun Gothic', sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  /* footer를 화면 하단에 고정 (내용이 짧아도) */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .container { max-width: 880px; margin: 0 auto; padding: 0 20px; }
@@ -46,7 +50,7 @@ nav a {
 nav a:hover { background: var(--surface-2); color: var(--text); }
 nav a.active, nav a[aria-current='page'] { background: var(--accent-soft); color: var(--text); font-weight: 700; }
 
-main { padding: 34px 20px 76px; }
+main { padding: 34px 20px 76px; flex: 1; width: 100%; }
 .site-footer { border-top: 1px solid var(--border); padding: 20px 0 34px; color: var(--text-dim); font-size: 12.5px; }
 
 h1 { font-size: clamp(22px, 6vw, 27px); font-weight: 800; margin: 0 0 8px; letter-spacing: -0.6px; }
@@ -223,6 +227,7 @@ button.danger:hover { background: #faf0f0; filter: none; }
 }
 .badge.match { background: var(--accent); color: #fff; }
 .badge.solo { background: var(--surface-2); color: var(--text-dim); }
+.badge.full { background: var(--danger); color: #fff; }
 
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border-soft); }

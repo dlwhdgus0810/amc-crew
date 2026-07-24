@@ -14,6 +14,7 @@ export interface PostView {
   endTime: string;
   location: string;
   description: string | null;
+  capacity: number | null;
   createdAt: string;
   participants: { id: string; name: string }[];
 }
@@ -63,6 +64,7 @@ export async function listPosts(category: string): Promise<PostView[]> {
     endTime: p.endTime,
     location: p.location,
     description: p.description,
+    capacity: p.capacity,
     createdAt: p.createdAt.toISOString(),
     participants: byPost.get(p.id) ?? [],
   }));
@@ -93,6 +95,7 @@ export async function createPost(input: {
   endTime: string;
   location: string;
   description?: string;
+  capacity?: number;
 }): Promise<string> {
   const db = await getDb();
   const postId = crypto.randomUUID();
@@ -113,6 +116,7 @@ export async function createPost(input: {
     endTime: input.endTime,
     location: input.location,
     description: input.description ?? null,
+    capacity: input.capacity ?? null,
   };
   const notificationValues = subscriberRows.map((s) => ({
     id: crypto.randomUUID(),
@@ -152,9 +156,24 @@ export async function deletePost(postId: string): Promise<void> {
   await db.delete(posts).where(eq(posts.id, postId)); // 참가·알림은 CASCADE
 }
 
-export async function joinPost(postId: string, userId: string): Promise<void> {
+/** 참가 등록. 정원이 차 있으면 false 반환 (이미 참가 중이면 항상 true). */
+export async function joinPost(postId: string, userId: string, capacity: number | null): Promise<boolean> {
   const db = await getDb();
+  const already = await db
+    .select()
+    .from(postParticipants)
+    .where(and(eq(postParticipants.postId, postId), eq(postParticipants.userId, userId)));
+  if (already.length > 0) return true;
+
+  if (capacity != null) {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(postParticipants)
+      .where(eq(postParticipants.postId, postId));
+    if ((row?.count ?? 0) >= capacity) return false;
+  }
   await db.insert(postParticipants).values({ postId, userId }).onConflictDoNothing();
+  return true;
 }
 
 export async function leavePost(postId: string, userId: string): Promise<void> {

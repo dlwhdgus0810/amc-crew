@@ -17,6 +17,7 @@ interface PostView {
   endTime: string;
   location: string;
   description: string | null;
+  capacity: number | null;
   participants: { id: string; name: string }[];
 }
 
@@ -51,6 +52,7 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
   const [fEnd, setFEnd] = useState('');
   const [fLocation, setFLocation] = useState('');
   const [fMemo, setFMemo] = useState('');
+  const [fCapacity, setFCapacity] = useState('');
 
   async function loadPosts() {
     const data = await fetch(`/api/posts?category=${slug}`).then((r) => r.json());
@@ -101,6 +103,7 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
           endTime: fEnd,
           location: fLocation,
           description: fMemo,
+          capacity: fCapacity || undefined,
         }),
       });
       const data = await res.json();
@@ -112,6 +115,7 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
       setFEnd('');
       setFLocation('');
       setFMemo('');
+      setFCapacity('');
       await loadPosts();
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : '모임 만들기 실패' });
@@ -189,6 +193,20 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
                 style={{ maxWidth: 420 }}
               />
             </div>
+            <div className="field-row" style={{ marginBottom: 10 }}>
+              <input
+                type="number"
+                placeholder="정원 (선택, 예: 4)"
+                value={fCapacity}
+                min={2}
+                max={99}
+                onChange={(e) => setFCapacity(e.target.value)}
+                style={{ maxWidth: 170 }}
+              />
+              <span style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600 }}>
+                비워두면 인원 제한 없음
+              </span>
+            </div>
             <div className="field-row">
               <input
                 type="text"
@@ -217,11 +235,16 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
       {posts.map((post) => {
         const joined = user ? post.participants.some((p) => p.id === user.id) : false;
         const mine = user?.id === post.authorId;
+        const full = post.capacity != null && post.participants.length >= post.capacity;
         return (
           <div key={post.id} className="card group-card">
             <div className="group-title">
               {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}
-              <span className="badge match">🙋{post.participants.length}명</span>
+              <span className="badge match">
+                🙋{post.participants.length}
+                {post.capacity != null ? `/${post.capacity}` : ''}명
+              </span>
+              {full && <span className="badge full">마감</span>}
             </div>
             <div className="post-meta">
               📍 {post.location} · 만든 사람: {post.authorName}
@@ -237,8 +260,12 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
               {!mine && (
-                <button className={joined ? 'secondary' : ''} disabled={busy} onClick={() => join(post)}>
-                  {joined ? '참가 취소' : '🙋 참가하기'}
+                <button
+                  className={joined ? 'secondary' : ''}
+                  disabled={busy || (!joined && full)}
+                  onClick={() => join(post)}
+                >
+                  {joined ? '참가 취소' : full ? '마감됐어요' : '🙋 참가하기'}
                 </button>
               )}
               {(mine || isAdmin) && (

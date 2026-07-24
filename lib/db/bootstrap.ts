@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS posts (
   end_time text NOT NULL,
   location text NOT NULL,
   description text,
+  capacity integer,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS posts_category_date_idx ON posts (category, date);

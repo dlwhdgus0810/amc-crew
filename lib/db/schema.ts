@@ -1,4 +1,4 @@
-import { boolean, index, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(), // 카카오 회원번호
@@ -23,6 +23,7 @@ export const posts = pgTable(
     endTime: text('end_time').notNull(), // HH:mm
     location: text('location').notNull(),
     description: text('description'),
+    capacity: integer('capacity'), // 정원. null이면 무제한
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('posts_category_date_idx').on(t.category, t.date)]

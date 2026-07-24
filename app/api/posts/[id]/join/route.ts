@@ -16,7 +16,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: '포스트를 찾을 수 없어요.' }, { status: 404 });
   }
   await ensureUser(user);
-  await joinPost(id, user.id);
+  const joined = await joinPost(id, user.id, post.capacity);
+  if (!joined) {
+    return NextResponse.json({ error: '정원이 가득 차서 마감된 모임이에요.' }, { status: 409 });
+  }
   return NextResponse.json({ ok: true });
 }
 

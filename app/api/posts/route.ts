@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
   const endTime = typeof body?.endTime === 'string' ? body.endTime : '';
   const location = typeof body?.location === 'string' ? body.location.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
+  const rawCapacity = body?.capacity;
 
   if (!POST_CATEGORY_SLUGS.includes(category)) {
     return NextResponse.json({ error: '올바르지 않은 카테고리입니다.' }, { status: 400 });
@@ -44,6 +45,14 @@ export async function POST(req: NextRequest) {
   if (description.length > 500) {
     return NextResponse.json({ error: '메모는 500자 이하로 입력해주세요.' }, { status: 400 });
   }
+  let capacity: number | undefined;
+  if (rawCapacity !== undefined && rawCapacity !== null && rawCapacity !== '') {
+    const n = Number(rawCapacity);
+    if (!Number.isInteger(n) || n < 2 || n > 99) {
+      return NextResponse.json({ error: '정원은 2~99 사이 숫자로 입력해주세요.' }, { status: 400 });
+    }
+    capacity = n;
+  }
 
   await ensureUser(user);
   const profile = (await getProfiles())[user.id];
@@ -57,6 +66,7 @@ export async function POST(req: NextRequest) {
     endTime,
     location,
     ...(description ? { description } : {}),
+    ...(capacity !== undefined ? { capacity } : {}),
   });
   return NextResponse.json({ ok: true, postId });
 }
