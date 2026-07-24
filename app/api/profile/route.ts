@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { resolveDisplayName } from '@/lib/store';
-import { dbGetUser, dbUpdateProfile } from '@/lib/db/users';
+import { dbGetUser, dbUpdateProfile, ensureUser } from '@/lib/db/users';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +63,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: '변경할 내용이 없습니다.' }, { status: 400 });
   }
 
+  await ensureUser(user); // 프로필 row가 없으면 세션의 카카오 닉네임으로 생성
   const profile = await dbUpdateProfile(user.id, patch);
   const row = await dbGetUser(user.id);
   return NextResponse.json({
