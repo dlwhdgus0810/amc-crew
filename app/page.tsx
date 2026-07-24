@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 
 interface SessionUser {
@@ -25,8 +25,8 @@ export default function HubPage() {
   const [subs, setSubs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const carRef = useRef<HTMLDivElement>(null);
 
-  // 카카오 로그인 실패 시 콜백에서 넘어온 에러 표시
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const err = params.get('login_error');
@@ -54,7 +54,6 @@ export default function HubPage() {
       return;
     }
     const next = !subs.has(category);
-    // 낙관적 업데이트
     setSubs((prev) => {
       const s = new Set(prev);
       if (next) s.add(category);
@@ -72,58 +71,78 @@ export default function HubPage() {
     }
   }
 
+  function scroll(dir: number) {
+    carRef.current?.scrollBy({ left: dir * 580, behavior: 'smooth' });
+  }
+
   if (loading) return <p className="subtitle">불러오는 중…</p>;
 
   return (
     <>
-      <h1>오늘 뭐 하고 놀까?</h1>
-      <p className="subtitle">
-        취미를 골라 모임을 만들거나 참가하세요. 구독한 취미에 새 모임이 올라오면 알림을 받아요.
-      </p>
+      <div className="statement">
+        취미로 모이는 크루.
+        <br />
+        <span className="dim2">오늘 뭐 하고 놀지, 같이 정합니다.</span>
+      </div>
+      <div className="statement-meta">CINEMA — PICKLEBALL — BOWLING — SOCCER</div>
 
-      <div className="card">
+      <div className="home-login">
         {user ? (
-          <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 700 }}>👋 {user.name}님</span>
+          <>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>{user.name}</span>
             <Link href="/profile" className="profile-link">
-              프로필 관리 →
+              프로필 →
             </Link>
-          </div>
+          </>
         ) : (
-          <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
-              카카오 로그인하고 모임에 참가해보세요.
-            </span>
-            <a className="kakao-btn" href="/api/auth/login">
-              <KakaoIcon />
-              카카오 로그인
-            </a>
-          </div>
+          <a className="kakao-btn" href="/api/auth/login">
+            <KakaoIcon />
+            카카오 로그인
+          </a>
         )}
       </div>
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      <div className="hub-grid">
-        {CATEGORIES.map((c) => (
-          <Link key={c.slug} href={c.kind === 'movie' ? '/movie' : `/c/${c.slug}`} className="hub-card">
-            <span className="hub-emoji">{c.emoji}</span>
-            <span className="hub-name">{c.name}</span>
-            <span className="hub-desc">{c.description}</span>
-            {c.kind === 'posts' && user && (
-              <button
-                className={`sub-toggle ${subs.has(c.slug) ? 'on' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleSub(c.slug);
-                }}
-              >
-                {subs.has(c.slug) ? '🔔 구독중' : '🔕 구독'}
-              </button>
-            )}
+      <div className="car" ref={carRef}>
+        {CATEGORIES.map((c, i) => (
+          <Link
+            key={c.slug}
+            href={c.kind === 'movie' ? '/movie' : `/c/${c.slug}`}
+            className="car-card"
+            style={{ background: c.color, color: c.fg }}
+          >
+            <div className="car-top">
+              <span className="car-idx">
+                0{i + 1} / {c.en}
+              </span>
+              {c.kind === 'posts' && user && (
+                <button
+                  className={`sub-toggle ${subs.has(c.slug) ? 'on' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleSub(c.slug);
+                  }}
+                >
+                  {subs.has(c.slug) ? '구독중' : '구독'}
+                </button>
+              )}
+            </div>
+            <div>
+              <div className="car-name">{c.name}</div>
+              <div className="car-desc">{c.description}</div>
+            </div>
           </Link>
         ))}
+      </div>
+      <div className="car-arrows">
+        <button onClick={() => scroll(-1)} aria-label="이전">
+          ←
+        </button>
+        <button onClick={() => scroll(1)} aria-label="다음">
+          →
+        </button>
       </div>
     </>
   );
