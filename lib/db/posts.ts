@@ -121,6 +121,26 @@ export async function addComment(postId: string, userId: string, body: string): 
   return id;
 }
 
+/** 댓글 알림: 댓글 단 사람을 제외한 참가자 전원에게 인앱 + 카톡 발송 */
+export async function notifyComment(
+  post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
+  commenterId: string,
+  commenterName: string,
+  body: string,
+  origin: string
+): Promise<void> {
+  const db = await getDb();
+  const recipients = await participantIdsExcept(post.id, commenterId);
+  if (recipients.length === 0) return;
+
+  const snippet = body.length > 60 ? `${body.slice(0, 60)}…` : body;
+  const message = `💬 ${describeForNotification(post.category, '새 댓글', post.date, post.startTime, post.location, post.title)} — ${commenterName}: ${snippet}`;
+  await db.insert(notifications).values(
+    recipients.map((userId) => ({ id: crypto.randomUUID(), userId, postId: post.id, message }))
+  );
+  await sendKakaoMemos(recipients, message, `${origin}/p/${post.id}`);
+}
+
 export async function getComment(commentId: string) {
   const db = await getDb();
   return (await db.select().from(postComments).where(eq(postComments.id, commentId)))[0];
