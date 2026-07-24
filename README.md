@@ -72,6 +72,14 @@
 5. **앱 설정 → 앱 키** 의 **REST API 키**를 `KAKAO_REST_API_KEY` 환경변수에 입력
 6. (권장) **제품 설정 → 카카오 로그인 → 보안** 에서 Client Secret 활성화 후 `KAKAO_CLIENT_SECRET`에 입력
 
+## TMDB 연동 (무비나잇 제목 자동완성, 선택)
+
+무비나잇 모임을 만들 때 영화/드라마를 검색하면 포스터·평점·감독·출연진이 자동으로 붙습니다.
+
+1. [themoviedb.org](https://www.themoviedb.org/) 가입 → 설정 → API에서 **API 키(v3)** 발급 (무료)
+2. `TMDB_API_KEY` 환경변수에 입력 (로컬 `.env.local` + Vercel). v4 Read Access Token(`eyJ…`)도 지원
+3. 키가 없으면 자동완성만 꺼지고 제목은 일반 텍스트로 입력됩니다
+
 ## 로컬 개발
 
 ```bash
