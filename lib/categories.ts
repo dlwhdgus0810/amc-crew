@@ -10,7 +10,8 @@ export interface Category {
 }
 
 export const CATEGORIES: Category[] = [
-  { slug: 'movie', name: '영화', emoji: '🎬', en: 'CINEMA', color: '#E8380D', fg: '#F6F4EE', kind: 'movie', description: 'The Odyssey 회차 맞추기' },
+  { slug: 'movie', name: 'AMC', emoji: '🎬', en: 'AMC', color: '#E8380D', fg: '#F6F4EE', kind: 'movie', description: 'The Odyssey 회차 맞추기' },
+  { slug: 'movienight', name: '무비나잇', emoji: '🍿', en: 'MOVIE NIGHT', color: '#5B2A86', fg: '#F6F4EE', kind: 'posts', description: '같이 영화 볼 사람 모집' },
   { slug: 'pickleball', name: '피클볼', emoji: '🥒', en: 'PICKLEBALL', color: '#008542', fg: '#F6F4EE', kind: 'posts', description: '같이 칠 사람 모집' },
   { slug: 'bowling', name: '볼링', emoji: '🎳', en: 'BOWLING', color: '#E9A300', fg: '#101010', kind: 'posts', description: '같이 칠 사람 모집' },
   { slug: 'soccer', name: '축구', emoji: '⚽', en: 'SOCCER', color: '#002FA7', fg: '#F6F4EE', kind: 'posts', description: '같이 할 사람 모집' },

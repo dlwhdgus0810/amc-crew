@@ -84,7 +84,7 @@ export default function HubPage() {
         <br />
         <span className="dim2">오늘 뭐 하고 놀지, 같이 정합니다.</span>
       </div>
-      <div className="statement-meta">CINEMA — PICKLEBALL — BOWLING — SOCCER</div>
+      <div className="statement-meta">AMC — MOVIE NIGHT — PICKLEBALL — BOWLING — SOCCER</div>
 
       <div className="home-login">
         {user ? (
