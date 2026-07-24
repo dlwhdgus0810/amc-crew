@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+/** 온보딩 완료 후 복귀할 경로 (?next=, 사이트 내 경로만) — 공유 링크로 유입된 신규 사용자용 */
+function nextPath(): string {
+  const next = new URLSearchParams(window.location.search).get('next');
+  if (next && next.startsWith('/') && !next.startsWith('//')) return next;
+  return '/';
+}
+
 export default function WelcomePage() {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -17,7 +24,7 @@ export default function WelcomePage() {
       .then((r) => r.json())
       .then((auth) => {
         if (!auth.user || !auth.needsOnboarding) {
-          router.replace('/');
+          router.replace(nextPath());
           return;
         }
         setName(auth.user.name);
@@ -38,7 +45,7 @@ export default function WelcomePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '저장 실패');
-      router.replace('/');
+      router.replace(nextPath());
     } catch (e) {
       setErr(e instanceof Error ? e.message : '저장 실패');
       setSaving(false);

@@ -29,7 +29,8 @@ export default function NavLinks() {
         setIsAdmin(Boolean(auth.isAdmin));
         setLoggedIn(Boolean(auth.user));
         if (auth.user && auth.needsOnboarding && pathname !== '/welcome') {
-          router.replace('/welcome');
+          // 온보딩 후 원래 보던 페이지(공유 링크 등)로 복귀할 수 있게 경로를 넘긴다
+          router.replace(`/welcome?next=${encodeURIComponent(pathname)}`);
         }
       })
       .catch(() => {});
