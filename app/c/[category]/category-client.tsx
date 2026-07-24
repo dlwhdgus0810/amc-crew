@@ -45,14 +45,24 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  // 작성 폼
+  // 작성/수정 폼 (필드 공유)
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [fDate, setFDate] = useState('');
   const [fStart, setFStart] = useState('');
   const [fEnd, setFEnd] = useState('');
   const [fLocation, setFLocation] = useState('');
   const [fMemo, setFMemo] = useState('');
   const [fCapacity, setFCapacity] = useState('');
+
+  function resetForm() {
+    setFDate('');
+    setFStart('');
+    setFEnd('');
+    setFLocation('');
+    setFMemo('');
+    setFCapacity('');
+  }
 
   async function loadPosts() {
     const data = await fetch(`/api/posts?category=${slug}`).then((r) => r.json());
@@ -110,15 +120,52 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
       if (!res.ok) throw new Error(data.error ?? '모임 만들기 실패');
       setMsg({ type: 'ok', text: '모임을 만들었어요! 구독자들에게 알림이 갔어요.' });
       setShowForm(false);
-      setFDate('');
-      setFStart('');
-      setFEnd('');
-      setFLocation('');
-      setFMemo('');
-      setFCapacity('');
+      resetForm();
       await loadPosts();
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : '모임 만들기 실패' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEditPost(post: PostView) {
+    setMsg(null);
+    setShowForm(false);
+    setEditId(post.id);
+    setFDate(post.date);
+    setFStart(post.startTime);
+    setFEnd(post.endTime);
+    setFLocation(post.location);
+    setFMemo(post.description ?? '');
+    setFCapacity(post.capacity != null ? String(post.capacity) : '');
+  }
+
+  async function saveEditPost() {
+    if (!editId) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/posts/${editId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: fDate,
+          startTime: fStart,
+          endTime: fEnd,
+          location: fLocation,
+          description: fMemo,
+          capacity: fCapacity || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '수정 실패');
+      setMsg({ type: 'ok', text: '모임을 수정했어요. 참가자들에게 변경 알림이 갔어요.' });
+      setEditId(null);
+      resetForm();
+      await loadPosts();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : '수정 실패' });
     } finally {
       setBusy(false);
     }
@@ -142,7 +189,7 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
   }
 
   async function remove(post: PostView) {
-    if (!confirm('이 모임을 삭제할까요? 참가자 등록과 알림도 함께 삭제돼요.')) return;
+    if (!confirm('이 모임을 취소(삭제)할까요? 참가자들에게 취소 알림이 가요.')) return;
     setBusy(true);
     setMsg(null);
     const res = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
@@ -169,7 +216,14 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
             {subscribed ? '🔔 구독중 — 새 모임 알림 받는 중' : '🔕 구독하고 새 모임 알림 받기'}
           </button>
           {user && (
-            <button className="secondary" onClick={() => setShowForm((v) => !v)}>
+            <button
+              className="secondary"
+              onClick={() => {
+                setEditId(null);
+                if (!showForm) resetForm();
+                setShowForm((v) => !v);
+              }}
+            >
               {showForm ? '닫기' : '➕ 모임 만들기'}
             </button>
           )}
@@ -258,22 +312,85 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
                 </span>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-              {!mine && (
-                <button
-                  className={joined ? 'secondary' : ''}
-                  disabled={busy || (!joined && full)}
-                  onClick={() => join(post)}
-                >
-                  {joined ? '참가 취소' : full ? '마감됐어요' : '🙋 참가하기'}
-                </button>
-              )}
-              {(mine || isAdmin) && (
-                <button className="danger" disabled={busy} onClick={() => remove(post)}>
-                  삭제
-                </button>
-              )}
-            </div>
+            {editId === post.id ? (
+              <div style={{ marginTop: 14, background: 'var(--surface-2)', borderRadius: 12, padding: 14 }}>
+                <div className="field-row" style={{ marginBottom: 10 }}>
+                  <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} style={{ maxWidth: 170 }} />
+                  <input type="time" value={fStart} onChange={(e) => setFStart(e.target.value)} style={{ maxWidth: 140 }} />
+                  <span style={{ color: 'var(--text-dim)' }}>~</span>
+                  <input type="time" value={fEnd} onChange={(e) => setFEnd(e.target.value)} style={{ maxWidth: 140 }} />
+                </div>
+                <div className="field-row" style={{ marginBottom: 10 }}>
+                  <input
+                    type="text"
+                    placeholder="장소"
+                    value={fLocation}
+                    maxLength={100}
+                    onChange={(e) => setFLocation(e.target.value)}
+                    style={{ maxWidth: 300 }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="정원 (선택)"
+                    value={fCapacity}
+                    min={2}
+                    max={99}
+                    onChange={(e) => setFCapacity(e.target.value)}
+                    style={{ maxWidth: 140 }}
+                  />
+                </div>
+                <div className="field-row">
+                  <input
+                    type="text"
+                    placeholder="메모 (선택)"
+                    value={fMemo}
+                    maxLength={500}
+                    onChange={(e) => setFMemo(e.target.value)}
+                    style={{ maxWidth: 300 }}
+                  />
+                  <button
+                    className="secondary"
+                    disabled={busy || !fDate || !fStart || !fEnd || !fLocation.trim()}
+                    onClick={saveEditPost}
+                  >
+                    {busy ? '저장 중…' : '저장'}
+                  </button>
+                  <button
+                    className="secondary"
+                    style={{ background: '#fff' }}
+                    disabled={busy}
+                    onClick={() => {
+                      setEditId(null);
+                      resetForm();
+                    }}
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                {!mine && (
+                  <button
+                    className={joined ? 'secondary' : ''}
+                    disabled={busy || (!joined && full)}
+                    onClick={() => join(post)}
+                  >
+                    {joined ? '참가 취소' : full ? '마감됐어요' : '🙋 참가하기'}
+                  </button>
+                )}
+                {(mine || isAdmin) && (
+                  <>
+                    <button className="secondary" disabled={busy} onClick={() => startEditPost(post)}>
+                      ✏️ 수정
+                    </button>
+                    <button className="danger" disabled={busy} onClick={() => remove(post)}>
+                      삭제
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

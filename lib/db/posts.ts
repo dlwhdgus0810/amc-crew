@@ -72,14 +72,21 @@ export async function listPosts(category: string): Promise<PostView[]> {
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-function describeForNotification(category: string, date: string, startTime: string, location: string): string {
+/** 알림 메시지용 모임 설명: "🥒 피클볼 {label} · 8/1(토) 오후 6:00 · OP코트" */
+function describeForNotification(
+  category: string,
+  label: string,
+  date: string,
+  startTime: string,
+  location: string
+): string {
   const cat = getCategory(category);
   const [y, m, d] = date.split('-').map(Number);
   const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
   const [h, min] = startTime.split(':').map(Number);
   const ampm = h < 12 ? '오전' : '오후';
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${cat?.emoji ?? ''} ${cat?.name ?? category} 새 모임 · ${m}/${d}(${wd}) ${ampm} ${h12}:${String(min).padStart(2, '0')} · ${location}`;
+  return `${cat?.emoji ?? ''} ${cat?.name ?? category} ${label} · ${m}/${d}(${wd}) ${ampm} ${h12}:${String(min).padStart(2, '0')} · ${location}`;
 }
 
 /**
@@ -105,7 +112,7 @@ export async function createPost(input: {
     .from(subscriptions)
     .where(and(eq(subscriptions.category, input.category), ne(subscriptions.userId, input.authorId)));
 
-  const message = `${describeForNotification(input.category, input.date, input.startTime, input.location)} — ${input.authorName}`;
+  const message = `${describeForNotification(input.category, '새 모임', input.date, input.startTime, input.location)} — ${input.authorName}`;
 
   const postValues = {
     id: postId,
@@ -151,9 +158,100 @@ export async function getPost(postId: string) {
   return (await db.select().from(posts).where(eq(posts.id, postId)))[0];
 }
 
-export async function deletePost(postId: string): Promise<void> {
+export async function countParticipants(postId: string): Promise<number> {
   const db = await getDb();
-  await db.delete(posts).where(eq(posts.id, postId)); // 참가·알림은 CASCADE
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(postParticipants)
+    .where(eq(postParticipants.postId, postId));
+  return row?.count ?? 0;
+}
+
+/** 참가자(actor 제외) 목록 조회 — 변경/취소 알림 수신자 */
+async function participantIdsExcept(postId: string, actorId: string): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({ userId: postParticipants.userId })
+    .from(postParticipants)
+    .where(and(eq(postParticipants.postId, postId), ne(postParticipants.userId, actorId)));
+  return rows.map((r) => r.userId);
+}
+
+/** 모임 수정 + 참가자(수정자 제외)에게 변경 알림을 단일 트랜잭션으로 실행 */
+export async function updatePost(input: {
+  postId: string;
+  category: string;
+  actorId: string;
+  actorName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  description: string | null;
+  capacity: number | null;
+}): Promise<void> {
+  const db = await getDb();
+  const recipients = await participantIdsExcept(input.postId, input.actorId);
+  const message = `${describeForNotification(input.category, '모임 변경', input.date, input.startTime, input.location)} — ${input.actorName}`;
+
+  const set = {
+    date: input.date,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    location: input.location,
+    description: input.description,
+    capacity: input.capacity,
+  };
+  const notificationValues = recipients.map((userId) => ({
+    id: crypto.randomUUID(),
+    userId,
+    postId: input.postId,
+    message,
+  }));
+
+  const anyDb = db as any;
+  if (typeof anyDb.batch === 'function') {
+    const statements: unknown[] = [db.update(posts).set(set).where(eq(posts.id, input.postId))];
+    if (notificationValues.length > 0) statements.push(db.insert(notifications).values(notificationValues));
+    await anyDb.batch(statements);
+  } else {
+    await anyDb.transaction(async (tx: typeof db) => {
+      await tx.update(posts).set(set).where(eq(posts.id, input.postId));
+      if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
+    });
+  }
+}
+
+/**
+ * 모임 삭제(취소) + 참가자(취소자 제외)에게 취소 알림.
+ * 취소 알림은 postId를 null로 저장해 포스트 삭제 CASCADE에 지워지지 않게 한다.
+ */
+export async function deletePost(
+  post: { id: string; category: string; date: string; startTime: string; location: string },
+  actorId: string,
+  actorName: string
+): Promise<void> {
+  const db = await getDb();
+  const recipients = await participantIdsExcept(post.id, actorId);
+  const message = `${describeForNotification(post.category, '모임 취소', post.date, post.startTime, post.location)} — ${actorName}`;
+  const notificationValues = recipients.map((userId) => ({
+    id: crypto.randomUUID(),
+    userId,
+    postId: null,
+    message,
+  }));
+
+  const anyDb = db as any;
+  if (typeof anyDb.batch === 'function') {
+    const statements: unknown[] = [db.delete(posts).where(eq(posts.id, post.id))]; // 참가·기존 알림은 CASCADE
+    if (notificationValues.length > 0) statements.unshift(db.insert(notifications).values(notificationValues));
+    await anyDb.batch(statements);
+  } else {
+    await anyDb.transaction(async (tx: typeof db) => {
+      if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
+      await tx.delete(posts).where(eq(posts.id, post.id));
+    });
+  }
 }
 
 /** 참가 등록. 정원이 차 있으면 false 반환 (이미 참가 중이면 항상 true). */
