@@ -11,7 +11,7 @@ function describe(s: Showtime): string {
   const [h, min] = s.time.split(':').map(Number);
   const ampm = h < 12 ? '오전' : '오후';
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${m}/${d} (${wd}) ${ampm} ${h12}:${String(min).padStart(2, '0')} · ${s.format}`;
+  return `${m}/${d} (${wd}) ${ampm} ${h12}:${String(min).padStart(2, '0')} — ${s.format}`;
 }
 
 export default function GroupsPage() {
@@ -22,7 +22,6 @@ export default function GroupsPage() {
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
 
-  // 관리자 편집 상태
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPicked, setEditPicked] = useState<Set<string>>(new Set());
   const [savingEdit, setSavingEdit] = useState(false);
@@ -58,7 +57,6 @@ export default function GroupsPage() {
     return [...map.entries()]
       .map(([id, members]) => ({ showtime: byId.get(id)!, members: members.sort((a, b) => a.localeCompare(b, 'ko')) }))
       .sort((a, b) => {
-        // 인원 많은 순 → 날짜/시간 순
         if (b.members.length !== a.members.length) return b.members.length - a.members.length;
         return (a.showtime.date + a.showtime.time).localeCompare(b.showtime.date + b.showtime.time);
       });
@@ -129,42 +127,40 @@ export default function GroupsPage() {
 
   return (
     <>
-      <h1>그룹 매칭 결과</h1>
-      <p className="subtitle">
-        참여 {participants.length}명 — 같은 회차를 고른 사람들끼리 그룹으로 묶었어요. 인원이 많은 순서예요.
-      </p>
+      <h1>그룹</h1>
+      <p className="subtitle">같은 회차를 고른 사람들 — 참여 {participants.length}명. 인원이 많은 순서예요.</p>
 
       {participants.length === 0 && (
-        <div className="card">아직 아무도 선택하지 않았어요. 먼저 &quot;시간 고르기&quot;에서 카카오 로그인 후 스케줄을 저장해보세요!</div>
+        <div className="card">아직 아무도 선택하지 않았어요. 먼저 &quot;시간 고르기&quot;에서 스케줄을 저장해보세요.</div>
       )}
 
-      {matched.length > 0 && <h2>✅ 매칭된 그룹 ({matched.length})</h2>}
+      {matched.length > 0 && <h2>Matched — 매칭된 그룹 ({matched.length})</h2>}
       {matched.map((g) => (
-        <div key={g.showtime.id} className="card group-card matched">
-          <div className="group-title">
-            {describe(g.showtime)}
-            <span className="badge match">🙋{g.members.length}명 가능</span>
-          </div>
-          {g.showtime.note && <div className="group-sub">⚠️ {g.showtime.note} — 예매를 서두르세요!</div>}
-          <div className="member-chips">
-            {g.members.map((m, i) => (
-              <span key={i} className="member-chip">{m}</span>
-            ))}
+        <div key={g.showtime.id} className="card group-card">
+          <span className="g-count">{g.members.length}</span>
+          <div className="group-body">
+            <div className="group-title">{describe(g.showtime)}</div>
+            {g.showtime.note && <div className="group-sub">{g.showtime.note} — 예매를 서두르세요</div>}
+            <div className="member-chips">
+              {g.members.map((m, i) => (
+                <span key={i} className="member-chip">{m}</span>
+              ))}
+            </div>
           </div>
         </div>
       ))}
 
-      {solo.length > 0 && <h2>🙋 아직 혼자인 회차</h2>}
+      {solo.length > 0 && <h2>Solo — 아직 혼자인 회차</h2>}
       {solo.map((g) => (
-        <div key={g.showtime.id} className="card group-card">
-          <div className="group-title">
-            {describe(g.showtime)}
-            <span className="badge solo">1명</span>
-          </div>
-          <div className="member-chips">
-            {g.members.map((m, i) => (
-              <span key={i} className="member-chip">{m}</span>
-            ))}
+        <div key={g.showtime.id} className="card group-card solo-card">
+          <span className="g-count">1</span>
+          <div className="group-body">
+            <div className="group-title" style={{ color: 'var(--text-dim)' }}>{describe(g.showtime)}</div>
+            <div className="member-chips">
+              {g.members.map((m, i) => (
+                <span key={i} className="member-chip">{m}</span>
+              ))}
+            </div>
           </div>
         </div>
       ))}
@@ -188,11 +184,11 @@ export default function GroupsPage() {
                       <td>{p.name}{me?.id === p.id && ' (나)'}</td>
                       <td>{p.count}개</td>
                       <td style={{ textAlign: 'right' }}>
-                        <span style={{ display: 'inline-flex', gap: 6 }}>
+                        <span style={{ display: 'inline-flex', gap: 18 }}>
                           {isAdmin && (
                             <button
                               className="secondary"
-                              style={{ padding: '6px 15px', fontSize: 13 }}
+                              style={{ fontSize: 13 }}
                               disabled={removing || savingEdit}
                               onClick={() => (editingId === p.id ? setEditingId(null) : startEdit(p.id))}
                             >
@@ -213,12 +209,12 @@ export default function GroupsPage() {
                     </tr>
                     {isAdmin && editingId === p.id && (
                       <tr>
-                        <td colSpan={3} style={{ background: 'var(--surface-2)', borderRadius: 12 }}>
+                        <td colSpan={3} style={{ background: 'var(--surface-2)' }}>
                           <div style={{ padding: '6px 2px' }}>
-                            <div style={{ fontWeight: 800, fontSize: 13.5, marginBottom: 10 }}>
+                            <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 10 }}>
                               {p.name}님의 가능 회차 ({editPicked.size}개 선택됨)
                             </div>
-                            <div className="member-chips" style={{ marginTop: 0 }}>
+                            <div className="member-chips" style={{ marginTop: 0, gap: 8 }}>
                               {schedule.map((s) => {
                                 const on = editPicked.has(s.id);
                                 return (
@@ -228,8 +224,9 @@ export default function GroupsPage() {
                                     style={{
                                       cursor: 'pointer',
                                       userSelect: 'none',
-                                      background: on ? 'var(--accent)' : '#fff',
-                                      color: on ? '#fff' : 'var(--text)',
+                                      borderBottom: on ? '1.5px solid var(--accent)' : '1px solid #c9c7be',
+                                      color: on ? 'var(--accent)' : 'var(--text-dim)',
+                                      fontWeight: on ? 600 : 500,
                                     }}
                                     onClick={() => toggleEditPick(s.id)}
                                   >
@@ -239,16 +236,11 @@ export default function GroupsPage() {
                               })}
                             </div>
                             {editMsg && <div className="msg err" style={{ marginBottom: 0 }}>{editMsg}</div>}
-                            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                            <div style={{ display: 'flex', gap: 18, marginTop: 14 }}>
                               <button className="secondary" disabled={savingEdit} onClick={saveEdit}>
                                 {savingEdit ? '저장 중…' : '저장'}
                               </button>
-                              <button
-                                className="secondary"
-                                style={{ background: '#fff' }}
-                                disabled={savingEdit}
-                                onClick={() => setEditingId(null)}
-                              >
+                              <button className="secondary" disabled={savingEdit} onClick={() => setEditingId(null)}>
                                 취소
                               </button>
                             </div>

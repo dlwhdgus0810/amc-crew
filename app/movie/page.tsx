@@ -52,14 +52,12 @@ export default function PickPage() {
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [openTip, setOpenTip] = useState<string | null>(null);
 
-  // 앱 닉네임 편집
   const [nickname, setNickname] = useState<string | null>(null);
   const [kakaoName, setKakaoName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
 
-  // 툴팁 열린 상태에서 다른 곳을 탭하면 닫기
   useEffect(() => {
     if (!openTip) return;
     const close = () => setOpenTip(null);
@@ -82,7 +80,6 @@ export default function PickPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 로그인한 사용자의 기존 선택 불러오기
   useEffect(() => {
     if (!user) return;
     const existing = selections[user.id];
@@ -131,7 +128,7 @@ export default function PickPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '저장 실패');
-      setMsg({ type: 'ok', text: '저장됐어요! "그룹 보기"에서 누구랑 겹치는지 확인해보세요.' });
+      setMsg({ type: 'ok', text: '저장됐어요! "그룹"에서 누구랑 겹치는지 확인해보세요.' });
       const refreshed = await fetch('/api/schedule').then((r) => r.json());
       setSelections(refreshed.selections ?? {});
     } catch (e) {
@@ -163,7 +160,6 @@ export default function PickPage() {
       setNickname(data.nickname ?? null);
       setKakaoName(data.kakaoName ?? '');
       setEditingName(false);
-      // 툴팁 등에 표시되는 이름 갱신
       const refreshed = await fetch('/api/schedule').then((r) => r.json());
       setSelections(refreshed.selections ?? {});
     } catch (e) {
@@ -177,10 +173,11 @@ export default function PickPage() {
 
   return (
     <>
-      <h1>The Odyssey, 언제 볼 수 있어?</h1>
+      <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", color: 'var(--accent)', fontWeight: 700 }}>
+        The Odyssey
+      </h1>
       <p className="subtitle">
-        AMC Town Center 20 · 2시간 52분 · R등급 — 가능한 회차를 전부 선택하고 저장하세요.
-        같은 회차를 고른 사람들끼리 자동으로 그룹이 만들어져요.
+        AMC Town Center 20 — 2시간 52분 · R등급. 가능한 회차를 모두 고르세요. 같은 회차끼리 그룹이 만들어져요.
       </p>
 
       <div className="card">
@@ -200,34 +197,29 @@ export default function PickPage() {
                 <button className="secondary" disabled={savingName} onClick={saveNickname}>
                   {savingName ? '저장 중…' : '저장'}
                 </button>
-                <button
-                  className="secondary"
-                  style={{ background: 'var(--surface-2)' }}
-                  disabled={savingName}
-                  onClick={() => setEditingName(false)}
-                >
+                <button className="secondary" disabled={savingName} onClick={() => setEditingName(false)}>
                   취소
                 </button>
               </div>
-              <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600, margin: '10px 2px 0' }}>
+              <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '10px 2px 0' }}>
                 비워두고 저장하면 카카오 닉네임({kakaoName})을 사용해요.
               </p>
             </div>
           ) : (
             <div className="field-row" style={{ justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 700 }}>
-                👋 {user.name}님
+              <span style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'baseline', gap: 14 }}>
+                {user.name}
                 <button
                   className="secondary"
-                  style={{ padding: '4px 12px', fontSize: 12.5, marginLeft: 8, verticalAlign: 'middle' }}
+                  style={{ fontSize: 12.5 }}
                   onClick={() => {
                     setNameInput(nickname ?? '');
                     setEditingName(true);
                   }}
                 >
-                  ✏️ 닉네임
+                  닉네임
                 </button>
-                <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 600, marginLeft: 10 }}>
+                <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 500 }}>
                   {picked.size > 0 ? `${picked.size}개 회차 선택됨` : '가능한 회차를 골라주세요'}
                 </span>
               </span>
@@ -236,7 +228,7 @@ export default function PickPage() {
           )
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>
               카카오 로그인 후 가능한 회차를 선택할 수 있어요.
             </span>
             <a className="kakao-btn" href="/api/auth/login">
@@ -248,15 +240,14 @@ export default function PickPage() {
       </div>
 
       {byDate.map(([date, shows]) => {
-        const { label, weekday, short, wd } = formatDateHeading(date);
+        const { label, weekday, short } = formatDateHeading(date);
         return (
-          <section key={date} className="card date-section">
+          <section key={date} className="date-section">
             <div className="date-heading">
               <span className="date-badge">
                 {short}
-                <small>{wd}</small>
+                <small>{label} {weekday}</small>
               </span>
-              {label} <span className="weekday">{weekday}</span>
             </div>
             {FORMAT_ORDER.map((fmt) => {
               const times = shows.filter((s) => s.format === fmt).sort((a, b) => a.time.localeCompare(b.time));
@@ -275,7 +266,6 @@ export default function PickPage() {
                           onClick={() => toggle(s.id)}
                         >
                           <span>{to12h(s.time)}</span>
-                          {selected && <span style={{ fontWeight: 800 }}>✓</span>}
                           {members.length > 0 && (
                             <span
                               className="count"
@@ -284,7 +274,7 @@ export default function PickPage() {
                                 setOpenTip((cur) => (cur === s.id ? null : s.id));
                               }}
                             >
-                              🙋{members.length}
+                              {members.length}
                             </span>
                           )}
                           {s.note && <span className="note">{s.note}</span>}
@@ -308,20 +298,23 @@ export default function PickPage() {
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      {user ? (
-        <button style={{ width: '100%' }} onClick={submit} disabled={saving || picked.size === 0}>
-          {saving
-            ? '저장 중…'
-            : picked.size > 0
-              ? `내 스케줄 저장하기 · ${picked.size}개 선택됨`
-              : '내 스케줄 저장하기'}
-        </button>
-      ) : (
-        <a className="kakao-btn" href="/api/auth/login" style={{ width: '100%' }}>
-          <KakaoIcon />
-          카카오 로그인하고 시작하기
-        </a>
-      )}
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 36, marginTop: 0 }}>
+        {user ? (
+          <button className="big-cta" onClick={submit} disabled={saving || picked.size === 0}>
+            {saving
+              ? '저장 중…'
+              : picked.size > 0
+                ? `내 스케줄 저장하기 · ${picked.size}개 선택됨`
+                : '가능한 회차를 골라주세요'}
+            <span className="arrow">→</span>
+          </button>
+        ) : (
+          <a className="kakao-btn" href="/api/auth/login">
+            <KakaoIcon />
+            카카오 로그인하고 시작하기
+          </a>
+        )}
+      </div>
     </>
   );
 }
