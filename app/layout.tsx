@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="site-header">
           <div className="container header-inner">
             <Link href="/" className="logo">
-              🎯 Odyssey&nbsp;Crew
+              Odyssey&nbsp;Crew<sup>®</sup>
             </Link>
             <NavLinks />
           </div>
@@ -23,7 +23,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="container">{children}</main>
         <footer className="site-footer">
           <div className="container">
-            Odyssey Crew · 취미 모임 만들고 같이 놀 사람 모으기
+            <span>© 2026 ODYSSEY CREW</span>
+            <span>오디세이 크루 — 취미 모임</span>
           </div>
         </footer>
       </body>
