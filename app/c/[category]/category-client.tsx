@@ -266,6 +266,23 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     setBusy(false);
   }
 
+  async function share(post: PostView) {
+    const url = `${window.location.origin}/p/${post.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${name} 모임 · ${dateLabel(post.date)} ${to12h(post.startTime)} · ${post.location}`,
+          url,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setMsg({ type: 'ok', text: '모임 링크를 복사했어요. 카톡에 붙여넣으면 바로 참가할 수 있어요!' });
+    } catch {
+      /* 사용자가 공유 시트를 닫은 경우 등 */
+    }
+  }
+
   async function remove(post: PostView) {
     if (!confirm('이 모임을 취소(삭제)할까요? 참가자들에게 취소 알림이 가요.')) return;
     setBusy(true);
@@ -406,6 +423,11 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
           <div style={{ flexBasis: '100%' }}>{editForm(saveEditPost, () => { setEditId(null); resetForm(); }, '저장')}</div>
         ) : (
           <span style={{ display: 'flex', gap: 20, flex: 'none' }}>
+            {!past && (
+              <button className="secondary" disabled={busy} onClick={() => share(post)}>
+                공유
+              </button>
+            )}
             <button className="secondary" disabled={busy} onClick={() => toggleComments(post.id)}>
               댓글 {post.comments.length > 0 ? post.comments.length : ''}
             </button>
