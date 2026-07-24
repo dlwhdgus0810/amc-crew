@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getCategory } from '@/lib/categories';
+import type { TitleMeta, TitleSearchResult } from '@/lib/tmdb';
+import { TMDB_IMG } from '@/lib/tmdb';
 
 interface SessionUser {
   id: string;
@@ -22,6 +24,7 @@ interface PostView {
   authorId: string;
   authorName: string;
   title: string | null;
+  titleMeta: TitleMeta | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -61,6 +64,10 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [fTitle, setFTitle] = useState('');
+  const [fTitleMeta, setFTitleMeta] = useState<TitleMeta | null>(null);
+  const [titleResults, setTitleResults] = useState<TitleSearchResult[]>([]);
+  const [tmdbOff, setTmdbOff] = useState(false); // TMDB_API_KEY 미설정 시 자동완성 비활성
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fDate, setFDate] = useState('');
   const [fStart, setFStart] = useState('');
   const [fEnd, setFEnd] = useState('');
@@ -70,6 +77,8 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
 
   function resetForm() {
     setFTitle('');
+    setFTitleMeta(null);
+    setTitleResults([]);
     setFDate('');
     setFStart('');
     setFEnd('');
@@ -191,6 +200,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         body: JSON.stringify({
           category: slug,
           title: fTitle,
+          titleMeta: fTitleMeta ?? undefined,
           date: fDate,
           startTime: fStart,
           endTime: fEnd,
@@ -217,6 +227,8 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     setShowForm(false);
     setEditId(post.id);
     setFTitle(post.title ?? '');
+    setFTitleMeta(post.titleMeta);
+    setTitleResults([]);
     setFDate(post.date);
     setFStart(post.startTime);
     setFEnd(post.endTime);
@@ -235,6 +247,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: fTitle,
+          titleMeta: fTitleMeta ?? undefined,
           date: fDate,
           startTime: fStart,
           endTime: fEnd,
@@ -273,6 +286,52 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     setBusy(false);
   }
 
+  // 제목 입력 → 디바운스 TMDB 검색 (키 미설정이면 첫 503 이후 조용히 비활성)
+  function onTitleChange(value: string) {
+    setFTitle(value);
+    setFTitleMeta(null);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    const q = value.trim();
+    if (q.length < 2 || tmdbOff) {
+      setTitleResults([]);
+      return;
+    }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/tmdb/search?q=${encodeURIComponent(q)}`);
+        if (res.status === 503) {
+          setTmdbOff(true);
+          setTitleResults([]);
+          return;
+        }
+        if (!res.ok) {
+          setTitleResults([]);
+          return;
+        }
+        const data = await res.json();
+        setTitleResults(data.results ?? []);
+      } catch {
+        setTitleResults([]);
+      }
+    }, 300);
+  }
+
+  async function pickTitle(r: TitleSearchResult) {
+    setFTitle(r.title);
+    setTitleResults([]);
+    try {
+      const res = await fetch(`/api/tmdb/detail?type=${r.mediaType}&id=${r.tmdbId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFTitleMeta(data.meta ?? null);
+        return;
+      }
+    } catch {
+      /* 상세 조회 실패 시 검색 결과 수준의 정보만 저장 */
+    }
+    setFTitleMeta(r);
+  }
+
   async function share(post: PostView) {
     const url = `${window.location.origin}/p/${post.id}`;
     try {
@@ -309,14 +368,67 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     <div style={{ marginTop: 20 }}>
       {titleLabel && (
         <div className="field-row" style={{ marginBottom: 14 }}>
-          <input
-            type="text"
-            placeholder={`${titleLabel} 제목 (예: 듄: 파트2)`}
-            value={fTitle}
-            maxLength={100}
-            onChange={(e) => setFTitle(e.target.value)}
-            style={{ maxWidth: 420 }}
-          />
+          <div className="search-wrap">
+            <input
+              type="text"
+              placeholder={`${titleLabel} 제목 검색 (예: 듄: 파트2)`}
+              value={fTitle}
+              maxLength={100}
+              onChange={(e) => onTitleChange(e.target.value)}
+              onBlur={() => setTimeout(() => setTitleResults([]), 200)}
+            />
+            {titleResults.length > 0 && (
+              <div className="search-drop">
+                {titleResults.map((r) => (
+                  <div key={`${r.mediaType}-${r.tmdbId}`} className="search-item" onMouseDown={() => pickTitle(r)}>
+                    {r.posterPath ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={`${TMDB_IMG}/w92${r.posterPath}`} alt="" />
+                    ) : (
+                      <span className="si-noposter" />
+                    )}
+                    <span>
+                      {r.title}
+                      <span className="si-sub">
+                        {[r.mediaType === 'tv' ? '드라마' : '영화', r.year, r.rating ? `★ ${r.rating.toFixed(1)}` : null]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {fTitleMeta && (
+        <div className="title-meta-box">
+          {fTitleMeta.posterPath && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`${TMDB_IMG}/w154${fTitleMeta.posterPath}`} alt="" />
+          )}
+          <div>
+            <div style={{ fontWeight: 800 }}>
+              〈{fTitleMeta.title}〉{fTitleMeta.year ? ` (${fTitleMeta.year})` : ''}
+            </div>
+            <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
+              {[
+                fTitleMeta.rating ? `★ ${fTitleMeta.rating.toFixed(1)}` : null,
+                fTitleMeta.director ? `${fTitleMeta.mediaType === 'tv' ? '크리에이터' : '감독'} ${fTitleMeta.director}` : null,
+                fTitleMeta.cast?.length ? `출연 ${fTitleMeta.cast.join(', ')}` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </div>
+          </div>
+          <button
+            className="danger"
+            style={{ marginLeft: 'auto', flex: 'none' }}
+            onClick={() => setFTitleMeta(null)}
+          >
+            선택 해제
+          </button>
         </div>
       )}
       <div className="field-row" style={{ marginBottom: 14 }}>
@@ -428,6 +540,20 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         <span className="post-meta">
           {post.title && (
             <span style={{ display: 'block', fontWeight: 800, color: 'var(--text)' }}>〈{post.title}〉</span>
+          )}
+          {post.titleMeta && (
+            <span style={{ display: 'block', fontSize: 12.5, color: 'var(--text-dim)' }}>
+              {[
+                post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
+                post.titleMeta.year,
+                post.titleMeta.director
+                  ? `${post.titleMeta.mediaType === 'tv' ? '크리에이터' : '감독'} ${post.titleMeta.director}`
+                  : null,
+                post.titleMeta.cast?.length ? post.titleMeta.cast.join(', ') : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
           )}
           {post.location} — {post.authorName}
           {post.description && <span className="post-desc" style={{ display: 'block' }}>“{post.description}”</span>}

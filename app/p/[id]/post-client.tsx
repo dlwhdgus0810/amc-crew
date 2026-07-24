@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getCategory } from '@/lib/categories';
 import type { PostView } from '@/lib/db/posts';
+import { TMDB_IMG } from '@/lib/tmdb';
 
 interface SessionUser {
   id: string;
@@ -174,8 +175,35 @@ export default function PostClient({ id }: { id: string }) {
       </div>
 
       <div className="card">
-        {post.title && (
-          <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>〈{post.title}〉</div>
+        {post.titleMeta ? (
+          <div style={{ display: 'flex', gap: 14, marginBottom: 12 }}>
+            {post.titleMeta.posterPath && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`${TMDB_IMG}/w154${post.titleMeta.posterPath}`}
+                alt=""
+                style={{ width: 72, borderRadius: 8, flex: 'none' }}
+              />
+            )}
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 800 }}>
+                〈{post.title}〉{post.titleMeta.year ? ` (${post.titleMeta.year})` : ''}
+              </div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 13.5, marginTop: 4 }}>
+                {[
+                  post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
+                  post.titleMeta.director
+                    ? `${post.titleMeta.mediaType === 'tv' ? '크리에이터' : '감독'} ${post.titleMeta.director}`
+                    : null,
+                  post.titleMeta.cast?.length ? `출연 ${post.titleMeta.cast.join(', ')}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </div>
+            </div>
+          </div>
+        ) : (
+          post.title && <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>〈{post.title}〉</div>
         )}
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.4px' }}>
           {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}

@@ -298,3 +298,31 @@ a:hover .notif-item { background: var(--surface-2); }
   table { min-width: 480px; }
   .card:has(table) { overflow-x: auto; }
 }
+
+/* ── 제목 자동완성 (TMDB) ── */
+.search-wrap { position: relative; flex: 1 1 auto; max-width: 420px; }
+.search-wrap input { width: 100%; }
+.search-drop {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 34px rgba(16, 16, 16, 0.14);
+  max-height: 340px; overflow-y: auto;
+}
+.search-item {
+  display: flex; gap: 11px; align-items: center;
+  padding: 9px 12px; cursor: pointer; font-size: 14px; line-height: 1.35;
+}
+.search-item:hover { background: var(--surface-2); }
+.search-item img, .search-item .si-noposter {
+  width: 34px; height: 50px; object-fit: cover; border-radius: 4px;
+  background: var(--surface-2); flex: none;
+}
+.search-item .si-sub { display: block; color: var(--text-dim); font-size: 12px; }
+.title-meta-box {
+  display: flex; gap: 14px; align-items: center;
+  background: var(--surface-2); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 14px;
+}
+.title-meta-box img { width: 48px; border-radius: 6px; flex: none; }

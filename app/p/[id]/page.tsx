@@ -25,7 +25,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const cat = getCategory(post.category);
   const titlePart = post.title ? ` 〈${post.title}〉` : '';
   const title = `${cat?.name ?? post.category} 모임${titlePart} · ${describeWhen(post.date, post.startTime)}`;
-  const description = `${post.location} · ${post.participants.length}명 참여 중${
+  const metaPart = post.titleMeta
+    ? [
+        post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
+        post.titleMeta.director ? `감독 ${post.titleMeta.director}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+  const description = `${metaPart ? `${metaPart} · ` : ''}${post.location} · ${post.participants.length}명 참여 중${
     post.capacity != null ? ` (정원 ${post.capacity}명)` : ''
   } — 링크를 눌러 바로 참가하세요`;
   return {
