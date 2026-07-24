@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, updatePost } from '@/lib/db/posts';
+import { getCategory } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const body = await req.json().catch(() => null);
+  const title = typeof body?.title === 'string' ? body.title.trim() : '';
   const date = typeof body?.date === 'string' ? body.date : '';
   const startTime = typeof body?.startTime === 'string' ? body.startTime : '';
   const endTime = typeof body?.endTime === 'string' ? body.endTime : '';
@@ -55,6 +57,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (description.length > 500) {
     return NextResponse.json({ error: '메모는 500자 이하로 입력해주세요.' }, { status: 400 });
   }
+  if (title.length > 100) {
+    return NextResponse.json({ error: '제목은 100자 이하로 입력해주세요.' }, { status: 400 });
+  }
+  const hasTitle = Boolean(getCategory(post.category)?.titleLabel);
   let capacity: number | null = null;
   if (rawCapacity !== undefined && rawCapacity !== null && rawCapacity !== '') {
     const n = Number(rawCapacity);
@@ -73,6 +79,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     category: post.category,
     actorId: user.id,
     actorName: await displayNameOf(user),
+    title: hasTitle && title ? title : null,
     date,
     startTime,
     endTime,

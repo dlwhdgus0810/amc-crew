@@ -9,6 +9,7 @@ export interface PostView {
   category: string;
   authorId: string;
   authorName: string;
+  title: string | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -103,6 +104,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<Post
     category: p.category,
     authorId: p.authorId,
     authorName: displayNameOf(userById.get(p.authorId), '알 수 없음'),
+    title: p.title,
     date: p.date,
     startTime: p.startTime,
     endTime: p.endTime,
@@ -134,13 +136,14 @@ export async function deleteComment(commentId: string): Promise<void> {
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-/** 알림 메시지용 모임 설명: "🥒 피클볼 {label} · 8/1(토) 오후 6:00 · OP코트" */
+/** 알림 메시지용 모임 설명: "🥒 피클볼 {label} · 8/1(토) 오후 6:00 · OP코트" (제목이 있으면 〈제목〉 삽입) */
 function describeForNotification(
   category: string,
   label: string,
   date: string,
   startTime: string,
-  location: string
+  location: string,
+  title?: string | null
 ): string {
   const cat = getCategory(category);
   const [y, m, d] = date.split('-').map(Number);
@@ -148,7 +151,8 @@ function describeForNotification(
   const [h, min] = startTime.split(':').map(Number);
   const ampm = h < 12 ? '오전' : '오후';
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${cat?.emoji ?? ''} ${cat?.name ?? category} ${label} · ${m}/${d}(${wd}) ${ampm} ${h12}:${String(min).padStart(2, '0')} · ${location}`;
+  const titlePart = title ? ` 〈${title}〉` : '';
+  return `${cat?.emoji ?? ''} ${cat?.name ?? category} ${label}${titlePart} · ${m}/${d}(${wd}) ${ampm} ${h12}:${String(min).padStart(2, '0')} · ${location}`;
 }
 
 /**
@@ -159,6 +163,7 @@ export async function createPost(input: {
   category: string;
   authorId: string;
   authorName: string;
+  title?: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -174,12 +179,13 @@ export async function createPost(input: {
     .from(subscriptions)
     .where(and(eq(subscriptions.category, input.category), ne(subscriptions.userId, input.authorId)));
 
-  const message = `${describeForNotification(input.category, '새 모임', input.date, input.startTime, input.location)} — ${input.authorName}`;
+  const message = `${describeForNotification(input.category, '새 모임', input.date, input.startTime, input.location, input.title)} — ${input.authorName}`;
 
   const postValues = {
     id: postId,
     category: input.category,
     authorId: input.authorId,
+    title: input.title ?? null,
     date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,
@@ -245,6 +251,7 @@ export async function updatePost(input: {
   category: string;
   actorId: string;
   actorName: string;
+  title: string | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -254,9 +261,10 @@ export async function updatePost(input: {
 }): Promise<void> {
   const db = await getDb();
   const recipients = await participantIdsExcept(input.postId, input.actorId);
-  const message = `${describeForNotification(input.category, '모임 변경', input.date, input.startTime, input.location)} — ${input.actorName}`;
+  const message = `${describeForNotification(input.category, '모임 변경', input.date, input.startTime, input.location, input.title)} — ${input.actorName}`;
 
   const set = {
+    title: input.title,
     date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,
@@ -289,13 +297,13 @@ export async function updatePost(input: {
  * 취소 알림은 postId를 null로 저장해 포스트 삭제 CASCADE에 지워지지 않게 한다.
  */
 export async function deletePost(
-  post: { id: string; category: string; date: string; startTime: string; location: string },
+  post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
   actorId: string,
   actorName: string
 ): Promise<void> {
   const db = await getDb();
   const recipients = await participantIdsExcept(post.id, actorId);
-  const message = `${describeForNotification(post.category, '모임 취소', post.date, post.startTime, post.location)} — ${actorName}`;
+  const message = `${describeForNotification(post.category, '모임 취소', post.date, post.startTime, post.location, post.title)} — ${actorName}`;
   const notificationValues = recipients.map((userId) => ({
     id: crypto.randomUUID(),
     userId,

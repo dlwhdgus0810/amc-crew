@@ -3,7 +3,7 @@ import { getSessionUser } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { ensureUser } from '@/lib/db/users';
 import { createPost, listPosts } from '@/lib/db/posts';
-import { POST_CATEGORY_SLUGS } from '@/lib/categories';
+import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const category = typeof body?.category === 'string' ? body.category : '';
+  const title = typeof body?.title === 'string' ? body.title.trim() : '';
   const date = typeof body?.date === 'string' ? body.date : '';
   const startTime = typeof body?.startTime === 'string' ? body.startTime : '';
   const endTime = typeof body?.endTime === 'string' ? body.endTime : '';
@@ -46,6 +47,10 @@ export async function POST(req: NextRequest) {
   if (description.length > 500) {
     return NextResponse.json({ error: '메모는 500자 이하로 입력해주세요.' }, { status: 400 });
   }
+  if (title.length > 100) {
+    return NextResponse.json({ error: '제목은 100자 이하로 입력해주세요.' }, { status: 400 });
+  }
+  const hasTitle = Boolean(getCategory(category)?.titleLabel);
   let capacity: number | undefined;
   if (rawCapacity !== undefined && rawCapacity !== null && rawCapacity !== '') {
     const n = Number(rawCapacity);
@@ -62,6 +67,7 @@ export async function POST(req: NextRequest) {
     category,
     authorId: user.id,
     authorName,
+    ...(hasTitle && title ? { title } : {}),
     date,
     startTime,
     endTime,

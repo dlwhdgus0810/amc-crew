@@ -18,6 +18,7 @@ export const posts = pgTable(
     authorId: text('author_id')
       .notNull()
       .references(() => users.id),
+    title: text('title'), // 뭐 볼지/뭐 할지 (카테고리에 titleLabel이 있을 때만 사용)
     date: text('date').notNull(), // YYYY-MM-DD (사전순 = 시간순)
     startTime: text('start_time').notNull(), // HH:mm
     endTime: text('end_time').notNull(), // HH:mm

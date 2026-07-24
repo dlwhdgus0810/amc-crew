@@ -23,7 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!post) return { title: '모임을 찾을 수 없어요 — Odyssey Crew' };
 
   const cat = getCategory(post.category);
-  const title = `${cat?.name ?? post.category} 모임 · ${describeWhen(post.date, post.startTime)}`;
+  const titlePart = post.title ? ` 〈${post.title}〉` : '';
+  const title = `${cat?.name ?? post.category} 모임${titlePart} · ${describeWhen(post.date, post.startTime)}`;
   const description = `${post.location} · ${post.participants.length}명 참여 중${
     post.capacity != null ? ` (정원 ${post.capacity}명)` : ''
   } — 링크를 눌러 바로 참가하세요`;

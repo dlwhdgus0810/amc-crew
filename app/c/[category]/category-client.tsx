@@ -21,6 +21,7 @@ interface PostView {
   category: string;
   authorId: string;
   authorName: string;
+  title: string | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -55,9 +56,11 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const color = getCategory(slug)?.color ?? '#101010';
+  const titleLabel = getCategory(slug)?.titleLabel;
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [fTitle, setFTitle] = useState('');
   const [fDate, setFDate] = useState('');
   const [fStart, setFStart] = useState('');
   const [fEnd, setFEnd] = useState('');
@@ -66,6 +69,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   const [fCapacity, setFCapacity] = useState('');
 
   function resetForm() {
+    setFTitle('');
     setFDate('');
     setFStart('');
     setFEnd('');
@@ -186,6 +190,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category: slug,
+          title: fTitle,
           date: fDate,
           startTime: fStart,
           endTime: fEnd,
@@ -211,6 +216,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     setMsg(null);
     setShowForm(false);
     setEditId(post.id);
+    setFTitle(post.title ?? '');
     setFDate(post.date);
     setFStart(post.startTime);
     setFEnd(post.endTime);
@@ -228,6 +234,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          title: fTitle,
           date: fDate,
           startTime: fStart,
           endTime: fEnd,
@@ -271,7 +278,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${name} 모임 · ${dateLabel(post.date)} ${to12h(post.startTime)} · ${post.location}`,
+          title: `${name} 모임${post.title ? ` 〈${post.title}〉` : ''} · ${dateLabel(post.date)} ${to12h(post.startTime)} · ${post.location}`,
           url,
         });
         return;
@@ -300,6 +307,18 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
 
   const editForm = (onSave: () => void, onCancel: () => void, saveLabel: string) => (
     <div style={{ marginTop: 20 }}>
+      {titleLabel && (
+        <div className="field-row" style={{ marginBottom: 14 }}>
+          <input
+            type="text"
+            placeholder={`${titleLabel} 제목 (예: 듄: 파트2)`}
+            value={fTitle}
+            maxLength={100}
+            onChange={(e) => setFTitle(e.target.value)}
+            style={{ maxWidth: 420 }}
+          />
+        </div>
+      )}
       <div className="field-row" style={{ marginBottom: 14 }}>
         <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} style={{ maxWidth: 170 }} />
         <input type="time" value={fStart} onChange={(e) => setFStart(e.target.value)} style={{ maxWidth: 140 }} />
@@ -407,6 +426,9 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
           {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}
         </span>
         <span className="post-meta">
+          {post.title && (
+            <span style={{ display: 'block', fontWeight: 800, color: 'var(--text)' }}>〈{post.title}〉</span>
+          )}
           {post.location} — {post.authorName}
           {post.description && <span className="post-desc" style={{ display: 'block' }}>“{post.description}”</span>}
           {post.participants.length > 0 && (
