@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getCategory } from '@/lib/categories';
 
 interface SessionUser {
   id: string;
@@ -36,7 +37,7 @@ function dateLabel(date: string): string {
   return `${m}/${d} (${wd})`;
 }
 
-export default function CategoryClient({ slug, name, emoji }: { slug: string; name: string; emoji: string }) {
+export default function CategoryClient({ slug, name }: { slug: string; name: string; emoji?: string }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [posts, setPosts] = useState<PostView[]>([]);
@@ -44,8 +45,8 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const color = getCategory(slug)?.color ?? '#101010';
 
-  // 작성/수정 폼 (필드 공유)
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [fDate, setFDate] = useState('');
@@ -203,86 +204,82 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
 
   if (loading) return <p className="subtitle">불러오는 중…</p>;
 
+  const editForm = (onSave: () => void, onCancel: () => void, saveLabel: string) => (
+    <div style={{ marginTop: 20 }}>
+      <div className="field-row" style={{ marginBottom: 14 }}>
+        <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} style={{ maxWidth: 170 }} />
+        <input type="time" value={fStart} onChange={(e) => setFStart(e.target.value)} style={{ maxWidth: 140 }} />
+        <span style={{ color: 'var(--text-dim)' }}>~</span>
+        <input type="time" value={fEnd} onChange={(e) => setFEnd(e.target.value)} style={{ maxWidth: 140 }} />
+      </div>
+      <div className="field-row" style={{ marginBottom: 14 }}>
+        <input
+          type="text"
+          placeholder="장소 (예: Lifetime OP 피클볼 코트)"
+          value={fLocation}
+          maxLength={100}
+          onChange={(e) => setFLocation(e.target.value)}
+          style={{ maxWidth: 420 }}
+        />
+        <input
+          type="number"
+          placeholder="정원 (선택)"
+          value={fCapacity}
+          min={2}
+          max={99}
+          onChange={(e) => setFCapacity(e.target.value)}
+          style={{ maxWidth: 140 }}
+        />
+      </div>
+      <div className="field-row">
+        <input
+          type="text"
+          placeholder="메모 (선택)"
+          value={fMemo}
+          maxLength={500}
+          onChange={(e) => setFMemo(e.target.value)}
+          style={{ maxWidth: 420 }}
+        />
+        <button disabled={busy || !fDate || !fStart || !fEnd || !fLocation.trim()} onClick={onSave}>
+          {busy ? '저장 중…' : saveLabel}
+        </button>
+        <button className="secondary" disabled={busy} onClick={onCancel}>
+          취소
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
-      <h1>
-        {emoji} {name}
-      </h1>
-      <p className="subtitle">모임을 만들거나, 마음에 드는 모임에 참가하세요.</p>
-
-      <div className="card">
-        <div className="field-row" style={{ justifyContent: 'space-between' }}>
-          <button className={`secondary ${subscribed ? '' : ''}`} onClick={toggleSub}>
-            {subscribed ? '🔔 구독중 — 새 모임 알림 받는 중' : '🔕 구독하고 새 모임 알림 받기'}
-          </button>
+      <div className="feed-head">
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+          <h1 style={{ margin: 0 }}>{name}</h1>
+          <span className="feed-dot" style={{ background: color }} />
+        </div>
+        <div className="feed-actions">
+          <button onClick={toggleSub}>{subscribed ? '구독중' : '구독'}</button>
           {user && (
             <button
-              className="secondary"
               onClick={() => {
                 setEditId(null);
                 if (!showForm) resetForm();
                 setShowForm((v) => !v);
               }}
             >
-              {showForm ? '닫기' : '➕ 모임 만들기'}
+              {showForm ? '닫기' : '모임 만들기 +'}
             </button>
           )}
         </div>
-
-        {showForm && (
-          <div style={{ marginTop: 16 }}>
-            <div className="field-row" style={{ marginBottom: 10 }}>
-              <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} style={{ maxWidth: 170 }} />
-              <input type="time" value={fStart} onChange={(e) => setFStart(e.target.value)} style={{ maxWidth: 140 }} />
-              <span style={{ color: 'var(--text-dim)' }}>~</span>
-              <input type="time" value={fEnd} onChange={(e) => setFEnd(e.target.value)} style={{ maxWidth: 140 }} />
-            </div>
-            <div className="field-row" style={{ marginBottom: 10 }}>
-              <input
-                type="text"
-                placeholder="장소 (예: Lifetime OP 피클볼 코트)"
-                value={fLocation}
-                maxLength={100}
-                onChange={(e) => setFLocation(e.target.value)}
-                style={{ maxWidth: 420 }}
-              />
-            </div>
-            <div className="field-row" style={{ marginBottom: 10 }}>
-              <input
-                type="number"
-                placeholder="정원 (선택, 예: 4)"
-                value={fCapacity}
-                min={2}
-                max={99}
-                onChange={(e) => setFCapacity(e.target.value)}
-                style={{ maxWidth: 170 }}
-              />
-              <span style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600 }}>
-                비워두면 인원 제한 없음
-              </span>
-            </div>
-            <div className="field-row">
-              <input
-                type="text"
-                placeholder="메모 (선택)"
-                value={fMemo}
-                maxLength={500}
-                onChange={(e) => setFMemo(e.target.value)}
-                style={{ maxWidth: 420 }}
-              />
-              <button disabled={busy || !fDate || !fStart || !fEnd || !fLocation.trim()} onClick={createPost}>
-                {busy ? '만드는 중…' : '만들기'}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {showForm && <div className="card">{editForm(createPost, () => setShowForm(false), '만들기')}</div>}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
       {posts.length === 0 && (
         <div className="card" style={{ color: 'var(--text-dim)' }}>
-          아직 예정된 모임이 없어요. 첫 모임을 만들어보세요!
+          아직 예정된 모임이 없어요. 첫 모임을 만들어보세요.
         </div>
       )}
 
@@ -291,105 +288,43 @@ export default function CategoryClient({ slug, name, emoji }: { slug: string; na
         const mine = user?.id === post.authorId;
         const full = post.capacity != null && post.participants.length >= post.capacity;
         return (
-          <div key={post.id} className="card group-card">
-            <div className="group-title">
+          <div key={post.id} className="post-row">
+            <span className="post-when">
               {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}
-              <span className="badge match">
-                🙋{post.participants.length}
-                {post.capacity != null ? `/${post.capacity}` : ''}명
-              </span>
-              {full && <span className="badge full">마감</span>}
-            </div>
-            <div className="post-meta">
-              📍 {post.location} · 만든 사람: {post.authorName}
-              {post.description && <div className="post-desc">💬 {post.description}</div>}
-            </div>
-            <div className="member-chips">
-              {post.participants.map((p) => (
-                <span key={p.id} className="member-chip">
-                  {p.name}
-                  {user?.id === p.id && ' (나)'}
+            </span>
+            <span className="post-meta">
+              {post.location} — {post.authorName}
+              {post.description && <span className="post-desc" style={{ display: 'block' }}>“{post.description}”</span>}
+              {post.participants.length > 0 && (
+                <span style={{ display: 'block', marginTop: 6 }}>
+                  {post.participants.map((p) => p.name + (user?.id === p.id ? ' (나)' : '')).join(', ')}
                 </span>
-              ))}
-            </div>
+              )}
+            </span>
+            <span className="post-count" style={{ color }}>
+              {post.participants.length}
+              {post.capacity != null ? `/${post.capacity}` : ''}명{full ? ' — 마감' : ''}
+            </span>
             {editId === post.id ? (
-              <div style={{ marginTop: 14, background: 'var(--surface-2)', borderRadius: 12, padding: 14 }}>
-                <div className="field-row" style={{ marginBottom: 10 }}>
-                  <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} style={{ maxWidth: 170 }} />
-                  <input type="time" value={fStart} onChange={(e) => setFStart(e.target.value)} style={{ maxWidth: 140 }} />
-                  <span style={{ color: 'var(--text-dim)' }}>~</span>
-                  <input type="time" value={fEnd} onChange={(e) => setFEnd(e.target.value)} style={{ maxWidth: 140 }} />
-                </div>
-                <div className="field-row" style={{ marginBottom: 10 }}>
-                  <input
-                    type="text"
-                    placeholder="장소"
-                    value={fLocation}
-                    maxLength={100}
-                    onChange={(e) => setFLocation(e.target.value)}
-                    style={{ maxWidth: 300 }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="정원 (선택)"
-                    value={fCapacity}
-                    min={2}
-                    max={99}
-                    onChange={(e) => setFCapacity(e.target.value)}
-                    style={{ maxWidth: 140 }}
-                  />
-                </div>
-                <div className="field-row">
-                  <input
-                    type="text"
-                    placeholder="메모 (선택)"
-                    value={fMemo}
-                    maxLength={500}
-                    onChange={(e) => setFMemo(e.target.value)}
-                    style={{ maxWidth: 300 }}
-                  />
-                  <button
-                    className="secondary"
-                    disabled={busy || !fDate || !fStart || !fEnd || !fLocation.trim()}
-                    onClick={saveEditPost}
-                  >
-                    {busy ? '저장 중…' : '저장'}
-                  </button>
-                  <button
-                    className="secondary"
-                    style={{ background: '#fff' }}
-                    disabled={busy}
-                    onClick={() => {
-                      setEditId(null);
-                      resetForm();
-                    }}
-                  >
-                    취소
-                  </button>
-                </div>
-              </div>
+              <div style={{ flexBasis: '100%' }}>{editForm(saveEditPost, () => { setEditId(null); resetForm(); }, '저장')}</div>
             ) : (
-              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <span style={{ display: 'flex', gap: 20, flex: 'none' }}>
                 {!mine && (
-                  <button
-                    className={joined ? 'secondary' : ''}
-                    disabled={busy || (!joined && full)}
-                    onClick={() => join(post)}
-                  >
-                    {joined ? '참가 취소' : full ? '마감됐어요' : '🙋 참가하기'}
+                  <button disabled={busy || (!joined && full)} onClick={() => join(post)}>
+                    {joined ? '참가 취소' : full ? '마감' : '참가하기 →'}
                   </button>
                 )}
                 {(mine || isAdmin) && (
                   <>
                     <button className="secondary" disabled={busy} onClick={() => startEditPost(post)}>
-                      ✏️ 수정
+                      수정
                     </button>
                     <button className="danger" disabled={busy} onClick={() => remove(post)}>
                       삭제
                     </button>
                   </>
                 )}
-              </div>
+              </span>
             )}
           </div>
         );

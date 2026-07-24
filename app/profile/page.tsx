@@ -28,10 +28,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  // 닉네임 편집
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
-  // 생년월일·성별 편집
   const [editingInfo, setEditingInfo] = useState(false);
   const [bInput, setBInput] = useState('');
   const [gInput, setGInput] = useState<'male' | 'female' | ''>('');
@@ -111,7 +109,7 @@ export default function ProfilePage() {
         <h1>프로필</h1>
         <div className="card">
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>
               카카오 로그인 후 프로필을 관리할 수 있어요.
             </span>
             <a className="kakao-btn" href="/api/auth/login">
@@ -129,8 +127,8 @@ export default function ProfilePage() {
       <h1>프로필</h1>
       <p className="subtitle">닉네임, 기본 정보, 구독을 관리해요.</p>
 
+      <h2>닉네임</h2>
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>닉네임</h2>
         {editingName ? (
           <div>
             <div className="field-row">
@@ -146,24 +144,19 @@ export default function ProfilePage() {
               <button className="secondary" disabled={saving} onClick={() => saveProfile({ nickname: nameInput }, '닉네임을 저장했어요.')}>
                 {saving ? '저장 중…' : '저장'}
               </button>
-              <button
-                className="secondary"
-                style={{ background: 'var(--surface-2)' }}
-                disabled={saving}
-                onClick={() => setEditingName(false)}
-              >
+              <button className="secondary" disabled={saving} onClick={() => setEditingName(false)}>
                 취소
               </button>
             </div>
-            <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600, margin: '10px 2px 0' }}>
+            <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '10px 2px 0' }}>
               비워두고 저장하면 카카오 닉네임({kakaoName})을 사용해요.
             </p>
           </div>
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 700 }}>
+            <span style={{ fontWeight: 600, fontSize: 17 }}>
               {user.name}
-              <span style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600, marginLeft: 8 }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, marginLeft: 10 }}>
                 카카오: {kakaoName}
               </span>
             </span>
@@ -174,17 +167,17 @@ export default function ProfilePage() {
                 setEditingName(true);
               }}
             >
-              ✏️ 수정
+              수정
             </button>
           </div>
         )}
       </div>
 
+      <h2>기본 정보</h2>
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>기본 정보</h2>
         {editingInfo ? (
           <div>
-            <div style={{ marginBottom: 14 }}>
+            <div style={{ marginBottom: 16 }}>
               <div className="field-label">생년월일</div>
               <input
                 type="date"
@@ -194,7 +187,7 @@ export default function ProfilePage() {
                 style={{ maxWidth: 220 }}
               />
             </div>
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 18 }}>
               <div className="field-label">성별</div>
               <div className="seg-group">
                 <button className={`seg ${gInput === 'male' ? 'on' : ''}`} onClick={() => setGInput('male')}>
@@ -213,21 +206,16 @@ export default function ProfilePage() {
               >
                 {saving ? '저장 중…' : '저장'}
               </button>
-              <button
-                className="secondary"
-                style={{ background: 'var(--surface-2)' }}
-                disabled={saving}
-                onClick={() => setEditingInfo(false)}
-              >
+              <button className="secondary" disabled={saving} onClick={() => setEditingInfo(false)}>
                 취소
               </button>
             </div>
           </div>
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-              🎂 {birthday || '미입력'}
-              <span style={{ marginLeft: 14 }}>{gender ? (gender === 'male' ? '👨' : '👩') : ''} {GENDER_LABEL[gender] ?? ''}</span>
+            <span style={{ fontWeight: 500 }}>
+              {birthday || '미입력'}
+              <span style={{ marginLeft: 16, color: 'var(--text-dim)' }}>{GENDER_LABEL[gender] ?? ''}</span>
             </span>
             <button
               className="secondary"
@@ -237,15 +225,15 @@ export default function ProfilePage() {
                 setEditingInfo(true);
               }}
             >
-              ✏️ 수정
+              수정
             </button>
           </div>
         )}
       </div>
 
+      <h2>구독 중인 취미</h2>
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>구독 중인 취미</h2>
-        <p className="subtitle" style={{ marginBottom: 14 }}>
+        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
           구독한 취미에 새 모임이 올라오면 알림을 받아요.
         </p>
         <div className="field-row">
@@ -253,9 +241,10 @@ export default function ProfilePage() {
             <button
               key={c.slug}
               className={`seg ${subs.has(c.slug) ? 'on' : ''}`}
+              style={subs.has(c.slug) ? { background: c.color, borderColor: c.color, color: c.fg } : undefined}
               onClick={() => toggleSub(c.slug)}
             >
-              {c.emoji} {c.name} {subs.has(c.slug) ? '🔔' : ''}
+              {c.name}
             </button>
           ))}
         </div>
@@ -263,9 +252,11 @@ export default function ProfilePage() {
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      <button className="danger" onClick={logout}>
-        로그아웃
-      </button>
+      <div style={{ marginTop: 28 }}>
+        <button className="danger" onClick={logout}>
+          로그아웃
+        </button>
+      </div>
     </>
   );
 }
