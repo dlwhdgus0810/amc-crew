@@ -68,6 +68,23 @@ export async function dbUpdateProfile(
   return { kakaoName, ...(nickname ? { nickname } : {}), kakaoNameHistory: history };
 }
 
+/** 카카오 토큰 보관 (로그인 콜백·리프레시 시). refreshToken/talkMessage는 준 것만 갱신. */
+export async function dbSaveKakaoTokens(
+  userId: string,
+  t: { accessToken: string; expiresAt: Date; refreshToken?: string; talkMessage?: boolean }
+): Promise<void> {
+  const db = await getDb();
+  await db
+    .update(users)
+    .set({
+      kakaoAccessToken: t.accessToken,
+      kakaoTokenExpiresAt: t.expiresAt,
+      ...(t.refreshToken ? { kakaoRefreshToken: t.refreshToken } : {}),
+      ...(t.talkMessage !== undefined ? { kakaoTalkMessage: t.talkMessage } : {}),
+    })
+    .where(eq(users.id, userId));
+}
+
 /**
  * 신규 API가 FK insert 전에 users row 존재를 보장.
  * (users 테이블 도입 전에 발급된 세션이 남아있을 수 있으므로 콜백 upsert만으로는 부족)

@@ -8,6 +8,11 @@ export const users = pgTable('users', {
   kakaoNameHistory: jsonb('kakao_name_history').$type<{ name: string; at: string }[]>().notNull().default([]),
   birthday: text('birthday'), // YYYY-MM-DD, null이면 온보딩 미완료
   gender: text('gender'), // 'male' | 'female', null이면 온보딩 미완료
+  // 카카오톡 "나에게 보내기" 알림용 토큰 (로그인마다 갱신)
+  kakaoAccessToken: text('kakao_access_token'),
+  kakaoTokenExpiresAt: timestamp('kakao_token_expires_at', { withTimezone: true }),
+  kakaoRefreshToken: text('kakao_refresh_token'),
+  kakaoTalkMessage: boolean('kakao_talk_message'), // talk_message 동의 여부 (null=미확인, false=미동의)
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

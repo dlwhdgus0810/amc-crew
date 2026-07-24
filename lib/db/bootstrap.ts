@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS users (
   kakao_name_history jsonb NOT NULL DEFAULT '[]',
   birthday text,
   gender text,
+  kakao_access_token text,
+  kakao_token_expires_at timestamptz,
+  kakao_refresh_token text,
+  kakao_talk_message boolean,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
