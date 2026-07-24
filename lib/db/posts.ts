@@ -341,6 +341,40 @@ export async function deletePost(
   }
 }
 
+/**
+ * 오늘 모임 리마인더 (Vercel Cron이 매일 아침 호출).
+ * 오늘 날짜의 모든 모임 참가자(작성자 포함)에게 인앱 알림 + 카톡 메모 발송.
+ */
+export async function sendTodayReminders(origin: string): Promise<{ posts: number; recipients: number }> {
+  const db = await getDb();
+  const today = todayLocal();
+  const todayPosts = await db.select().from(posts).where(eq(posts.date, today));
+  if (todayPosts.length === 0) return { posts: 0, recipients: 0 };
+
+  const participantRows = await db
+    .select()
+    .from(postParticipants)
+    .where(inArray(postParticipants.postId, todayPosts.map((p) => p.id)));
+  const byPost = new Map<string, string[]>();
+  for (const r of participantRows) {
+    if (!byPost.has(r.postId)) byPost.set(r.postId, []);
+    byPost.get(r.postId)!.push(r.userId);
+  }
+
+  let recipients = 0;
+  for (const post of todayPosts) {
+    const userIds = byPost.get(post.id) ?? [];
+    if (userIds.length === 0) continue;
+    recipients += userIds.length;
+    const message = `⏰ ${describeForNotification(post.category, '오늘 모임', post.date, post.startTime, post.location, post.title)}`;
+    await db.insert(notifications).values(
+      userIds.map((userId) => ({ id: crypto.randomUUID(), userId, postId: post.id, message }))
+    );
+    await sendKakaoMemos(userIds, message, `${origin}/p/${post.id}`);
+  }
+  return { posts: todayPosts.length, recipients };
+}
+
 /** 참가 등록. 정원이 차 있으면 false 반환 (이미 참가 중이면 항상 true). */
 export async function joinPost(postId: string, userId: string, capacity: number | null): Promise<boolean> {
   const db = await getDb();
