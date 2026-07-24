@@ -20,6 +20,9 @@ export async function GET(req: NextRequest) {
   url.searchParams.set('redirect_uri', `${origin}/api/auth/callback`);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('state', state);
+  // 명시적 scope 요청: 이미 로그인했던 사용자도 아직 동의 안 한 항목(talk_message)의
+  // 추가 동의 화면을 보게 된다 (모두 동의된 상태면 화면 없이 통과)
+  url.searchParams.set('scope', 'profile_nickname,talk_message');
 
   const res = NextResponse.redirect(url);
   const cookieOpts = {
