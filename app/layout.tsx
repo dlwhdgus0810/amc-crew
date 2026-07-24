@@ -4,8 +4,8 @@ import NavLinks from './nav';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Odyssey Crew — 같이 볼 사람?',
-  description: 'AMC Town Center 20에서 The Odyssey 같이 볼 시간 맞추기',
+  title: 'Odyssey Crew — 같이 놀 사람?',
+  description: '영화·피클볼·볼링·축구 — 취미 모임 만들고 같이 놀 사람 모으기',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="site-header">
           <div className="container header-inner">
             <Link href="/" className="logo">
-              🎬 Odyssey&nbsp;Crew
+              🎯 Odyssey&nbsp;Crew
             </Link>
             <NavLinks />
           </div>
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="container">{children}</main>
         <footer className="site-footer">
           <div className="container">
-            The Odyssey · AMC Town Center 20 (Leawood, KS) · 상영시간 25~30분 후 본편 시작
+            Odyssey Crew · 취미 모임 만들고 같이 놀 사람 모으기
           </div>
         </footer>
       </body>

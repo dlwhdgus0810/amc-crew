@@ -1,16 +1,26 @@
-# 🎬 Odyssey Crew
+# 🎯 Odyssey Crew
 
-친구들끼리 **The Odyssey** (AMC Town Center 20, Leawood KS) 볼 시간을 맞추는 앱.
+친구들끼리 **취미 모임**을 만들고 같이 놀 사람을 모으는 앱.
 
-각자 가능한 상영 회차를 선택하면, **같은 요일·같은 회차**를 고른 사람들끼리 자동으로 그룹이 만들어집니다.
+- **영화 🎬** — The Odyssey (AMC Town Center 20) 회차 맞추기: 가능한 회차를 선택하면 같은 회차끼리 자동 그룹 매칭
+- **피클볼 🥒 · 볼링 🎳 · 축구 ⚽** — 날짜/시간/장소를 정해 모임 포스트를 올리고, 다른 사람이 참가 등록
+- **구독·알림 🔔** — 취미를 구독하면 새 모임이 올라올 때 인앱 알림 수신
 
 ## 페이지
 
 | 경로 | 설명 |
 |------|------|
-| `/` | 카카오 로그인 후 가능한 회차 선택·저장. 각 회차에 몇 명이 선택했는지(👥) 표시 |
-| `/groups` | 그룹 매칭 결과 — 2명 이상 겹친 회차가 위에, 혼자인 회차는 아래에 표시 |
-| `/admin` | 스케줄 편집 (회차 추가/삭제, AMC API 새로고침). `ADMIN_KEY` 필요 |
+| `/` | 홈 — 취미 카테고리 선택, 구독 토글, 카카오 로그인/닉네임 설정 |
+| `/c/pickleball` 등 | 취미별 모임 피드 — 모임 만들기, 참가/취소, 삭제(작성자·관리자) |
+| `/notifications` | 인앱 알림 목록 (진입 시 자동 읽음 처리) |
+| `/movie` | 카카오 로그인 후 가능한 영화 회차 선택·저장 |
+| `/movie/groups` | 영화 그룹 매칭 결과 — 2명 이상 겹친 회차가 위에 표시 |
+| `/admin` | 영화 스케줄 편집 (회차 추가/삭제, AMC API 새로고침). `ADMIN_KEY` 필요 |
+
+## 저장소 구조
+
+- **Postgres (Neon + Drizzle)** — 사용자 프로필(닉네임), 모임 포스트, 참가, 구독, 알림
+- **Upstash Redis** — 영화 스케줄·회차 선택 (기존 기능 전용)
 
 ## 배포하기 (Vercel + Upstash)
 
@@ -27,13 +37,21 @@
    - [vercel.com/new](https://vercel.com/new) → 방금 만든 repo 선택 → Deploy
    - 프레임워크는 Next.js로 자동 인식됩니다.
 
-3. **Upstash Redis 연결**
+3. **Upstash Redis 연결** (영화 기능용)
    - Vercel 프로젝트 → **Storage** 탭 → **Create Database** → **Upstash Redis** (무료 플랜 충분)
-   - 연결하면 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 환경변수가 자동 주입됩니다.
-     - 만약 `KV_REST_API_URL` 형태로 주입되면 Vercel의 환경변수 화면에서 위 두 이름으로 별칭을 추가하세요.
+   - `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` 또는 `KV_REST_API_URL`/`KV_REST_API_TOKEN` 어느 이름으로 주입돼도 인식합니다.
+
+3-1. **Neon Postgres 연결** (모임/구독/알림/프로필용)
+   - Vercel 프로젝트 → **Storage** 탭 → **Create Database** → **Neon Postgres** (무료 플랜 충분)
+   - 연결하면 `DATABASE_URL`(또는 `POSTGRES_URL`) 환경변수가 자동 주입됩니다.
+   - 로컬에서 테이블 생성: `.env.local`에 `DATABASE_URL`을 넣고 (`vercel env pull`로 받아도 됨)
+     ```bash
+     npm run db:push   # lib/db/schema.ts 기준으로 Neon에 테이블 생성 (스키마 변경 때마다 재실행)
+     ```
 
 4. **환경변수 설정** (Vercel → Settings → Environment Variables)
-   - `ADMIN_KEY` — 관리자 페이지용 비밀 키 (아무 문자열)
+   - `ADMIN_KEY` — 관리자 페이지(영화 스케줄 편집)용 비밀 키 (아무 문자열)
+   - `ADMIN_KAKAO_ID` — 관리자로 인정할 카카오 회원번호 (쉼표로 여러 명 가능). 로그인 후 `/api/auth/me`의 `user.id`로 확인
    - `KAKAO_REST_API_KEY` — 카카오 로그인용 REST API 키 (아래 "카카오 로그인 설정" 참고)
    - (선택) `KAKAO_CLIENT_SECRET` — 카카오 앱에서 Client Secret을 활성화한 경우
    - `AUTH_SECRET` — 세션 쿠키 서명용 비밀 키 (`openssl rand -base64 32` 등으로 생성)
@@ -61,7 +79,9 @@ npm install
 npm run dev   # http://localhost:3000
 ```
 
-Redis 환경변수가 없으면 메모리 저장소로 동작합니다 (재시작 시 초기화, 개발용).
+환경변수가 없으면 폴백으로 동작합니다 (재시작 시 초기화, 개발용):
+- Redis 미설정 → 영화 데이터는 메모리 저장소
+- `DATABASE_URL` 미설정 → 모임/알림/프로필은 PGlite(인메모리 Postgres)
 
 ## 스케줄 데이터
 

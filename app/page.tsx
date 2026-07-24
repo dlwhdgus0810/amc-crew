@@ -1,34 +1,12 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
-import {Format, Selections, Showtime} from '@/lib/types';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { CATEGORIES } from '@/lib/categories';
 
 interface SessionUser {
   id: string;
   name: string;
-}
-
-const FORMAT_ORDER: Format[] = ['IMAX with Laser', 'Dolby Cinema', 'PRIME', 'Laser'];
-const FORMAT_CLASS: Record<Format, string> = {
-  'IMAX with Laser': 'f-imax',
-  'Dolby Cinema': 'f-dolby',
-  PRIME: 'f-prime',
-  Laser: 'f-laser',
-};
-
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
-function formatDateHeading(date: string): { label: string; weekday: string; short: string; wd: string } {
-  const [y, m, d] = date.split('-').map(Number);
-  const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
-  return { label: `${m}월 ${d}일`, weekday: `${wd}요일`, short: `${m}/${d}`, wd };
-}
-
-function to12h(time: string): string {
-  const [h, min] = time.split(':').map(Number);
-  const ampm = h < 12 ? '오전' : '오후';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${ampm} ${h12}:${String(min).padStart(2, '0')}`;
 }
 
 function KakaoIcon() {
@@ -42,15 +20,11 @@ function KakaoIcon() {
   );
 }
 
-export default function PickPage() {
-  const [schedule, setSchedule] = useState<Showtime[]>([]);
-  const [selections, setSelections] = useState<Selections>({});
+export default function HubPage() {
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [subs, setSubs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const [openTip, setOpenTip] = useState<string | null>(null);
 
   // 앱 닉네임 편집
   const [nickname, setNickname] = useState<string | null>(null);
@@ -58,14 +32,6 @@ export default function PickPage() {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
-
-  // 툴팁 열린 상태에서 다른 곳을 탭하면 닫기
-  useEffect(() => {
-    if (!openTip) return;
-    const close = () => setOpenTip(null);
-    document.addEventListener('click', close);
-    return () => document.removeEventListener('click', close);
-  }, [openTip]);
 
   // 카카오 로그인 실패 시 콜백에서 넘어온 에러 표시
   useEffect(() => {
@@ -79,82 +45,22 @@ export default function PickPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/schedule').then((r) => r.json()),
       fetch('/api/auth/me').then((r) => r.json()),
+      fetch('/api/subscriptions').then((r) => r.json()),
     ])
-      .then(([data, auth]) => {
-        setSchedule(data.schedule ?? []);
-        setSelections(data.selections ?? {});
+      .then(([auth, sub]) => {
         setUser(auth.user ?? null);
         setNickname(auth.nickname ?? null);
         setKakaoName(auth.kakaoName ?? '');
+        setSubs(new Set(sub.subscriptions ?? []));
       })
       .finally(() => setLoading(false));
   }, []);
 
-  // 로그인한 사용자의 기존 선택 불러오기
-  useEffect(() => {
-    if (!user) return;
-    const existing = selections[user.id];
-    if (existing) setPicked(new Set(existing.showtimeIds));
-  }, [user, selections]);
-
-  const byDate = useMemo(() => {
-    const map = new Map<string, Showtime[]>();
-    for (const s of schedule) {
-      if (!map.has(s.date)) map.set(s.date, []);
-      map.get(s.date)!.push(s);
-    }
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [schedule]);
-
-  const membersFor = useMemo(() => {
-    const members: Record<string, string[]> = {};
-    for (const sel of Object.values(selections)) {
-      for (const id of sel.showtimeIds) (members[id] ??= []).push(sel.name);
-    }
-    for (const names of Object.values(members)) names.sort((a, b) => a.localeCompare(b, 'ko'));
-    return members;
-  }, [selections]);
-
-  function toggle(id: string) {
-    if (!user) {
-      setMsg({ type: 'err', text: '카카오 로그인 후 회차를 선택할 수 있어요.' });
-      return;
-    }
-    setPicked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  async function submit() {
-    setMsg(null);
-    setSaving(true);
-    try {
-      const res = await fetch('/api/selections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ showtimeIds: [...picked] }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? '저장 실패');
-      setMsg({ type: 'ok', text: '저장됐어요! "그룹 보기"에서 누구랑 겹치는지 확인해보세요.' });
-      const refreshed = await fetch('/api/schedule').then((r) => r.json());
-      setSelections(refreshed.selections ?? {});
-    } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : '저장 실패' });
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
-    setPicked(new Set());
+    setSubs(new Set());
     setMsg(null);
   }
 
@@ -173,9 +79,6 @@ export default function PickPage() {
       setNickname(data.nickname ?? null);
       setKakaoName(data.kakaoName ?? '');
       setEditingName(false);
-      // 툴팁 등에 표시되는 이름 갱신
-      const refreshed = await fetch('/api/schedule').then((r) => r.json());
-      setSelections(refreshed.selections ?? {});
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : '닉네임 저장 실패' });
     } finally {
@@ -183,14 +86,37 @@ export default function PickPage() {
     }
   }
 
-  if (loading) return <p className="subtitle">스케줄 불러오는 중…</p>;
+  async function toggleSub(category: string) {
+    if (!user) {
+      setMsg({ type: 'err', text: '카카오 로그인 후 구독할 수 있어요.' });
+      return;
+    }
+    const next = !subs.has(category);
+    // 낙관적 업데이트
+    setSubs((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(category);
+      else s.delete(category);
+      return s;
+    });
+    const res = await fetch('/api/subscriptions', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, subscribed: next }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setSubs(new Set(data.subscriptions ?? []));
+    }
+  }
+
+  if (loading) return <p className="subtitle">불러오는 중…</p>;
 
   return (
     <>
-      <h1>The Odyssey, 언제 볼 수 있어?</h1>
+      <h1>오늘 뭐 하고 놀까?</h1>
       <p className="subtitle">
-        AMC Town Center 20 · 2시간 52분 · R등급 — 가능한 회차를 전부 선택하고 저장하세요.
-        같은 회차를 고른 사람들끼리 자동으로 그룹이 만들어져요.
+        취미를 골라 모임을 만들거나 참가하세요. 구독한 취미에 새 모임이 올라오면 알림을 받아요.
       </p>
 
       <div className="card">
@@ -237,9 +163,6 @@ export default function PickPage() {
                 >
                   ✏️ 닉네임
                 </button>
-                <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 600, marginLeft: 10 }}>
-                  {picked.size > 0 ? `${picked.size}개 회차 선택됨` : '가능한 회차를 골라주세요'}
-                </span>
               </span>
               <button className="secondary" onClick={logout}>로그아웃</button>
             </div>
@@ -247,7 +170,7 @@ export default function PickPage() {
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
-              카카오 로그인 후 가능한 회차를 선택할 수 있어요.
+              카카오 로그인하고 모임에 참가해보세요.
             </span>
             <a className="kakao-btn" href="/api/auth/login">
               <KakaoIcon />
@@ -257,81 +180,29 @@ export default function PickPage() {
         )}
       </div>
 
-      {byDate.map(([date, shows]) => {
-        const { label, weekday, short, wd } = formatDateHeading(date);
-        return (
-          <section key={date} className="card date-section">
-            <div className="date-heading">
-              <span className="date-badge">
-                {short}
-                <small>{wd}</small>
-              </span>
-              {label} <span className="weekday">{weekday}</span>
-            </div>
-            {FORMAT_ORDER.map((fmt) => {
-              const times = shows.filter((s) => s.format === fmt).sort((a, b) => a.time.localeCompare(b.time));
-              if (times.length === 0) return null;
-              return (
-                <div key={fmt} className="format-row">
-                  <div className={`format-label ${FORMAT_CLASS[fmt]}`}>{fmt.toUpperCase()}</div>
-                  <div className="times">
-                    {times.map((s) => {
-                      const members = membersFor[s.id] ?? [];
-                      const selected = picked.has(s.id);
-                      return (
-                        <div
-                          key={s.id}
-                          className={`time-chip ${selected ? 'selected' : ''}`}
-                          onClick={() => toggle(s.id)}
-                        >
-                          <span>{to12h(s.time)}</span>
-                          {selected && <span style={{ fontWeight: 800 }}>✓</span>}
-                          {members.length > 0 && (
-                            <span
-                              className="count"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenTip((cur) => (cur === s.id ? null : s.id));
-                              }}
-                            >
-                              🙋{members.length}
-                            </span>
-                          )}
-                          {s.note && <span className="note">{s.note}</span>}
-                          {members.length > 0 && (
-                            <div className={`chip-tip ${openTip === s.id ? 'open' : ''}`}>
-                              {members.map((m, i) => (
-                                <span key={i} className="chip-tip-name">{m}</span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </section>
-        );
-      })}
-
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      {user ? (
-        <button style={{ width: '100%' }} onClick={submit} disabled={saving || picked.size === 0}>
-          {saving
-            ? '저장 중…'
-            : picked.size > 0
-              ? `내 스케줄 저장하기 · ${picked.size}개 선택됨`
-              : '내 스케줄 저장하기'}
-        </button>
-      ) : (
-        <a className="kakao-btn" href="/api/auth/login" style={{ width: '100%' }}>
-          <KakaoIcon />
-          카카오 로그인하고 시작하기
-        </a>
-      )}
+      <div className="hub-grid">
+        {CATEGORIES.map((c) => (
+          <Link key={c.slug} href={c.kind === 'movie' ? '/movie' : `/c/${c.slug}`} className="hub-card">
+            <span className="hub-emoji">{c.emoji}</span>
+            <span className="hub-name">{c.name}</span>
+            <span className="hub-desc">{c.description}</span>
+            {c.kind === 'posts' && user && (
+              <button
+                className={`sub-toggle ${subs.has(c.slug) ? 'on' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleSub(c.slug);
+                }}
+              >
+                {subs.has(c.slug) ? '🔔 구독중' : '🔕 구독'}
+              </button>
+            )}
+          </Link>
+        ))}
+      </div>
     </>
   );
 }

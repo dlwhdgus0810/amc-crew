@@ -230,6 +230,82 @@ th { color: var(--text-dim); font-size: 12.5px; border-bottom: 1px solid var(--b
 
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+/* ── 허브 (취미 카테고리) ── */
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 4px;
+}
+.hub-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 22px;
+  text-decoration: none;
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(51, 48, 42, 0.05), 0 4px 14px rgba(51, 48, 42, 0.05);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.hub-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(51, 48, 42, 0.06), 0 8px 22px rgba(51, 48, 42, 0.09);
+}
+.hub-emoji { font-size: 34px; line-height: 1.2; }
+.hub-name { font-size: 17px; font-weight: 800; }
+.hub-desc { font-size: 13px; color: var(--text-dim); font-weight: 600; }
+.sub-toggle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.sub-toggle:hover { filter: none; background: var(--border); }
+.sub-toggle.on { background: var(--accent-soft); color: var(--accent-dark); }
+
+/* ── 알림 ── */
+nav a.bell { position: relative; padding: 7px 12px; font-size: 16px; }
+.bell-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+.notif-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(51, 48, 42, 0.05);
+  font-size: 14px;
+  font-weight: 600;
+}
+.notif-item.unread { background: var(--accent-soft); }
+.notif-message { flex: 1; }
+.notif-time { color: var(--text-dim); font-size: 12px; font-weight: 600; flex: none; }
+
+/* ── 포스트 카드 ── */
+.post-meta { color: var(--text-dim); font-size: 13.5px; font-weight: 600; margin-top: 6px; }
+.post-desc { margin-top: 4px; }
+
 /* 모바일 */
 @media (max-width: 560px) {
   .container { padding: 0 14px; }
@@ -240,4 +316,5 @@ th { color: var(--text-dim); font-size: 12.5px; border-bottom: 1px solid var(--b
   main > button, main > .kakao-btn { position: sticky; bottom: 14px; box-shadow: 0 6px 20px rgba(51, 48, 42, 0.2); }
   table { min-width: 480px; }
   .card:has(table) { overflow-x: auto; }
+  .hub-grid { grid-template-columns: 1fr; }
 }

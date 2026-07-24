@@ -4,23 +4,37 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const LINKS = [
-  { href: '/', label: '시간 고르기' },
-  { href: '/groups', label: '그룹 보기' },
-];
-
 export default function NavLinks() {
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.json())
-      .then((auth) => setIsAdmin(Boolean(auth.isAdmin)))
+      .then((auth) => {
+        setIsAdmin(Boolean(auth.isAdmin));
+        setLoggedIn(Boolean(auth.user));
+      })
       .catch(() => {});
   }, []);
 
-  const links = isAdmin ? [...LINKS, { href: '/admin', label: '관리자' }] : LINKS;
+  // 페이지 이동마다 안읽음 수 갱신
+  useEffect(() => {
+    fetch('/api/notifications/count')
+      .then((r) => r.json())
+      .then((data) => setUnread(data.unreadCount ?? 0))
+      .catch(() => {});
+  }, [pathname]);
+
+  const links = [{ href: '/', label: '홈' }];
+  if (pathname.startsWith('/movie')) {
+    links.push({ href: '/movie', label: '시간 고르기' }, { href: '/movie/groups', label: '그룹 보기' });
+  }
+  if (isAdmin) {
+    links.push({ href: '/admin', label: '관리자' });
+  }
 
   return (
     <nav>
@@ -29,6 +43,12 @@ export default function NavLinks() {
           {l.label}
         </Link>
       ))}
+      {loggedIn && (
+        <Link href="/notifications" className={`bell ${pathname === '/notifications' ? 'active' : ''}`}>
+          🔔
+          {unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
+        </Link>
+      )}
     </nav>
   );
 }
