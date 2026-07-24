@@ -2,16 +2,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
 
 :root {
-  --bg: #f2f1ec;
-  --surface: #f2f1ec;
-  --surface-2: #ebeae3;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f4;
   --border: #dddbd3;
   --border-soft: #e4e2da;
   --text: #101010;
   --text-dim: #a5a39b;
   --accent: #e8380d;
   --accent-dark: #b32b0a;
-  --accent-soft: #ebeae3;
+  --accent-soft: #f4f4f4;
   --warn: #e9a300;
   --danger: #c81e1e;
   --danger-border: #e3b9b9;
@@ -35,7 +35,7 @@ body {
 .container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
 
 .site-header {
-  background: rgba(242, 241, 236, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   position: sticky; top: 0; z-index: 10;
   backdrop-filter: blur(8px);
 }
@@ -152,7 +152,7 @@ button.big-cta .arrow { color: var(--accent); }
 .chip-tip {
   position: absolute; bottom: calc(100% + 8px); left: 50%;
   transform: translateX(-50%) translateY(3px);
-  background: var(--text); color: #f2f1ec; border-radius: 4px; padding: 8px 11px;
+  background: var(--text); color: #ffffff; border-radius: 4px; padding: 8px 11px;
   display: flex; flex-wrap: wrap; gap: 5px;
   max-width: min(240px, calc(100vw - 28px)); width: max-content;
   opacity: 0; visibility: hidden;
