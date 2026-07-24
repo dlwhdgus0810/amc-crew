@@ -5,6 +5,7 @@ import { resolveDisplayName } from '../store';
 import { getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendKakaoMemos } from '../kakao';
+import { todayLocal } from '../dates';
 
 export interface PostView {
   id: string;
@@ -30,14 +31,6 @@ function displayNameOf(row: { kakaoName: string; nickname: string | null } | und
     { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] },
     fallback
   );
-}
-
-function todayLocal(): string {
-  // 미국 중부(극장/모임 기준) 근처 사용자 대상 소규모 앱 — 서버 로컬 날짜로 충분
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 /**

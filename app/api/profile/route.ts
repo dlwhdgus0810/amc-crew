@@ -2,15 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { resolveDisplayName } from '@/lib/store';
 import { dbGetUser, dbUpdateProfile, ensureUser } from '@/lib/db/users';
+import { todayLocal } from '@/lib/dates';
 
 export const dynamic = 'force-dynamic';
-
-function todayLocal(): string {
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
-}
 
 /** 프로필 부분 업데이트: 닉네임(빈 값이면 해제) / 생년월일 / 성별 */
 export async function PUT(req: NextRequest) {
