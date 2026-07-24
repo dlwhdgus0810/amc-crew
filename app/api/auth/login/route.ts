@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { STATE_COOKIE } from '@/lib/auth';
+import { LOGIN_NEXT_COOKIE, safeNextPath, STATE_COOKIE } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,12 +22,15 @@ export async function GET(req: NextRequest) {
   url.searchParams.set('state', state);
 
   const res = NextResponse.redirect(url);
-  res.cookies.set(STATE_COOKIE, state, {
+  const cookieOpts = {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     maxAge: 600,
     path: '/',
-  });
+  } as const;
+  res.cookies.set(STATE_COOKIE, state, cookieOpts);
+  // 로그인 완료 후 복귀할 경로 (예: 공유받은 모임 링크)
+  res.cookies.set(LOGIN_NEXT_COOKIE, safeNextPath(req.nextUrl.searchParams.get('next')), cookieOpts);
   return res;
 }

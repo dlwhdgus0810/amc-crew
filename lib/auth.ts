@@ -9,6 +9,13 @@ export interface SessionUser {
 export const SESSION_COOKIE = 'session';
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30일
 export const STATE_COOKIE = 'kakao_oauth_state';
+export const LOGIN_NEXT_COOKIE = 'login_next';
+
+/** 로그인 후 복귀 경로 검증: 사이트 내 경로만 허용 (open redirect 방지) */
+export function safeNextPath(path: string | undefined | null): string {
+  if (path && path.startsWith('/') && !path.startsWith('//')) return path;
+  return '/';
+}
 
 function secret(): string {
   return process.env.AUTH_SECRET ?? 'dev-only-secret-change-me';

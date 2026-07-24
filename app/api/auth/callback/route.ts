@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, STATE_COOKIE } from '@/lib/auth';
+import { createSessionToken, LOGIN_NEXT_COOKIE, safeNextPath, SESSION_COOKIE, SESSION_MAX_AGE, STATE_COOKIE } from '@/lib/auth';
 import { updateProfile } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const fail = (reason: string) => {
     const res = NextResponse.redirect(`${origin}/?login_error=${encodeURIComponent(reason)}`);
     res.cookies.delete(STATE_COOKIE);
+    res.cookies.delete(LOGIN_NEXT_COOKIE);
     return res;
   };
 
@@ -58,7 +59,8 @@ export async function GET(req: NextRequest) {
     console.error('[kakao] profile upsert failed:', e);
   }
 
-  const res = NextResponse.redirect(`${origin}/`);
+  const next = safeNextPath(req.cookies.get(LOGIN_NEXT_COOKIE)?.value);
+  const res = NextResponse.redirect(`${origin}${next}`);
   res.cookies.set(SESSION_COOKIE, createSessionToken({ id, name }), {
     httpOnly: true,
     sameSite: 'lax',
@@ -67,5 +69,6 @@ export async function GET(req: NextRequest) {
     path: '/',
   });
   res.cookies.delete(STATE_COOKIE);
+  res.cookies.delete(LOGIN_NEXT_COOKIE);
   return res;
 }
