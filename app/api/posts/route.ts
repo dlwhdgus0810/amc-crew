@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
     location,
     ...(description ? { description } : {}),
     ...(capacity !== undefined ? { capacity } : {}),
+    origin: req.nextUrl.origin,
   });
   return NextResponse.json({ ok: true, postId });
 }

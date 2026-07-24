@@ -89,12 +89,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     location,
     description: description || null,
     capacity,
+    origin: req.nextUrl.origin,
   });
   return NextResponse.json({ ok: true });
 }
 
 /** 모임 삭제(취소) (작성자·관리자). 참가자에게 취소 알림 발송 */
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: '카카오 로그인이 필요해요.' }, { status: 401 });
@@ -107,6 +108,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (post.authorId !== user.id && !isAdmin(user)) {
     return NextResponse.json({ error: '작성자만 삭제할 수 있어요.' }, { status: 403 });
   }
-  await deletePost(post, user.id, await displayNameOf(user));
+  await deletePost(post, user.id, await displayNameOf(user), req.nextUrl.origin);
   return NextResponse.json({ ok: true });
 }

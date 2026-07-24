@@ -4,6 +4,7 @@ import { notifications, postComments, postParticipants, posts, subscriptions, us
 import { resolveDisplayName } from '../store';
 import { getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
+import { sendKakaoMemos } from '../kakao';
 
 export interface PostView {
   id: string;
@@ -174,6 +175,7 @@ export async function createPost(input: {
   location: string;
   description?: string;
   capacity?: number;
+  origin?: string; // 카톡 알림의 "모임 보기" 링크 base URL (요청 origin)
 }): Promise<string> {
   const db = await getDb();
   const postId = crypto.randomUUID();
@@ -205,7 +207,6 @@ export async function createPost(input: {
     message,
   }));
 
-  // TODO(kakao-memo): 알림 insert 직후가 구독자별 "카카오톡 나에게 보내기" 발송을 붙일 자리 (액세스 토큰 보관 필요)
   const anyDb = db as any;
   if (typeof anyDb.batch === 'function') {
     // neon-http: batch = 단일 트랜잭션
@@ -222,6 +223,11 @@ export async function createPost(input: {
       await tx.insert(postParticipants).values({ postId, userId: input.authorId });
       if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
     });
+  }
+
+  // 구독자에게 카카오톡 "나에게 보내기" 발송 (토큰 없는 사용자는 인앱 알림만)
+  if (input.origin && notificationValues.length > 0) {
+    await sendKakaoMemos(notificationValues.map((n) => n.userId), message, `${input.origin}/p/${postId}`);
   }
   return postId;
 }
@@ -264,6 +270,7 @@ export async function updatePost(input: {
   location: string;
   description: string | null;
   capacity: number | null;
+  origin?: string;
 }): Promise<void> {
   const db = await getDb();
   const recipients = await participantIdsExcept(input.postId, input.actorId);
@@ -297,6 +304,10 @@ export async function updatePost(input: {
       if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
     });
   }
+
+  if (input.origin && recipients.length > 0) {
+    await sendKakaoMemos(recipients, message, `${input.origin}/p/${input.postId}`);
+  }
 }
 
 /**
@@ -306,7 +317,8 @@ export async function updatePost(input: {
 export async function deletePost(
   post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
   actorId: string,
-  actorName: string
+  actorName: string,
+  origin?: string
 ): Promise<void> {
   const db = await getDb();
   const recipients = await participantIdsExcept(post.id, actorId);
@@ -328,6 +340,11 @@ export async function deletePost(
       if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
       await tx.delete(posts).where(eq(posts.id, post.id));
     });
+  }
+
+  // 취소된 모임은 상세 페이지가 사라지므로 카테고리 피드로 링크
+  if (origin && recipients.length > 0) {
+    await sendKakaoMemos(recipients, message, `${origin}/c/${post.category}`);
   }
 }
 
