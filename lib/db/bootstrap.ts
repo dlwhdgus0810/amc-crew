@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS posts (
   category text NOT NULL,
   author_id text NOT NULL REFERENCES users(id),
   title text,
+  title_meta jsonb,
   date text NOT NULL,
   start_time text NOT NULL,
   end_time text NOT NULL,

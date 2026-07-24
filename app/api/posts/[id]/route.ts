@@ -3,6 +3,7 @@ import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, updatePost } from '@/lib/db/posts';
 import { getCategory } from '@/lib/categories';
+import { sanitizeTitleMeta } from '@/lib/tmdb';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: '제목은 100자 이하로 입력해주세요.' }, { status: 400 });
   }
   const hasTitle = Boolean(getCategory(post.category)?.titleLabel);
+  const titleMeta = hasTitle && title ? sanitizeTitleMeta(body?.titleMeta) : null;
   let capacity: number | null = null;
   if (rawCapacity !== undefined && rawCapacity !== null && rawCapacity !== '') {
     const n = Number(rawCapacity);
@@ -80,6 +82,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     actorId: user.id,
     actorName: await displayNameOf(user),
     title: hasTitle && title ? title : null,
+    titleMeta,
     date,
     startTime,
     endTime,

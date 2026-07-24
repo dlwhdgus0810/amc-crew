@@ -3,6 +3,7 @@ import { getDb } from './index';
 import { notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { getCategory } from '../categories';
+import type { TitleMeta } from '../tmdb';
 
 export interface PostView {
   id: string;
@@ -10,6 +11,7 @@ export interface PostView {
   authorId: string;
   authorName: string;
   title: string | null;
+  titleMeta: TitleMeta | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -105,6 +107,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<Post
     authorId: p.authorId,
     authorName: displayNameOf(userById.get(p.authorId), '알 수 없음'),
     title: p.title,
+    titleMeta: p.titleMeta ?? null,
     date: p.date,
     startTime: p.startTime,
     endTime: p.endTime,
@@ -164,6 +167,7 @@ export async function createPost(input: {
   authorId: string;
   authorName: string;
   title?: string;
+  titleMeta?: TitleMeta;
   date: string;
   startTime: string;
   endTime: string;
@@ -186,6 +190,7 @@ export async function createPost(input: {
     category: input.category,
     authorId: input.authorId,
     title: input.title ?? null,
+    titleMeta: input.titleMeta ?? null,
     date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,
@@ -252,6 +257,7 @@ export async function updatePost(input: {
   actorId: string;
   actorName: string;
   title: string | null;
+  titleMeta: TitleMeta | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -265,6 +271,7 @@ export async function updatePost(input: {
 
   const set = {
     title: input.title,
+    titleMeta: input.titleMeta,
     date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,

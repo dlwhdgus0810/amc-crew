@@ -4,6 +4,7 @@ import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { ensureUser } from '@/lib/db/users';
 import { createPost, listPosts } from '@/lib/db/posts';
 import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
+import { sanitizeTitleMeta } from '@/lib/tmdb';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '제목은 100자 이하로 입력해주세요.' }, { status: 400 });
   }
   const hasTitle = Boolean(getCategory(category)?.titleLabel);
+  const titleMeta = hasTitle && title ? sanitizeTitleMeta(body?.titleMeta) : null;
   let capacity: number | undefined;
   if (rawCapacity !== undefined && rawCapacity !== null && rawCapacity !== '') {
     const n = Number(rawCapacity);
@@ -68,6 +70,7 @@ export async function POST(req: NextRequest) {
     authorId: user.id,
     authorName,
     ...(hasTitle && title ? { title } : {}),
+    ...(titleMeta ? { titleMeta } : {}),
     date,
     startTime,
     endTime,

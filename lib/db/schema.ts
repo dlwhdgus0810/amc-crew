@@ -1,4 +1,5 @@
 import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import type { TitleMeta } from '../tmdb';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(), // 카카오 회원번호
@@ -19,6 +20,8 @@ export const posts = pgTable(
       .notNull()
       .references(() => users.id),
     title: text('title'), // 뭐 볼지/뭐 할지 (카테고리에 titleLabel이 있을 때만 사용)
+    titleMeta: jsonb('title_meta').$type<TitleMeta>(), // TMDB 메타 (평점·감독·출연·포스터), 검색으로 고른 경우만
+
     date: text('date').notNull(), // YYYY-MM-DD (사전순 = 시간순)
     startTime: text('start_time').notNull(), // HH:mm
     endTime: text('end_time').notNull(), // HH:mm
