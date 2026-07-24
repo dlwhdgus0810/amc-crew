@@ -9,10 +9,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category') ?? '';
+  const past = req.nextUrl.searchParams.get('past') === '1';
   if (!POST_CATEGORY_SLUGS.includes(category)) {
     return NextResponse.json({ error: '올바르지 않은 카테고리입니다.' }, { status: 400 });
   }
-  return NextResponse.json({ posts: await listPosts(category) });
+  return NextResponse.json({ posts: await listPosts(category, past) });
 }
 
 export async function POST(req: NextRequest) {

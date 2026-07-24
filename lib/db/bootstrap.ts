@@ -35,6 +35,15 @@ CREATE TABLE IF NOT EXISTS post_participants (
   PRIMARY KEY (post_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS post_comments (
+  id uuid PRIMARY KEY,
+  post_id uuid NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id text NOT NULL REFERENCES users(id),
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS post_comments_post_idx ON post_comments (post_id, created_at);
+
 CREATE TABLE IF NOT EXISTS subscriptions (
   user_id text NOT NULL REFERENCES users(id),
   category text NOT NULL,

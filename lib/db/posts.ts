@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, inArray, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from 'drizzle-orm';
 import { getDb } from './index';
-import { notifications, postParticipants, posts, subscriptions, users } from './schema';
+import { notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { getCategory } from '../categories';
 
@@ -17,6 +17,7 @@ export interface PostView {
   capacity: number | null;
   createdAt: string;
   participants: { id: string; name: string }[];
+  comments: { id: string; userId: string; name: string; body: string; createdAt: string }[];
 }
 
 function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined, fallback: string): string {
@@ -35,23 +36,52 @@ function todayLocal(): string {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
-/** 오늘 이후의 포스트 목록 (참가자·작성자 표시 이름 포함) */
-export async function listPosts(category: string): Promise<PostView[]> {
+/**
+ * 포스트 목록 (참가자·작성자 표시 이름, 댓글 포함).
+ * past=false: 오늘 이후, 가까운 순. past=true: 오늘 이전(지난 모임), 최근 순 최대 30개.
+ */
+export async function listPosts(category: string, past = false): Promise<PostView[]> {
   const db = await getDb();
-  const postRows = await db
-    .select()
-    .from(posts)
-    .where(and(eq(posts.category, category), gte(posts.date, todayLocal())))
-    .orderBy(posts.date, posts.startTime);
+  const today = todayLocal();
+  const postRows = past
+    ? await db
+        .select()
+        .from(posts)
+        .where(and(eq(posts.category, category), lt(posts.date, today)))
+        .orderBy(desc(posts.date), desc(posts.startTime))
+        .limit(30)
+    : await db
+        .select()
+        .from(posts)
+        .where(and(eq(posts.category, category), gte(posts.date, today)))
+        .orderBy(posts.date, posts.startTime);
   if (postRows.length === 0) return [];
 
+  const postIds = postRows.map((p) => p.id);
   const userRows = await db.select().from(users);
   const userById = new Map(userRows.map((u) => [u.id, u]));
-  const participantRows = await db.select().from(postParticipants);
+  const participantRows = await db.select().from(postParticipants).where(inArray(postParticipants.postId, postIds));
   const byPost = new Map<string, { id: string; name: string }[]>();
   for (const p of participantRows) {
     if (!byPost.has(p.postId)) byPost.set(p.postId, []);
     byPost.get(p.postId)!.push({ id: p.userId, name: displayNameOf(userById.get(p.userId), '알 수 없음') });
+  }
+
+  const commentRows = await db
+    .select()
+    .from(postComments)
+    .where(inArray(postComments.postId, postIds))
+    .orderBy(asc(postComments.createdAt));
+  const commentsByPost = new Map<string, PostView['comments']>();
+  for (const c of commentRows) {
+    if (!commentsByPost.has(c.postId)) commentsByPost.set(c.postId, []);
+    commentsByPost.get(c.postId)!.push({
+      id: c.id,
+      userId: c.userId,
+      name: displayNameOf(userById.get(c.userId), '알 수 없음'),
+      body: c.body,
+      createdAt: c.createdAt.toISOString(),
+    });
   }
 
   return postRows.map((p) => ({
@@ -67,7 +97,25 @@ export async function listPosts(category: string): Promise<PostView[]> {
     capacity: p.capacity,
     createdAt: p.createdAt.toISOString(),
     participants: byPost.get(p.id) ?? [],
+    comments: commentsByPost.get(p.id) ?? [],
   }));
+}
+
+export async function addComment(postId: string, userId: string, body: string): Promise<string> {
+  const db = await getDb();
+  const id = crypto.randomUUID();
+  await db.insert(postComments).values({ id, postId, userId, body });
+  return id;
+}
+
+export async function getComment(commentId: string) {
+  const db = await getDb();
+  return (await db.select().from(postComments).where(eq(postComments.id, commentId)))[0];
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const db = await getDb();
+  await db.delete(postComments).where(eq(postComments.id, commentId));
 }
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];

@@ -43,6 +43,22 @@ export const postParticipants = pgTable(
   (t) => [primaryKey({ columns: [t.postId, t.userId] })]
 );
 
+export const postComments = pgTable(
+  'post_comments',
+  {
+    id: uuid('id').primaryKey(), // 앱에서 생성
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('post_comments_post_idx').on(t.postId, t.createdAt)]
+);
+
 export const subscriptions = pgTable(
   'subscriptions',
   {
