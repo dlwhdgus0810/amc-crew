@@ -160,6 +160,16 @@ export default function PostClient({ id }: { id: string }) {
   const past = post.date < todayLocal();
   const loginNext = `/api/auth/login?next=${encodeURIComponent(`/p/${id}`)}`;
 
+  // Google 캘린더 추가 링크 (ctz로 모임 시간대 고정)
+  const gcalTitle = `${cat?.name ?? post.category}${post.title ? ` 〈${post.title}〉` : ''} 모임`;
+  const gcalDates = `${post.date.replace(/-/g, '')}T${post.startTime.replace(':', '')}00/${post.date.replace(/-/g, '')}T${post.endTime.replace(':', '')}00`;
+  const gcalUrl =
+    `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+    `&text=${encodeURIComponent(gcalTitle)}` +
+    `&dates=${gcalDates}&ctz=America/Chicago` +
+    `&location=${encodeURIComponent(post.location)}` +
+    `&details=${encodeURIComponent(`모임 페이지: ${typeof window !== 'undefined' ? window.location.origin : ''}/p/${id}`)}`;
+
   return (
     <>
       <div className="feed-head">
@@ -241,6 +251,16 @@ export default function PostClient({ id }: { id: string }) {
             </a>
           )}
           <button className="secondary" onClick={copyLink}>링크 공유</button>
+          {!past && (
+            <>
+              <a className="profile-link" href={gcalUrl} target="_blank" rel="noreferrer">
+                Google 캘린더
+              </a>
+              <a className="profile-link" href={`/api/posts/${id}/ics`}>
+                캘린더 파일(.ics)
+              </a>
+            </>
+          )}
         </div>
       </div>
 

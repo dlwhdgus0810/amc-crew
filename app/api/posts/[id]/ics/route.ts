@@ -1,0 +1,53 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getPostView } from '@/lib/db/posts';
+import { getCategory } from '@/lib/categories';
+
+export const dynamic = 'force-dynamic';
+
+function icsEscape(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+function compact(date: string, time: string): string {
+  // 2026-08-22 + 19:30 -> 20260822T193000 (floating local time — 참가자 모두 같은 지역이라 충분)
+  return `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
+}
+
+/** 모임을 캘린더 이벤트(.ics)로 다운로드 */
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const post = await getPostView(id);
+  if (!post) {
+    return NextResponse.json({ error: '포스트를 찾을 수 없어요.' }, { status: 404 });
+  }
+
+  const cat = getCategory(post.category);
+  const summary = `${cat?.emoji ?? ''} ${cat?.name ?? post.category}${post.title ? ` 〈${post.title}〉` : ''} 모임`;
+  const detailUrl = `${req.nextUrl.origin}/p/${post.id}`;
+  const description = [post.description, `모임 페이지: ${detailUrl}`].filter(Boolean).join('\n');
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Odyssey Crew//meetup//KO',
+    'BEGIN:VEVENT',
+    `UID:${post.id}@odyssey-crew`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${compact(post.date, post.startTime)}`,
+    `DTEND:${compact(post.date, post.endTime)}`,
+    `SUMMARY:${icsEscape(summary)}`,
+    `LOCATION:${icsEscape(post.location)}`,
+    `DESCRIPTION:${icsEscape(description)}`,
+    `URL:${detailUrl}`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  return new NextResponse(ics, {
+    headers: {
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Disposition': `attachment; filename="meetup-${post.date}.ics"`,
+    },
+  });
+}
