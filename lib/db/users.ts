@@ -86,6 +86,15 @@ export async function dbSaveKakaoTokens(
 }
 
 /**
+ * talk_message 동의 여부만 갱신 (동의 확인·철회·발송 실패 자기치유용).
+ * update-only이므로 row가 없으면 no-op — 호출 전에 ensureUser/updateProfile로 row를 보장할 것.
+ */
+export async function dbSetTalkMessage(userId: string, agreed: boolean): Promise<void> {
+  const db = await getDb();
+  await db.update(users).set({ kakaoTalkMessage: agreed }).where(eq(users.id, userId));
+}
+
+/**
  * 신규 API가 FK insert 전에 users row 존재를 보장.
  * (users 테이블 도입 전에 발급된 세션이 남아있을 수 있으므로 콜백 upsert만으로는 부족)
  */
