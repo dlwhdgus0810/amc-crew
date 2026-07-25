@@ -339,3 +339,31 @@ a:hover .notif-item { background: var(--surface-2); }
   border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px;
   color: var(--text-dim); vertical-align: middle; white-space: nowrap;
 }
+
+/* ── 카테고리 제안 ── */
+.suggest-grid { display: grid; grid-template-columns: 1fr minmax(240px, 320px); gap: 40px; align-items: start; }
+.suggest-preview {
+  height: 220px; padding: 24px 26px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.swatch {
+  width: 32px; height: 32px; border-radius: 999px; border: none; padding: 0;
+  cursor: pointer; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.swatch:hover { opacity: 1; transform: scale(1.08); }
+.swatch.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
+.swatch-custom {
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  border-bottom: 1.5px solid var(--text); display: inline-flex; align-items: center; gap: 6px;
+}
+.swatch-custom input { width: 26px; height: 26px; padding: 0; border: none; background: none; cursor: pointer; }
+.req-status { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap; }
+.req-status.approved { color: #008542; border-color: #008542; }
+.req-status.rejected { color: var(--danger); border-color: var(--danger-border); }
+
+@media (max-width: 720px) {
+  .suggest-grid { grid-template-columns: 1fr; gap: 24px; }
+}

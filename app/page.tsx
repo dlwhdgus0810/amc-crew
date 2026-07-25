@@ -137,6 +137,9 @@ export default function HubPage() {
         ))}
       </div>
       <div className="car-arrows">
+        <Link href="/suggest" className="profile-link" style={{ marginRight: 'auto', alignSelf: 'center' }}>
+          하고 싶은 취미가 없나요? 카테고리 제안하기 →
+        </Link>
         <button onClick={() => scroll(-1)} aria-label="이전">
           ←
         </button>
