@@ -14,6 +14,7 @@ export interface PostView {
   authorName: string;
   title: string | null;
   titleMeta: TitleMeta | null;
+  recurringRuleId: string | null; // 정기 모임 회차면 규칙 id
   date: string;
   startTime: string;
   endTime: string;
@@ -102,6 +103,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<Post
     authorName: displayNameOf(userById.get(p.authorId), '알 수 없음'),
     title: p.title,
     titleMeta: p.titleMeta ?? null,
+    recurringRuleId: p.recurringRuleId ?? null,
     date: p.date,
     startTime: p.startTime,
     endTime: p.endTime,
@@ -188,6 +190,8 @@ export async function createPost(input: {
   location: string;
   description?: string;
   capacity?: number;
+  recurringRuleId?: string; // 정기 모임 규칙에서 생성된 회차면 규칙 id
+  label?: string; // 알림 문구 ('새 모임' 기본, 정기 모임은 '이번 주 모임')
   origin?: string; // 카톡 알림의 "모임 보기" 링크 base URL (요청 origin)
 }): Promise<string> {
   const db = await getDb();
@@ -198,7 +202,7 @@ export async function createPost(input: {
     .from(subscriptions)
     .where(and(eq(subscriptions.category, input.category), ne(subscriptions.userId, input.authorId)));
 
-  const message = `${describeForNotification(input.category, '새 모임', input.date, input.startTime, input.location, input.title)} — ${input.authorName}`;
+  const message = `${describeForNotification(input.category, input.label ?? '새 모임', input.date, input.startTime, input.location, input.title)} — ${input.authorName}`;
 
   const postValues = {
     id: postId,
@@ -206,6 +210,7 @@ export async function createPost(input: {
     authorId: input.authorId,
     title: input.title ?? null,
     titleMeta: input.titleMeta ?? null,
+    recurringRuleId: input.recurringRuleId ?? null,
     date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,
