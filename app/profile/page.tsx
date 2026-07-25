@@ -35,6 +35,10 @@ export default function ProfilePage() {
   const [gInput, setGInput] = useState<'male' | 'female' | ''>('');
   const [saving, setSaving] = useState(false);
 
+  // 카카오톡 알림 동의: true=받는 중, false=받지 않음, null=확인 안 됨
+  const [talkMessage, setTalkMessage] = useState<boolean | null>(null);
+  const [talkBusy, setTalkBusy] = useState(false);
+
   useEffect(() => {
     Promise.all([
       fetch('/api/auth/me').then((r) => r.json()),
@@ -46,9 +50,28 @@ export default function ProfilePage() {
         setKakaoName(auth.kakaoName ?? '');
         setBirthday(auth.birthday ?? '');
         setGender(auth.gender ?? '');
+        setTalkMessage(auth.kakaoTalkMessage ?? null);
         setSubs(new Set(sub.subscriptions ?? []));
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  // 카카오 재동의에서 돌아왔을 때 결과 안내 (?kakao_talk=) 후 URL 정리
+  useEffect(() => {
+    const flag = new URLSearchParams(window.location.search).get('kakao_talk');
+    if (!flag) return;
+    const results: Record<string, { type: 'ok' | 'err'; text: string }> = {
+      on: { type: 'ok', text: '카카오톡 알림을 켰어요.' },
+      off: {
+        type: 'err',
+        text: '카카오톡 메시지 전송에 동의하지 않아서 알림을 켜지 못했어요. 동의 화면이 뜨지 않았다면 카카오톡 → 더보기 → 설정 → 개인/보안 → 카카오 계정 → 연결된 서비스 관리에서 동의 항목을 정리한 뒤 다시 시도해주세요.',
+      },
+      denied: { type: 'err', text: '카카오 화면에서 취소했어요. 언제든 다시 켤 수 있어요.' },
+      unknown: { type: 'err', text: '동의 상태를 확인하지 못했어요. 아래 "상태 확인"을 눌러주세요.' },
+    };
+    const result = results[flag];
+    if (result) setMsg(result);
+    window.history.replaceState(null, '', '/profile');
   }, []);
 
   async function saveProfile(body: Record<string, unknown>, okText: string) {
@@ -93,6 +116,45 @@ export default function ProfilePage() {
     if (res.ok) {
       const data = await res.json();
       setSubs(new Set(data.subscriptions ?? []));
+    }
+  }
+
+  /** 카카오에 실제 동의 상태를 물어 화면을 정정한다 */
+  async function verifyTalk() {
+    setTalkBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/profile/kakao-talk?verify=1');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '상태 확인 실패');
+      setTalkMessage(data.status === 'on' ? true : data.status === 'off' ? false : null);
+      setMsg(
+        data.status === 'unknown'
+          ? { type: 'err', text: '동의 상태를 확인하지 못했어요. 카카오 로그인을 다시 하면 복구돼요.' }
+          : { type: 'ok', text: data.status === 'on' ? '카카오톡 알림을 받는 중이에요.' : '카카오톡 알림을 받지 않고 있어요.' }
+      );
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : '상태 확인 실패' });
+    } finally {
+      setTalkBusy(false);
+    }
+  }
+
+  /** 카카오에서 talk_message 동의를 철회한다 (다시 켜려면 카카오 동의를 새로 받아야 함) */
+  async function disableTalk() {
+    if (!confirm('카카오톡 알림을 끌까요? 다시 켜려면 카카오 동의를 새로 받아야 해요.')) return;
+    setTalkBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/profile/kakao-talk', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '알림 끄기 실패');
+      setTalkMessage(false);
+      setMsg({ type: 'ok', text: '카카오톡 알림을 껐어요. 앱 안 알림은 계속 받아요.' });
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : '알림 끄기 실패' });
+    } finally {
+      setTalkBusy(false);
     }
   }
 
@@ -248,6 +310,41 @@ export default function ProfilePage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <h2>카카오톡 알림</h2>
+      <div className="card">
+        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
+          구독한 취미의 새 모임·변경·취소·댓글 알림을 카카오톡 &quot;나와의 채팅&quot;으로도 받아요.
+        </p>
+        <div className="field-row" style={{ justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 500, color: talkMessage ? undefined : 'var(--text-dim)' }}>
+            {talkMessage === true ? '받는 중' : talkMessage === false ? '받지 않음' : '확인 안 됨'}
+          </span>
+          <span className="field-row">
+            {talkMessage !== true && (
+              <a className="kakao-btn" href="/api/auth/login?consent=talk_message&next=/profile">
+                <KakaoIcon />
+                카카오톡 알림 켜기
+              </a>
+            )}
+            {talkMessage !== false && (
+              <button className="secondary" disabled={talkBusy} onClick={verifyTalk}>
+                {talkBusy ? '확인 중…' : '상태 확인'}
+              </button>
+            )}
+            {talkMessage === true && (
+              <button className="danger" disabled={talkBusy} onClick={disableTalk}>
+                알림 끄기
+              </button>
+            )}
+          </span>
+        </div>
+        {talkMessage === null && (
+          <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '12px 2px 0' }}>
+            카카오톡 알림 동의 여부를 아직 확인하지 못했어요. 켜기를 누르거나 상태를 확인해주세요.
+          </p>
+        )}
       </div>
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
