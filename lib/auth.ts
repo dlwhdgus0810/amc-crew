@@ -59,10 +59,13 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
 /** ADMIN_KAKAO_ID(쉼표로 여러 명 가능)에 등록된 카카오 회원번호만 관리자로 인정 */
 export function isAdmin(user: SessionUser | null): boolean {
-  if (!user) return false;
-  const ids = (process.env.ADMIN_KAKAO_ID ?? '')
+  return user ? adminIds().includes(user.id) : false;
+}
+
+/** ADMIN_KAKAO_ID에 등록된 관리자 카카오 회원번호 목록 (알림 수신자 등) */
+export function adminIds(): string[] {
+  return (process.env.ADMIN_KAKAO_ID ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
-  return ids.includes(user.id);
 }

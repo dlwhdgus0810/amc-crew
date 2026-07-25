@@ -106,6 +106,25 @@ export const subscriptions = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.category] })]
 );
 
+/** 사용자가 제안한 새 카테고리. 관리자가 검토 후 lib/categories.ts에 반영한다. */
+export const categoryRequests = pgTable(
+  'category_requests',
+  {
+    id: uuid('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    name: text('name').notNull(), // 예: 등산
+    color: text('color').notNull(), // #RRGGBB — 카테고리 시그니처 컬러
+    description: text('description').notNull(), // 부제목 (예: 같이 오를 사람 모집)
+    featureRequest: text('feature_request'), // 원하는 기능 (예: 무비나잇처럼 영화 검색 API 연결)
+    status: text('status').notNull().default('pending'), // pending | approved | rejected
+    adminNote: text('admin_note'), // 관리자 답변 (반려 사유 등)
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('category_requests_status_idx').on(t.status, t.createdAt)]
+);
+
 export const notifications = pgTable(
   'notifications',
   {

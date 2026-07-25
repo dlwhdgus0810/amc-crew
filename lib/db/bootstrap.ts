@@ -76,6 +76,19 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   PRIMARY KEY (user_id, category)
 );
 
+CREATE TABLE IF NOT EXISTS category_requests (
+  id uuid PRIMARY KEY,
+  user_id text NOT NULL REFERENCES users(id),
+  name text NOT NULL,
+  color text NOT NULL,
+  description text NOT NULL,
+  feature_request text,
+  status text NOT NULL DEFAULT 'pending',
+  admin_note text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS category_requests_status_idx ON category_requests (status, created_at);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id uuid PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id),
