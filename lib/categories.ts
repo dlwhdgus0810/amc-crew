@@ -11,12 +11,13 @@ export interface Category {
   titleLabel?: string;
 }
 
+// 배열 순서가 곧 홈 캐러셀 노출 순서다 (카드 번호 01·02…도 여기서 나온다)
 export const CATEGORIES: Category[] = [
+  { slug: 'soccer', name: '축구', emoji: '⚽', en: 'SOCCER', color: '#002FA7', fg: '#F6F4EE', kind: 'posts', description: '같이 할 사람 모집' },
   { slug: 'movie', name: 'AMC', emoji: '🎬', en: 'AMC', color: '#E8380D', fg: '#F6F4EE', kind: 'movie', description: 'The Odyssey 회차 맞추기' },
   { slug: 'movienight', name: '무비나잇', emoji: '🍿', en: 'MOVIE NIGHT', color: '#5B2A86', fg: '#F6F4EE', kind: 'posts', description: '같이 영화 볼 사람 모집', titleLabel: '영화/드라마' },
   { slug: 'pickleball', name: '피클볼', emoji: '🥒', en: 'PICKLEBALL', color: '#008542', fg: '#F6F4EE', kind: 'posts', description: '같이 칠 사람 모집' },
   { slug: 'bowling', name: '볼링', emoji: '🎳', en: 'BOWLING', color: '#E9A300', fg: '#101010', kind: 'posts', description: '같이 칠 사람 모집' },
-  { slug: 'soccer', name: '축구', emoji: '⚽', en: 'SOCCER', color: '#002FA7', fg: '#F6F4EE', kind: 'posts', description: '같이 할 사람 모집' },
 ];
 
 /** 포스트/구독이 가능한 카테고리 슬러그 (영화 제외) */

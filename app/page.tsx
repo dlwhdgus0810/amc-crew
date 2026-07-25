@@ -84,7 +84,8 @@ export default function HubPage() {
         <br />
         <span className="dim2">오늘 뭐 하고 놀지, 같이 정합니다.</span>
       </div>
-      <div className="statement-meta">AMC — MOVIE NIGHT — PICKLEBALL — BOWLING — SOCCER</div>
+      {/* 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다 */}
+      <div className="statement-meta">{CATEGORIES.map((c) => c.en).join(' — ')}</div>
 
       <div className="home-login">
         {user ? (
