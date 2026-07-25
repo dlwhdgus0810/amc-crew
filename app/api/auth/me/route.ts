@@ -21,6 +21,8 @@ export async function GET() {
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,
     needsOnboarding: !row?.birthday || !row?.gender,
+    // 카톡 알림 동의: true=동의, false=미동의, null=미확인 (외부 호출 없이 DB 값만 — nav가 전 페이지에서 호출하는 경로)
+    kakaoTalkMessage: row?.kakaoTalkMessage ?? null,
     isAdmin: isAdmin(user),
   });
 }
