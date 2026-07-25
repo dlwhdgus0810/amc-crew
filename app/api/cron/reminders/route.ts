@@ -14,7 +14,14 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get('authorization') !== `Bearer ${secret}`) {
+  // 프로덕션에서 시크릿이 없으면 열어두지 않고 거부한다 (예전엔 미설정 시 무인증 실행이었다).
+  // 로컬은 시크릿 없이 수동 실행할 수 있게 둔다.
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[cron] CRON_SECRET is not configured — refusing to run');
+      return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 503 });
+    }
+  } else if (req.headers.get('authorization') !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
   const origin = req.nextUrl.origin;

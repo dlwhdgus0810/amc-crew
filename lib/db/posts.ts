@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, lt, lte, ne, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
@@ -167,6 +167,9 @@ export async function deleteComment(commentId: string): Promise<void> {
 }
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+/** 리마인더 알림 식별용 접두사 — 중복 발송 방지에 쓰이므로 메시지 앞부분을 바꾸지 말 것 */
+const REMINDER_PREFIX = '⏰';
 
 /** 알림 메시지용 모임 설명: "🥒 피클볼 {label} · 8/1(토) 오후 6:00 · OP코트" (제목이 있으면 〈제목〉 삽입) */
 function describeForNotification(
@@ -383,17 +386,34 @@ export async function deletePost(
 /**
  * 오늘 모임 리마인더 (Vercel Cron이 매일 아침 호출).
  * 오늘 날짜의 모든 모임 참가자(작성자 포함)에게 인앱 알림 + 카톡 메모 발송.
+ *
+ * 하루에 여러 번 호출돼도 같은 모임에는 한 번만 보낸다 — 이미 보낸 리마인더 알림이
+ * 남아 있으면 건너뛴다 (리마인더 메시지는 REMINDER_PREFIX로 식별).
  */
-export async function sendTodayReminders(origin: string): Promise<{ posts: number; recipients: number }> {
+export async function sendTodayReminders(
+  origin: string
+): Promise<{ posts: number; recipients: number; skipped: number }> {
   const db = await getDb();
   const today = todayLocal();
   const todayPosts = await db.select().from(posts).where(eq(posts.date, today));
-  if (todayPosts.length === 0) return { posts: 0, recipients: 0 };
+  if (todayPosts.length === 0) return { posts: 0, recipients: 0, skipped: 0 };
+
+  const todayPostIds = todayPosts.map((p) => p.id);
+  const alreadySent = new Set(
+    (
+      await db
+        .select({ postId: notifications.postId })
+        .from(notifications)
+        .where(
+          and(inArray(notifications.postId, todayPostIds), like(notifications.message, `${REMINDER_PREFIX}%`))
+        )
+    ).map((r) => r.postId)
+  );
 
   const participantRows = await db
     .select()
     .from(postParticipants)
-    .where(inArray(postParticipants.postId, todayPosts.map((p) => p.id)));
+    .where(inArray(postParticipants.postId, todayPostIds));
   const byPost = new Map<string, string[]>();
   for (const r of participantRows) {
     if (!byPost.has(r.postId)) byPost.set(r.postId, []);
@@ -401,17 +421,24 @@ export async function sendTodayReminders(origin: string): Promise<{ posts: numbe
   }
 
   let recipients = 0;
+  let skipped = 0;
+  let sentPosts = 0;
   for (const post of todayPosts) {
+    if (alreadySent.has(post.id)) {
+      skipped++;
+      continue;
+    }
     const userIds = byPost.get(post.id) ?? [];
     if (userIds.length === 0) continue;
     recipients += userIds.length;
-    const message = `⏰ ${describeForNotification(post.category, '오늘 모임', post.date, post.startTime, post.location, post.title)}`;
+    sentPosts++;
+    const message = `${REMINDER_PREFIX} ${describeForNotification(post.category, '오늘 모임', post.date, post.startTime, post.location, post.title)}`;
     await db.insert(notifications).values(
       userIds.map((userId) => ({ id: crypto.randomUUID(), userId, postId: post.id, message }))
     );
     await sendKakaoMemos(userIds, message, `${origin}/p/${post.id}`);
   }
-  return { posts: todayPosts.length, recipients };
+  return { posts: sentPosts, recipients, skipped };
 }
 
 /** 참가 등록. 정원이 차 있으면 false 반환 (이미 참가 중이면 항상 true). */
