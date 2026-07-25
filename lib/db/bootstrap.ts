@@ -18,12 +18,31 @@ CREATE TABLE IF NOT EXISTS users (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS recurring_rules (
+  id uuid PRIMARY KEY,
+  category text NOT NULL,
+  author_id text NOT NULL REFERENCES users(id),
+  weekday integer NOT NULL,
+  start_date text NOT NULL,
+  title text,
+  title_meta jsonb,
+  start_time text NOT NULL,
+  end_time text NOT NULL,
+  location text NOT NULL,
+  description text,
+  capacity integer,
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS recurring_rules_active_idx ON recurring_rules (active, category);
+
 CREATE TABLE IF NOT EXISTS posts (
   id uuid PRIMARY KEY,
   category text NOT NULL,
   author_id text NOT NULL REFERENCES users(id),
   title text,
   title_meta jsonb,
+  recurring_rule_id uuid REFERENCES recurring_rules(id) ON DELETE SET NULL,
   date text NOT NULL,
   start_time text NOT NULL,
   end_time text NOT NULL,
