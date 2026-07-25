@@ -11,8 +11,27 @@ const SLUG: Record<Format, string> = {
   Laser: 'laser',
 };
 
+interface CategoryRequest {
+  id: string;
+  userName: string;
+  name: string;
+  color: string;
+  description: string;
+  featureRequest: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  adminNote: string | null;
+}
+
+const REQ_STATUS_LABEL: Record<CategoryRequest['status'], string> = {
+  pending: '검토 중',
+  approved: '승인됨',
+  rejected: '반려됨',
+};
+
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState('');
+  const [requests, setRequests] = useState<CategoryRequest[]>([]);
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [schedule, setSchedule] = useState<Showtime[]>([]);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -29,8 +48,37 @@ export default function AdminPage() {
       .then((data) => setSchedule(data.schedule ?? []));
     fetch('/api/auth/me')
       .then((r) => r.json())
-      .then((auth) => setIsKakaoAdmin(Boolean(auth.isAdmin)));
+      .then((auth) => {
+        setIsKakaoAdmin(Boolean(auth.isAdmin));
+        if (auth.isAdmin) loadRequests();
+      });
   }, []);
+
+  async function loadRequests() {
+    const res = await fetch('/api/category-requests');
+    if (res.ok) setRequests((await res.json()).requests ?? []);
+  }
+
+  /** 제안 승인/반려 — 제안자에게 알림이 나간다 */
+  async function review(id: string, status: 'approved' | 'rejected') {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/category-requests/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, adminNote: notes[id] ?? '' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '처리 실패');
+      setMsg({ type: 'ok', text: status === 'approved' ? '승인했어요. 제안자에게 알림이 갔어요.' : '반려했어요.' });
+      await loadRequests();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : '처리 실패' });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function clearAllSelections() {
     if (!window.confirm('정말 모든 사람의 선택을 삭제할까요? 되돌릴 수 없어요.')) return;
@@ -111,7 +159,56 @@ export default function AdminPage() {
 
   return (
     <>
-      <h1>관리자 — 스케줄 편집</h1>
+      {isKakaoAdmin && (
+        <>
+          <h1>카테고리 제안</h1>
+          <p className="subtitle">
+            사용자들이 보낸 새 카테고리 제안이에요. 승인하면 제안자에게 알림이 가고, 실제 추가는
+            <code> lib/categories.ts</code>에 항목을 넣어 배포해야 반영됩니다.
+          </p>
+          {requests.length === 0 ? (
+            <div className="card" style={{ color: 'var(--text-dim)' }}>아직 들어온 제안이 없어요.</div>
+          ) : (
+            requests.map((r) => (
+              <div key={r.id} className="card">
+                <div className="field-row" style={{ justifyContent: 'space-between' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 12, fontWeight: 600 }}>
+                    <span className="feed-dot" style={{ background: r.color }} />
+                    {r.name}
+                    <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>
+                      {r.description} · {r.color} · {r.userName}
+                    </span>
+                  </span>
+                  <span className={`req-status ${r.status}`}>{REQ_STATUS_LABEL[r.status]}</span>
+                </div>
+                {r.featureRequest && (
+                  <div style={{ marginTop: 10, fontSize: 14 }}>
+                    <strong>원하는 기능</strong>
+                    <div style={{ color: 'var(--text-dim)', whiteSpace: 'pre-wrap' }}>{r.featureRequest}</div>
+                  </div>
+                )}
+                {r.adminNote && <div style={{ marginTop: 10, fontSize: 14 }}>답변: {r.adminNote}</div>}
+                {r.status === 'pending' && (
+                  <div className="field-row" style={{ marginTop: 14 }}>
+                    <input
+                      type="text"
+                      placeholder="답변 (선택) — 제안자에게 함께 전달돼요"
+                      value={notes[r.id] ?? ''}
+                      maxLength={500}
+                      onChange={(e) => setNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                      style={{ maxWidth: 420 }}
+                    />
+                    <button disabled={busy} onClick={() => review(r.id, 'approved')}>승인</button>
+                    <button className="danger" disabled={busy} onClick={() => review(r.id, 'rejected')}>반려</button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </>
+      )}
+
+      <h1 style={{ marginTop: isKakaoAdmin ? 80 : 0 }}>관리자 — 스케줄 편집</h1>
       <p className="subtitle">
         회차를 추가/삭제한 뒤 반드시 &quot;저장&quot;을 눌러야 반영돼요. AMC Vendor Key가 설정되어 있다면
         &quot;AMC에서 새로고침&quot;으로 실시간 스케줄을 가져올 수 있어요.
