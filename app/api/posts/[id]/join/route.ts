@@ -33,7 +33,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!post) {
     return NextResponse.json({ error: '포스트를 찾을 수 없어요.' }, { status: 404 });
   }
-  if (post.authorId === user.id) {
+  // 정기 모임 회차는 "매주 열리지만 이번 주는 못 감"이 자연스러우므로 작성자도 빠질 수 있다
+  if (post.authorId === user.id && !post.recurringRuleId) {
     return NextResponse.json({ error: '작성자는 참가를 취소할 수 없어요. 대신 포스트를 삭제해주세요.' }, { status: 409 });
   }
   await leavePost(id, user.id);

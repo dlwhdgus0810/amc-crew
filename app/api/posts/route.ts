@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { ensureUser } from '@/lib/db/users';
 import { createPost, listPosts } from '@/lib/db/posts';
+import { createRecurringRule } from '@/lib/db/recurring';
 import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
 
@@ -65,19 +66,26 @@ export async function POST(req: NextRequest) {
   await ensureUser(user);
   const profile = (await getProfiles())[user.id];
   const authorName = resolveDisplayName(profile, user.name);
-  const postId = await createPost({
+  const common = {
     category,
     authorId: user.id,
     authorName,
     ...(hasTitle && title ? { title } : {}),
     ...(titleMeta ? { titleMeta } : {}),
-    date,
     startTime,
     endTime,
     location,
     ...(description ? { description } : {}),
     ...(capacity !== undefined ? { capacity } : {}),
     origin: req.nextUrl.origin,
-  });
+  };
+
+  // 매주 반복이면 규칙을 만들고 첫 회차를 생성한다 (이후 회차는 크론이 매일 채운다)
+  if (body?.repeatWeekly === true) {
+    const { ruleId, postId } = await createRecurringRule({ ...common, startDate: date });
+    return NextResponse.json({ ok: true, postId, ruleId, repeatWeekly: true });
+  }
+
+  const postId = await createPost({ ...common, date });
   return NextResponse.json({ ok: true, postId });
 }
