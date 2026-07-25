@@ -25,6 +25,7 @@ interface PostView {
   authorName: string;
   title: string | null;
   titleMeta: TitleMeta | null;
+  recurringRuleId: string | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -48,6 +49,12 @@ function dateLabel(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
   const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
   return `${m}/${d} (${wd})`;
+}
+
+/** 요일 한 글자 (예: '토') — 매주 반복 안내·뱃지용 */
+function weekdayLabel(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return WEEKDAYS[new Date(y, m - 1, d).getDay()];
 }
 
 export default function CategoryClient({ slug, name }: { slug: string; name: string; emoji?: string }) {
@@ -74,6 +81,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   const [fLocation, setFLocation] = useState('');
   const [fMemo, setFMemo] = useState('');
   const [fCapacity, setFCapacity] = useState('');
+  const [fRepeat, setFRepeat] = useState(false); // 매주 반복 (새 모임 만들 때만)
 
   function resetForm() {
     setFTitle('');
@@ -85,6 +93,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     setFLocation('');
     setFMemo('');
     setFCapacity('');
+    setFRepeat(false);
   }
 
   // 지난 모임
@@ -207,11 +216,17 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
+          repeatWeekly: fRepeat,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '모임 만들기 실패');
-      setMsg({ type: 'ok', text: '모임을 만들었어요! 구독자들에게 알림이 갔어요.' });
+      setMsg({
+        type: 'ok',
+        text: data.repeatWeekly
+          ? `매주 ${weekdayLabel(fDate)}요일 모임으로 만들었어요! 다음 회차는 한 주 전에 자동으로 열려요.`
+          : '모임을 만들었어요! 구독자들에게 알림이 갔어요.',
+      });
       setShowForm(false);
       resetForm();
       await loadPosts();
@@ -349,6 +364,23 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     }
   }
 
+  /** 반복 중단 — 규칙만 끄고 이미 열린 회차는 남는다 */
+  async function stopRepeat(post: PostView) {
+    if (!post.recurringRuleId) return;
+    if (!confirm('매주 반복을 중단할까요? 이미 열린 모임은 그대로 남아요.')) return;
+    setBusy(true);
+    setMsg(null);
+    const res = await fetch(`/api/recurring/${post.recurringRuleId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMsg({ type: 'err', text: data.error ?? '반복 중단 실패' });
+    } else {
+      setMsg({ type: 'ok', text: '반복을 중단했어요. 다음 주부터는 자동으로 열리지 않아요.' });
+    }
+    await reloadAll();
+    setBusy(false);
+  }
+
   async function remove(post: PostView) {
     if (!confirm('이 모임을 취소(삭제)할까요? 참가자들에게 취소 알림이 가요.')) return;
     setBusy(true);
@@ -364,7 +396,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
 
   if (loading) return <p className="subtitle">불러오는 중…</p>;
 
-  const editForm = (onSave: () => void, onCancel: () => void, saveLabel: string) => (
+  const editForm = (onSave: () => void, onCancel: () => void, saveLabel: string, isCreate = false) => (
     <div style={{ marginTop: 20 }}>
       {titleLabel && (
         <div className="field-row" style={{ marginBottom: 14 }}>
@@ -456,7 +488,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
           style={{ maxWidth: 140 }}
         />
       </div>
-      <div className="field-row">
+      <div className="field-row" style={{ marginBottom: isCreate ? 14 : 0 }}>
         <input
           type="text"
           placeholder="메모 (선택)"
@@ -472,6 +504,20 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
           취소
         </button>
       </div>
+      {isCreate && (
+        <label className="repeat-check">
+          <input type="checkbox" checked={fRepeat} onChange={(e) => setFRepeat(e.target.checked)} />
+          <span>
+            매주 반복
+            {fDate && (
+              <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>
+                {' '}
+                — 매주 {weekdayLabel(fDate)}요일 같은 시간에 모임이 자동으로 열려요
+              </span>
+            )}
+          </span>
+        </label>
+      )}
     </div>
   );
 
@@ -498,7 +544,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         </div>
       </div>
 
-      {showForm && <div className="card">{editForm(createPost, () => setShowForm(false), '만들기')}</div>}
+      {showForm && <div className="card">{editForm(createPost, () => setShowForm(false), '만들기', true)}</div>}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
@@ -536,6 +582,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
       <div key={post.id} className="post-row" style={past ? { opacity: 0.75 } : undefined}>
         <span className="post-when">
           {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}
+          {post.recurringRuleId && <span className="repeat-badge">매주 {weekdayLabel(post.date)}</span>}
         </span>
         <span className="post-meta">
           {post.title && (
@@ -579,7 +626,8 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
             <button className="secondary" disabled={busy} onClick={() => toggleComments(post.id)}>
               댓글 {post.comments.length > 0 ? post.comments.length : ''}
             </button>
-            {!past && !mine && (
+            {/* 정기 모임은 작성자도 이번 주만 빠질 수 있다 */}
+            {!past && (!mine || post.recurringRuleId) && (
               <button disabled={busy || (!joined && full)} onClick={() => join(post)}>
                 {joined ? '참가 취소' : full ? '마감' : '참가하기 →'}
               </button>
@@ -589,6 +637,11 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
                 {!past && (
                   <button className="secondary" disabled={busy} onClick={() => startEditPost(post)}>
                     수정
+                  </button>
+                )}
+                {!past && post.recurringRuleId && (
+                  <button className="secondary" disabled={busy} onClick={() => stopRepeat(post)}>
+                    반복 중단
                   </button>
                 )}
                 <button className="danger" disabled={busy} onClick={() => remove(post)}>

@@ -217,6 +217,9 @@ export default function PostClient({ id }: { id: string }) {
         )}
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.4px' }}>
           {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}
+          {post.recurringRuleId && (
+            <span className="repeat-badge">매주 {WEEKDAYS[new Date(post.date + 'T00:00:00').getDay()]}</span>
+          )}
         </div>
         <div style={{ marginTop: 8, fontSize: 15.5 }}>
           {post.location} — {post.authorName}
