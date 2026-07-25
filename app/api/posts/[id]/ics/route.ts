@@ -30,8 +30,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Odyssey Crew//meetup//KO',
+    'PRODID:-//Kansas Korean//meetup//KO',
     'BEGIN:VEVENT',
+    // UID는 캘린더가 같은 일정으로 인식하는 열쇠라 이름을 바꿔도 그대로 둔다
+    // (바꾸면 이미 등록한 사람이 다시 받을 때 중복 일정이 생긴다)
     `UID:${post.id}@odyssey-crew`,
     `DTSTAMP:${stamp}`,
     `DTSTART:${compact(post.date, post.startTime)}`,

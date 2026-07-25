@@ -1,4 +1,4 @@
-# 🎯 Odyssey Crew
+# 🎯 Kansas Korean
 
 친구들끼리 **취미 모임**을 만들고 같이 놀 사람을 모으는 앱.
 
@@ -26,10 +26,10 @@
 
 1. **GitHub에 푸시**
    ```bash
-   cd odyssey-crew
+   cd kansas-korean
    git init && git add -A && git commit -m "init"
    # GitHub에 새 repo 만든 뒤:
-   git remote add origin https://github.com/<유저명>/odyssey-crew.git
+   git remote add origin https://github.com/<유저명>/kansas-korean.git
    git push -u origin main
    ```
 

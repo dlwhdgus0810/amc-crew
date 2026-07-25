@@ -20,7 +20,7 @@ function describeWhen(date: string, startTime: string): string {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const post = await getPostView(id);
-  if (!post) return { title: '모임을 찾을 수 없어요 — Odyssey Crew' };
+  if (!post) return { title: '모임을 찾을 수 없어요 — Kansas Korean' };
 
   const cat = getCategory(post.category);
   const titlePart = post.title ? ` 〈${post.title}〉` : '';
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     post.capacity != null ? ` (정원 ${post.capacity}명)` : ''
   } — 링크를 눌러 바로 참가하세요`;
   return {
-    title: `${title} — Odyssey Crew`,
+    title: `${title} — Kansas Korean`,
     description,
     openGraph: { title, description },
   };
