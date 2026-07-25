@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import NavLinks from './nav';
+import ServiceWorkerRegistrar from './sw-register';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <body>
+        <ServiceWorkerRegistrar />
         <header className="site-header">
           <div className="container header-inner">
             <Link href="/" className="logo">
