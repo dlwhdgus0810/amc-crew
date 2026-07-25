@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LOGIN_NEXT_COOKIE, safeNextPath, STATE_COOKIE } from '@/lib/auth';
+import {
+  LOGIN_NEXT_COOKIE,
+  LOGIN_PURPOSE_COOKIE,
+  safeNextPath,
+  STATE_COOKIE,
+  TALK_MESSAGE_PURPOSE,
+} from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,5 +41,9 @@ export async function GET(req: NextRequest) {
   res.cookies.set(STATE_COOKIE, state, cookieOpts);
   // 로그인 완료 후 복귀할 경로 (예: 공유받은 모임 링크)
   res.cookies.set(LOGIN_NEXT_COOKIE, safeNextPath(req.nextUrl.searchParams.get('next')), cookieOpts);
+  // 프로필의 "카톡 알림 켜기"로 들어온 재동의 요청이면 콜백이 결과를 안내하도록 표시
+  if (req.nextUrl.searchParams.get('consent') === TALK_MESSAGE_PURPOSE) {
+    res.cookies.set(LOGIN_PURPOSE_COOKIE, TALK_MESSAGE_PURPOSE, cookieOpts);
+  }
   return res;
 }

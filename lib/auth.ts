@@ -10,6 +10,9 @@ export const SESSION_COOKIE = 'session';
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30일
 export const STATE_COOKIE = 'kakao_oauth_state';
 export const LOGIN_NEXT_COOKIE = 'login_next';
+/** 이번 로그인이 "카톡 알림 재동의" 목적이었는지 표시 (콜백의 결과 안내·확인 메모용) */
+export const LOGIN_PURPOSE_COOKIE = 'login_purpose';
+export const TALK_MESSAGE_PURPOSE = 'talk_message';
 
 /** 로그인 후 복귀 경로 검증: 사이트 내 경로만 허용 (open redirect 방지) */
 export function safeNextPath(path: string | undefined | null): string {
