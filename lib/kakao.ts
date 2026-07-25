@@ -152,12 +152,20 @@ export async function revokeTalkMessageConsent(
   return { ok: true };
 }
 
-async function sendMemo(accessToken: string, text: string, linkUrl: string): Promise<Response> {
+/** 카카오 메모 버튼 기본 라벨 — 대부분의 알림이 모임으로 연결된다 */
+const DEFAULT_BUTTON_TITLE = '모임 보기';
+
+async function sendMemo(
+  accessToken: string,
+  text: string,
+  linkUrl: string,
+  buttonTitle: string
+): Promise<Response> {
   const template = {
     object_type: 'text',
     text,
     link: { web_url: linkUrl, mobile_web_url: linkUrl },
-    button_title: '모임 보기',
+    button_title: buttonTitle,
   };
   return fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
     method: 'POST',
@@ -182,14 +190,20 @@ function kakaoErrorCode(body: string): number | null {
 /**
  * 여러 사용자에게 카톡 메모 발송. 토큰 없음/미동의는 건너뛰고,
  * 개별 실패는 로그만 남긴다 (인앱 알림은 이미 저장된 상태).
+ * buttonTitle로 링크 버튼 문구를 맞출 수 있다 (기본: 모임 보기).
  */
-export async function sendKakaoMemos(userIds: string[], text: string, linkUrl: string): Promise<void> {
+export async function sendKakaoMemos(
+  userIds: string[],
+  text: string,
+  linkUrl: string,
+  buttonTitle: string = DEFAULT_BUTTON_TITLE
+): Promise<void> {
   await Promise.allSettled(
     userIds.map(async (userId) => {
       try {
         const token = await getValidAccessToken(userId);
         if (!token) return;
-        const res = await sendMemo(token, text, linkUrl);
+        const res = await sendMemo(token, text, linkUrl, buttonTitle);
         if (res.ok) return;
 
         const body = await res.text();

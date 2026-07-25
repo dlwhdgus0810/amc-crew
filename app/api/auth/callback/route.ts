@@ -94,7 +94,8 @@ export async function GET(req: NextRequest) {
     await sendKakaoMemos(
       [id],
       '카카오톡 알림을 켰어요. 구독한 취미에 새 모임이 올라오면 여기로 알려드릴게요.',
-      `${origin}/`
+      `${origin}/`,
+      '앱 열기'
     );
   }
 

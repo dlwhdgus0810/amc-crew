@@ -153,7 +153,7 @@ export async function notifyComment(
   await db.insert(notifications).values(
     recipients.map((userId) => ({ id: crypto.randomUUID(), userId, postId: post.id, message }))
   );
-  await sendKakaoMemos(recipients, message, `${origin}/p/${post.id}`);
+  await sendKakaoMemos(recipients, message, `${origin}/p/${post.id}`, '댓글 보기');
 }
 
 export async function getComment(commentId: string) {
@@ -375,7 +375,8 @@ export async function deletePost(
 
   // 취소된 모임은 상세 페이지가 사라지므로 카테고리 피드로 링크
   if (origin && recipients.length > 0) {
-    await sendKakaoMemos(recipients, message, `${origin}/c/${post.category}`);
+    // 취소된 모임은 상세 페이지가 없으므로 목록으로 보낸다
+    await sendKakaoMemos(recipients, message, `${origin}/c/${post.category}`, '다른 모임 보기');
   }
 }
 

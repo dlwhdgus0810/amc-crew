@@ -95,7 +95,7 @@ export async function createCategoryRequest(input: {
       await db.insert(notifications).values(
         recipients.map((userId) => ({ id: crypto.randomUUID(), userId, postId: null, message }))
       );
-      await sendKakaoMemos(recipients, message, `${input.origin}/admin`);
+      await sendKakaoMemos(recipients, message, `${input.origin}/admin`, '제안 검토하기');
     } catch (e) {
       console.error('[category-request] admin notify failed:', e);
     }
@@ -126,7 +126,7 @@ export async function reviewCategoryRequest(input: {
     await db
       .insert(notifications)
       .values({ id: crypto.randomUUID(), userId: input.requesterId, postId: null, message });
-    await sendKakaoMemos([input.requesterId], message, `${input.origin}/suggest`);
+    await sendKakaoMemos([input.requesterId], message, `${input.origin}/suggest`, '내 제안 보기');
   } catch (e) {
     console.error('[category-request] requester notify failed:', e);
   }
