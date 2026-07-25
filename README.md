@@ -72,6 +72,14 @@
 5. **앱 설정 → 앱 키** 의 **REST API 키**를 `KAKAO_REST_API_KEY` 환경변수에 입력
 6. (권장) **제품 설정 → 카카오 로그인 → 보안** 에서 Client Secret 활성화 후 `KAKAO_CLIENT_SECRET`에 입력
 
+## 예정 / 지난 모임 기준
+
+모임은 **종료 시각이 지나고 1시간 뒤**에 "지난 모임"으로 내려갑니다
+(`lib/dates.ts`의 `PAST_GRACE_MINUTES`). 끝나자마자 접히면 후기 댓글을 달기 번거로워서 둔 유예예요.
+
+판정은 서버가 앱 시간대(`APP_TIMEZONE`, 기본 `America/Chicago`) 기준으로 하고
+`PostView.isPast`로 내려주므로, 다른 시간대에서 열어도 결과가 같습니다.
+
 ## 카테고리 제안
 
 사용자가 `/suggest`에서 새 취미 카테고리를 제안할 수 있습니다 (홈 캐러셀 아래 링크).

@@ -26,6 +26,7 @@ interface PostView {
   title: string | null;
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null;
+  isPast: boolean;
   date: string;
   startTime: string;
   endTime: string;

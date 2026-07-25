@@ -10,6 +10,27 @@ export function todayLocal(): string {
 
 export const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
+/** 모임이 끝난 뒤 "지난 모임"으로 내려가기까지의 유예 (분) — 끝나자마자 접히면 후기 댓글을 달기 번거롭다 */
+export const PAST_GRACE_MINUTES = 60;
+
+/**
+ * "지난 모임" 판정 기준 시각을 앱 시간대의 (날짜, 시각)으로 반환.
+ * 현재 시각에서 유예만큼 뺀 값이라, 모임의 (date, endTime)이 이보다 크면 아직 예정이다.
+ */
+export function pastCutoff(): { date: string; time: string } {
+  const at = new Date(Date.now() - PAST_GRACE_MINUTES * 60_000);
+  return {
+    date: new Intl.DateTimeFormat('en-CA', { timeZone: APP_TIMEZONE }).format(at),
+    // en-GB + hour12:false = 24시간제 HH:mm
+    time: new Intl.DateTimeFormat('en-GB', {
+      timeZone: APP_TIMEZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(at),
+  };
+}
+
 // YYYY-MM-DD 문자열 연산은 UTC 기준으로 처리한다 (로컬 시간대가 끼면 날짜가 하루씩 밀린다)
 function toUtc(date: string): Date {
   const [y, m, d] = date.split('-').map(Number);

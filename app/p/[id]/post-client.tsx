@@ -26,13 +26,6 @@ function dateLabel(date: string): string {
   return `${m}/${d} (${wd})`;
 }
 
-function todayLocal(): string {
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
-}
-
 function KakaoIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -157,7 +150,8 @@ export default function PostClient({ id }: { id: string }) {
   const joined = user ? post.participants.some((p) => p.id === user.id) : false;
   const mine = user?.id === post.authorId;
   const full = post.capacity != null && post.participants.length >= post.capacity;
-  const past = post.date < todayLocal();
+  // 브라우저 시간대가 아니라 서버(앱 시간대) 판정을 쓴다 — 다른 지역에서 열어도 같은 결과
+  const past = post.isPast;
   const loginNext = `/api/auth/login?next=${encodeURIComponent(`/p/${id}`)}`;
 
   // Google 캘린더 추가 링크 (ctz로 모임 시간대 고정)

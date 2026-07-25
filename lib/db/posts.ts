@@ -1,11 +1,11 @@
-import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendKakaoMemos } from '../kakao';
-import { todayLocal } from '../dates';
+import { pastCutoff, todayLocal } from '../dates';
 
 export interface PostView {
   id: string;
@@ -21,6 +21,7 @@ export interface PostView {
   location: string;
   description: string | null;
   capacity: number | null;
+  isPast: boolean; // 종료 후 유예가 지났는지 (앱 시간대 기준, 서버가 판정)
   createdAt: string;
   participants: { id: string; name: string }[];
   comments: { id: string; userId: string; name: string; body: string; createdAt: string }[];
@@ -36,22 +37,32 @@ function displayNameOf(row: { kakaoName: string; nickname: string | null } | und
 
 /**
  * 포스트 목록 (참가자·작성자 표시 이름, 댓글 포함).
- * past=false: 오늘 이후, 가까운 순. past=true: 오늘 이전(지난 모임), 최근 순 최대 30개.
+ * 기준은 날짜가 아니라 (종료 시각 + 유예)이므로, 오늘 낮에 끝난 모임도 그날 바로 지난 모임이 된다.
+ * past=false: 아직 안 끝난 모임, 가까운 순. past=true: 끝난 모임, 최근 순 최대 30개.
  */
 export async function listPosts(category: string, past = false): Promise<PostView[]> {
   const db = await getDb();
-  const today = todayLocal();
+  const { date: cutDate, time: cutTime } = pastCutoff();
+  // 끝난 모임: 날짜가 지났거나, 같은 날인데 종료 시각이 기준 시각을 넘겼을 때
+  const ended = or(
+    lt(posts.date, cutDate),
+    and(eq(posts.date, cutDate), lte(posts.endTime, cutTime))
+  );
+  const upcoming = or(
+    gt(posts.date, cutDate),
+    and(eq(posts.date, cutDate), gt(posts.endTime, cutTime))
+  );
   const postRows = past
     ? await db
         .select()
         .from(posts)
-        .where(and(eq(posts.category, category), lt(posts.date, today)))
+        .where(and(eq(posts.category, category), ended))
         .orderBy(desc(posts.date), desc(posts.startTime))
         .limit(30)
     : await db
         .select()
         .from(posts)
-        .where(and(eq(posts.category, category), gte(posts.date, today)))
+        .where(and(eq(posts.category, category), upcoming))
         .orderBy(posts.date, posts.startTime);
   return buildViews(postRows);
 }
@@ -69,6 +80,7 @@ export async function getPostView(postId: string): Promise<PostView | null> {
 async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<PostView[]> {
   if (postRows.length === 0) return [];
   const db = await getDb();
+  const { date: cutDate, time: cutTime } = pastCutoff();
   const postIds = postRows.map((p) => p.id);
   const userRows = await db.select().from(users);
   const userById = new Map(userRows.map((u) => [u.id, u]));
@@ -110,6 +122,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<Post
     location: p.location,
     description: p.description,
     capacity: p.capacity,
+    isPast: p.date < cutDate || (p.date === cutDate && p.endTime <= cutTime),
     createdAt: p.createdAt.toISOString(),
     participants: byPost.get(p.id) ?? [],
     comments: commentsByPost.get(p.id) ?? [],
