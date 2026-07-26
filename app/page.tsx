@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { CATEGORIES } from '@/lib/categories';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useT } from './i18n';
 import CategoryCard from './category-card';
 
@@ -15,6 +15,11 @@ const T = {
   loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
   loginToFavorite: { ko: '카카오 로그인 후 즐겨찾기할 수 있어요.', en: 'Log in with Kakao to add favourites.' },
   allCategories: { ko: '전체 카테고리 보기 →', en: 'See all categories →' },
+  dragHint: {
+    ko: '⠿ 을 끌어서 즐겨찾기 순서를 바꿀 수 있어요.',
+    en: 'Drag ⠿ to reorder your favourites.',
+  },
+  reorder: { ko: '순서 바꾸기', en: 'Reorder' },
   suggest: {
     ko: '하고 싶은 취미가 없나요? 카테고리 제안하기 →',
     en: 'Missing your hobby? Suggest a category →',
@@ -42,11 +47,25 @@ function KakaoIcon() {
 export default function HubPage() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [subs, setSubs] = useState<Set<string>>(new Set());
-  const [favs, setFavs] = useState<Set<string>>(new Set());
+  // 즐겨찾기는 사용자가 정한 순서가 있으므로 배열로 들고 있는다
+  const [favList, setFavList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
   const carRef = useRef<HTMLDivElement>(null);
+  const favRef = useRef<string[]>([]);
+  const edgeRef = useRef(0);
+  // 끄는 중인 카드는 ref로도 들고 있는다 — 포인터 이벤트가 리렌더보다 먼저 와도 최신 값이 필요하다
+  const dragRef = useRef<string | null>(null);
+  const stopDragRef = useRef<(() => void) | null>(null);
   const t = useT();
+  const favs = useMemo(() => new Set(favList), [favList]);
+
+  /** 드래그 중에는 리렌더보다 포인터 이벤트가 빨라서 최신 목록을 ref로도 같이 들고 있어야 한다 */
+  function applyFavs(next: string[]) {
+    favRef.current = next;
+    setFavList(next);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -66,7 +85,7 @@ export default function HubPage() {
       .then(([auth, sub, fav]) => {
         setUser(auth.user ?? null);
         setSubs(new Set(sub.subscriptions ?? []));
-        setFavs(new Set(fav.favorites ?? []));
+        applyFavs(fav.favorites ?? []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -101,12 +120,7 @@ export default function HubPage() {
       return;
     }
     const next = !favs.has(category);
-    setFavs((prev) => {
-      const s = new Set(prev);
-      if (next) s.add(category);
-      else s.delete(category);
-      return s;
-    });
+    applyFavs(next ? [...favRef.current, category] : favRef.current.filter((c) => c !== category));
     const res = await fetch('/api/favorites', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -114,9 +128,77 @@ export default function HubPage() {
     });
     if (res.ok) {
       const data = await res.json();
-      setFavs(new Set(data.favorites ?? []));
+      applyFavs(data.favorites ?? []);
     }
   }
+
+  /**
+   * 손잡이를 끌어 즐겨찾기 순서를 바꾼다.
+   * 마우스와 터치를 함께 다루려고 HTML5 드래그 대신 포인터 이벤트를 쓴다.
+   */
+  // 끄는 동안은 window에서 듣는다 — 카드 순서가 바뀌면 손잡이 DOM이 옮겨져
+  // setPointerCapture가 풀리고 pointerup을 놓친다.
+  // 등록도 pointerdown 안에서 바로 한다 (useEffect는 페인트 뒤라 빠른 드래그를 놓친다).
+  function startDrag(slug: string) {
+    return (e: React.PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragRef.current = slug;
+      setDragging(slug);
+
+      const onMove = (e: PointerEvent) => {
+        const slug = dragRef.current;
+        if (!slug) return;
+        // 캐러셀 가장자리에 오면 그쪽으로 스크롤한다
+        const box = carRef.current?.getBoundingClientRect();
+        edgeRef.current = !box ? 0 : e.clientX < box.left + 70 ? -1 : e.clientX > box.right - 70 ? 1 : 0;
+
+        const over = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('.car-card')
+          ?.dataset.slug;
+        if (!over || over === slug) return;
+        const prev = favRef.current;
+        const from = prev.indexOf(slug);
+        const to = prev.indexOf(over);
+        if (from < 0 || to < 0) return;
+        const next = prev.slice();
+        next.splice(to, 0, next.splice(from, 1)[0]);
+        applyFavs(next);
+      };
+
+      const onUp = async () => {
+        if (!dragRef.current) return;
+        dragRef.current = null;
+        edgeRef.current = 0;
+        setDragging(null);
+        stopDragRef.current?.();
+        const res = await fetch('/api/favorites', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order: favRef.current }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          applyFavs(data.favorites ?? []);
+        }
+      };
+
+      const id = setInterval(() => {
+        if (edgeRef.current) carRef.current?.scrollBy({ left: edgeRef.current * 18 });
+      }, 16);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+      stopDragRef.current = () => {
+        clearInterval(id);
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        stopDragRef.current = null;
+      };
+    };
+  }
+
+  useEffect(() => () => stopDragRef.current?.(), []);
 
   function scroll(dir: number) {
     carRef.current?.scrollBy({ left: dir * 580, behavior: 'smooth' });
@@ -124,8 +206,9 @@ export default function HubPage() {
 
   if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
-  // 즐겨찾기가 있으면 홈에는 그것만 — 나머지는 "전체 카테고리"에서 본다
-  const shown = favs.size > 0 ? CATEGORIES.filter((c) => favs.has(c.slug)) : CATEGORIES;
+  // 즐겨찾기가 있으면 홈에는 그것만 — 사용자가 정한 순서대로. 나머지는 "전체 카테고리"에서 본다
+  const shown = favList.length > 0 ? favList.map(getCategory).filter((c) => c !== undefined) : CATEGORIES;
+  const canReorder = Boolean(user) && favList.length > 1;
 
   return (
     <>
@@ -166,9 +249,26 @@ export default function HubPage() {
             isSubscribed={subs.has(c.slug)}
             onFavorite={() => toggleFav(c.slug)}
             onSubscribe={() => toggleSub(c.slug)}
+            dragging={dragging === c.slug}
+            dragHandle={
+              canReorder ? (
+                <button
+                  className="car-drag"
+                  aria-label={t(T.reorder)}
+                  onPointerDown={startDrag(c.slug)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  ⠿
+                </button>
+              ) : null
+            }
           />
         ))}
       </div>
+      {canReorder && <div className="drag-hint">{t(T.dragHint)}</div>}
       <div className="car-arrows">
         <span className="car-links">
           <Link href="/categories" className="profile-link">
