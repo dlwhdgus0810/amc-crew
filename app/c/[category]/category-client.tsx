@@ -66,8 +66,13 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const color = getCategory(slug)?.color ?? '#101010';
-  const titleLabel = getCategory(slug)?.titleLabel;
+  const category = getCategory(slug);
+  const color = category?.color ?? '#101010';
+  const titleLabel = category?.titleLabel;
+  const useTitleSearch = category?.titleSearch === 'tmdb'; // 자동완성은 영화/드라마만
+  const locationPlaceholder = `${category?.locationLabel ?? '장소'} (${
+    category?.locationHint ?? '예: Lifetime OP 피클볼 코트'
+  })`;
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -305,6 +310,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   // 제목 입력 → 디바운스 TMDB 검색 (키 미설정이면 첫 503 이후 조용히 비활성)
   function onTitleChange(value: string) {
     setFTitle(value);
+    if (!useTitleSearch) return; // 메뉴 등 자유 입력 카테고리는 검색하지 않는다
     setFTitleMeta(null);
     if (searchTimer.current) clearTimeout(searchTimer.current);
     const q = value.trim();
@@ -404,7 +410,9 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
           <div className="search-wrap">
             <input
               type="text"
-              placeholder={`${titleLabel} 제목 검색 (예: 듄: 파트2)`}
+              placeholder={
+                useTitleSearch ? `${titleLabel} 제목 검색 (예: 듄: 파트2)` : `${titleLabel} (선택)`
+              }
               value={fTitle}
               maxLength={100}
               onChange={(e) => onTitleChange(e.target.value)}
@@ -473,7 +481,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
       <div className="field-row" style={{ marginBottom: 14 }}>
         <input
           type="text"
-          placeholder="장소 (예: Lifetime OP 피클볼 코트)"
+          placeholder={locationPlaceholder}
           value={fLocation}
           maxLength={100}
           onChange={(e) => setFLocation(e.target.value)}

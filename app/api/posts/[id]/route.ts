@@ -66,8 +66,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (title.length > 100) {
     return NextResponse.json({ error: '제목은 100자 이하로 입력해주세요.' }, { status: 400 });
   }
-  const hasTitle = Boolean(getCategory(post.category)?.titleLabel);
-  const titleMeta = hasTitle && title ? sanitizeTitleMeta(body?.titleMeta) : null;
+  const cat = getCategory(post.category);
+  const hasTitle = Boolean(cat?.titleLabel);
+  // TMDB 메타는 자동완성을 쓰는 카테고리에서만 (메뉴 같은 자유 입력은 제목만 저장)
+  const titleMeta = hasTitle && title && cat?.titleSearch === 'tmdb' ? sanitizeTitleMeta(body?.titleMeta) : null;
   let capacity: number | null = null;
   if (rawCapacity !== undefined && rawCapacity !== null && rawCapacity !== '') {
     const n = Number(rawCapacity);
