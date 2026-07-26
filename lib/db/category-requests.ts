@@ -1,9 +1,9 @@
-import { desc, eq, inArray } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { categoryRequests, notifications, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { sendKakaoMemos } from '../kakao';
-import { adminIds } from '../auth';
+import { notifyAdmins } from './admin-notify';
 import { pick, toLocale } from '../i18n';
 
 const N = {
@@ -103,32 +103,13 @@ export async function createCategoryRequest(input: {
     featureRequest: input.featureRequest ?? null,
   });
 
-  // 본인 제외 + users 행이 실제로 있는 관리자만.
-  // 아직 로그인한 적 없는 ADMIN_KAKAO_ID가 섞여 있으면 FK 위반으로 전체 insert가 실패한다.
-  const candidates = adminIds().filter((adminId) => adminId !== input.userId);
-  const recipients =
-    candidates.length > 0
-      ? (await db.select({ id: users.id }).from(users).where(inArray(users.id, candidates))).map((u) => u.id)
-      : [];
-  if (recipients.length > 0) {
-    try {
-      // 관리자가 여러 명이면 각자의 언어로 (보통 1명이라 순차 처리로 충분)
-      const rows = await db
-        .select({ id: users.id, locale: users.locale })
-        .from(users)
-        .where(inArray(users.id, recipients));
-      for (const r of rows) {
-        const locale = toLocale(r.locale);
-        const message = pick(locale, N.newRequest, { name: input.name, by: input.userName });
-        await db
-          .insert(notifications)
-          .values({ id: crypto.randomUUID(), userId: r.id, postId: null, message });
-        await sendKakaoMemos([r.id], message, `${input.origin}/admin`, pick(locale, N.btnReview));
-      }
-    } catch (e) {
-      console.error('[category-request] admin notify failed:', e);
-    }
-  }
+  await notifyAdmins({
+    exclude: input.userId,
+    message: (locale) => pick(locale, N.newRequest, { name: input.name, by: input.userName }),
+    button: (locale) => pick(locale, N.btnReview),
+    linkUrl: `${input.origin}/admin`,
+    tag: 'category-request',
+  });
   return id;
 }
 
