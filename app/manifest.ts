@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'ko',
     start_url: '/',
     display: 'standalone',
-    background_color: '#f6f4ee', // 스플래시 배경 — 아이콘 배경과 맞춘다
+    background_color: '#ffffff', // 스플래시 배경 — 앱 배경(--bg)과 맞춘다
     theme_color: '#ffffff', // 상단 바 색 — 앱 배경과 맞춘다
     icons: [
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
