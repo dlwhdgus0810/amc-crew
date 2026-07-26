@@ -115,6 +115,7 @@ export const favorites = pgTable(
       .notNull()
       .references(() => users.id),
     category: text('category').notNull(),
+    sort: integer('sort').notNull().default(0), // 홈에 뜨는 순서 (드래그로 바꾼다)
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.category] })]

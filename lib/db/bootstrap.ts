@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 CREATE TABLE IF NOT EXISTS favorites (
   user_id text NOT NULL REFERENCES users(id),
   category text NOT NULL,
+  sort integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, category)
 );

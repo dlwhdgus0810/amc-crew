@@ -592,19 +592,42 @@ export async function setSubscription(userId: string, category: string, subscrib
   }
 }
 
-/** 즐겨찾기한 카테고리 (홈 노출 순서용) */
+/** 즐겨찾기한 카테고리 — 사용자가 정한 순서대로 */
 export async function getFavorites(userId: string): Promise<string[]> {
   const db = await getDb();
-  const rows = await db.select().from(favorites).where(eq(favorites.userId, userId));
+  const rows = await db
+    .select()
+    .from(favorites)
+    .where(eq(favorites.userId, userId))
+    .orderBy(asc(favorites.sort), asc(favorites.createdAt));
   return rows.map((r) => r.category);
 }
 
 export async function setFavorite(userId: string, category: string, on: boolean): Promise<void> {
   const db = await getDb();
-  if (on) {
-    await db.insert(favorites).values({ userId, category }).onConflictDoNothing();
-  } else {
+  if (!on) {
     await db.delete(favorites).where(and(eq(favorites.userId, userId), eq(favorites.category, category)));
+    return;
+  }
+  // 새로 추가하는 건 맨 뒤에 붙인다
+  const [row] = await db
+    .select({ max: sql<number | null>`max(${favorites.sort})` })
+    .from(favorites)
+    .where(eq(favorites.userId, userId));
+  const sort = (row?.max ?? -1) + 1;
+  await db.insert(favorites).values({ userId, category, sort }).onConflictDoNothing();
+}
+
+/** 드래그로 바꾼 순서 저장 — 목록에 있는 것만 반영하고 나머지는 뒤에 남는다 */
+export async function reorderFavorites(userId: string, order: string[]): Promise<void> {
+  const db = await getDb();
+  const mine = new Set(await getFavorites(userId));
+  const valid = order.filter((c) => mine.has(c));
+  for (const [i, category] of valid.entries()) {
+    await db
+      .update(favorites)
+      .set({ sort: i })
+      .where(and(eq(favorites.userId, userId), eq(favorites.category, category)));
   }
 }
 

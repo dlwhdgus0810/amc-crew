@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
-import { getFavorites, setFavorite } from '@/lib/db/posts';
+import { getFavorites, reorderFavorites, setFavorite } from '@/lib/db/posts';
 import { getCategory } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
@@ -30,5 +30,20 @@ export async function PUT(req: NextRequest) {
   }
   await ensureUser(user);
   await setFavorite(user.id, category, favorite);
+  return NextResponse.json({ ok: true, favorites: await getFavorites(user.id) });
+}
+
+/** 드래그로 바꾼 홈 노출 순서 저장 */
+export async function PATCH(req: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) {
+    return await errJson(E.loginRequired, 401);
+  }
+  const body = await req.json().catch(() => null);
+  if (!Array.isArray(body?.order) || body.order.some((c: unknown) => typeof c !== 'string')) {
+    return await errJson(E.badRequest, 400);
+  }
+  await ensureUser(user);
+  await reorderFavorites(user.id, body.order as string[]);
   return NextResponse.json({ ok: true, favorites: await getFavorites(user.id) });
 }
