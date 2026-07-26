@@ -6,5 +6,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const { category } = await params;
   const cat = getCategory(category);
   if (!cat || cat.kind !== 'posts') notFound();
-  return <CategoryClient slug={cat.slug} name={cat.name} emoji={cat.emoji} />;
+  // 이름·라벨은 클라이언트가 현재 언어로 직접 고른다
+  return <CategoryClient slug={cat.slug} />;
 }

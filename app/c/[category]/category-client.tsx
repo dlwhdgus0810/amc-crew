@@ -1,9 +1,106 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { getCategory } from '@/lib/categories';
+import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, getCategory } from '@/lib/categories';
+import { useLocale, useT } from '../../i18n';
+import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
 import type { TitleMeta, TitleSearchResult } from '@/lib/tmdb';
 import { TMDB_IMG } from '@/lib/tmdb';
+
+const T = {
+  loading: { ko: '불러오는 중…', en: 'Loading…' },
+  subscribed: { ko: '구독중', en: 'Subscribed' },
+  subscribe: { ko: '구독', en: 'Subscribe' },
+  close: { ko: '닫기', en: 'Close' },
+  newMeetup: { ko: '모임 만들기 +', en: 'New meetup +' },
+  create: { ko: '만들기', en: 'Create' },
+  save: { ko: '저장', en: 'Save' },
+  saving: { ko: '저장 중…', en: 'Saving…' },
+  cancel: { ko: '취소', en: 'Cancel' },
+  edit: { ko: '수정', en: 'Edit' },
+  del: { ko: '삭제', en: 'Delete' },
+  share: { ko: '공유', en: 'Share' },
+  comments: { ko: '댓글', en: 'Comments' },
+  join: { ko: '참가하기 →', en: 'Join →' },
+  leave: { ko: '참가 취소', en: 'Leave' },
+  full: { ko: '마감', en: 'Full' },
+  people: { ko: '{n}명', en: '{n} joined' },
+  peopleCap: { ko: '{n}/{cap}명', en: '{n}/{cap} joined' },
+  fullSuffix: { ko: ' — 마감', en: ' — full' },
+  me: { ko: ' (나)', en: ' (you)' },
+  stopRepeat: { ko: '반복 중단', en: 'Stop repeating' },
+  repeatWeekly: { ko: '매주 반복', en: 'Repeat weekly' },
+  repeatHint: {
+    ko: '— 매주 {day}요일 같은 시간에 모임이 자동으로 열려요',
+    en: '— a meetup opens automatically every {day} at the same time',
+  },
+  repeatBadge: { ko: '매주 {day}', en: 'Every {day}' },
+  emptyUpcoming: {
+    ko: '아직 예정된 모임이 없어요. 첫 모임을 만들어보세요.',
+    en: 'No upcoming meetups yet. Create the first one.',
+  },
+  pastSection: { ko: '지난 모임', en: 'Past meetups' },
+  emptyPast: { ko: '아직 지난 모임이 없어요.', en: 'No past meetups yet.' },
+  capacityPh: { ko: '정원 (선택)', en: 'Capacity (optional)' },
+  memoPh: { ko: '메모 (선택)', en: 'Note (optional)' },
+  titleSearchPh: { ko: '{label} 제목 검색 (예: 듄: 파트2)', en: 'Search {label} (e.g. Dune: Part Two)' },
+  titleFreePh: { ko: '{label} (선택)', en: '{label} (optional)' },
+  clearPick: { ko: '선택 해제', en: 'Clear' },
+  tv: { ko: '드라마', en: 'TV' },
+  movie: { ko: '영화', en: 'Movie' },
+  creator: { ko: '크리에이터', en: 'Creator' },
+  director: { ko: '감독', en: 'Director' },
+  cast: { ko: '출연 {names}', en: 'Cast {names}' },
+  commentPh: {
+    ko: '댓글 남기기 (예: 10분 늦어요 / 재밌었다!)',
+    en: 'Leave a comment (e.g. running 10 min late / that was fun!)',
+  },
+  commentSubmit: { ko: '등록', en: 'Post' },
+  commentEmpty: { ko: '첫 댓글을 남겨보세요.', en: 'Be the first to comment.' },
+  commentLogin: { ko: '카카오 로그인 후 댓글을 남길 수 있어요.', en: 'Log in with Kakao to comment.' },
+  commentFailed: { ko: '댓글 작성 실패', en: 'Couldn’t post the comment' },
+  commentDeleteConfirm: { ko: '댓글을 삭제할까요?', en: 'Delete this comment?' },
+  commentDeleteFailed: { ko: '댓글 삭제 실패', en: 'Couldn’t delete the comment' },
+  loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
+  loginToJoin: { ko: '카카오 로그인 후 참가할 수 있어요.', en: 'Log in with Kakao to join.' },
+  createFailed: { ko: '모임 만들기 실패', en: 'Couldn’t create the meetup' },
+  createdOnce: {
+    ko: '모임을 만들었어요! 구독자들에게 알림이 갔어요.',
+    en: 'Meetup created — subscribers have been notified.',
+  },
+  createdWeekly: {
+    ko: '매주 {day}요일 모임으로 만들었어요! 다음 회차는 한 주 전에 자동으로 열려요.',
+    en: 'Set to repeat every {day}. The next one opens automatically a week ahead.',
+  },
+  editFailed: { ko: '수정 실패', en: 'Couldn’t save the changes' },
+  edited: {
+    ko: '모임을 수정했어요. 참가자들에게 변경 알림이 갔어요.',
+    en: 'Meetup updated — participants have been notified.',
+  },
+  requestFailed: { ko: '요청 실패', en: 'Request failed' },
+  shareTitle: {
+    ko: '{cat} 모임{title} · {when} · {place}',
+    en: '{cat} meetup{title} · {when} · {place}',
+  },
+  shareCopied: {
+    ko: '모임 링크를 복사했어요. 카톡에 붙여넣으면 바로 참가할 수 있어요!',
+    en: 'Link copied — paste it in a chat and anyone can join.',
+  },
+  stopRepeatConfirm: {
+    ko: '매주 반복을 중단할까요? 이미 열린 모임은 그대로 남아요.',
+    en: 'Stop the weekly repeat? Meetups already created will stay.',
+  },
+  stopRepeatFailed: { ko: '반복 중단 실패', en: 'Couldn’t stop the repeat' },
+  stoppedRepeat: {
+    ko: '반복을 중단했어요. 다음 주부터는 자동으로 열리지 않아요.',
+    en: 'Repeat stopped. No new meetups will open from next week.',
+  },
+  deleteConfirm: {
+    ko: '이 모임을 취소(삭제)할까요? 참가자들에게 취소 알림이 가요.',
+    en: 'Cancel (delete) this meetup? Participants will be notified.',
+  },
+  deleteFailed: { ko: '삭제 실패', en: 'Couldn’t delete' },
+};
 
 interface SessionUser {
   id: string;
@@ -37,28 +134,7 @@ interface PostView {
   comments: CommentView[];
 }
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
-function to12h(time: string): string {
-  const [h, min] = time.split(':').map(Number);
-  const ampm = h < 12 ? '오전' : '오후';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${ampm} ${h12}:${String(min).padStart(2, '0')}`;
-}
-
-function dateLabel(date: string): string {
-  const [y, m, d] = date.split('-').map(Number);
-  const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
-  return `${m}/${d} (${wd})`;
-}
-
-/** 요일 한 글자 (예: '토') — 매주 반복 안내·뱃지용 */
-function weekdayLabel(date: string): string {
-  const [y, m, d] = date.split('-').map(Number);
-  return WEEKDAYS[new Date(y, m - 1, d).getDay()];
-}
-
-export default function CategoryClient({ slug, name }: { slug: string; name: string; emoji?: string }) {
+export default function CategoryClient({ slug }: { slug: string }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [posts, setPosts] = useState<PostView[]>([]);
@@ -66,13 +142,20 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const t = useT();
+  const locale = useLocale();
   const category = getCategory(slug);
+  const name = category ? t(category.name) : slug;
   const color = category?.color ?? '#101010';
-  const titleLabel = category?.titleLabel;
+  const titleLabel = category?.titleLabel ? t(category.titleLabel) : undefined;
   const useTitleSearch = category?.titleSearch === 'tmdb'; // 자동완성은 영화/드라마만
-  const locationPlaceholder = `${category?.locationLabel ?? '장소'} (${
-    category?.locationHint ?? '예: Lifetime OP 피클볼 코트'
-  })`;
+  const locationPlaceholder = `${t(category?.locationLabel ?? DEFAULT_LOCATION_LABEL)} (${t(
+    category?.locationHint ?? DEFAULT_LOCATION_HINT
+  )})`;
+  // 날짜·시간은 현재 언어 포맷으로
+  const dateLabel = (d: string) => fmtDate(d, locale);
+  const to12h = (time: string) => fmtTime(time, locale);
+  const weekdayLabel = (d: string) => fmtWeekday(d, locale);
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -155,7 +238,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? '댓글 작성 실패' });
+      setMsg({ type: 'err', text: data.error ?? t(T.commentFailed) });
     } else {
       setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
     }
@@ -164,12 +247,12 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   }
 
   async function removeComment(comment: CommentView) {
-    if (!confirm('댓글을 삭제할까요?')) return;
+    if (!confirm(t(T.commentDeleteConfirm))) return;
     setBusy(true);
     const res = await fetch(`/api/comments/${comment.id}`, { method: 'DELETE' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? '댓글 삭제 실패' });
+      setMsg({ type: 'err', text: data.error ?? t(T.commentDeleteFailed) });
     }
     await reloadAll();
     setBusy(false);
@@ -192,7 +275,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
 
   async function toggleSub() {
     if (!user) {
-      setMsg({ type: 'err', text: '카카오 로그인 후 구독할 수 있어요.' });
+      setMsg({ type: 'err', text: t(T.loginToSubscribe) });
       return;
     }
     const next = !subscribed;
@@ -226,18 +309,18 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? '모임 만들기 실패');
+      if (!res.ok) throw new Error(data.error ?? t(T.createFailed));
       setMsg({
         type: 'ok',
         text: data.repeatWeekly
-          ? `매주 ${weekdayLabel(fDate)}요일 모임으로 만들었어요! 다음 회차는 한 주 전에 자동으로 열려요.`
-          : '모임을 만들었어요! 구독자들에게 알림이 갔어요.',
+          ? t(T.createdWeekly, { day: weekdayLabel(fDate) })
+          : t(T.createdOnce),
       });
       setShowForm(false);
       resetForm();
       await loadPosts();
     } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : '모임 만들기 실패' });
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.createFailed) });
     } finally {
       setBusy(false);
     }
@@ -278,13 +361,13 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? '수정 실패');
-      setMsg({ type: 'ok', text: '모임을 수정했어요. 참가자들에게 변경 알림이 갔어요.' });
+      if (!res.ok) throw new Error(data.error ?? t(T.editFailed));
+      setMsg({ type: 'ok', text: t(T.edited) });
       setEditId(null);
       resetForm();
       await loadPosts();
     } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : '수정 실패' });
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.editFailed) });
     } finally {
       setBusy(false);
     }
@@ -292,7 +375,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
 
   async function join(post: PostView) {
     if (!user) {
-      setMsg({ type: 'err', text: '카카오 로그인 후 참가할 수 있어요.' });
+      setMsg({ type: 'err', text: t(T.loginToJoin) });
       return;
     }
     setBusy(true);
@@ -301,7 +384,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     const res = await fetch(`/api/posts/${post.id}/join`, { method: joined ? 'DELETE' : 'POST' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? '요청 실패' });
+      setMsg({ type: 'err', text: data.error ?? t(T.requestFailed) });
     }
     await reloadAll();
     setBusy(false);
@@ -359,13 +442,18 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${name} 모임${post.title ? ` 〈${post.title}〉` : ''} · ${dateLabel(post.date)} ${to12h(post.startTime)} · ${post.location}`,
+          title: t(T.shareTitle, {
+            cat: name,
+            title: post.title ? ` 〈${post.title}〉` : '',
+            when: `${dateLabel(post.date)} ${to12h(post.startTime)}`,
+            place: post.location,
+          }),
           url,
         });
         return;
       }
       await navigator.clipboard.writeText(url);
-      setMsg({ type: 'ok', text: '모임 링크를 복사했어요. 카톡에 붙여넣으면 바로 참가할 수 있어요!' });
+      setMsg({ type: 'ok', text: t(T.shareCopied) });
     } catch {
       /* 사용자가 공유 시트를 닫은 경우 등 */
     }
@@ -374,34 +462,34 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
   /** 반복 중단 — 규칙만 끄고 이미 열린 회차는 남는다 */
   async function stopRepeat(post: PostView) {
     if (!post.recurringRuleId) return;
-    if (!confirm('매주 반복을 중단할까요? 이미 열린 모임은 그대로 남아요.')) return;
+    if (!confirm(t(T.stopRepeatConfirm))) return;
     setBusy(true);
     setMsg(null);
     const res = await fetch(`/api/recurring/${post.recurringRuleId}`, { method: 'DELETE' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? '반복 중단 실패' });
+      setMsg({ type: 'err', text: data.error ?? t(T.stopRepeatFailed) });
     } else {
-      setMsg({ type: 'ok', text: '반복을 중단했어요. 다음 주부터는 자동으로 열리지 않아요.' });
+      setMsg({ type: 'ok', text: t(T.stoppedRepeat) });
     }
     await reloadAll();
     setBusy(false);
   }
 
   async function remove(post: PostView) {
-    if (!confirm('이 모임을 취소(삭제)할까요? 참가자들에게 취소 알림이 가요.')) return;
+    if (!confirm(t(T.deleteConfirm))) return;
     setBusy(true);
     setMsg(null);
     const res = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? '삭제 실패' });
+      setMsg({ type: 'err', text: data.error ?? t(T.deleteFailed) });
     }
     await reloadAll();
     setBusy(false);
   }
 
-  if (loading) return <p className="subtitle">불러오는 중…</p>;
+  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   const editForm = (onSave: () => void, onCancel: () => void, saveLabel: string, isCreate = false) => (
     <div style={{ marginTop: 20 }}>
@@ -411,7 +499,9 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
             <input
               type="text"
               placeholder={
-                useTitleSearch ? `${titleLabel} 제목 검색 (예: 듄: 파트2)` : `${titleLabel} (선택)`
+                useTitleSearch
+                  ? t(T.titleSearchPh, { label: titleLabel ?? '' })
+                  : t(T.titleFreePh, { label: titleLabel ?? '' })
               }
               value={fTitle}
               maxLength={100}
@@ -431,7 +521,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
                     <span>
                       {r.title}
                       <span className="si-sub">
-                        {[r.mediaType === 'tv' ? '드라마' : '영화', r.year, r.rating ? `★ ${r.rating.toFixed(1)}` : null]
+                        {[r.mediaType === 'tv' ? t(T.tv) : t(T.movie), r.year, r.rating ? `★ ${r.rating.toFixed(1)}` : null]
                           .filter(Boolean)
                           .join(' · ')}
                       </span>
@@ -456,8 +546,10 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
             <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
               {[
                 fTitleMeta.rating ? `★ ${fTitleMeta.rating.toFixed(1)}` : null,
-                fTitleMeta.director ? `${fTitleMeta.mediaType === 'tv' ? '크리에이터' : '감독'} ${fTitleMeta.director}` : null,
-                fTitleMeta.cast?.length ? `출연 ${fTitleMeta.cast.join(', ')}` : null,
+                fTitleMeta.director
+                  ? `${fTitleMeta.mediaType === 'tv' ? t(T.creator) : t(T.director)} ${fTitleMeta.director}`
+                  : null,
+                fTitleMeta.cast?.length ? t(T.cast, { names: fTitleMeta.cast.join(', ') }) : null,
               ]
                 .filter(Boolean)
                 .join(' · ')}
@@ -468,7 +560,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
             style={{ marginLeft: 'auto', flex: 'none' }}
             onClick={() => setFTitleMeta(null)}
           >
-            선택 해제
+            {t(T.clearPick)}
           </button>
         </div>
       )}
@@ -489,7 +581,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         />
         <input
           type="number"
-          placeholder="정원 (선택)"
+          placeholder={t(T.capacityPh)}
           value={fCapacity}
           min={2}
           max={99}
@@ -500,28 +592,28 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
       <div className="field-row" style={{ marginBottom: isCreate ? 14 : 0 }}>
         <input
           type="text"
-          placeholder="메모 (선택)"
+          placeholder={t(T.memoPh)}
           value={fMemo}
           maxLength={500}
           onChange={(e) => setFMemo(e.target.value)}
           style={{ maxWidth: 420 }}
         />
         <button disabled={busy || !fDate || !fStart || !fEnd || !fLocation.trim()} onClick={onSave}>
-          {busy ? '저장 중…' : saveLabel}
+          {busy ? t(T.saving) : saveLabel}
         </button>
         <button className="secondary" disabled={busy} onClick={onCancel}>
-          취소
+          {t(T.cancel)}
         </button>
       </div>
       {isCreate && (
         <label className="repeat-check">
           <input type="checkbox" checked={fRepeat} onChange={(e) => setFRepeat(e.target.checked)} />
           <span>
-            매주 반복
+            {t(T.repeatWeekly)}
             {fDate && (
               <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>
                 {' '}
-                — 매주 {weekdayLabel(fDate)}요일 같은 시간에 모임이 자동으로 열려요
+                {t(T.repeatHint, { day: weekdayLabel(fDate) })}
               </span>
             )}
           </span>
@@ -538,7 +630,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
           <span className="feed-dot" style={{ background: color }} />
         </div>
         <div className="feed-actions">
-          <button onClick={toggleSub}>{subscribed ? '구독중' : '구독'}</button>
+          <button onClick={toggleSub}>{subscribed ? t(T.subscribed) : t(T.subscribe)}</button>
           {user && (
             <button
               onClick={() => {
@@ -547,19 +639,19 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
                 setShowForm((v) => !v);
               }}
             >
-              {showForm ? '닫기' : '모임 만들기 +'}
+              {showForm ? t(T.close) : t(T.newMeetup)}
             </button>
           )}
         </div>
       </div>
 
-      {showForm && <div className="card">{editForm(createPost, () => setShowForm(false), '만들기', true)}</div>}
+      {showForm && <div className="card">{editForm(createPost, () => setShowForm(false), t(T.create), true)}</div>}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
       {posts.length === 0 && (
         <div className="card" style={{ color: 'var(--text-dim)' }}>
-          아직 예정된 모임이 없어요. 첫 모임을 만들어보세요.
+          {t(T.emptyUpcoming)}
         </div>
       )}
 
@@ -567,14 +659,14 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
 
       <h2 style={{ marginTop: 64 }}>
         <button className="secondary" style={{ fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', color: 'inherit', border: 'none' }} onClick={togglePast}>
-          지난 모임 {showPast ? '−' : '+'}
+          {t(T.pastSection)} {showPast ? '−' : '+'}
         </button>
       </h2>
       {showPast && (
         loadingPast ? (
-          <p className="subtitle">불러오는 중…</p>
+          <p className="subtitle">{t(T.loading)}</p>
         ) : (pastPosts ?? []).length === 0 ? (
-          <div className="card" style={{ color: 'var(--text-dim)' }}>아직 지난 모임이 없어요.</div>
+          <div className="card" style={{ color: 'var(--text-dim)' }}>{t(T.emptyPast)}</div>
         ) : (
           (pastPosts ?? []).map((post) => renderPost(post, true))
         )
@@ -591,7 +683,9 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
       <div key={post.id} className="post-row" style={past ? { opacity: 0.75 } : undefined}>
         <span className="post-when">
           {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}
-          {post.recurringRuleId && <span className="repeat-badge">매주 {weekdayLabel(post.date)}</span>}
+          {post.recurringRuleId && (
+            <span className="repeat-badge">{t(T.repeatBadge, { day: weekdayLabel(post.date) })}</span>
+          )}
         </span>
         <span className="post-meta">
           {post.title && (
@@ -603,7 +697,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
                 post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
                 post.titleMeta.year,
                 post.titleMeta.director
-                  ? `${post.titleMeta.mediaType === 'tv' ? '크리에이터' : '감독'} ${post.titleMeta.director}`
+                  ? `${post.titleMeta.mediaType === 'tv' ? t(T.creator) : t(T.director)} ${post.titleMeta.director}`
                   : null,
                 post.titleMeta.cast?.length ? post.titleMeta.cast.join(', ') : null,
               ]
@@ -615,46 +709,48 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
           {post.description && <span className="post-desc" style={{ display: 'block' }}>“{post.description}”</span>}
           {post.participants.length > 0 && (
             <span style={{ display: 'block', marginTop: 6 }}>
-              {post.participants.map((p) => p.name + (user?.id === p.id ? ' (나)' : '')).join(', ')}
+              {post.participants.map((p) => p.name + (user?.id === p.id ? t(T.me) : '')).join(', ')}
             </span>
           )}
         </span>
         <span className="post-count" style={{ color }}>
-          {post.participants.length}
-          {post.capacity != null ? `/${post.capacity}` : ''}명{!past && full ? ' — 마감' : ''}
+          {post.capacity != null
+            ? t(T.peopleCap, { n: post.participants.length, cap: post.capacity })
+            : t(T.people, { n: post.participants.length })}
+          {!past && full ? t(T.fullSuffix) : ''}
         </span>
         {editId === post.id ? (
-          <div style={{ flexBasis: '100%' }}>{editForm(saveEditPost, () => { setEditId(null); resetForm(); }, '저장')}</div>
+          <div style={{ flexBasis: '100%' }}>{editForm(saveEditPost, () => { setEditId(null); resetForm(); }, t(T.save))}</div>
         ) : (
           <span style={{ display: 'flex', gap: 20, flex: 'none' }}>
             {!past && (
               <button className="secondary" disabled={busy} onClick={() => share(post)}>
-                공유
+                {t(T.share)}
               </button>
             )}
             <button className="secondary" disabled={busy} onClick={() => toggleComments(post.id)}>
-              댓글 {post.comments.length > 0 ? post.comments.length : ''}
+              {t(T.comments)} {post.comments.length > 0 ? post.comments.length : ''}
             </button>
             {/* 정기 모임은 작성자도 이번 주만 빠질 수 있다 */}
             {!past && (!mine || post.recurringRuleId) && (
               <button disabled={busy || (!joined && full)} onClick={() => join(post)}>
-                {joined ? '참가 취소' : full ? '마감' : '참가하기 →'}
+                {joined ? t(T.leave) : full ? t(T.full) : t(T.join)}
               </button>
             )}
             {(mine || isAdmin) && (
               <>
                 {!past && (
                   <button className="secondary" disabled={busy} onClick={() => startEditPost(post)}>
-                    수정
+                    {t(T.edit)}
                   </button>
                 )}
                 {!past && post.recurringRuleId && (
                   <button className="secondary" disabled={busy} onClick={() => stopRepeat(post)}>
-                    반복 중단
+                    {t(T.stopRepeat)}
                   </button>
                 )}
                 <button className="danger" disabled={busy} onClick={() => remove(post)}>
-                  삭제
+                  {t(T.del)}
                 </button>
               </>
             )}
@@ -663,7 +759,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
         {commentsOpen && (
           <div className="comments">
             {post.comments.length === 0 && (
-              <div className="comment-row" style={{ color: 'var(--text-dim)' }}>첫 댓글을 남겨보세요.</div>
+              <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.commentEmpty)}</div>
             )}
             {post.comments.map((c) => (
               <div key={c.id} className="comment-row">
@@ -671,7 +767,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
                 <span className="comment-body">{c.body}</span>
                 {(user?.id === c.userId || isAdmin) && (
                   <button className="danger comment-delete" disabled={busy} onClick={() => removeComment(c)}>
-                    삭제
+                    {t(T.del)}
                   </button>
                 )}
               </div>
@@ -680,7 +776,7 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
               <div className="field-row" style={{ marginTop: 12 }}>
                 <input
                   type="text"
-                  placeholder="댓글 남기기 (예: 10분 늦어요 / 재밌었다!)"
+                  placeholder={t(T.commentPh)}
                   value={commentInputs[post.id] ?? ''}
                   maxLength={300}
                   onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
@@ -688,11 +784,11 @@ export default function CategoryClient({ slug, name }: { slug: string; name: str
                   style={{ maxWidth: 420 }}
                 />
                 <button className="secondary" disabled={busy || !(commentInputs[post.id] ?? '').trim()} onClick={() => sendComment(post.id)}>
-                  등록
+                  {t(T.commentSubmit)}
                 </button>
               </div>
             ) : (
-              <div className="comment-row" style={{ color: 'var(--text-dim)' }}>카카오 로그인 후 댓글을 남길 수 있어요.</div>
+              <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.commentLogin)}</div>
             )}
           </div>
         )}

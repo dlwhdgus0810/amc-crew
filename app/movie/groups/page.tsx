@@ -2,16 +2,47 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Showtime, Selections } from '@/lib/types';
+import { useLocale, useT } from '../../i18n';
+import { dateLabelShort, timeLabel } from '@/lib/datefmt';
+import { Locale } from '@/lib/i18n';
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const T = {
+  loading: { ko: '불러오는 중…', en: 'Loading…' },
+  title: { ko: '그룹', en: 'Groups' },
+  subtitle: {
+    ko: '같은 회차를 고른 사람들 — 참여 {n}명. 인원이 많은 순서예요.',
+    en: 'People who picked the same showtime — {n} participating, largest groups first.',
+  },
+  empty: {
+    ko: '아직 아무도 선택하지 않았어요. 먼저 "시간 고르기"에서 스케줄을 저장해보세요.',
+    en: 'Nobody has picked yet. Save your picks in “Showtimes” first.',
+  },
+  matched: { ko: 'Matched — 매칭된 그룹 ({n})', en: 'Matched — groups ({n})' },
+  solo: { ko: 'Solo — 아직 혼자인 회차', en: 'Solo — nobody else yet' },
+  hurry: { ko: '{note} — 예매를 서두르세요', en: '{note} — book soon' },
+  participants: { ko: '참여자', en: 'Participants' },
+  colName: { ko: '이름', en: 'Name' },
+  colCount: { ko: '선택 회차 수', en: 'Showtimes picked' },
+  count: { ko: '{n}개', en: '{n}' },
+  me: { ko: ' (나)', en: ' (you)' },
+  close: { ko: '닫기', en: 'Close' },
+  editPicks: { ko: '회차 수정', en: 'Edit picks' },
+  delMine: { ko: '내 선택 삭제', en: 'Delete my picks' },
+  del: { ko: '삭제', en: 'Delete' },
+  editHeading: { ko: '{name}님의 가능 회차 ({n}개 선택됨)', en: '{name}’s showtimes ({n} selected)' },
+  save: { ko: '저장', en: 'Save' },
+  saving: { ko: '저장 중…', en: 'Saving…' },
+  cancel: { ko: '취소', en: 'Cancel' },
+  saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
+  confirmDeleteMine: { ko: '{name}님의 선택을 삭제할까요?', en: 'Delete {name}’s picks?' },
+  confirmClearAll: {
+    ko: '회차를 모두 해제하면 이 참여자가 목록에서 삭제돼요. 계속할까요?',
+    en: 'Clearing every showtime removes this participant from the list. Continue?',
+  },
+};
 
-function describe(s: Showtime): string {
-  const [y, m, d] = s.date.split('-').map(Number);
-  const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
-  const [h, min] = s.time.split(':').map(Number);
-  const ampm = h < 12 ? '오전' : '오후';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${m}/${d} (${wd}) ${ampm} ${h12}:${String(min).padStart(2, '0')} — ${s.format}`;
+function describe(s: Showtime, locale: Locale): string {
+  return `${dateLabelShort(s.date, locale)} ${timeLabel(s.time, locale)} — ${s.format}`;
 }
 
 export default function GroupsPage() {
@@ -26,6 +57,8 @@ export default function GroupsPage() {
   const [editPicked, setEditPicked] = useState<Set<string>>(new Set());
   const [savingEdit, setSavingEdit] = useState(false);
   const [editMsg, setEditMsg] = useState<string | null>(null);
+  const t = useT();
+  const locale = useLocale();
 
   async function load() {
     const data = await fetch('/api/schedule').then((r) => r.json());
@@ -70,7 +103,7 @@ export default function GroupsPage() {
 
   async function removeMine() {
     if (!me) return;
-    if (!confirm(`${me.name}님의 선택을 삭제할까요?`)) return;
+    if (!confirm(t(T.confirmDeleteMine, { name: me.name }))) return;
     setRemoving(true);
     await fetch('/api/selections', { method: 'DELETE' });
     await load();
@@ -94,7 +127,7 @@ export default function GroupsPage() {
 
   async function saveEdit() {
     if (!editingId) return;
-    if (editPicked.size === 0 && !confirm('회차를 모두 해제하면 이 참여자가 목록에서 삭제돼요. 계속할까요?')) return;
+    if (editPicked.size === 0 && !confirm(t(T.confirmClearAll))) return;
     setSavingEdit(true);
     setEditMsg(null);
     try {
@@ -104,18 +137,18 @@ export default function GroupsPage() {
         body: JSON.stringify({ userId: editingId, showtimeIds: [...editPicked] }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? '저장 실패');
+      if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
       setEditingId(null);
       await load();
     } catch (e) {
-      setEditMsg(e instanceof Error ? e.message : '저장 실패');
+      setEditMsg(e instanceof Error ? e.message : t(T.saveFailed));
     } finally {
       setSavingEdit(false);
     }
   }
 
   async function removeParticipant(userId: string, name: string) {
-    if (!confirm(`${name}님의 선택을 삭제할까요?`)) return;
+    if (!confirm(t(T.confirmDeleteMine, { name }))) return;
     setRemoving(true);
     await fetch(`/api/admin/selections?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
     if (editingId === userId) setEditingId(null);
@@ -123,24 +156,24 @@ export default function GroupsPage() {
     setRemoving(false);
   }
 
-  if (loading) return <p className="subtitle">불러오는 중…</p>;
+  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   return (
     <>
-      <h1>그룹</h1>
-      <p className="subtitle">같은 회차를 고른 사람들 — 참여 {participants.length}명. 인원이 많은 순서예요.</p>
+      <h1>{t(T.title)}</h1>
+      <p className="subtitle">{t(T.subtitle, { n: participants.length })}</p>
 
       {participants.length === 0 && (
-        <div className="card">아직 아무도 선택하지 않았어요. 먼저 &quot;시간 고르기&quot;에서 스케줄을 저장해보세요.</div>
+        <div className="card">{t(T.empty)}</div>
       )}
 
-      {matched.length > 0 && <h2>Matched — 매칭된 그룹 ({matched.length})</h2>}
+      {matched.length > 0 && <h2>{t(T.matched, { n: matched.length })}</h2>}
       {matched.map((g) => (
         <div key={g.showtime.id} className="card group-card">
           <span className="g-count">{g.members.length}</span>
           <div className="group-body">
-            <div className="group-title">{describe(g.showtime)}</div>
-            {g.showtime.note && <div className="group-sub">{g.showtime.note} — 예매를 서두르세요</div>}
+            <div className="group-title">{describe(g.showtime, locale)}</div>
+            {g.showtime.note && <div className="group-sub">{t(T.hurry, { note: g.showtime.note })}</div>}
             <div className="member-chips">
               {g.members.map((m, i) => (
                 <span key={i} className="member-chip">{m}</span>
@@ -150,12 +183,12 @@ export default function GroupsPage() {
         </div>
       ))}
 
-      {solo.length > 0 && <h2>Solo — 아직 혼자인 회차</h2>}
+      {solo.length > 0 && <h2>{t(T.solo)}</h2>}
       {solo.map((g) => (
         <div key={g.showtime.id} className="card group-card solo-card">
           <span className="g-count">1</span>
           <div className="group-body">
-            <div className="group-title" style={{ color: 'var(--text-dim)' }}>{describe(g.showtime)}</div>
+            <div className="group-title" style={{ color: 'var(--text-dim)' }}>{describe(g.showtime, locale)}</div>
             <div className="member-chips">
               {g.members.map((m, i) => (
                 <span key={i} className="member-chip">{m}</span>
@@ -167,13 +200,13 @@ export default function GroupsPage() {
 
       {participants.length > 0 && (
         <>
-          <h2>참여자</h2>
+          <h2>{t(T.participants)}</h2>
           <div className="card">
             <table>
               <thead>
                 <tr>
-                  <th>이름</th>
-                  <th>선택 회차 수</th>
+                  <th>{t(T.colName)}</th>
+                  <th>{t(T.colCount)}</th>
                   <th />
                 </tr>
               </thead>
@@ -181,8 +214,8 @@ export default function GroupsPage() {
                 {participants.map((p) => (
                   <React.Fragment key={p.id}>
                     <tr>
-                      <td>{p.name}{me?.id === p.id && ' (나)'}</td>
-                      <td>{p.count}개</td>
+                      <td>{p.name}{me?.id === p.id && t(T.me)}</td>
+                      <td>{t(T.count, { n: p.count })}</td>
                       <td style={{ textAlign: 'right' }}>
                         <span style={{ display: 'inline-flex', gap: 18 }}>
                           {isAdmin && (
@@ -192,7 +225,7 @@ export default function GroupsPage() {
                               disabled={removing || savingEdit}
                               onClick={() => (editingId === p.id ? setEditingId(null) : startEdit(p.id))}
                             >
-                              {editingId === p.id ? '닫기' : '회차 수정'}
+                              {editingId === p.id ? t(T.close) : t(T.editPicks)}
                             </button>
                           )}
                           {(me?.id === p.id || isAdmin) && (
@@ -201,7 +234,7 @@ export default function GroupsPage() {
                               disabled={removing || savingEdit}
                               onClick={() => (me?.id === p.id ? removeMine() : removeParticipant(p.id, p.name))}
                             >
-                              {me?.id === p.id ? '내 선택 삭제' : '삭제'}
+                              {me?.id === p.id ? t(T.delMine) : t(T.del)}
                             </button>
                           )}
                         </span>
@@ -212,7 +245,7 @@ export default function GroupsPage() {
                         <td colSpan={3} style={{ background: 'var(--surface-2)' }}>
                           <div style={{ padding: '6px 2px' }}>
                             <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 10 }}>
-                              {p.name}님의 가능 회차 ({editPicked.size}개 선택됨)
+                              {t(T.editHeading, { name: p.name, n: editPicked.size })}
                             </div>
                             <div className="member-chips" style={{ marginTop: 0, gap: 8 }}>
                               {schedule.map((s) => {
@@ -230,7 +263,7 @@ export default function GroupsPage() {
                                     }}
                                     onClick={() => toggleEditPick(s.id)}
                                   >
-                                    {on && '✓ '}{describe(s)}
+                                    {on && '✓ '}{describe(s, locale)}
                                   </span>
                                 );
                               })}
@@ -238,10 +271,10 @@ export default function GroupsPage() {
                             {editMsg && <div className="msg err" style={{ marginBottom: 0 }}>{editMsg}</div>}
                             <div style={{ display: 'flex', gap: 18, marginTop: 14 }}>
                               <button className="secondary" disabled={savingEdit} onClick={saveEdit}>
-                                {savingEdit ? '저장 중…' : '저장'}
+                                {savingEdit ? t(T.saving) : t(T.save)}
                               </button>
                               <button className="secondary" disabled={savingEdit} onClick={() => setEditingId(null)}>
-                                취소
+                                {t(T.cancel)}
                               </button>
                             </div>
                           </div>

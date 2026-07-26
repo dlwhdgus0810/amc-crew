@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPostView } from '@/lib/db/posts';
-import { getCategory } from '@/lib/categories';
+import { catName, getCategory } from '@/lib/categories';
+import { getLocale } from '@/lib/locale';
+import { pick } from '@/lib/i18n';
+
+const T = {
+  notFound: { ko: '포스트를 찾을 수 없어요.', en: 'Meetup not found.' },
+  summary: { ko: '{emoji} {cat}{title} 모임', en: '{emoji} {cat}{title} meetup' },
+  page: { ko: '모임 페이지: {url}', en: 'Meetup page: {url}' },
+};
 
 export const dynamic = 'force-dynamic';
 
@@ -16,15 +24,20 @@ function compact(date: string, time: string): string {
 /** 모임을 캘린더 이벤트(.ics)로 다운로드 */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const post = await getPostView(id);
+  const [post, locale] = await Promise.all([getPostView(id), getLocale()]);
   if (!post) {
-    return NextResponse.json({ error: '포스트를 찾을 수 없어요.' }, { status: 404 });
+    return NextResponse.json({ error: pick(locale, T.notFound) }, { status: 404 });
   }
 
-  const cat = getCategory(post.category);
-  const summary = `${cat?.emoji ?? ''} ${cat?.name ?? post.category}${post.title ? ` 〈${post.title}〉` : ''} 모임`;
+  const summary = pick(locale, T.summary, {
+    emoji: getCategory(post.category)?.emoji ?? '',
+    cat: catName(post.category, locale),
+    title: post.title ? ` 〈${post.title}〉` : '',
+  });
   const detailUrl = `${req.nextUrl.origin}/p/${post.id}`;
-  const description = [post.description, `모임 페이지: ${detailUrl}`].filter(Boolean).join('\n');
+  const description = [post.description, pick(locale, T.page, { url: detailUrl })]
+    .filter(Boolean)
+    .join('\n');
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
   const ics = [

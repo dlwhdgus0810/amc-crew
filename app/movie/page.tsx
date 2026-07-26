@@ -2,6 +2,9 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {Format, Selections, Showtime} from '@/lib/types';
+import { useLocale, useT } from '../i18n';
+import { timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
+import { Locale } from '@/lib/i18n';
 
 interface SessionUser {
   id: string;
@@ -16,19 +19,55 @@ const FORMAT_CLASS: Record<Format, string> = {
   Laser: 'f-laser',
 };
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const T = {
+  loading: { ko: '스케줄 불러오는 중…', en: 'Loading showtimes…' },
+  intro: {
+    ko: 'AMC Town Center 20 — 2시간 52분 · R등급. 가능한 회차를 모두 고르세요. 같은 회차끼리 그룹이 만들어져요.',
+    en: 'AMC Town Center 20 — 2h52m · Rated R. Pick every showtime that works; people who pick the same one get grouped.',
+  },
+  loginToPick: { ko: '카카오 로그인 후 회차를 선택할 수 있어요.', en: 'Log in with Kakao to pick showtimes.' },
+  saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
+  saved: {
+    ko: '저장됐어요! "그룹"에서 누구랑 겹치는지 확인해보세요.',
+    en: 'Saved — check “Groups” to see who overlaps with you.',
+  },
+  nicknameFailed: { ko: '닉네임 저장 실패', en: 'Couldn’t save the nickname' },
+  nickname: { ko: '닉네임', en: 'Nickname' },
+  nicknameHint: {
+    ko: '비워두고 저장하면 카카오 닉네임({name})을 사용해요.',
+    en: 'Leave it empty to use your Kakao nickname ({name}).',
+  },
+  save: { ko: '저장', en: 'Save' },
+  saving: { ko: '저장 중…', en: 'Saving…' },
+  cancel: { ko: '취소', en: 'Cancel' },
+  picked: { ko: '{n}개 회차 선택됨', en: '{n} showtimes picked' },
+  pickPrompt: { ko: '가능한 회차를 골라주세요', en: 'Pick the showtimes that work' },
+  logout: { ko: '로그아웃', en: 'Log out' },
+  loginPrompt: {
+    ko: '카카오 로그인 후 가능한 회차를 선택할 수 있어요.',
+    en: 'Log in with Kakao to pick your showtimes.',
+  },
+  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
+  saveMine: { ko: '내 스케줄 저장하기 · {n}개 선택됨', en: 'Save my picks · {n} selected' },
+  loginAndStart: { ko: '카카오 로그인하고 시작하기', en: 'Log in with Kakao to start' },
+  dayLabel: { ko: '{m}월 {d}일', en: '{mon} {d}' },
+  weekdayLabel: { ko: '{wd}요일', en: '{wd}' },
+};
 
-function formatDateHeading(date: string): { label: string; weekday: string; short: string; wd: string } {
-  const [y, m, d] = date.split('-').map(Number);
-  const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
-  return { label: `${m}월 ${d}일`, weekday: `${wd}요일`, short: `${m}/${d}`, wd };
-}
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-function to12h(time: string): string {
-  const [h, min] = time.split(':').map(Number);
-  const ampm = h < 12 ? '오전' : '오후';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${ampm} ${h12}:${String(min).padStart(2, '0')}`;
+function formatDateHeading(
+  date: string,
+  locale: Locale
+): { label: string; weekday: string; short: string; wd: string } {
+  const [, m, d] = date.split('-').map(Number);
+  const wd = fmtWeekday(date, locale);
+  return {
+    label: locale === 'en' ? `${MONTHS_EN[m - 1]} ${d}` : `${m}월 ${d}일`,
+    weekday: locale === 'en' ? wd : `${wd}요일`,
+    short: `${m}/${d}`,
+    wd,
+  };
 }
 
 function KakaoIcon() {
@@ -57,6 +96,9 @@ export default function PickPage() {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const t = useT();
+  const locale = useLocale();
+  const to12h = (time: string) => fmtTime(time, locale);
 
   useEffect(() => {
     if (!openTip) return;
@@ -106,7 +148,7 @@ export default function PickPage() {
 
   function toggle(id: string) {
     if (!user) {
-      setMsg({ type: 'err', text: '카카오 로그인 후 회차를 선택할 수 있어요.' });
+      setMsg({ type: 'err', text: t(T.loginToPick) });
       return;
     }
     setPicked((prev) => {
@@ -127,12 +169,12 @@ export default function PickPage() {
         body: JSON.stringify({ showtimeIds: [...picked] }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? '저장 실패');
-      setMsg({ type: 'ok', text: '저장됐어요! "그룹"에서 누구랑 겹치는지 확인해보세요.' });
+      if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
+      setMsg({ type: 'ok', text: t(T.saved) });
       const refreshed = await fetch('/api/schedule').then((r) => r.json());
       setSelections(refreshed.selections ?? {});
     } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : '저장 실패' });
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.saveFailed) });
     } finally {
       setSaving(false);
     }
@@ -155,7 +197,7 @@ export default function PickPage() {
         body: JSON.stringify({ nickname: nameInput }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? '닉네임 저장 실패');
+      if (!res.ok) throw new Error(data.error ?? t(T.nicknameFailed));
       setUser((u) => (u ? { ...u, name: data.name } : u));
       setNickname(data.nickname ?? null);
       setKakaoName(data.kakaoName ?? '');
@@ -163,13 +205,13 @@ export default function PickPage() {
       const refreshed = await fetch('/api/schedule').then((r) => r.json());
       setSelections(refreshed.selections ?? {});
     } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : '닉네임 저장 실패' });
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.nicknameFailed) });
     } finally {
       setSavingName(false);
     }
   }
 
-  if (loading) return <p className="subtitle">스케줄 불러오는 중…</p>;
+  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   return (
     <>
@@ -177,7 +219,7 @@ export default function PickPage() {
         The Odyssey
       </h1>
       <p className="subtitle">
-        AMC Town Center 20 — 2시간 52분 · R등급. 가능한 회차를 모두 고르세요. 같은 회차끼리 그룹이 만들어져요.
+        {t(T.intro)}
       </p>
 
       <div className="card">
@@ -187,7 +229,7 @@ export default function PickPage() {
               <div className="field-row">
                 <input
                   type="text"
-                  placeholder="닉네임"
+                  placeholder={t(T.nickname)}
                   value={nameInput}
                   maxLength={20}
                   onChange={(e) => setNameInput(e.target.value)}
@@ -195,14 +237,14 @@ export default function PickPage() {
                   autoFocus
                 />
                 <button className="secondary" disabled={savingName} onClick={saveNickname}>
-                  {savingName ? '저장 중…' : '저장'}
+                  {savingName ? t(T.saving) : t(T.save)}
                 </button>
                 <button className="secondary" disabled={savingName} onClick={() => setEditingName(false)}>
-                  취소
+                  {t(T.cancel)}
                 </button>
               </div>
               <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '10px 2px 0' }}>
-                비워두고 저장하면 카카오 닉네임({kakaoName})을 사용해요.
+                {t(T.nicknameHint, { name: kakaoName })}
               </p>
             </div>
           ) : (
@@ -217,30 +259,30 @@ export default function PickPage() {
                     setEditingName(true);
                   }}
                 >
-                  닉네임
+                  {t(T.nickname)}
                 </button>
                 <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 500 }}>
-                  {picked.size > 0 ? `${picked.size}개 회차 선택됨` : '가능한 회차를 골라주세요'}
+                  {picked.size > 0 ? t(T.picked, { n: picked.size }) : t(T.pickPrompt)}
                 </span>
               </span>
-              <button className="secondary" onClick={logout}>로그아웃</button>
+              <button className="secondary" onClick={logout}>{t(T.logout)}</button>
             </div>
           )
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>
-              카카오 로그인 후 가능한 회차를 선택할 수 있어요.
+              {t(T.loginPrompt)}
             </span>
             <a className="kakao-btn" href="/api/auth/login">
               <KakaoIcon />
-              카카오 로그인
+              {t(T.kakaoLogin)}
             </a>
           </div>
         )}
       </div>
 
       {byDate.map(([date, shows]) => {
-        const { label, weekday, short } = formatDateHeading(date);
+        const { label, weekday, short } = formatDateHeading(date, locale);
         return (
           <section key={date} className="date-section">
             <div className="date-heading">
@@ -302,16 +344,16 @@ export default function PickPage() {
         {user ? (
           <button className="big-cta" onClick={submit} disabled={saving || picked.size === 0}>
             {saving
-              ? '저장 중…'
+              ? t(T.saving)
               : picked.size > 0
-                ? `내 스케줄 저장하기 · ${picked.size}개 선택됨`
-                : '가능한 회차를 골라주세요'}
+                ? t(T.saveMine, { n: picked.size })
+                : t(T.pickPrompt)}
             <span className="arrow">→</span>
           </button>
         ) : (
           <a className="kakao-btn" href="/api/auth/login">
             <KakaoIcon />
-            카카오 로그인하고 시작하기
+            {t(T.loginAndStart)}
           </a>
         )}
       </div>

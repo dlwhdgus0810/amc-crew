@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>연결이 끊겼어요 — Kansas Korean</title>
+    <title>You’re offline — Kansas Korean</title>
     <!-- 오프라인에 보여줄 화면이라 외부 파일에 기대지 않고 전부 인라인으로 둔다 -->
     <style>
       * { box-sizing: border-box; }
@@ -41,8 +41,17 @@
       <span class="dot" style="background: #e9a300"></span>
       <span class="dot center" style="background: #5b2a86"></span>
     </div>
-    <h1>연결이 끊겼어요.</h1>
-    <p>인터넷에 연결되면 모임 목록을 다시 불러올게요.</p>
-    <button onclick="location.reload()">다시 시도 →</button>
+    <!-- 정적 파일이라 사용자 언어를 알 수 없다 → 저장된 locale 쿠키로 문구를 고른다 (없으면 한국어) -->
+    <h1 id="t">연결이 끊겼어요.</h1>
+    <p id="d">인터넷에 연결되면 모임 목록을 다시 불러올게요.</p>
+    <button id="r" onclick="location.reload()">다시 시도 →</button>
+    <script>
+      if (/(^|;\s*)locale=en(;|$)/.test(document.cookie)) {
+        document.documentElement.lang = 'en';
+        document.getElementById('t').textContent = 'You’re offline.';
+        document.getElementById('d').textContent = 'We’ll load your meetups again once you’re back online.';
+        document.getElementById('r').textContent = 'Try again →';
+      }
+    </script>
   </body>
 </html>

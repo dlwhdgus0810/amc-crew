@@ -3,27 +3,59 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getCategory } from '@/lib/categories';
+import { useLocale, useT } from '../../i18n';
+import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
+
+const T = {
+  loading: { ko: '불러오는 중…', en: 'Loading…' },
+  notFound: { ko: '모임을 찾을 수 없어요', en: 'Meetup not found' },
+  notFoundDesc: {
+    ko: '링크가 잘못됐거나 이미 취소된 모임이에요.',
+    en: 'The link is wrong or the meetup was cancelled.',
+  },
+  home: { ko: '홈으로 →', en: 'Go home →' },
+  allMeetups: { ko: '전체 모임 보기 →', en: 'See all meetups →' },
+  requestFailed: { ko: '요청 실패', en: 'Request failed' },
+  joined: { ko: '참가 완료! 모임에서 만나요.', en: 'You’re in — see you there!' },
+  commentFailed: { ko: '댓글 작성 실패', en: 'Couldn’t post the comment' },
+  commentDeleteConfirm: { ko: '댓글을 삭제할까요?', en: 'Delete this comment?' },
+  commentDeleteFailed: { ko: '댓글 삭제 실패', en: 'Couldn’t delete the comment' },
+  copied: {
+    ko: '모임 링크를 복사했어요. 카톡에 붙여넣어 공유하세요!',
+    en: 'Link copied — paste it in a chat to share.',
+  },
+  meetupSuffix: { ko: '{cat}{title} 모임', en: '{cat}{title} meetup' },
+  gcalDetails: { ko: '모임 페이지: {url}', en: 'Meetup page: {url}' },
+  creator: { ko: '크리에이터', en: 'Creator' },
+  director: { ko: '감독', en: 'Director' },
+  cast: { ko: '출연 {names}', en: 'Cast {names}' },
+  repeatBadge: { ko: '매주 {day}', en: 'Every {day}' },
+  people: { ko: '{n}명 참여', en: '{n} joined' },
+  peopleCap: { ko: '{n}/{cap}명 참여', en: '{n}/{cap} joined' },
+  pastSuffix: { ko: ' — 지난 모임', en: ' — past meetup' },
+  fullSuffix: { ko: ' — 마감', en: ' — full' },
+  me: { ko: ' (나)', en: ' (you)' },
+  mine: { ko: '내가 만든 모임이에요.', en: 'You created this meetup.' },
+  join: { ko: '참가하기 →', en: 'Join →' },
+  leave: { ko: '참가 취소', en: 'Leave' },
+  full: { ko: '마감', en: 'Full' },
+  loginAndJoin: { ko: '카카오 로그인하고 참가하기', en: 'Log in with Kakao to join' },
+  shareLink: { ko: '링크 공유', en: 'Share link' },
+  gcal: { ko: 'Google 캘린더', en: 'Google Calendar' },
+  ics: { ko: '캘린더 파일(.ics)', en: 'Calendar file (.ics)' },
+  comments: { ko: '댓글', en: 'Comments' },
+  commentEmpty: { ko: '첫 댓글을 남겨보세요.', en: 'Be the first to comment.' },
+  commentPh: { ko: '댓글 남기기', en: 'Leave a comment' },
+  commentSubmit: { ko: '등록', en: 'Post' },
+  commentLogin: { ko: '카카오 로그인 후 댓글을 남길 수 있어요.', en: 'Log in with Kakao to comment.' },
+  del: { ko: '삭제', en: 'Delete' },
+};
 import type { PostView } from '@/lib/db/posts';
 import { TMDB_IMG } from '@/lib/tmdb';
 
 interface SessionUser {
   id: string;
   name: string;
-}
-
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
-function to12h(time: string): string {
-  const [h, min] = time.split(':').map(Number);
-  const ampm = h < 12 ? '오전' : '오후';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${ampm} ${h12}:${String(min).padStart(2, '0')}`;
-}
-
-function dateLabel(date: string): string {
-  const [y, m, d] = date.split('-').map(Number);
-  const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
-  return `${m}/${d} (${wd})`;
 }
 
 function KakaoIcon() {
@@ -45,6 +77,10 @@ export default function PostClient({ id }: { id: string }) {
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const t = useT();
+  const locale = useLocale();
+  const dateLabel = (d: string) => fmtDate(d, locale);
+  const to12h = (time: string) => fmtTime(time, locale);
   const [commentInput, setCommentInput] = useState('');
 
   async function loadPost() {
@@ -78,9 +114,9 @@ export default function PostClient({ id }: { id: string }) {
     const res = await fetch(`/api/posts/${post.id}/join`, { method: joined ? 'DELETE' : 'POST' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? '요청 실패' });
+      setMsg({ type: 'err', text: data.error ?? t(T.requestFailed) });
     } else if (!joined) {
-      setMsg({ type: 'ok', text: '참가 완료! 모임에서 만나요.' });
+      setMsg({ type: 'ok', text: t(T.joined) });
     }
     await loadPost();
     setBusy(false);
@@ -99,7 +135,7 @@ export default function PostClient({ id }: { id: string }) {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? '댓글 작성 실패' });
+      setMsg({ type: 'err', text: data.error ?? t(T.commentFailed) });
     } else {
       setCommentInput('');
     }
@@ -108,12 +144,12 @@ export default function PostClient({ id }: { id: string }) {
   }
 
   async function removeComment(commentId: string) {
-    if (!confirm('댓글을 삭제할까요?')) return;
+    if (!confirm(t(T.commentDeleteConfirm))) return;
     setBusy(true);
     const res = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? '댓글 삭제 실패' });
+      setMsg({ type: 'err', text: data.error ?? t(T.commentDeleteFailed) });
     }
     await loadPost();
     setBusy(false);
@@ -127,20 +163,20 @@ export default function PostClient({ id }: { id: string }) {
         return;
       }
       await navigator.clipboard.writeText(url);
-      setMsg({ type: 'ok', text: '모임 링크를 복사했어요. 카톡에 붙여넣어 공유하세요!' });
+      setMsg({ type: 'ok', text: t(T.copied) });
     } catch {
       /* 사용자가 공유 시트를 닫은 경우 등 */
     }
   }
 
-  if (loading) return <p className="subtitle">불러오는 중…</p>;
+  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   if (notFound || !post) {
     return (
       <>
-        <h1>모임을 찾을 수 없어요</h1>
-        <p className="subtitle">링크가 잘못됐거나 이미 취소된 모임이에요.</p>
-        <Link href="/" className="profile-link">홈으로 →</Link>
+        <h1>{t(T.notFound)}</h1>
+        <p className="subtitle">{t(T.notFoundDesc)}</p>
+        <Link href="/" className="profile-link">{t(T.home)}</Link>
       </>
     );
   }
@@ -155,25 +191,28 @@ export default function PostClient({ id }: { id: string }) {
   const loginNext = `/api/auth/login?next=${encodeURIComponent(`/p/${id}`)}`;
 
   // Google 캘린더 추가 링크 (ctz로 모임 시간대 고정)
-  const gcalTitle = `${cat?.name ?? post.category}${post.title ? ` 〈${post.title}〉` : ''} 모임`;
+  const catLabel = cat ? t(cat.name) : post.category;
+  const gcalTitle = t(T.meetupSuffix, { cat: catLabel, title: post.title ? ` 〈${post.title}〉` : '' });
   const gcalDates = `${post.date.replace(/-/g, '')}T${post.startTime.replace(':', '')}00/${post.date.replace(/-/g, '')}T${post.endTime.replace(':', '')}00`;
   const gcalUrl =
     `https://calendar.google.com/calendar/render?action=TEMPLATE` +
     `&text=${encodeURIComponent(gcalTitle)}` +
     `&dates=${gcalDates}&ctz=America/Chicago` +
     `&location=${encodeURIComponent(post.location)}` +
-    `&details=${encodeURIComponent(`모임 페이지: ${typeof window !== 'undefined' ? window.location.origin : ''}/p/${id}`)}`;
+    `&details=${encodeURIComponent(
+      t(T.gcalDetails, { url: `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${id}` })
+    )}`;
 
   return (
     <>
       <div className="feed-head">
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-          <h1 style={{ margin: 0 }}>{cat?.name ?? post.category}</h1>
+          <h1 style={{ margin: 0 }}>{catLabel}</h1>
           <span className="feed-dot" style={{ background: color }} />
         </div>
         <div className="feed-actions">
           <Link href={`/c/${post.category}`} className="profile-link">
-            전체 모임 보기 →
+            {t(T.allMeetups)}
           </Link>
         </div>
       </div>
@@ -197,9 +236,9 @@ export default function PostClient({ id }: { id: string }) {
                 {[
                   post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
                   post.titleMeta.director
-                    ? `${post.titleMeta.mediaType === 'tv' ? '크리에이터' : '감독'} ${post.titleMeta.director}`
+                    ? `${post.titleMeta.mediaType === 'tv' ? t(T.creator) : t(T.director)} ${post.titleMeta.director}`
                     : null,
-                  post.titleMeta.cast?.length ? `출연 ${post.titleMeta.cast.join(', ')}` : null,
+                  post.titleMeta.cast?.length ? t(T.cast, { names: post.titleMeta.cast.join(', ') }) : null,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -212,7 +251,7 @@ export default function PostClient({ id }: { id: string }) {
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.4px' }}>
           {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}
           {post.recurringRuleId && (
-            <span className="repeat-badge">매주 {WEEKDAYS[new Date(post.date + 'T00:00:00').getDay()]}</span>
+            <span className="repeat-badge">{t(T.repeatBadge, { day: fmtWeekday(post.date, locale) })}</span>
           )}
         </div>
         <div style={{ marginTop: 8, fontSize: 15.5 }}>
@@ -223,38 +262,40 @@ export default function PostClient({ id }: { id: string }) {
         )}
         <div style={{ marginTop: 14, fontWeight: 700, color }}>
           {post.participants.length}
-          {post.capacity != null ? `/${post.capacity}` : ''}명 참여
-          {past ? ' — 지난 모임' : full ? ' — 마감' : ''}
+          {post.capacity != null
+            ? t(T.peopleCap, { n: post.participants.length, cap: post.capacity })
+            : t(T.people, { n: post.participants.length })}
+          {past ? t(T.pastSuffix) : full ? t(T.fullSuffix) : ''}
         </div>
         {post.participants.length > 0 && (
           <div style={{ marginTop: 6, color: 'var(--text-dim)' }}>
-            {post.participants.map((p) => p.name + (user?.id === p.id ? ' (나)' : '')).join(', ')}
+            {post.participants.map((p) => p.name + (user?.id === p.id ? t(T.me) : '')).join(', ')}
           </div>
         )}
 
         <div className="field-row" style={{ marginTop: 20 }}>
           {past ? null : user ? (
             mine ? (
-              <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>내가 만든 모임이에요.</span>
+              <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>{t(T.mine)}</span>
             ) : (
               <button disabled={busy || (!joined && full)} onClick={join}>
-                {joined ? '참가 취소' : full ? '마감' : '참가하기 →'}
+                {joined ? t(T.leave) : full ? t(T.full) : t(T.join)}
               </button>
             )
           ) : (
             <a className="kakao-btn" href={loginNext}>
               <KakaoIcon />
-              카카오 로그인하고 참가하기
+              {t(T.loginAndJoin)}
             </a>
           )}
-          <button className="secondary" onClick={copyLink}>링크 공유</button>
+          <button className="secondary" onClick={copyLink}>{t(T.shareLink)}</button>
           {!past && (
             <>
               <a className="profile-link" href={gcalUrl} target="_blank" rel="noreferrer">
-                Google 캘린더
+                {t(T.gcal)}
               </a>
               <a className="profile-link" href={`/api/posts/${id}/ics`}>
-                캘린더 파일(.ics)
+                {t(T.ics)}
               </a>
             </>
           )}
@@ -263,10 +304,10 @@ export default function PostClient({ id }: { id: string }) {
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      <h2>댓글 {post.comments.length > 0 ? post.comments.length : ''}</h2>
+      <h2>{t(T.comments)} {post.comments.length > 0 ? post.comments.length : ''}</h2>
       <div className="comments" style={{ marginTop: 0 }}>
         {post.comments.length === 0 && (
-          <div className="comment-row" style={{ color: 'var(--text-dim)' }}>첫 댓글을 남겨보세요.</div>
+          <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.commentEmpty)}</div>
         )}
         {post.comments.map((c) => (
           <div key={c.id} className="comment-row">
@@ -274,7 +315,7 @@ export default function PostClient({ id }: { id: string }) {
             <span className="comment-body">{c.body}</span>
             {(user?.id === c.userId || isAdmin) && (
               <button className="danger comment-delete" disabled={busy} onClick={() => removeComment(c.id)}>
-                삭제
+                {t(T.del)}
               </button>
             )}
           </div>
@@ -283,7 +324,7 @@ export default function PostClient({ id }: { id: string }) {
           <div className="field-row" style={{ marginTop: 12 }}>
             <input
               type="text"
-              placeholder="댓글 남기기"
+              placeholder={t(T.commentPh)}
               value={commentInput}
               maxLength={300}
               onChange={(e) => setCommentInput(e.target.value)}
@@ -291,11 +332,11 @@ export default function PostClient({ id }: { id: string }) {
               style={{ maxWidth: 420 }}
             />
             <button className="secondary" disabled={busy || !commentInput.trim()} onClick={sendComment}>
-              등록
+              {t(T.commentSubmit)}
             </button>
           </div>
         ) : (
-          <div className="comment-row" style={{ color: 'var(--text-dim)' }}>카카오 로그인 후 댓글을 남길 수 있어요.</div>
+          <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.commentLogin)}</div>
         )}
       </div>
     </>
