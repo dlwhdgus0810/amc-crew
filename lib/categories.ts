@@ -106,6 +106,19 @@ export const CATEGORIES: Category[] = [
     locationLabel: { ko: '카페', en: 'Café' },
     locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall' },
   },
+  {
+    slug: 'baking',
+    emoji: '🧁',
+    en: 'BAKING',
+    color: '#00838F',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '베이킹 클래스', en: 'Baking Class' },
+    description: { ko: '같이 구울 사람 모집', en: 'Find people to bake with' },
+    titleLabel: { ko: '만들 것', en: 'What we’re baking' },
+    locationLabel: { ko: '장소', en: 'Place' },
+    locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio' },
+  },
 ];
 
 /** 포스트/구독이 가능한 카테고리 슬러그 (영화 제외) */
