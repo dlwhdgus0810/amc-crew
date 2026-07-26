@@ -261,7 +261,6 @@ export default function PostClient({ id }: { id: string }) {
           <div style={{ marginTop: 8, color: 'var(--text-dim)' }}>“{post.description}”</div>
         )}
         <div style={{ marginTop: 14, fontWeight: 700, color }}>
-          {post.participants.length}
           {post.capacity != null
             ? t(T.peopleCap, { n: post.participants.length, cap: post.capacity })
             : t(T.people, { n: post.participants.length })}
