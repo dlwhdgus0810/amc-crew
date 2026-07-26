@@ -77,6 +77,13 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   PRIMARY KEY (user_id, category)
 );
 
+CREATE TABLE IF NOT EXISTS favorites (
+  user_id text NOT NULL REFERENCES users(id),
+  category text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, category)
+);
+
 CREATE TABLE IF NOT EXISTS category_requests (
   id uuid PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id),

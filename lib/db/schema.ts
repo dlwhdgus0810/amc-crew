@@ -107,6 +107,19 @@ export const subscriptions = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.category] })]
 );
 
+/** 즐겨찾기 — 홈에 먼저 띄울 카테고리. 알림을 받는 subscriptions와는 별개다. */
+export const favorites = pgTable(
+  'favorites',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    category: text('category').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.category] })]
+);
+
 /** 사용자가 제안한 새 카테고리. 관리자가 검토 후 lib/categories.ts에 반영한다. */
 export const categoryRequests = pgTable(
   'category_requests',

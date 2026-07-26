@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, inArray, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
-import { notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
+import { favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
@@ -589,6 +589,22 @@ export async function setSubscription(userId: string, category: string, subscrib
     await db.insert(subscriptions).values({ userId, category }).onConflictDoNothing();
   } else {
     await db.delete(subscriptions).where(and(eq(subscriptions.userId, userId), eq(subscriptions.category, category)));
+  }
+}
+
+/** 즐겨찾기한 카테고리 (홈 노출 순서용) */
+export async function getFavorites(userId: string): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.select().from(favorites).where(eq(favorites.userId, userId));
+  return rows.map((r) => r.category);
+}
+
+export async function setFavorite(userId: string, category: string, on: boolean): Promise<void> {
+  const db = await getDb();
+  if (on) {
+    await db.insert(favorites).values({ userId, category }).onConflictDoNothing();
+  } else {
+    await db.delete(favorites).where(and(eq(favorites.userId, userId), eq(favorites.category, category)));
   }
 }
 
