@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { E, errJson } from '@/lib/apierr';
 import { clearSelections, getSchedule, getSelections, removeUser, setUserSelection } from '@/lib/store';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 
@@ -13,19 +14,19 @@ export const dynamic = 'force-dynamic';
 export async function PUT(req: NextRequest) {
   const user = await getSessionUser();
   if (!isAdmin(user)) {
-    return NextResponse.json({ error: '관리자만 사용할 수 있어요.' }, { status: 403 });
+    return await errJson(E.adminOnly, 403);
   }
 
   const body = await req.json().catch(() => null);
   const userId = typeof body?.userId === 'string' ? body.userId : '';
   const showtimeIds = Array.isArray(body?.showtimeIds) ? body.showtimeIds : null;
   if (!userId || !showtimeIds) {
-    return NextResponse.json({ error: 'userId와 showtimeIds가 필요합니다.' }, { status: 400 });
+    return await errJson(E.userIdShowtimes, 400);
   }
 
   const existing = (await getSelections())[userId];
   if (!existing) {
-    return NextResponse.json({ error: '해당 참여자를 찾을 수 없어요.' }, { status: 404 });
+    return await errJson(E.participantNotFound, 404);
   }
 
   const schedule = await getSchedule();
@@ -42,7 +43,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const user = await getSessionUser();
   if (!isAdmin(user)) {
-    return NextResponse.json({ error: '관리자만 사용할 수 있어요.' }, { status: 403 });
+    return await errJson(E.adminOnly, 403);
   }
 
   const userId = req.nextUrl.searchParams.get('userId');

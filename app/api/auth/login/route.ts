@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const clientId = process.env.KAKAO_REST_API_KEY;
   if (!clientId) {
     return NextResponse.json(
-      { error: 'KAKAO_REST_API_KEY 환경변수가 설정되지 않았어요.' },
+      { error: 'KAKAO_REST_API_KEY is not configured.' },
       { status: 500 }
     );
   }

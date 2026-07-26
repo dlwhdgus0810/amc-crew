@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { E, errJson } from '@/lib/apierr';
 import { setSchedule } from '@/lib/store';
 import { Showtime } from '@/lib/types';
 
@@ -11,12 +12,12 @@ function authorized(req: NextRequest): boolean {
 
 export async function POST(req: NextRequest) {
   if (!authorized(req)) {
-    return NextResponse.json({ error: '관리자 키가 올바르지 않습니다.' }, { status: 401 });
+    return await errJson(E.adminKey, 401);
   }
   const body = await req.json().catch(() => null);
   const schedule = body?.schedule;
   if (!Array.isArray(schedule)) {
-    return NextResponse.json({ error: 'schedule 배열이 필요합니다.' }, { status: 400 });
+    return await errJson(E.scheduleArray, 400);
   }
   const valid = schedule.every(
     (s: Showtime) =>
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       typeof s?.format === 'string'
   );
   if (!valid) {
-    return NextResponse.json({ error: '형식이 올바르지 않은 항목이 있습니다.' }, { status: 400 });
+    return await errJson(E.scheduleShape, 400);
   }
   await setSchedule(schedule);
   return NextResponse.json({ ok: true, count: schedule.length });
