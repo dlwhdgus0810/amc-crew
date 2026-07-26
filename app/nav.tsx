@@ -7,6 +7,7 @@ import { useT } from './i18n';
 
 const T = {
   home: { ko: '홈', en: 'Home' },
+  categories: { ko: '카테고리', en: 'Categories' },
   showtimes: { ko: '시간 고르기', en: 'Showtimes' },
   groups: { ko: '그룹', en: 'Groups' },
   profile: { ko: '프로필', en: 'Profile' },
@@ -54,7 +55,10 @@ export default function NavLinks() {
       .catch(() => {});
   }, [pathname]);
 
-  const links = [{ href: '/', label: t(T.home) }];
+  const links = [
+    { href: '/', label: t(T.home) },
+    { href: '/categories', label: t(T.categories) },
+  ];
   if (pathname.startsWith('/movie')) {
     links.push({ href: '/movie', label: t(T.showtimes) }, { href: '/movie/groups', label: t(T.groups) });
   }

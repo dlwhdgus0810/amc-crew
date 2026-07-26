@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useT } from './i18n';
+import CategoryCard from './category-card';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -12,8 +13,8 @@ const T = {
   profile: { ko: '프로필 →', en: 'Profile →' },
   kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
   loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
-  subscribed: { ko: '구독중', en: 'Subscribed' },
-  subscribe: { ko: '구독', en: 'Subscribe' },
+  loginToFavorite: { ko: '카카오 로그인 후 즐겨찾기할 수 있어요.', en: 'Log in with Kakao to add favourites.' },
+  allCategories: { ko: '전체 카테고리 보기 →', en: 'See all categories →' },
   suggest: {
     ko: '하고 싶은 취미가 없나요? 카테고리 제안하기 →',
     en: 'Missing your hobby? Suggest a category →',
@@ -41,6 +42,7 @@ function KakaoIcon() {
 export default function HubPage() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [subs, setSubs] = useState<Set<string>>(new Set());
+  const [favs, setFavs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const carRef = useRef<HTMLDivElement>(null);
@@ -59,10 +61,12 @@ export default function HubPage() {
     Promise.all([
       fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
+      fetch('/api/favorites').then((r) => r.json()),
     ])
-      .then(([auth, sub]) => {
+      .then(([auth, sub, fav]) => {
         setUser(auth.user ?? null);
         setSubs(new Set(sub.subscriptions ?? []));
+        setFavs(new Set(fav.favorites ?? []));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -90,11 +94,38 @@ export default function HubPage() {
     }
   }
 
+  /** 즐겨찾기는 홈에 먼저 띄우기 위한 것 — 알림과는 무관하다 */
+  async function toggleFav(category: string) {
+    if (!user) {
+      setMsg({ type: 'err', text: t(T.loginToFavorite) });
+      return;
+    }
+    const next = !favs.has(category);
+    setFavs((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(category);
+      else s.delete(category);
+      return s;
+    });
+    const res = await fetch('/api/favorites', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, favorite: next }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setFavs(new Set(data.favorites ?? []));
+    }
+  }
+
   function scroll(dir: number) {
     carRef.current?.scrollBy({ left: dir * 580, behavior: 'smooth' });
   }
 
   if (loading) return <p className="subtitle">{t(T.loading)}</p>;
+
+  // 즐겨찾기가 있으면 홈에는 그것만 — 나머지는 "전체 카테고리"에서 본다
+  const shown = favs.size > 0 ? CATEGORIES.filter((c) => favs.has(c.slug)) : CATEGORIES;
 
   return (
     <>
@@ -125,41 +156,28 @@ export default function HubPage() {
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
       <div className="car" ref={carRef}>
-        {CATEGORIES.map((c, i) => (
-          <Link
+        {shown.map((c) => (
+          <CategoryCard
             key={c.slug}
-            href={c.kind === 'movie' ? '/movie' : `/c/${c.slug}`}
-            className="car-card"
-            style={{ background: c.color, color: c.fg }}
-          >
-            <div className="car-top">
-              <span className="car-idx">
-                0{i + 1} / {c.en}
-              </span>
-              {c.kind === 'posts' && user && (
-                <button
-                  className={`sub-toggle ${subs.has(c.slug) ? 'on' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleSub(c.slug);
-                  }}
-                >
-                  {subs.has(c.slug) ? t(T.subscribed) : t(T.subscribe)}
-                </button>
-              )}
-            </div>
-            <div>
-              <div className="car-name">{t(c.name)}</div>
-              <div className="car-desc">{t(c.description)}</div>
-            </div>
-          </Link>
+            category={c}
+            label={`${String(CATEGORIES.indexOf(c) + 1).padStart(2, '0')} / ${c.en}`}
+            showToggles={Boolean(user)}
+            isFavorite={favs.has(c.slug)}
+            isSubscribed={subs.has(c.slug)}
+            onFavorite={() => toggleFav(c.slug)}
+            onSubscribe={() => toggleSub(c.slug)}
+          />
         ))}
       </div>
       <div className="car-arrows">
-        <Link href="/suggest" className="profile-link" style={{ marginRight: 'auto', alignSelf: 'center' }}>
-          {t(T.suggest)}
-        </Link>
+        <span className="car-links">
+          <Link href="/categories" className="profile-link">
+            {t(T.allCategories)}
+          </Link>
+          <Link href="/suggest" className="profile-link">
+            {t(T.suggest)}
+          </Link>
+        </span>
         <button onClick={() => scroll(-1)} aria-label={t(T.prev)}>
           ←
         </button>
