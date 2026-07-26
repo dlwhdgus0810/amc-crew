@@ -31,7 +31,7 @@ export async function dbGetUser(userId: string) {
  */
 export async function dbUpdateProfile(
   userId: string,
-  patch: { kakaoName?: string; nickname?: string | null; birthday?: string; gender?: string }
+  patch: { kakaoName?: string; nickname?: string | null; birthday?: string; gender?: string; locale?: string }
 ): Promise<UserProfile> {
   const db = await getDb();
   const existing = (await db.select().from(users).where(eq(users.id, userId)))[0];
@@ -41,6 +41,7 @@ export async function dbUpdateProfile(
   let history = existing?.kakaoNameHistory ?? [];
   const birthday = patch.birthday ?? existing?.birthday ?? null;
   const gender = patch.gender ?? existing?.gender ?? null;
+  const locale = patch.locale ?? existing?.locale ?? null;
 
   if (patch.kakaoName !== undefined) {
     kakaoName = patch.kakaoName;
@@ -59,10 +60,10 @@ export async function dbUpdateProfile(
 
   await db
     .insert(users)
-    .values({ id: userId, kakaoName, nickname, kakaoNameHistory: history, birthday, gender })
+    .values({ id: userId, kakaoName, nickname, kakaoNameHistory: history, birthday, gender, locale })
     .onConflictDoUpdate({
       target: users.id,
-      set: { kakaoName, nickname, kakaoNameHistory: history, birthday, gender },
+      set: { kakaoName, nickname, kakaoNameHistory: history, birthday, gender, locale },
     });
 
   return { kakaoName, ...(nickname ? { nickname } : {}), kakaoNameHistory: history };

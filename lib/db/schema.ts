@@ -8,6 +8,7 @@ export const users = pgTable('users', {
   kakaoNameHistory: jsonb('kakao_name_history').$type<{ name: string; at: string }[]>().notNull().default([]),
   birthday: text('birthday'), // YYYY-MM-DD, null이면 온보딩 미완료
   gender: text('gender'), // 'male' | 'female', null이면 온보딩 미완료
+  locale: text('locale'), // 'ko' | 'en', null이면 기본(한국어) — 알림 문구도 이 언어로 만든다
   // 카카오톡 "나에게 보내기" 알림용 토큰 (로그인마다 갱신)
   kakaoAccessToken: text('kakao_access_token'),
   kakaoTokenExpiresAt: timestamp('kakao_token_expires_at', { withTimezone: true }),

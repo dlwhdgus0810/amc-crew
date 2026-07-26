@@ -1,15 +1,26 @@
 import type { MetadataRoute } from 'next';
+import { getLocale } from '@/lib/locale';
+import { pick } from '@/lib/i18n';
+
+const T = {
+  name: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?' },
+  description: {
+    ko: '영화·피클볼·볼링·축구·밥친구·카페 — 취미 모임 만들고 같이 놀 사람 모으기',
+    en: 'Movies, pickleball, bowling, soccer, meals, cafés — create a meetup and find people to join',
+  },
+};
 
 /**
  * PWA 매니페스트 (Next가 /manifest.webmanifest로 서빙하고 link 태그도 자동 삽입).
  * 홈 화면에 추가하면 주소창 없는 앱처럼 열린다.
  */
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const locale = await getLocale();
   return {
-    name: 'Kansas Korean — 같이 놀 사람?',
+    name: pick(locale, T.name),
     short_name: 'Kansas Korean', // 홈 화면 아이콘 아래 표시 (길면 잘린다)
-    description: '영화·피클볼·볼링·축구 — 취미 모임 만들고 같이 놀 사람 모으기',
-    lang: 'ko',
+    description: pick(locale, T.description),
+    lang: locale,
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff', // 스플래시 배경 — 앱 배경(--bg)과 맞춘다
