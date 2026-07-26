@@ -3,6 +3,24 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
+import { useT } from './i18n';
+
+const T = {
+  loading: { ko: '불러오는 중…', en: 'Loading…' },
+  statement1: { ko: '취미로 모이는 크루.', en: 'A crew that gathers around hobbies.' },
+  statement2: { ko: '오늘 뭐 하고 놀지, 같이 정합니다.', en: 'Let’s decide together what to do today.' },
+  profile: { ko: '프로필 →', en: 'Profile →' },
+  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
+  loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
+  subscribed: { ko: '구독중', en: 'Subscribed' },
+  subscribe: { ko: '구독', en: 'Subscribe' },
+  suggest: {
+    ko: '하고 싶은 취미가 없나요? 카테고리 제안하기 →',
+    en: 'Missing your hobby? Suggest a category →',
+  },
+  prev: { ko: '이전', en: 'Previous' },
+  next: { ko: '다음', en: 'Next' },
+};
 
 interface SessionUser {
   id: string;
@@ -26,6 +44,7 @@ export default function HubPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const carRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -50,7 +69,7 @@ export default function HubPage() {
 
   async function toggleSub(category: string) {
     if (!user) {
-      setMsg({ type: 'err', text: '카카오 로그인 후 구독할 수 있어요.' });
+      setMsg({ type: 'err', text: t(T.loginToSubscribe) });
       return;
     }
     const next = !subs.has(category);
@@ -75,14 +94,14 @@ export default function HubPage() {
     carRef.current?.scrollBy({ left: dir * 580, behavior: 'smooth' });
   }
 
-  if (loading) return <p className="subtitle">불러오는 중…</p>;
+  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   return (
     <>
       <div className="statement">
-        취미로 모이는 크루.
+        {t(T.statement1)}
         <br />
-        <span className="dim2">오늘 뭐 하고 놀지, 같이 정합니다.</span>
+        <span className="dim2">{t(T.statement2)}</span>
       </div>
       {/* 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다 */}
       <div className="statement-meta">{CATEGORIES.map((c) => c.en).join(' — ')}</div>
@@ -92,13 +111,13 @@ export default function HubPage() {
           <>
             <span style={{ fontSize: 15, fontWeight: 600 }}>{user.name}</span>
             <Link href="/profile" className="profile-link">
-              프로필 →
+              {t(T.profile)}
             </Link>
           </>
         ) : (
           <a className="kakao-btn" href="/api/auth/login">
             <KakaoIcon />
-            카카오 로그인
+            {t(T.kakaoLogin)}
           </a>
         )}
       </div>
@@ -126,25 +145,25 @@ export default function HubPage() {
                     toggleSub(c.slug);
                   }}
                 >
-                  {subs.has(c.slug) ? '구독중' : '구독'}
+                  {subs.has(c.slug) ? t(T.subscribed) : t(T.subscribe)}
                 </button>
               )}
             </div>
             <div>
-              <div className="car-name">{c.name}</div>
-              <div className="car-desc">{c.description}</div>
+              <div className="car-name">{t(c.name)}</div>
+              <div className="car-desc">{t(c.description)}</div>
             </div>
           </Link>
         ))}
       </div>
       <div className="car-arrows">
         <Link href="/suggest" className="profile-link" style={{ marginRight: 'auto', alignSelf: 'center' }}>
-          하고 싶은 취미가 없나요? 카테고리 제안하기 →
+          {t(T.suggest)}
         </Link>
-        <button onClick={() => scroll(-1)} aria-label="이전">
+        <button onClick={() => scroll(-1)} aria-label={t(T.prev)}>
           ←
         </button>
-        <button onClick={() => scroll(1)} aria-label="다음">
+        <button onClick={() => scroll(1)} aria-label={t(T.next)}>
           →
         </button>
       </div>

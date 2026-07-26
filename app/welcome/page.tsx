@@ -2,6 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useT } from '../i18n';
+
+const T = {
+  loading: { ko: '불러오는 중…', en: 'Loading…' },
+  welcome: { ko: '환영해요, {name}님! 👋', en: 'Welcome, {name}! 👋' },
+  subtitle: {
+    ko: '시작하기 전에 생년월일과 성별을 알려주세요. 프로필에서 언제든 수정할 수 있어요.',
+    en: 'Before you start, tell us your date of birth and gender. You can change these anytime in your profile.',
+  },
+  birthday: { ko: '생년월일', en: 'Date of birth' },
+  gender: { ko: '성별', en: 'Gender' },
+  male: { ko: '남성', en: 'Male' },
+  female: { ko: '여성', en: 'Female' },
+  start: { ko: '시작하기', en: 'Get started' },
+  saving: { ko: '저장 중…', en: 'Saving…' },
+  saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
+};
 
 /** 온보딩 완료 후 복귀할 경로 (?next=, 사이트 내 경로만) — 공유 링크로 유입된 신규 사용자용 */
 function nextPath(): string {
@@ -18,6 +35,7 @@ export default function WelcomePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const t = useT();
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -44,24 +62,24 @@ export default function WelcomePage() {
         body: JSON.stringify({ birthday, gender }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? '저장 실패');
+      if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
       router.replace(nextPath());
     } catch (e) {
-      setErr(e instanceof Error ? e.message : '저장 실패');
+      setErr(e instanceof Error ? e.message : t(T.saveFailed));
       setSaving(false);
     }
   }
 
-  if (loading) return <p className="subtitle">불러오는 중…</p>;
+  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   return (
     <>
-      <h1>환영해요, {name}님! 👋</h1>
-      <p className="subtitle">시작하기 전에 생년월일과 성별을 알려주세요. 프로필에서 언제든 수정할 수 있어요.</p>
+      <h1>{t(T.welcome, { name })}</h1>
+      <p className="subtitle">{t(T.subtitle)}</p>
 
       <div className="card">
         <div style={{ marginBottom: 18 }}>
-          <div className="field-label">생년월일</div>
+          <div className="field-label">{t(T.birthday)}</div>
           <input
             type="date"
             value={birthday}
@@ -71,13 +89,13 @@ export default function WelcomePage() {
           />
         </div>
         <div>
-          <div className="field-label">성별</div>
+          <div className="field-label">{t(T.gender)}</div>
           <div className="seg-group">
             <button className={`seg ${gender === 'male' ? 'on' : ''}`} onClick={() => setGender('male')}>
-              남성
+              {t(T.male)}
             </button>
             <button className={`seg ${gender === 'female' ? 'on' : ''}`} onClick={() => setGender('female')}>
-              여성
+              {t(T.female)}
             </button>
           </div>
         </div>
@@ -86,7 +104,7 @@ export default function WelcomePage() {
       {err && <div className="msg err">{err}</div>}
 
       <button style={{ width: '100%' }} disabled={saving || !birthday || !gender} onClick={submit}>
-        {saving ? '저장 중…' : '시작하기'}
+        {saving ? t(T.saving) : t(T.start)}
       </button>
     </>
   );
