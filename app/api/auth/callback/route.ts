@@ -12,6 +12,7 @@ import {
 import { updateProfile } from '@/lib/store';
 import { recordTalkMessageConsent, saveKakaoTokens, sendKakaoMemos, TalkMessageStatus } from '@/lib/kakao';
 import { dbGetUser } from '@/lib/db/users';
+import { notifyAdminsNewUser } from '@/lib/db/signup';
 import { isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, Msg, pick, toLocale } from '@/lib/i18n';
 
 const T = {
@@ -95,7 +96,9 @@ export async function GET(req: NextRequest) {
   // 카카오 닉네임을 프로필에 기록하고 토큰을 보관 (카톡 알림용). 실패해도 로그인은 진행.
   let consentStatus: TalkMessageStatus = 'unknown';
   let savedLocale: string | null = null;
+  let isNewUser = false;
   try {
+    isNewUser = !(await dbGetUser(id)); // upsert 전에 봐야 첫 로그인인지 알 수 있다
     await updateProfile(id, { kakaoName: name });
     await saveKakaoTokens(id, token);
     savedLocale = (await dbGetUser(id))?.locale ?? null; // 다른 기기에서도 저장한 언어로 열리도록
@@ -105,6 +108,9 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.error('[kakao] profile/token upsert failed:', e);
   }
+
+  // 가입(첫 로그인)은 관리자에게 알린다 — 실패해도 로그인은 진행
+  if (isNewUser) await notifyAdminsNewUser({ userId: id, name, origin });
 
   // 재동의로 켜진 경우에만 확인 메모 1건 (평범한 재로그인에는 보내지 않는다)
   if (isConsentFlow && consentStatus === 'on') {
