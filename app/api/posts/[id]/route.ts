@@ -4,6 +4,7 @@ import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, updatePost } from '@/lib/db/posts';
 import { getCategory } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
+import { todayLocal } from '@/lib/dates';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (startTime >= endTime) {
     return NextResponse.json({ error: '종료 시간은 시작 시간보다 늦어야 해요.' }, { status: 400 });
+  }
+  // 지난 날짜로 옮기는 것만 막는다 — 이미 끝난 모임의 메모·장소를 고치는 건 그대로 허용
+  if (date < todayLocal() && date !== post.date) {
+    return NextResponse.json({ error: '지난 날짜로는 옮길 수 없어요.' }, { status: 400 });
   }
   if (!location || location.length > 100) {
     return NextResponse.json({ error: '장소는 1~100자로 입력해주세요.' }, { status: 400 });

@@ -5,7 +5,7 @@ import { resolveDisplayName } from '../store';
 import { getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendKakaoMemos } from '../kakao';
-import { pastCutoff, todayLocal } from '../dates';
+import { isPastSlot, pastCutoff, todayLocal } from '../dates';
 
 export interface PostView {
   id: string;
@@ -80,7 +80,6 @@ export async function getPostView(postId: string): Promise<PostView | null> {
 async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<PostView[]> {
   if (postRows.length === 0) return [];
   const db = await getDb();
-  const { date: cutDate, time: cutTime } = pastCutoff();
   const postIds = postRows.map((p) => p.id);
   const userRows = await db.select().from(users);
   const userById = new Map(userRows.map((u) => [u.id, u]));
@@ -122,7 +121,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<Post
     location: p.location,
     description: p.description,
     capacity: p.capacity,
-    isPast: p.date < cutDate || (p.date === cutDate && p.endTime <= cutTime),
+    isPast: isPastSlot(p.date, p.endTime),
     createdAt: p.createdAt.toISOString(),
     participants: byPost.get(p.id) ?? [],
     comments: commentsByPost.get(p.id) ?? [],

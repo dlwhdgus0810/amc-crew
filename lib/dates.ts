@@ -31,6 +31,12 @@ export function pastCutoff(): { date: string; time: string } {
   };
 }
 
+/** (날짜, 종료시각)이 이미 "지난 모임" 기준을 넘겼는지 — 목록 분류와 생성 검증이 같은 기준을 쓴다 */
+export function isPastSlot(date: string, endTime: string): boolean {
+  const { date: cutDate, time: cutTime } = pastCutoff();
+  return date < cutDate || (date === cutDate && endTime <= cutTime);
+}
+
 // YYYY-MM-DD 문자열 연산은 UTC 기준으로 처리한다 (로컬 시간대가 끼면 날짜가 하루씩 밀린다)
 function toUtc(date: string): Date {
   const [y, m, d] = date.split('-').map(Number);

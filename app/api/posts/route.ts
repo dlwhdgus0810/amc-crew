@@ -6,6 +6,7 @@ import { createPost, listPosts } from '@/lib/db/posts';
 import { createRecurringRule } from '@/lib/db/recurring';
 import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
+import { isPastSlot } from '@/lib/dates';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,11 @@ export async function POST(req: NextRequest) {
   }
   if (startTime >= endTime) {
     return NextResponse.json({ error: '종료 시간은 시작 시간보다 늦어야 해요.' }, { status: 400 });
+  }
+  // 날짜·시간 오타 방어 — 만들자마자 "지난 모임"으로 들어가는 걸 막는다
+  // (목록 분류와 같은 기준이라 종료 후 유예 시간까지는 허용된다)
+  if (isPastSlot(date, endTime)) {
+    return NextResponse.json({ error: '이미 지난 시간으로는 모임을 만들 수 없어요.' }, { status: 400 });
   }
   if (!location || location.length > 100) {
     return NextResponse.json({ error: '장소는 1~100자로 입력해주세요.' }, { status: 400 });
