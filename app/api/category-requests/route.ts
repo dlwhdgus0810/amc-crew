@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { createCategoryRequest, listCategoryRequests } from '@/lib/db/category-requests';
-import { CATEGORIES } from '@/lib/categories';
+import { isExistingCategoryName } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ const HEX = /^#[0-9a-f]{6}$/i;
 export async function GET(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
-    return NextResponse.json({ error: '카카오 로그인이 필요해요.' }, { status: 401 });
+    return await errJson(E.loginRequired, 401);
   }
   const mineOnly = req.nextUrl.searchParams.get('mine') === '1' || !isAdmin(user);
   const requests = await listCategoryRequests(mineOnly ? user.id : undefined);
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
-    return NextResponse.json({ error: '카카오 로그인이 필요해요.' }, { status: 401 });
+    return await errJson(E.loginRequired, 401);
   }
 
   const body = await req.json().catch(() => null);
@@ -33,19 +34,19 @@ export async function POST(req: NextRequest) {
   const featureRequest = typeof body?.featureRequest === 'string' ? body.featureRequest.trim() : '';
 
   if (!name || name.length > 20) {
-    return NextResponse.json({ error: '카테고리 이름은 1~20자로 입력해주세요.' }, { status: 400 });
+    return await errJson(E.catName, 400);
   }
   if (!HEX.test(color)) {
-    return NextResponse.json({ error: '색상을 골라주세요.' }, { status: 400 });
+    return await errJson(E.catColor, 400);
   }
   if (!description || description.length > 50) {
-    return NextResponse.json({ error: '부제목은 1~50자로 입력해주세요.' }, { status: 400 });
+    return await errJson(E.catDesc, 400);
   }
   if (featureRequest.length > 1000) {
-    return NextResponse.json({ error: '원하는 기능은 1000자 이하로 입력해주세요.' }, { status: 400 });
+    return await errJson(E.catFeature, 400);
   }
-  if (CATEGORIES.some((c) => c.name === name || c.slug === name)) {
-    return NextResponse.json({ error: '이미 있는 카테고리예요.' }, { status: 409 });
+  if (isExistingCategoryName(name)) {
+    return await errJson(E.catExists, 409);
   }
 
   await ensureUser(user);
