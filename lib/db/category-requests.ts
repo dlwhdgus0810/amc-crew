@@ -4,6 +4,27 @@ import { categoryRequests, notifications, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { sendKakaoMemos } from '../kakao';
 import { adminIds } from '../auth';
+import { pick, toLocale } from '../i18n';
+
+const N = {
+  newRequest: { ko: '💡 새 카테고리 제안: {name} — {by}', en: '💡 New category suggestion: {name} — {by}' },
+  btnReview: { ko: '제안 검토하기', en: 'Review it' },
+  approved: { ko: '승인됐어요', en: 'was approved' },
+  rejected: { ko: '반려됐어요', en: 'was declined' },
+  verdict: {
+    ko: '💡 제안한 카테고리 "{name}"이(가) {verdict}.{note}',
+    en: '💡 Your category suggestion “{name}” {verdict}.{note}',
+  },
+  note: { ko: ' — {text}', en: ' — {text}' },
+  btnMine: { ko: '내 제안 보기', en: 'View my suggestions' },
+};
+
+/** 수신자 언어 (users.locale, 없으면 기본) */
+async function localeOf(userId: string) {
+  const db = await getDb();
+  const row = (await db.select({ locale: users.locale }).from(users).where(eq(users.id, userId)))[0];
+  return toLocale(row?.locale);
+}
 
 export type RequestStatus = 'pending' | 'approved' | 'rejected';
 
@@ -90,12 +111,20 @@ export async function createCategoryRequest(input: {
       ? (await db.select({ id: users.id }).from(users).where(inArray(users.id, candidates))).map((u) => u.id)
       : [];
   if (recipients.length > 0) {
-    const message = `💡 새 카테고리 제안: ${input.name} — ${input.userName}`;
     try {
-      await db.insert(notifications).values(
-        recipients.map((userId) => ({ id: crypto.randomUUID(), userId, postId: null, message }))
-      );
-      await sendKakaoMemos(recipients, message, `${input.origin}/admin`, '제안 검토하기');
+      // 관리자가 여러 명이면 각자의 언어로 (보통 1명이라 순차 처리로 충분)
+      const rows = await db
+        .select({ id: users.id, locale: users.locale })
+        .from(users)
+        .where(inArray(users.id, recipients));
+      for (const r of rows) {
+        const locale = toLocale(r.locale);
+        const message = pick(locale, N.newRequest, { name: input.name, by: input.userName });
+        await db
+          .insert(notifications)
+          .values({ id: crypto.randomUUID(), userId: r.id, postId: null, message });
+        await sendKakaoMemos([r.id], message, `${input.origin}/admin`, pick(locale, N.btnReview));
+      }
     } catch (e) {
       console.error('[category-request] admin notify failed:', e);
     }
@@ -118,15 +147,17 @@ export async function reviewCategoryRequest(input: {
     .set({ status: input.status, adminNote: input.adminNote ?? null })
     .where(eq(categoryRequests.id, input.id));
 
-  const verdict = input.status === 'approved' ? '승인됐어요' : '반려됐어요';
-  const message = `💡 제안한 카테고리 "${input.requestName}"이(가) ${verdict}.${
-    input.adminNote ? ` — ${input.adminNote}` : ''
-  }`;
+  const locale = await localeOf(input.requesterId);
+  const message = pick(locale, N.verdict, {
+    name: input.requestName,
+    verdict: pick(locale, input.status === 'approved' ? N.approved : N.rejected),
+    note: input.adminNote ? pick(locale, N.note, { text: input.adminNote }) : '',
+  });
   try {
     await db
       .insert(notifications)
       .values({ id: crypto.randomUUID(), userId: input.requesterId, postId: null, message });
-    await sendKakaoMemos([input.requesterId], message, `${input.origin}/suggest`, '내 제안 보기');
+    await sendKakaoMemos([input.requesterId], message, `${input.origin}/suggest`, pick(locale, N.btnMine));
   } catch (e) {
     console.error('[category-request] requester notify failed:', e);
   }

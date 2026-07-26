@@ -2,10 +2,12 @@ import { and, asc, desc, eq, gt, inArray, like, lt, lte, ne, or, sql } from 'dri
 import { getDb } from './index';
 import { notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
-import { getCategory } from '../categories';
+import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendKakaoMemos } from '../kakao';
 import { isPastSlot, pastCutoff, todayLocal } from '../dates';
+import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
+import { dateLabelShort, timeLabel } from '../datefmt';
 
 export interface PostView {
   id: string;
@@ -148,11 +150,20 @@ export async function notifyComment(
   if (recipients.length === 0) return;
 
   const snippet = body.length > 60 ? `${body.slice(0, 60)}…` : body;
-  const message = `💬 ${describeForNotification(post.category, '새 댓글', post.date, post.startTime, post.location, post.title)} — ${commenterName}: ${snippet}`;
-  await db.insert(notifications).values(
-    recipients.map((userId) => ({ id: crypto.randomUUID(), userId, postId: post.id, message }))
+  const notice = await buildNotice(
+    recipients,
+    (locale) =>
+      `💬 ${pick(locale, N.commentLine, {
+        text: describeForNotification(post.category, N.comment, post.date, post.startTime, post.location, post.title, locale),
+        name: commenterName,
+        body: snippet,
+      })}`,
+    N.btnComment
   );
-  await sendKakaoMemos(recipients, message, `${origin}/p/${post.id}`, '댓글 보기');
+  await db.insert(notifications).values(
+    notice.rows.map((r) => ({ id: crypto.randomUUID(), userId: r.userId, postId: post.id, message: r.message }))
+  );
+  await sendNotice(notice, `${origin}/p/${post.id}`);
 }
 
 export async function getComment(commentId: string) {
@@ -165,28 +176,89 @@ export async function deleteComment(commentId: string): Promise<void> {
   await db.delete(postComments).where(eq(postComments.id, commentId));
 }
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
 /** 리마인더 알림 식별용 접두사 — 중복 발송 방지에 쓰이므로 메시지 앞부분을 바꾸지 말 것 */
 const REMINDER_PREFIX = '⏰';
 
-/** 알림 메시지용 모임 설명: "🥒 피클볼 {label} · 8/1(토) 오후 6:00 · OP코트" (제목이 있으면 〈제목〉 삽입) */
+/** 알림 문구 조각 (수신자 언어로 렌더된다) */
+const N = {
+  newPost: { ko: '새 모임', en: 'new meetup' },
+  weekly: { ko: '이번 주 모임', en: 'this week' },
+  updated: { ko: '모임 변경', en: 'updated' },
+  cancelled: { ko: '모임 취소', en: 'cancelled' },
+  comment: { ko: '새 댓글', en: 'new comment' },
+  today: { ko: '오늘 모임', en: 'today' },
+  byActor: { ko: '{text} — {name}', en: '{text} — {name}' },
+  commentLine: { ko: '{text} — {name}: {body}', en: '{text} — {name}: {body}' },
+  btnPost: { ko: '모임 보기', en: 'View meetup' },
+  btnComment: { ko: '댓글 보기', en: 'View comments' },
+  btnOther: { ko: '다른 모임 보기', en: 'See other meetups' },
+};
+
+/** 알림 메시지용 모임 설명: "🥒 피클볼 새 모임 · 8/1(토) 오후 6:00 · OP코트" (제목이 있으면 〈제목〉 삽입) */
 function describeForNotification(
   category: string,
-  label: string,
+  label: Msg,
   date: string,
   startTime: string,
   location: string,
-  title?: string | null
+  title: string | null | undefined,
+  locale: Locale
 ): string {
   const cat = getCategory(category);
-  const [y, m, d] = date.split('-').map(Number);
-  const wd = WEEKDAYS[new Date(y, m - 1, d).getDay()];
-  const [h, min] = startTime.split(':').map(Number);
-  const ampm = h < 12 ? '오전' : '오후';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
   const titlePart = title ? ` 〈${title}〉` : '';
-  return `${cat?.emoji ?? ''} ${cat?.name ?? category} ${label}${titlePart} · ${m}/${d}(${wd}) ${ampm} ${h12}:${String(min).padStart(2, '0')} · ${location}`;
+  const when = `${dateLabelShort(date, locale)} ${timeLabel(startTime, locale)}`;
+  return `${cat?.emoji ?? ''} ${catName(category, locale)} ${pick(locale, label)}${titlePart} · ${when} · ${location}`;
+}
+
+interface Notice {
+  /** 인앱 알림 행 (수신자마다 자기 언어의 문구) */
+  rows: { userId: string; message: string }[];
+  /** 카톡 발송 단위 — 같은 언어끼리 묶는다 */
+  groups: { userIds: string[]; message: string; button: string }[];
+}
+
+/**
+ * 수신자를 언어별로 묶어 각자의 언어로 문구를 만든다.
+ * users 행이 없는 수신자(이론상 없음)는 기본 언어로 취급한다.
+ */
+async function buildNotice(
+  recipients: string[],
+  render: (locale: Locale) => string,
+  button: Msg = N.btnPost
+): Promise<Notice> {
+  if (recipients.length === 0) return { rows: [], groups: [] };
+  const db = await getDb();
+  const rows = await db
+    .select({ id: users.id, locale: users.locale })
+    .from(users)
+    .where(inArray(users.id, recipients));
+
+  const byLocale = new Map<Locale, string[]>();
+  const known = new Set(rows.map((r) => r.id));
+  for (const r of rows) {
+    const locale = toLocale(r.locale);
+    if (!byLocale.has(locale)) byLocale.set(locale, []);
+    byLocale.get(locale)!.push(r.id);
+  }
+  const missing = recipients.filter((id) => !known.has(id));
+  if (missing.length > 0) {
+    if (!byLocale.has(DEFAULT_LOCALE)) byLocale.set(DEFAULT_LOCALE, []);
+    byLocale.get(DEFAULT_LOCALE)!.push(...missing);
+  }
+
+  const groups = [...byLocale].map(([locale, userIds]) => ({
+    userIds,
+    message: render(locale),
+    button: pick(locale, button),
+  }));
+  return { rows: groups.flatMap((g) => g.userIds.map((userId) => ({ userId, message: g.message }))), groups };
+}
+
+/** 언어 그룹별로 카톡 메모 발송 */
+async function sendNotice(notice: Notice, linkUrl: string): Promise<void> {
+  for (const g of notice.groups) {
+    await sendKakaoMemos(g.userIds, g.message, linkUrl, g.button);
+  }
 }
 
 /**
@@ -206,7 +278,7 @@ export async function createPost(input: {
   description?: string;
   capacity?: number;
   recurringRuleId?: string; // 정기 모임 규칙에서 생성된 회차면 규칙 id
-  label?: string; // 알림 문구 ('새 모임' 기본, 정기 모임은 '이번 주 모임')
+  label?: Msg; // 알림 문구 (기본 '새 모임', 정기 모임은 '이번 주 모임')
   origin?: string; // 카톡 알림의 "모임 보기" 링크 base URL (요청 origin)
 }): Promise<string> {
   const db = await getDb();
@@ -217,7 +289,22 @@ export async function createPost(input: {
     .from(subscriptions)
     .where(and(eq(subscriptions.category, input.category), ne(subscriptions.userId, input.authorId)));
 
-  const message = `${describeForNotification(input.category, input.label ?? '새 모임', input.date, input.startTime, input.location, input.title)} — ${input.authorName}`;
+  const notice = await buildNotice(
+    subscriberRows.map((r) => r.userId),
+    (locale) =>
+      pick(locale, N.byActor, {
+        text: describeForNotification(
+          input.category,
+          input.label ?? N.newPost,
+          input.date,
+          input.startTime,
+          input.location,
+          input.title,
+          locale
+        ),
+        name: input.authorName,
+      })
+  );
 
   const postValues = {
     id: postId,
@@ -233,11 +320,11 @@ export async function createPost(input: {
     description: input.description ?? null,
     capacity: input.capacity ?? null,
   };
-  const notificationValues = subscriberRows.map((s) => ({
+  const notificationValues = notice.rows.map((r) => ({
     id: crypto.randomUUID(),
-    userId: s.userId,
+    userId: r.userId,
     postId,
-    message,
+    message: r.message,
   }));
 
   const anyDb = db as any;
@@ -260,7 +347,7 @@ export async function createPost(input: {
 
   // 구독자에게 카카오톡 "나에게 보내기" 발송 (토큰 없는 사용자는 인앱 알림만)
   if (input.origin && notificationValues.length > 0) {
-    await sendKakaoMemos(notificationValues.map((n) => n.userId), message, `${input.origin}/p/${postId}`);
+    await sendNotice(notice, `${input.origin}/p/${postId}`);
   }
   return postId;
 }
@@ -307,7 +394,20 @@ export async function updatePost(input: {
 }): Promise<void> {
   const db = await getDb();
   const recipients = await participantIdsExcept(input.postId, input.actorId);
-  const message = `${describeForNotification(input.category, '모임 변경', input.date, input.startTime, input.location, input.title)} — ${input.actorName}`;
+  const notice = await buildNotice(recipients, (locale) =>
+    pick(locale, N.byActor, {
+      text: describeForNotification(
+        input.category,
+        N.updated,
+        input.date,
+        input.startTime,
+        input.location,
+        input.title,
+        locale
+      ),
+      name: input.actorName,
+    })
+  );
 
   const set = {
     title: input.title,
@@ -319,11 +419,11 @@ export async function updatePost(input: {
     description: input.description,
     capacity: input.capacity,
   };
-  const notificationValues = recipients.map((userId) => ({
+  const notificationValues = notice.rows.map((r) => ({
     id: crypto.randomUUID(),
-    userId,
+    userId: r.userId,
     postId: input.postId,
-    message,
+    message: r.message,
   }));
 
   const anyDb = db as any;
@@ -339,7 +439,7 @@ export async function updatePost(input: {
   }
 
   if (input.origin && recipients.length > 0) {
-    await sendKakaoMemos(recipients, message, `${input.origin}/p/${input.postId}`);
+    await sendNotice(notice, `${input.origin}/p/${input.postId}`);
   }
 }
 
@@ -355,12 +455,20 @@ export async function deletePost(
 ): Promise<void> {
   const db = await getDb();
   const recipients = await participantIdsExcept(post.id, actorId);
-  const message = `${describeForNotification(post.category, '모임 취소', post.date, post.startTime, post.location, post.title)} — ${actorName}`;
-  const notificationValues = recipients.map((userId) => ({
+  const notice = await buildNotice(
+    recipients,
+    (locale) =>
+      pick(locale, N.byActor, {
+        text: describeForNotification(post.category, N.cancelled, post.date, post.startTime, post.location, post.title, locale),
+        name: actorName,
+      }),
+    N.btnOther
+  );
+  const notificationValues = notice.rows.map((r) => ({
     id: crypto.randomUUID(),
-    userId,
+    userId: r.userId,
     postId: null,
-    message,
+    message: r.message,
   }));
 
   const anyDb = db as any;
@@ -378,7 +486,7 @@ export async function deletePost(
   // 취소된 모임은 상세 페이지가 사라지므로 카테고리 피드로 링크
   if (origin && recipients.length > 0) {
     // 취소된 모임은 상세 페이지가 없으므로 목록으로 보낸다
-    await sendKakaoMemos(recipients, message, `${origin}/c/${post.category}`, '다른 모임 보기');
+    await sendNotice(notice, `${origin}/c/${post.category}`);
   }
 }
 
@@ -431,11 +539,15 @@ export async function sendTodayReminders(
     if (userIds.length === 0) continue;
     recipients += userIds.length;
     sentPosts++;
-    const message = `${REMINDER_PREFIX} ${describeForNotification(post.category, '오늘 모임', post.date, post.startTime, post.location, post.title)}`;
-    await db.insert(notifications).values(
-      userIds.map((userId) => ({ id: crypto.randomUUID(), userId, postId: post.id, message }))
+    const notice = await buildNotice(
+      userIds,
+      (locale) =>
+        `${REMINDER_PREFIX} ${describeForNotification(post.category, N.today, post.date, post.startTime, post.location, post.title, locale)}`
     );
-    await sendKakaoMemos(userIds, message, `${origin}/p/${post.id}`);
+    await db.insert(notifications).values(
+      notice.rows.map((r) => ({ id: crypto.randomUUID(), userId: r.userId, postId: post.id, message: r.message }))
+    );
+    await sendNotice(notice, `${origin}/p/${post.id}`);
   }
   return { posts: sentPosts, recipients, skipped };
 }
