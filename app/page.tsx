@@ -2,9 +2,25 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useT } from './i18n';
 import CategoryCard from './category-card';
+import SortableCategoryCard from './sortable-card';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -16,8 +32,8 @@ const T = {
   loginToFavorite: { ko: '카카오 로그인 후 즐겨찾기할 수 있어요.', en: 'Log in with Kakao to add favourites.' },
   allCategories: { ko: '전체 카테고리 보기 →', en: 'See all categories →' },
   dragHint: {
-    ko: '⠿ 을 끌어서 즐겨찾기 순서를 바꿀 수 있어요.',
-    en: 'Drag ⠿ to reorder your favourites.',
+    ko: '⠿ 을 끌어서 즐겨찾기 순서를 바꿀 수 있어요. 키보드로는 ⠿에서 스페이스를 누른 뒤 방향키로 옮기세요.',
+    en: 'Drag ⠿ to reorder your favourites, or focus ⠿ and press Space, then use the arrow keys.',
   },
   reorder: { ko: '순서 바꾸기', en: 'Reorder' },
   suggest: {
@@ -51,21 +67,9 @@ export default function HubPage() {
   const [favList, setFavList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const [dragging, setDragging] = useState<string | null>(null);
   const carRef = useRef<HTMLDivElement>(null);
-  const favRef = useRef<string[]>([]);
-  const edgeRef = useRef(0);
-  // 끄는 중인 카드는 ref로도 들고 있는다 — 포인터 이벤트가 리렌더보다 먼저 와도 최신 값이 필요하다
-  const dragRef = useRef<string | null>(null);
-  const stopDragRef = useRef<(() => void) | null>(null);
   const t = useT();
   const favs = useMemo(() => new Set(favList), [favList]);
-
-  /** 드래그 중에는 리렌더보다 포인터 이벤트가 빨라서 최신 목록을 ref로도 같이 들고 있어야 한다 */
-  function applyFavs(next: string[]) {
-    favRef.current = next;
-    setFavList(next);
-  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -85,7 +89,7 @@ export default function HubPage() {
       .then(([auth, sub, fav]) => {
         setUser(auth.user ?? null);
         setSubs(new Set(sub.subscriptions ?? []));
-        applyFavs(fav.favorites ?? []);
+        setFavList(fav.favorites ?? []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -120,7 +124,7 @@ export default function HubPage() {
       return;
     }
     const next = !favs.has(category);
-    applyFavs(next ? [...favRef.current, category] : favRef.current.filter((c) => c !== category));
+    setFavList((prev) => (next ? [...prev, category] : prev.filter((c) => c !== category)));
     const res = await fetch('/api/favorites', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -128,77 +132,38 @@ export default function HubPage() {
     });
     if (res.ok) {
       const data = await res.json();
-      applyFavs(data.favorites ?? []);
+      setFavList(data.favorites ?? []);
     }
   }
 
   /**
-   * 손잡이를 끌어 즐겨찾기 순서를 바꾼다.
-   * 마우스와 터치를 함께 다루려고 HTML5 드래그 대신 포인터 이벤트를 쓴다.
+   * 즐겨찾기 순서 바꾸기 — 손잡이(⠿)를 끌거나, 손잡이에 포커스를 두고
+   * 스페이스로 집어 방향키로 옮긴다 (키보드 조작은 dnd-kit이 제공).
    */
-  // 끄는 동안은 window에서 듣는다 — 카드 순서가 바뀌면 손잡이 DOM이 옮겨져
-  // setPointerCapture가 풀리고 pointerup을 놓친다.
-  // 등록도 pointerdown 안에서 바로 한다 (useEffect는 페인트 뒤라 빠른 드래그를 놓친다).
-  function startDrag(slug: string) {
-    return (e: React.PointerEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragRef.current = slug;
-      setDragging(slug);
+  const sensors = useSensors(
+    // 4px 이상 움직여야 드래그로 본다 — 손잡이를 그냥 눌렀을 때 오작동하지 않게
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
-      const onMove = (e: PointerEvent) => {
-        const slug = dragRef.current;
-        if (!slug) return;
-        // 캐러셀 가장자리에 오면 그쪽으로 스크롤한다
-        const box = carRef.current?.getBoundingClientRect();
-        edgeRef.current = !box ? 0 : e.clientX < box.left + 70 ? -1 : e.clientX > box.right - 70 ? 1 : 0;
+  async function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
 
-        const over = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('.car-card')
-          ?.dataset.slug;
-        if (!over || over === slug) return;
-        const prev = favRef.current;
-        const from = prev.indexOf(slug);
-        const to = prev.indexOf(over);
-        if (from < 0 || to < 0) return;
-        const next = prev.slice();
-        next.splice(to, 0, next.splice(from, 1)[0]);
-        applyFavs(next);
-      };
+    const from = favList.indexOf(String(active.id));
+    const to = favList.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
 
-      const onUp = async () => {
-        if (!dragRef.current) return;
-        dragRef.current = null;
-        edgeRef.current = 0;
-        setDragging(null);
-        stopDragRef.current?.();
-        const res = await fetch('/api/favorites', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order: favRef.current }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          applyFavs(data.favorites ?? []);
-        }
-      };
-
-      const id = setInterval(() => {
-        if (edgeRef.current) carRef.current?.scrollBy({ left: edgeRef.current * 18 });
-      }, 16);
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-      window.addEventListener('pointercancel', onUp);
-      stopDragRef.current = () => {
-        clearInterval(id);
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        window.removeEventListener('pointercancel', onUp);
-        stopDragRef.current = null;
-      };
-    };
+    // 응답을 기다리지 않고 먼저 그린다 — 저장에 실패하면 서버 순서로 되돌아온다
+    const next = arrayMove(favList, from, to);
+    setFavList(next);
+    const res = await fetch('/api/favorites', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: next }),
+    });
+    if (res.ok) setFavList((await res.json()).favorites ?? next);
   }
-
-  useEffect(() => () => stopDragRef.current?.(), []);
 
   function scroll(dir: number) {
     carRef.current?.scrollBy({ left: dir * 580, behavior: 'smooth' });
@@ -239,33 +204,40 @@ export default function HubPage() {
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
       <div className="car" ref={carRef}>
-        {shown.map((c) => (
-          <CategoryCard
-            key={c.slug}
-            category={c}
-            showToggles={Boolean(user)}
-            isFavorite={favs.has(c.slug)}
-            isSubscribed={subs.has(c.slug)}
-            onFavorite={() => toggleFav(c.slug)}
-            onSubscribe={() => toggleSub(c.slug)}
-            dragging={dragging === c.slug}
-            dragHandle={
-              canReorder ? (
-                <button
-                  className="car-drag"
-                  aria-label={t(T.reorder)}
-                  onPointerDown={startDrag(c.slug)}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  ⠿
-                </button>
-              ) : null
-            }
-          />
-        ))}
+        {canReorder ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
+            <SortableContext items={favList} strategy={horizontalListSortingStrategy}>
+              {shown.map((c) => (
+                <SortableCategoryCard
+                  key={c.slug}
+                  category={c}
+                  reorderLabel={t(T.reorder)}
+                  showToggles={Boolean(user)}
+                  isFavorite={favs.has(c.slug)}
+                  isSubscribed={subs.has(c.slug)}
+                  onFavorite={() => toggleFav(c.slug)}
+                  onSubscribe={() => toggleSub(c.slug)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        ) : (
+          shown.map((c) => (
+            <CategoryCard
+              key={c.slug}
+              category={c}
+              showToggles={Boolean(user)}
+              isFavorite={favs.has(c.slug)}
+              isSubscribed={subs.has(c.slug)}
+              onFavorite={() => toggleFav(c.slug)}
+              onSubscribe={() => toggleSub(c.slug)}
+            />
+          ))
+        )}
       </div>
       {canReorder && <div className="drag-hint">{t(T.dragHint)}</div>}
       <div className="car-arrows">

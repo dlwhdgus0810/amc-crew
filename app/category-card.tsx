@@ -23,6 +23,8 @@ export default function CategoryCard({
   onSubscribe,
   dragHandle,
   dragging,
+  nodeRef,
+  style,
 }: {
   category: Category;
   showToggles: boolean;
@@ -33,6 +35,9 @@ export default function CategoryCard({
   /** 순서 바꾸기 손잡이 — 홈의 즐겨찾기 카드에만 붙는다 */
   dragHandle?: React.ReactNode;
   dragging?: boolean;
+  /** 아래 둘은 dnd-kit이 카드를 잡고 움직이기 위해 넘긴다 */
+  nodeRef?: (node: HTMLElement | null) => void;
+  style?: React.CSSProperties;
 }) {
   const t = useT();
   // 카드 전체가 링크라 토글 클릭이 이동으로 새지 않게 막는다
@@ -45,8 +50,9 @@ export default function CategoryCard({
   return (
     <Link
       href={category.kind === 'movie' ? '/movie' : `/c/${category.slug}`}
+      ref={nodeRef}
       className={`car-card ${dragging ? 'dragging' : ''}`}
-      style={{ background: category.color, color: category.fg }}
+      style={{ background: category.color, color: category.fg, ...style }}
       data-slug={category.slug}
       draggable={false}
     >
