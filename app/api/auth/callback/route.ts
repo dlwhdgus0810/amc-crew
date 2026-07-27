@@ -14,6 +14,7 @@ import { recordTalkMessageConsent, saveKakaoTokens, sendKakaoMemos, TalkMessageS
 import { dbGetUser } from '@/lib/db/users';
 import { notifyAdminsNewUser } from '@/lib/db/signup';
 import { isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, Msg, pick, toLocale } from '@/lib/i18n';
+import { siteUrl } from '@/lib/site';
 
 const T = {
   talkOn: {
@@ -109,13 +110,17 @@ export async function GET(req: NextRequest) {
     console.error('[kakao] profile/token upsert failed:', e);
   }
 
+  // 카톡으로 나가는 링크는 접속한 호스트가 아니라 공개 주소로 만든다.
+  // (origin은 redirect_uri·리다이렉트 전용 — 로컬에서 로그인하면 localhost가 그대로 박혀 나갔다)
+  const publicOrigin = siteUrl(origin);
+
   // 가입(첫 로그인)은 관리자에게 알린다 — 실패해도 로그인은 진행
-  if (isNewUser) await notifyAdminsNewUser({ userId: id, name, origin });
+  if (isNewUser) await notifyAdminsNewUser({ userId: id, name, origin: publicOrigin });
 
   // 재동의로 켜진 경우에만 확인 메모 1건 (평범한 재로그인에는 보내지 않는다)
   if (isConsentFlow && consentStatus === 'on') {
     const memoLocale = toLocale(savedLocale ?? locale);
-    await sendKakaoMemos([id], pick(memoLocale, T.talkOn), `${origin}/`, pick(memoLocale, T.openApp));
+    await sendKakaoMemos([id], pick(memoLocale, T.talkOn), `${publicOrigin}/`, pick(memoLocale, T.openApp));
   }
 
   const redirectUrl = new URL(next, origin);

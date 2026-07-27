@@ -204,6 +204,11 @@ export async function sendKakaoMemos(
     console.info('[kakao-memo] 개발 환경이라 발송을 건너뜁니다:', userIds.length + '명', '|', text.slice(0, 60));
     return;
   }
+  // 링크는 발송 시점에 메시지에 박혀 되돌릴 수 없다 — 열 수 없는 주소가 섞이면 크게 남긴다.
+  // (siteUrl()을 거치지 않은 호출부가 생기면 여기서 드러난다)
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])/i.test(linkUrl)) {
+    console.error('[kakao-memo] 로컬 주소가 링크에 들어갔습니다 — siteUrl()을 거치지 않은 호출부:', linkUrl);
+  }
   await Promise.allSettled(
     userIds.map(async (userId) => {
       try {
