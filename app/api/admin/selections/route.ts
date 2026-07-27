@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
-import { clearSelections, getSchedule, getSelections, removeUser, setUserSelection } from '@/lib/store';
+import { clearSelections, getSelections, removeUser, setUserSelection, validPicks } from '@/lib/store';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * 관리자(ADMIN_KAKAO_ID에 등록된 카카오 계정) 전용.
  * DELETE            → 모든 선택 삭제
  * DELETE?userId=xxx → 특정 사용자의 선택만 삭제
- * PUT { userId, showtimeIds } → 특정 사용자의 선택 회차 수정 (빈 배열이면 참여 삭제)
+ * PUT { userId, picks } → 특정 사용자의 선택 회차 수정 (빈 배열이면 참여 삭제)
  */
 export async function PUT(req: NextRequest) {
   const user = await getSessionUser();
@@ -19,8 +19,8 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const userId = typeof body?.userId === 'string' ? body.userId : '';
-  const showtimeIds = Array.isArray(body?.showtimeIds) ? body.showtimeIds : null;
-  if (!userId || !showtimeIds) {
+  const picks = Array.isArray(body?.picks) ? body.picks : null;
+  if (!userId || !picks) {
     return await errJson(E.userIdShowtimes, 400);
   }
 
@@ -29,9 +29,9 @@ export async function PUT(req: NextRequest) {
     return await errJson(E.participantNotFound, 404);
   }
 
-  const schedule = await getSchedule();
-  const valid = new Set(schedule.map((s) => s.id));
-  const filtered = showtimeIds.filter((id: unknown): id is string => typeof id === 'string' && valid.has(id));
+  // 관리자 화면은 기존 선택에서 빼는 용도이므로, 남길 id만 받아 기존 스냅샷에서 고른다
+  const keep = new Set(picks.filter((id: unknown): id is string => typeof id === 'string'));
+  const filtered = await validPicks(existing.picks.filter((p) => keep.has(p.id)));
 
   if (filtered.length === 0) {
     await removeUser(userId);

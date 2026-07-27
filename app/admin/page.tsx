@@ -1,17 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Showtime, Format } from '@/lib/types';
 import { useT } from '../i18n';
 import type { Msg } from '@/lib/i18n';
-
-const FORMATS: Format[] = ['IMAX with Laser', 'Dolby Cinema', 'PRIME', 'Laser'];
-const SLUG: Record<Format, string> = {
-  'IMAX with Laser': 'imax',
-  'Dolby Cinema': 'dolby',
-  PRIME: 'prime',
-  Laser: 'laser',
-};
 
 interface CategoryRequest {
   id: string;
@@ -52,27 +43,22 @@ const T = {
   },
   clearFailed: { ko: '삭제 실패', en: 'Couldn’t delete' },
   cleared: { ko: '모든 선택을 삭제했어요.', en: 'All picks deleted.' },
-  needDateTime: { ko: '날짜와 시간을 입력해주세요.', en: 'Enter a date and time.' },
-  duplicate: { ko: '이미 있는 회차예요.', en: 'That showtime already exists.' },
-  saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
-  saved: { ko: '저장 완료 ({n}개 회차)', en: 'Saved ({n} showtimes)' },
-  amcFailed: { ko: 'AMC 새로고침 실패', en: 'AMC refresh failed' },
-  amcOk: { ko: 'AMC API에서 {n}개 회차를 가져왔어요.', en: 'Fetched {n} showtimes from the AMC API.' },
-  scheduleTitle: { ko: '관리자 — 스케줄 편집', en: 'Admin — edit showtimes' },
-  scheduleDesc: {
-    ko: '회차를 추가/삭제한 뒤 반드시 "저장"을 눌러야 반영돼요. AMC Vendor Key가 설정되어 있다면 "AMC에서 새로고침"으로 실시간 스케줄을 가져올 수 있어요.',
-    en: 'Add or remove showtimes, then press “Save” to apply. With an AMC Vendor Key set, “Refresh from AMC” pulls the live schedule.',
+  scheduleTitle: { ko: '관리자 — AMC 상영표', en: 'Admin — AMC showtimes' },
+  scheduleDesc2: {
+    ko: '상영표는 AMC에서 실시간으로 가져와 30분간 캐시해요. "AMC에서 새로고침"을 누르면 캐시를 비우고 다시 받습니다.',
+    en: 'Showtimes come live from AMC and are cached for 30 minutes. “Refresh from AMC” clears the cache and refetches.',
   },
+  theatres: { ko: '극장 찾기', en: 'Theatres' },
+  theatresDesc: {
+    ko: '지금 쓰는 극장 ID는 {id}이에요. 바꾸려면 AMC_THEATRE_ID 환경변수에 아래 ID를 넣으세요.',
+    en: 'Current theatre ID is {id}. To change it, set AMC_THEATRE_ID to one of these.',
+  },
+  colTheatre: { ko: '극장', en: 'Theatre' },
+  colCity: { ko: '도시', en: 'City' },
+  refreshFailed: { ko: 'AMC 새로고침 실패', en: 'Couldn’t refresh from AMC' },
+  refreshed: { ko: '오늘 상영표를 다시 받았어요 (영화 {m}편 · 회차 {n}개).', en: 'Reloaded today’s showtimes ({m} movies, {n} showtimes).' },
   adminKeyPh: { ko: '관리자 키 (ADMIN_KEY)', en: 'Admin key (ADMIN_KEY)' },
   amcRefresh: { ko: '🔄 AMC에서 새로고침', en: '🔄 Refresh from AMC' },
-  addShowtime: { ko: '회차 추가', en: 'Add showtime' },
-  add: { ko: '추가', en: 'Add' },
-  allShowtimes: { ko: '전체 회차 ({n})', en: 'All showtimes ({n})' },
-  colDate: { ko: '날짜', en: 'Date' },
-  colTime: { ko: '시간', en: 'Time' },
-  colFormat: { ko: '포맷', en: 'Format' },
-  colNote: { ko: '비고', en: 'Note' },
-  del: { ko: '삭제', en: 'Delete' },
   dataTitle: { ko: '선택 데이터 관리', en: 'Pick data' },
   dataDesc: {
     ko: '카카오 관리자 계정으로 로그인되어 있어요. 모든 사람의 회차 선택을 삭제할 수 있어요.',
@@ -80,28 +66,19 @@ const T = {
   },
   clearAll: { ko: '🗑 모든 선택 삭제', en: '🗑 Delete all picks' },
   processing: { ko: '처리 중…', en: 'Working…' },
-  save: { ko: '저장', en: 'Save' },
 };
 
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState('');
   const [requests, setRequests] = useState<CategoryRequest[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const [schedule, setSchedule] = useState<Showtime[]>([]);
+  const [amcInfo, setAmcInfo] = useState<{ theatreId: string; theatres: { id: string; name: string; city?: string }[] } | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [isKakaoAdmin, setIsKakaoAdmin] = useState(false);
   const t = useT();
 
-  // 새 회차 입력 폼
-  const [nDate, setNDate] = useState('');
-  const [nTime, setNTime] = useState('');
-  const [nFormat, setNFormat] = useState<Format>('IMAX with Laser');
-
   useEffect(() => {
-    fetch('/api/schedule')
-      .then((r) => r.json())
-      .then((data) => setSchedule(data.schedule ?? []));
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((auth) => {
@@ -152,66 +129,27 @@ export default function AdminPage() {
     }
   }
 
-  function addShowtime() {
-    if (!nDate || !nTime) {
-      setMsg({ type: 'err', text: t(T.needDateTime) });
-      return;
-    }
-    const id = `${nDate}_${nTime}_${SLUG[nFormat]}`;
-    if (schedule.some((s) => s.id === id)) {
-      setMsg({ type: 'err', text: t(T.duplicate) });
-      return;
-    }
-    setSchedule(
-      [...schedule, { id, date: nDate, time: nTime, format: nFormat }].sort((a, b) =>
-        (a.date + a.time).localeCompare(b.date + b.time)
-      )
-    );
-    setMsg(null);
-  }
 
-  function removeShowtime(id: string) {
-    setSchedule(schedule.filter((s) => s.id !== id));
-  }
 
-  async function save() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch('/api/admin/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
-        body: JSON.stringify({ schedule }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
-      setMsg({ type: 'ok', text: t(T.saved, { n: data.count }) });
-    } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.saveFailed) });
-    } finally {
-      setBusy(false);
-    }
-  }
 
+  /** 캐시를 비우고 AMC에서 다시 받아온 뒤, 극장 목록도 함께 조회한다 */
   async function refreshFromAmc() {
     setBusy(true);
     setMsg(null);
     try {
-      const res = await fetch('/api/admin/refresh', {
-        method: 'POST',
-        headers: { 'x-admin-key': adminKey },
-      });
+      const res = await fetch('/api/admin/refresh', { method: 'POST', headers: { 'x-admin-key': adminKey } });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t(T.amcFailed));
-      setMsg({ type: 'ok', text: t(T.amcOk, { n: data.count }) });
-      const refreshed = await fetch('/api/schedule').then((r) => r.json());
-      setSchedule(refreshed.schedule ?? []);
+      if (!res.ok) throw new Error(data.error ?? t(T.refreshFailed));
+      setMsg({ type: 'ok', text: t(T.refreshed, { n: data.showtimes, m: data.movies }) });
+      const info = await fetch('/api/admin/refresh?name=town-center', { headers: { 'x-admin-key': adminKey } });
+      if (info.ok) setAmcInfo(await info.json());
     } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.amcFailed) });
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.refreshFailed) });
     } finally {
       setBusy(false);
     }
   }
+
 
   return (
     <>
@@ -271,7 +209,7 @@ export default function AdminPage() {
 
       <h1 style={{ marginTop: isKakaoAdmin ? 80 : 0 }}>{t(T.scheduleTitle)}</h1>
       <p className="subtitle">
-        {t(T.scheduleDesc)}
+        {t(T.scheduleDesc2)}
       </p>
 
       <div className="card">
@@ -289,47 +227,30 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="card">
-        <h2 style={{ marginTop: 0 }}>{t(T.addShowtime)}</h2>
-        <div className="field-row">
-          <input type="date" value={nDate} onChange={(e) => setNDate(e.target.value)} style={{ maxWidth: 170 }} />
-          <input type="time" value={nTime} onChange={(e) => setNTime(e.target.value)} style={{ maxWidth: 140 }} />
-          <select value={nFormat} onChange={(e) => setNFormat(e.target.value as Format)} style={{ maxWidth: 200 }}>
-            {FORMATS.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-          <button className="secondary" onClick={addShowtime}>{t(T.add)}</button>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2 style={{ marginTop: 0 }}>{t(T.allShowtimes, { n: schedule.length })}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>{t(T.colDate)}</th>
-              <th>{t(T.colTime)}</th>
-              <th>{t(T.colFormat)}</th>
-              <th>{t(T.colNote)}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {schedule.map((s) => (
-              <tr key={s.id}>
-                <td>{s.date}</td>
-                <td>{s.time}</td>
-                <td>{s.format}</td>
-                <td>{s.note ?? ''}</td>
-                <td style={{ textAlign: 'right' }}>
-                  <button className="danger" onClick={() => removeShowtime(s.id)}>{t(T.del)}</button>
-                </td>
+      {amcInfo && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>{t(T.theatres)}</h2>
+          <p className="subtitle" style={{ marginBottom: 14 }}>{t(T.theatresDesc, { id: amcInfo.theatreId })}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>{t(T.colTheatre)}</th>
+                <th>{t(T.colCity)}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {amcInfo.theatres.map((th) => (
+                <tr key={th.id}>
+                  <td>{th.id}</td>
+                  <td>{th.name}</td>
+                  <td>{th.city ?? ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {isKakaoAdmin && (
         <div className="card">
@@ -344,10 +265,6 @@ export default function AdminPage() {
       )}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
-
-      <button disabled={busy || !adminKey} onClick={save}>
-        {busy ? t(T.processing) : t(T.save)}
-      </button>
     </>
   );
 }

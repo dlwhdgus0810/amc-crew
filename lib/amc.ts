@@ -1,39 +1,48 @@
-import { Showtime, Format } from './types';
+import { DaySchedule, Format, Movie, Showtime } from './types';
 
 /**
- * AMC 공식 Showtime API 연동 (선택 기능).
+ * AMC 공식 Showtime API 연동.
  *
- * 사용하려면:
- *  1. https://developers.amctheatres.com 에서 Vendor Key 신청/발급
- *  2. 환경변수 AMC_VENDOR_KEY 에 키 입력
- *  3. 환경변수 AMC_THEATRE_ID 에 AMC Town Center 20 극장 ID 입력
- *     (키 발급 후 GET https://api.amctheatres.com/v2/theatres 로 조회 가능)
+ * 환경변수
+ *  - AMC_VENDOR_KEY (또는 AMC_API_KEY) — developers.amctheatres.com 에서 발급한 Vendor Key
+ *  - AMC_THEATRE_ID — 극장 ID (미지정 시 Town Center 20)
+ *  - AMC_API_BASE — 샌드박스로 바꿀 때 https://api.sandbox-amctheatres.com/v2
  *
- * API 문서: https://developers.amctheatres.com/ApiReference/showtime-api-v2
- * 인증: X-AMC-Vendor-Key 헤더
- *
- * 참고: 아래 엔드포인트/응답 필드는 공개 문서 기준으로 작성했습니다.
- * 실제 키 발급 후 응답 구조가 다르면 mapAmcShowtime() 만 수정하면 됩니다.
+ * 인증은 X-AMC-Vendor-Key 헤더.
+ * 응답 필드가 문서와 다르면 mapShowtime()/mapMovie()만 고치면 된다.
  */
 
-// AMC_API_BASE 환경변수로 샌드박스 전환 가능:
-//   샌드박스: https://api.sandbox-amctheatres.com/v2 (테스트 극장 5곳의 시뮬레이션 데이터)
-//   프로덕션: https://api.amctheatres.com/v2 (기본값, 실제 데이터 — 승인된 키 필요)
 const API_BASE = process.env.AMC_API_BASE ?? 'https://api.amctheatres.com/v2';
 
-// 샌드박스에는 The Odyssey가 없을 수 있으므로, AMC_MOVIE_MATCH로 필터를 바꿀 수 있음
-// (예: AMC_MOVIE_MATCH=".*" 로 설정하면 모든 영화 회차를 가져와 연동 테스트 가능)
-const MOVIE_MATCH = new RegExp(process.env.AMC_MOVIE_MATCH ?? 'odyssey', 'i');
+/** AMC Town Center 20 (Leawood, KS) */
+const DEFAULT_THEATRE_ID = '38';
 
-interface AmcShowtime {
-  id: number;
-  showDateTimeLocal: string; // e.g. "2026-07-24T18:00:00"
-  movieName: string;
-  attributes?: { code: string; name: string }[];
-  isAlmostSoldOut?: boolean;
+/** 발급 포털이 부르는 이름이 제각각이라 둘 다 받는다 */
+function vendorKey(): string | undefined {
+  return process.env.AMC_VENDOR_KEY ?? process.env.AMC_API_KEY;
 }
 
-function detectFormat(attrs: { code: string; name: string }[] | undefined): Format {
+export function theatreId(): string {
+  return process.env.AMC_THEATRE_ID ?? DEFAULT_THEATRE_ID;
+}
+
+export function amcConfigured(): boolean {
+  return Boolean(vendorKey());
+}
+
+interface AmcShowtime {
+  id: number | string;
+  showDateTimeLocal: string; // "2026-07-24T18:00:00"
+  movieId?: number | string;
+  movieName?: string;
+  attributes?: { code: string; name: string }[];
+  isAlmostSoldOut?: boolean;
+  runTime?: number;
+  mpaaRating?: string;
+  media?: { posterThumbnail?: string; poster?: string };
+}
+
+function detectFormat(attrs: AmcShowtime['attributes']): Format {
   const names = (attrs ?? []).map((a) => `${a.code} ${a.name}`.toLowerCase()).join(' ');
   if (names.includes('imax')) return 'IMAX with Laser';
   if (names.includes('dolby')) return 'Dolby Cinema';
@@ -41,62 +50,100 @@ function detectFormat(attrs: { code: string; name: string }[] | undefined): Form
   return 'Laser';
 }
 
-function mapAmcShowtime(s: AmcShowtime): Showtime {
+function mapShowtime(s: AmcShowtime): Showtime | null {
+  if (!s.showDateTimeLocal) return null;
   const [date, timeFull] = s.showDateTimeLocal.split('T');
-  const time = timeFull.slice(0, 5);
-  const format = detectFormat(s.attributes);
-  const slug = { 'IMAX with Laser': 'imax', 'Dolby Cinema': 'dolby', PRIME: 'prime', Laser: 'laser' }[format];
+  if (!date || !timeFull) return null;
+  const movieName = s.movieName?.trim() || '(제목 없음)';
   return {
-    id: `${date}_${time}_${slug}`,
+    id: String(s.id),
+    // movieId가 없는 응답도 있어 이름으로 묶을 수 있게 폴백을 둔다
+    movieId: s.movieId != null ? String(s.movieId) : movieName,
+    movieName,
     date,
-    time,
-    format,
+    time: timeFull.slice(0, 5),
+    format: detectFormat(s.attributes),
     ...(s.isAlmostSoldOut ? { note: 'Almost Full' } : {}),
   };
 }
 
-export function amcConfigured(): boolean {
-  return Boolean(process.env.AMC_VENDOR_KEY && process.env.AMC_THEATRE_ID);
+function mapMovie(s: AmcShowtime, showtime: Showtime): Movie {
+  const poster = s.media?.posterThumbnail ?? s.media?.poster;
+  return {
+    id: showtime.movieId,
+    name: showtime.movieName,
+    ...(s.runTime ? { runtime: s.runTime } : {}),
+    ...(s.mpaaRating ? { rating: s.mpaaRating } : {}),
+    ...(poster ? { posterUrl: poster } : {}),
+  };
 }
 
-/** 오늘부터 days일치 The Odyssey 스케줄을 AMC API에서 가져온다. */
-export async function fetchAmcSchedule(days = 7): Promise<Showtime[]> {
-  if (!amcConfigured()) {
-    throw new Error('AMC_VENDOR_KEY / AMC_THEATRE_ID 환경변수가 설정되지 않았습니다.');
+/** YYYY-MM-DD → AMC가 쓰는 MM-DD-YYYY */
+function amcDate(date: string): string {
+  const [y, m, d] = date.split('-');
+  return `${m}-${d}-${y}`;
+}
+
+/** 영화별로 묶고, 영화는 이름순 · 회차는 시간순으로 정렬 */
+export function groupByMovie(showtimes: Showtime[], movies: Map<string, Movie>): DaySchedule['movies'] {
+  const byMovie = new Map<string, Showtime[]>();
+  for (const s of showtimes) {
+    if (!byMovie.has(s.movieId)) byMovie.set(s.movieId, []);
+    byMovie.get(s.movieId)!.push(s);
   }
+  return [...byMovie.entries()]
+    .map(([movieId, list]) => ({
+      movie: movies.get(movieId) ?? { id: movieId, name: list[0].movieName },
+      showtimes: list.sort((a, b) => a.time.localeCompare(b.time)),
+    }))
+    .sort((a, b) => a.movie.name.localeCompare(b.movie.name));
+}
 
-  const headers = {
-    'X-AMC-Vendor-Key': process.env.AMC_VENDOR_KEY!,
-    Accept: 'application/json',
-  };
-  const theatreId = process.env.AMC_THEATRE_ID!;
-  const results: Showtime[] = [];
+/** 하루치 상영표를 AMC에서 가져온다 (날짜: YYYY-MM-DD) */
+export async function fetchAmcDay(date: string): Promise<DaySchedule> {
+  const key = vendorKey();
+  if (!key) throw new Error('AMC_VENDOR_KEY(또는 AMC_API_KEY) 환경변수가 설정되지 않았습니다.');
 
-  for (let i = 0; i < days; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    // AMC API 날짜 형식: MM-DD-YYYY
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const dateParam = `${mm}-${dd}-${d.getFullYear()}`;
-
-    const url = `${API_BASE}/theatres/${theatreId}/showtimes/${dateParam}?page-size=100`;
-    const res = await fetch(url, { headers, cache: 'no-store' });
-    if (!res.ok) {
-      throw new Error(`AMC API 오류 (${res.status}): ${await res.text()}`);
-    }
-    const data = await res.json();
-    const showtimes: AmcShowtime[] = data?._embedded?.showtimes ?? data?.showtimes ?? [];
-    for (const s of showtimes) {
-      if (MOVIE_MATCH.test(s.movieName ?? '')) {
-        results.push(mapAmcShowtime(s));
-      }
-    }
+  const url = `${API_BASE}/theatres/${theatreId()}/showtimes/${amcDate(date)}?page-size=200`;
+  const res = await fetch(url, {
+    headers: { 'X-AMC-Vendor-Key': key, Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`AMC API 오류 (${res.status}): ${(await res.text()).slice(0, 300)}`);
   }
+  const data = await res.json();
+  const raw: AmcShowtime[] = data?._embedded?.showtimes ?? data?.showtimes ?? [];
 
-  // 중복 제거 + 정렬
+  const showtimes: Showtime[] = [];
+  const movies = new Map<string, Movie>();
   const seen = new Set<string>();
-  return results
-    .filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)))
-    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  for (const r of raw) {
+    const s = mapShowtime(r);
+    if (!s || s.date !== date || seen.has(s.id)) continue;
+    seen.add(s.id);
+    showtimes.push(s);
+    if (!movies.has(s.movieId)) movies.set(s.movieId, mapMovie(r, s));
+  }
+
+  return { date, movies: groupByMovie(showtimes, movies) };
+}
+
+/** 극장 검색 — 극장 ID를 찾을 때 쓴다 (관리자 도구) */
+export async function searchAmcTheatres(name: string): Promise<{ id: string; name: string; city?: string }[]> {
+  const key = vendorKey();
+  if (!key) throw new Error('AMC_VENDOR_KEY(또는 AMC_API_KEY) 환경변수가 설정되지 않았습니다.');
+  const url = `${API_BASE}/theatres?name=${encodeURIComponent(name)}&page-size=20`;
+  const res = await fetch(url, {
+    headers: { 'X-AMC-Vendor-Key': key, Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`AMC API 오류 (${res.status}): ${(await res.text()).slice(0, 300)}`);
+  const data = await res.json();
+  const list = data?._embedded?.theatres ?? data?.theatres ?? [];
+  return list.map((t: { id: number | string; name: string; location?: { city?: string } }) => ({
+    id: String(t.id),
+    name: t.name,
+    ...(t.location?.city ? { city: t.location.city } : {}),
+  }));
 }

@@ -42,11 +42,10 @@ const T = {
 };
 
 function describe(s: Showtime, locale: Locale): string {
-  return `${dateLabelShort(s.date, locale)} ${timeLabel(s.time, locale)} — ${s.format}`;
+  return `${s.movieName} · ${dateLabelShort(s.date, locale)} ${timeLabel(s.time, locale)} — ${s.format}`;
 }
 
 export default function GroupsPage() {
-  const [schedule, setSchedule] = useState<Showtime[]>([]);
   const [selections, setSelections] = useState<Selections>({});
   const [me, setMe] = useState<{ id: string; name: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -62,7 +61,6 @@ export default function GroupsPage() {
 
   async function load() {
     const data = await fetch('/api/schedule').then((r) => r.json());
-    setSchedule(data.schedule ?? []);
     setSelections(data.selections ?? {});
     setLoading(false);
   }
@@ -77,14 +75,15 @@ export default function GroupsPage() {
       });
   }, []);
 
+  // 회차 정보는 각자의 선택에 스냅샷으로 들어 있어 상영표를 다시 부르지 않아도 된다
   const groups = useMemo(() => {
-    const byId = new Map(schedule.map((s) => [s.id, s]));
+    const byId = new Map<string, Showtime>();
     const map = new Map<string, string[]>();
     for (const sel of Object.values(selections)) {
-      for (const id of sel.showtimeIds) {
-        if (!byId.has(id)) continue;
-        if (!map.has(id)) map.set(id, []);
-        map.get(id)!.push(sel.name);
+      for (const pick of sel.picks) {
+        byId.set(pick.id, pick);
+        if (!map.has(pick.id)) map.set(pick.id, []);
+        map.get(pick.id)!.push(sel.name);
       }
     }
     return [...map.entries()]
@@ -93,12 +92,12 @@ export default function GroupsPage() {
         if (b.members.length !== a.members.length) return b.members.length - a.members.length;
         return (a.showtime.date + a.showtime.time).localeCompare(b.showtime.date + b.showtime.time);
       });
-  }, [schedule, selections]);
+  }, [selections]);
 
   const matched = groups.filter((g) => g.members.length >= 2);
   const solo = groups.filter((g) => g.members.length === 1);
   const participants = Object.entries(selections)
-    .map(([id, sel]) => ({ id, name: sel.name, count: sel.showtimeIds.length }))
+    .map(([id, sel]) => ({ id, name: sel.name, count: sel.picks.length }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
   async function removeMine() {
@@ -113,7 +112,7 @@ export default function GroupsPage() {
   function startEdit(userId: string) {
     setEditMsg(null);
     setEditingId(userId);
-    setEditPicked(new Set(selections[userId]?.showtimeIds ?? []));
+    setEditPicked(new Set((selections[userId]?.picks ?? []).map((p) => p.id)));
   }
 
   function toggleEditPick(id: string) {
@@ -134,7 +133,7 @@ export default function GroupsPage() {
       const res = await fetch('/api/admin/selections', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: editingId, showtimeIds: [...editPicked] }),
+        body: JSON.stringify({ userId: editingId, picks: [...editPicked] }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
@@ -248,7 +247,7 @@ export default function GroupsPage() {
                               {t(T.editHeading, { name: p.name, n: editPicked.size })}
                             </div>
                             <div className="member-chips" style={{ marginTop: 0, gap: 8 }}>
-                              {schedule.map((s) => {
+                              {(selections[p.id]?.picks ?? []).map((s) => {
                                 const on = editPicked.has(s.id);
                                 return (
                                   <span

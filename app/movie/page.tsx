@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
-import {Format, Selections, Showtime} from '@/lib/types';
+import {DaySchedule, Format, Selections, Showtime} from '@/lib/types';
 import { useLocale, useT } from '../i18n';
 import { timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
 import { Locale } from '@/lib/i18n';
@@ -22,9 +22,20 @@ const FORMAT_CLASS: Record<Format, string> = {
 const T = {
   loading: { ko: '스케줄 불러오는 중…', en: 'Loading showtimes…' },
   intro: {
-    ko: 'AMC Town Center 20 — 2시간 52분 · R등급. 가능한 회차를 모두 고르세요. 같은 회차끼리 그룹이 만들어져요.',
-    en: 'AMC Town Center 20 — 2h52m · Rated R. Pick every showtime that works; people who pick the same one get grouped.',
+    ko: 'AMC Town Center 20 — 날짜를 고르고, 보고 싶은 영화의 회차를 모두 선택하세요. 같은 회차를 고른 사람끼리 그룹이 만들어져요.',
+    en: 'AMC Town Center 20 — pick a date, then every showtime that works. People who pick the same one get grouped.',
   },
+  noMovies: { ko: '이 날짜에는 상영표가 없어요.', en: 'No showtimes for this date.' },
+  amcDown: {
+    ko: 'AMC 상영표를 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
+    en: 'Couldn’t load showtimes from AMC. Please try again shortly.',
+  },
+  seedNotice: {
+    ko: 'AMC 키가 없어 예시 상영표를 보여주고 있어요.',
+    en: 'No AMC key configured — showing sample showtimes.',
+  },
+  runtimeRating: { ko: '{runtime}분 · {rating}', en: '{runtime} min · {rating}' },
+  pickedElsewhere: { ko: '다른 날짜 포함 {n}개 선택됨', en: '{n} picked across all dates' },
   loginToPick: { ko: '카카오 로그인 후 회차를 선택할 수 있어요.', en: 'Log in with Kakao to pick showtimes.' },
   saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
   saved: {
@@ -82,10 +93,16 @@ function KakaoIcon() {
 }
 
 export default function PickPage() {
-  const [schedule, setSchedule] = useState<Showtime[]>([]);
+  const [movies, setMovies] = useState<DaySchedule['movies']>([]);
+  const [date, setDate] = useState('');
+  const [dates, setDates] = useState<string[]>([]);
+  const [amcError, setAmcError] = useState<string | null>(null);
+  const [amcOn, setAmcOn] = useState(true);
+  const [loadingDay, setLoadingDay] = useState(false);
   const [selections, setSelections] = useState<Selections>({});
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  // 고른 회차는 스냅샷째로 들고 있는다 — 저장할 때 영화·시간 정보를 함께 보내야 한다
+  const [picked, setPicked] = useState<Map<string, Showtime>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -107,14 +124,20 @@ export default function PickPage() {
     return () => document.removeEventListener('click', close);
   }, [openTip]);
 
+  /** 하루치 상영표를 받아온다 (선택 현황도 같이 갱신) */
+  async function loadDay(target?: string) {
+    const data = await fetch(`/api/schedule${target ? `?date=${target}` : ''}`).then((r) => r.json());
+    setDate(data.date);
+    setDates(data.dates ?? []);
+    setMovies(data.movies ?? []);
+    setSelections(data.selections ?? {});
+    setAmcOn(Boolean(data.amcConfigured));
+    setAmcError(data.error ?? null);
+  }
+
   useEffect(() => {
-    Promise.all([
-      fetch('/api/schedule').then((r) => r.json()),
-      fetch('/api/auth/me').then((r) => r.json()),
-    ])
-      .then(([data, auth]) => {
-        setSchedule(data.schedule ?? []);
-        setSelections(data.selections ?? {});
+    Promise.all([loadDay(), fetch('/api/auth/me').then((r) => r.json())])
+      .then(([, auth]) => {
         setUser(auth.user ?? null);
         setNickname(auth.nickname ?? null);
         setKakaoName(auth.kakaoName ?? '');
@@ -122,39 +145,37 @@ export default function PickPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function pickDate(next: string) {
+    if (next === date) return;
+    setLoadingDay(true);
+    await loadDay(next);
+    setLoadingDay(false);
+  }
+
   useEffect(() => {
     if (!user) return;
     const existing = selections[user.id];
-    if (existing) setPicked(new Set(existing.showtimeIds));
+    if (existing) setPicked(new Map(existing.picks.map((p) => [p.id, p])));
   }, [user, selections]);
-
-  const byDate = useMemo(() => {
-    const map = new Map<string, Showtime[]>();
-    for (const s of schedule) {
-      if (!map.has(s.date)) map.set(s.date, []);
-      map.get(s.date)!.push(s);
-    }
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [schedule]);
 
   const membersFor = useMemo(() => {
     const members: Record<string, string[]> = {};
     for (const sel of Object.values(selections)) {
-      for (const id of sel.showtimeIds) (members[id] ??= []).push(sel.name);
+      for (const p of sel.picks) (members[p.id] ??= []).push(sel.name);
     }
     for (const names of Object.values(members)) names.sort((a, b) => a.localeCompare(b, 'ko'));
     return members;
   }, [selections]);
 
-  function toggle(id: string) {
+  function toggle(showtime: Showtime) {
     if (!user) {
       setMsg({ type: 'err', text: t(T.loginToPick) });
       return;
     }
     setPicked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const next = new Map(prev);
+      if (next.has(showtime.id)) next.delete(showtime.id);
+      else next.set(showtime.id, showtime);
       return next;
     });
   }
@@ -166,13 +187,12 @@ export default function PickPage() {
       const res = await fetch('/api/selections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ showtimeIds: [...picked] }),
+        body: JSON.stringify({ picks: [...picked.values()] }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
       setMsg({ type: 'ok', text: t(T.saved) });
-      const refreshed = await fetch('/api/schedule').then((r) => r.json());
-      setSelections(refreshed.selections ?? {});
+      await loadDay(date);
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.saveFailed) });
     } finally {
@@ -183,7 +203,7 @@ export default function PickPage() {
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
-    setPicked(new Set());
+    setPicked(new Map());
     setMsg(null);
   }
 
@@ -202,8 +222,7 @@ export default function PickPage() {
       setNickname(data.nickname ?? null);
       setKakaoName(data.kakaoName ?? '');
       setEditingName(false);
-      const refreshed = await fetch('/api/schedule').then((r) => r.json());
-      setSelections(refreshed.selections ?? {});
+      await loadDay(date);
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.nicknameFailed) });
     } finally {
@@ -216,7 +235,7 @@ export default function PickPage() {
   return (
     <>
       <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", color: 'var(--accent)', fontWeight: 700 }}>
-        The Odyssey
+        AMC
       </h1>
       <p className="subtitle">
         {t(T.intro)}
@@ -262,7 +281,7 @@ export default function PickPage() {
                   {t(T.nickname)}
                 </button>
                 <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 500 }}>
-                  {picked.size > 0 ? t(T.picked, { n: picked.size }) : t(T.pickPrompt)}
+                  {picked.size > 0 ? t(T.pickedElsewhere, { n: picked.size }) : t(T.pickPrompt)}
                 </span>
               </span>
               <button className="secondary" onClick={logout}>{t(T.logout)}</button>
@@ -281,18 +300,46 @@ export default function PickPage() {
         )}
       </div>
 
-      {byDate.map(([date, shows]) => {
-        const { label, weekday, short } = formatDateHeading(date, locale);
-        return (
-          <section key={date} className="date-section">
-            <div className="date-heading">
-              <span className="date-badge">
-                {short}
-                <small>{label} {weekday}</small>
-              </span>
+      {/* 날짜 고르기 */}
+      <div className="date-strip">
+        {dates.map((d) => {
+          const { short, wd } = formatDateHeading(d, locale);
+          return (
+            <button
+              key={d}
+              className={`date-pill ${d === date ? 'on' : ''}`}
+              onClick={() => pickDate(d)}
+              disabled={loadingDay}
+            >
+              {short}
+              <small>{wd}</small>
+            </button>
+          );
+        })}
+      </div>
+
+      {!amcOn && <div className="msg">{t(T.seedNotice)}</div>}
+      {amcError && <div className="msg err">{t(T.amcDown)}</div>}
+
+      {loadingDay ? (
+        <p className="subtitle">{t(T.loading)}</p>
+      ) : movies.length === 0 ? (
+        <div className="card" style={{ color: 'var(--text-dim)' }}>{t(T.noMovies)}</div>
+      ) : (
+        movies.map(({ movie, showtimes }) => (
+          <section key={movie.id} className="date-section">
+            <div className="movie-head">
+              <span className="movie-name">{movie.name}</span>
+              {(movie.runtime || movie.rating) && (
+                <span className="movie-meta">
+                  {[movie.runtime ? t(T.runtimeRating, { runtime: movie.runtime, rating: movie.rating ?? '' }) : movie.rating]
+                    .filter(Boolean)
+                    .join('')}
+                </span>
+              )}
             </div>
             {FORMAT_ORDER.map((fmt) => {
-              const times = shows.filter((s) => s.format === fmt).sort((a, b) => a.time.localeCompare(b.time));
+              const times = showtimes.filter((s) => s.format === fmt);
               if (times.length === 0) return null;
               return (
                 <div key={fmt} className="format-row">
@@ -305,7 +352,7 @@ export default function PickPage() {
                         <div
                           key={s.id}
                           className={`time-chip ${selected ? 'selected' : ''}`}
-                          onClick={() => toggle(s.id)}
+                          onClick={() => toggle(s)}
                         >
                           <span>{to12h(s.time)}</span>
                           {members.length > 0 && (
@@ -335,8 +382,8 @@ export default function PickPage() {
               );
             })}
           </section>
-        );
-      })}
+        ))
+      )}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 

@@ -1,69 +1,83 @@
-import { Showtime, Format } from './types';
+import { DaySchedule, Format, Movie, Showtime } from './types';
+import { groupByMovie } from './amc';
+import { addDays } from './dates';
 
-// 2026-07-22 에 AMC 공식 사이트에서 직접 수집한 The Odyssey 실제 상영 스케줄.
-// (AMC Town Center 20, Leawood KS)
-// 7/26(일)은 7/25(토)와 동일 패턴으로 추정 — 관리자 페이지에서 수정 가능.
+/**
+ * AMC 키가 없을 때 쓰는 로컬 개발용 상영표.
+ * 날짜를 고정하면 금방 과거가 되므로 요청한 날짜에 맞춰 그때그때 만든다.
+ */
 
-const FORMAT_SLUG: Record<Format, string> = {
-  'IMAX with Laser': 'imax',
-  'Dolby Cinema': 'dolby',
-  PRIME: 'prime',
-  Laser: 'laser',
-};
+const SEED_MOVIES: (Movie & { showtimes: { time: string; format: Format }[] })[] = [
+  {
+    id: 'seed-odyssey',
+    name: 'The Odyssey',
+    runtime: 172,
+    rating: 'R',
+    showtimes: [
+      { time: '10:00', format: 'IMAX with Laser' },
+      { time: '14:00', format: 'IMAX with Laser' },
+      { time: '18:00', format: 'IMAX with Laser' },
+      { time: '11:00', format: 'Dolby Cinema' },
+      { time: '19:00', format: 'Dolby Cinema' },
+      { time: '13:30', format: 'Laser' },
+    ],
+  },
+  {
+    id: 'seed-dune3',
+    name: 'Dune: Part Three',
+    runtime: 165,
+    rating: 'PG-13',
+    showtimes: [
+      { time: '12:30', format: 'IMAX with Laser' },
+      { time: '16:30', format: 'IMAX with Laser' },
+      { time: '20:30', format: 'PRIME' },
+      { time: '15:00', format: 'Laser' },
+    ],
+  },
+  {
+    id: 'seed-anim',
+    name: 'Sunday Bakers',
+    runtime: 98,
+    rating: 'PG',
+    showtimes: [
+      { time: '10:30', format: 'Laser' },
+      { time: '12:45', format: 'Laser' },
+      { time: '17:15', format: 'Laser' },
+    ],
+  },
+];
 
-function make(date: string, format: Format, times: string[], notes: Record<string, string> = {}): Showtime[] {
-  return times.map((time) => ({
-    id: `${date}_${time}_${FORMAT_SLUG[format]}`,
-    date,
-    time,
-    format,
-    ...(notes[time] ? { note: notes[time] } : {}),
-  }));
+/** 주말에는 심야 회차를 하나 더 붙여 날짜마다 조금씩 다르게 보이도록 한다 */
+function isWeekend(date: string): boolean {
+  const [y, m, d] = date.split('-').map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return wd === 0 || wd === 6;
 }
 
-const WEEKDAY_LASER = ['11:30', '12:00', '13:00', '15:30', '16:00', '19:30', '20:00', '21:00'];
-const WEEKEND_LASER = [
-  '09:00', '09:30', '11:30', '12:00', '12:30', '13:00', '13:30',
-  '15:30', '16:00', '16:30', '17:00', '18:20', '19:15', '19:30',
-  '20:00', '20:30', '21:00', '22:15',
-];
+export function seedDay(date: string): DaySchedule {
+  const showtimes: Showtime[] = [];
+  const movies = new Map<string, Movie>();
 
-export const SEED_SCHEDULE: Showtime[] = [
-  // ── 수요일 7/22 (수집 확정) ──
-  ...make('2026-07-22', 'IMAX with Laser', ['10:00', '14:00', '18:00', '22:00'], { '18:00': 'Almost Full' }),
-  ...make('2026-07-22', 'Dolby Cinema', ['11:00', '15:00', '19:00']),
-  ...make('2026-07-22', 'PRIME', ['18:30', '22:30']),
-  ...make('2026-07-22', 'Laser', ['10:30', '11:30', '12:00', '14:30', '15:30', '16:00', '17:00', '19:30', '19:45', '20:00', '20:30', '21:35']),
+  for (const { showtimes: times, ...movie } of SEED_MOVIES) {
+    movies.set(movie.id, movie);
+    const slots = isWeekend(date) ? [...times, { time: '22:15', format: 'Laser' as Format }] : times;
+    for (const slot of slots) {
+      showtimes.push({
+        id: `${movie.id}_${date}_${slot.time}`,
+        movieId: movie.id,
+        movieName: movie.name,
+        date,
+        time: slot.time,
+        format: slot.format,
+        ...(slot.time === '18:00' ? { note: 'Almost Full' } : {}),
+      });
+    }
+  }
 
-  // ── 목요일 7/23 (수집 확정) ──
-  ...make('2026-07-23', 'IMAX with Laser', ['10:00', '14:00', '18:00', '22:00'], { '18:00': 'Almost Full' }),
-  ...make('2026-07-23', 'Dolby Cinema', ['11:00', '15:00', '19:00']),
-  ...make('2026-07-23', 'PRIME', ['10:30', '14:30', '18:30', '22:30']),
-  ...make('2026-07-23', 'Laser', WEEKDAY_LASER),
+  return { date, movies: groupByMovie(showtimes, movies) };
+}
 
-  // ── 금요일 7/24 (수집 확정) ──
-  ...make('2026-07-24', 'IMAX with Laser', ['10:00', '14:00', '18:00', '22:00'], { '18:00': 'Almost Full' }),
-  ...make('2026-07-24', 'Dolby Cinema', ['11:00', '15:00', '19:00', '23:00']),
-  ...make('2026-07-24', 'PRIME', ['10:30', '14:30', '18:30', '22:30']),
-  ...make('2026-07-24', 'Laser', WEEKEND_LASER),
-
-  // ── 토요일 7/25 (수집 확정) ──
-  ...make('2026-07-25', 'IMAX with Laser', ['10:00', '14:00', '18:00', '22:00'], { '18:00': 'Almost Full' }),
-  ...make('2026-07-25', 'Dolby Cinema', ['11:00', '15:00', '19:00', '23:00']),
-  ...make('2026-07-25', 'PRIME', ['10:30', '14:30', '18:30', '22:30']),
-  ...make('2026-07-25', 'Laser', WEEKEND_LASER),
-
-  // ── 일요일 7/26 (7/25 패턴 기반 추정) ──
-  ...make('2026-07-26', 'IMAX with Laser', ['10:00', '14:00', '18:00', '22:00']),
-  ...make('2026-07-26', 'Dolby Cinema', ['11:00', '15:00', '19:00', '23:00']),
-  ...make('2026-07-26', 'PRIME', ['10:30', '14:30', '18:30', '22:30']),
-  ...make('2026-07-26', 'Laser', WEEKEND_LASER),
-];
-
-export const MOVIE = {
-  title: 'The Odyssey',
-  runtime: '2시간 52분',
-  rating: 'R',
-  theatre: 'AMC Town Center 20',
-  theatreAddress: '11701 Nall Ave, Leawood, KS 66211',
-};
+/** 상영표를 보여줄 날짜 목록 (오늘부터 days일) */
+export function scheduleDates(today: string, days = 7): string[] {
+  return Array.from({ length: days }, (_, i) => addDays(today, i));
+}

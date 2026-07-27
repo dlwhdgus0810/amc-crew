@@ -384,3 +384,20 @@ a:hover .notif-item { background: var(--surface-2); }
 @media (max-width: 720px) {
   .suggest-grid { grid-template-columns: 1fr; gap: 24px; }
 }
+
+/* ── AMC: 날짜 고르기 + 영화별 회차 ── */
+.date-strip { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; margin: 0 0 40px; }
+.date-strip::-webkit-scrollbar { display: none; }
+.date-pill {
+  flex: none; border: 1px solid #c9c7be; border-bottom: 1px solid #c9c7be; border-radius: 999px;
+  padding: 10px 18px; font-size: 14.5px; font-weight: 600; line-height: 1.25;
+  display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 72px;
+  transition: border-color 0.15s ease;
+}
+.date-pill small { font-family: var(--mono); font-size: 10.5px; font-weight: 400; color: var(--text-dim); }
+.date-pill:hover { opacity: 1; border-color: var(--text); }
+.date-pill.on { background: var(--accent); border-color: var(--accent); color: #f6f4ee; }
+.date-pill.on small { color: #f6f4ee; opacity: 0.8; }
+.movie-head { display: flex; align-items: baseline; gap: 14px; margin: 0 0 20px; flex-wrap: wrap; }
+.movie-name { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+.movie-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--text-dim); }
