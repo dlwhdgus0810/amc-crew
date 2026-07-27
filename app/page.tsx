@@ -243,7 +243,6 @@ export default function HubPage() {
           <CategoryCard
             key={c.slug}
             category={c}
-            label={`${String(CATEGORIES.indexOf(c) + 1).padStart(2, '0')} / ${c.en}`}
             showToggles={Boolean(user)}
             isFavorite={favs.has(c.slug)}
             isSubscribed={subs.has(c.slug)}

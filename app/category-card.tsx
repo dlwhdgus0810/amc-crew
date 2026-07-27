@@ -16,7 +16,6 @@ const T = {
  */
 export default function CategoryCard({
   category,
-  label,
   showToggles,
   isFavorite,
   isSubscribed,
@@ -26,7 +25,6 @@ export default function CategoryCard({
   dragging,
 }: {
   category: Category;
-  label: string;
   showToggles: boolean;
   isFavorite: boolean;
   isSubscribed: boolean;
@@ -55,7 +53,7 @@ export default function CategoryCard({
       <div className="car-top">
         <span className="car-idx">
           {dragHandle}
-          {label}
+          {category.en}
         </span>
         {showToggles && (
           <span className="car-toggles">

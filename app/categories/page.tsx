@@ -93,11 +93,10 @@ export default function CategoriesPage() {
       )}
 
       <div className="cat-grid">
-        {CATEGORIES.map((c, i) => (
+        {CATEGORIES.map((c) => (
           <CategoryCard
             key={c.slug}
             category={c}
-            label={`${String(i + 1).padStart(2, '0')} / ${c.en}`}
             showToggles={loggedIn}
             isFavorite={favs.has(c.slug)}
             isSubscribed={subs.has(c.slug)}
