@@ -68,6 +68,8 @@ export default function HubPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const carRef = useRef<HTMLDivElement>(null);
+  // 끄는 동안에는 캐러셀의 scroll-snap을 꺼야 카드가 손을 따라온다
+  const [reordering, setReordering] = useState(false);
   const t = useT();
   const favs = useMemo(() => new Set(favList), [favList]);
 
@@ -146,7 +148,34 @@ export default function HubPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  /**
+   * 드래그가 끝나면 브라우저가 pointerup 자리에 click을 만들어내는데,
+   * 카드가 통째로 링크라 그대로 두면 카테고리로 이동해버린다. 직후 클릭 한 번만 삼킨다.
+   * (키보드 드래그에는 click이 없으므로 타이머로 반드시 풀어준다)
+   */
+  const swallowClick = useRef(false);
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!swallowClick.current) return;
+      swallowClick.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, []);
+
+  function armClickSuppression(activatorEvent: Event) {
+    if (!(activatorEvent instanceof MouseEvent || activatorEvent instanceof PointerEvent)) return;
+    swallowClick.current = true;
+    setTimeout(() => {
+      swallowClick.current = false;
+    }, 300);
+  }
+
   async function onDragEnd(e: DragEndEvent) {
+    setReordering(false);
+    armClickSuppression(e.activatorEvent);
     const { active, over } = e;
     if (!over || active.id === over.id) return;
 
@@ -203,11 +232,13 @@ export default function HubPage() {
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      <div className="car" ref={carRef}>
+      <div className={`car ${reordering ? 'reordering' : ''}`} ref={carRef}>
         {canReorder ? (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={() => setReordering(true)}
+            onDragCancel={() => setReordering(false)}
             onDragEnd={onDragEnd}
           >
             <SortableContext items={favList} strategy={horizontalListSortingStrategy}>

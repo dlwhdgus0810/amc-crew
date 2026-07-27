@@ -239,6 +239,9 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 11px; font-wei
 .car-drag:hover { background: transparent; opacity: 0.6; }
 .car-drag:active { cursor: grabbing; }
 .car-card.dragging { opacity: 0.55; }
+/* 끄는 동안에는 스냅과 hover 들림을 멈춘다 — 카드가 손을 안 따라오고 튀는 원인 */
+.car.reordering { scroll-snap-type: none; }
+.car.reordering .car-card:hover { transform: none; }
 .drag-hint { margin-top: 14px; font-size: 13px; color: var(--text-dim); }
 /* 전체 카테고리 탭 — 캐러셀과 같은 카드를 그리드로 편다 */
 .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 30px; }

@@ -55,6 +55,8 @@ export default function CategoryCard({
       style={{ background: category.color, color: category.fg, ...style }}
       data-slug={category.slug}
       draggable={false}
+      // 끄는 중인 카드에서 손을 떼면 링크가 눌린 것으로 처리되므로 막는다
+      onClick={dragging ? (e) => e.preventDefault() : undefined}
     >
       <div className="car-top">
         <span className="car-idx">
