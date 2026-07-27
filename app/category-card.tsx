@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { Category } from '@/lib/categories';
 import { useT } from './i18n';
 
+// 라벨은 카드 좌측 상단의 car-idx처럼 언어와 무관한 모노 대문자 표기다
 const T = {
-  favorite: { ko: '즐겨찾기', en: 'Favourite' },
-  subscribe: { ko: '구독', en: 'Subscribe' },
-  subscribed: { ko: '구독중', en: 'Subscribed' },
+  favorite: { ko: 'FAV', en: 'FAV' },
+  subscribe: { ko: 'SUBSCRIBE', en: 'SUBSCRIBE' },
+  subscribed: { ko: 'SUBSCRIBED', en: 'SUBSCRIBED' },
+  favoriteA11y: { ko: '즐겨찾기', en: 'Favourite' },
+  subscribeA11y: { ko: '구독', en: 'Subscribe' },
 };
 
 /**
@@ -65,13 +68,29 @@ export default function CategoryCard({
         </span>
         {showToggles && (
           <span className="car-toggles">
-            <button className={`sub-toggle ${isFavorite ? 'on' : ''}`} onClick={stop(onFavorite)}>
-              {isFavorite ? '★' : '☆'} {t(T.favorite)}
+            <button
+              className={`sub-toggle ${isFavorite ? 'on' : ''}`}
+              onClick={stop(onFavorite)}
+              aria-pressed={isFavorite}
+              aria-label={t(T.favoriteA11y)}
+            >
+              <span className="star" aria-hidden="true">
+                {isFavorite ? '★' : '☆'}
+              </span>
+              {t(T.favorite)}
             </button>
             {category.kind === 'posts' && (
-              <button className={`sub-toggle ${isSubscribed ? 'on' : ''}`} onClick={stop(onSubscribe)}>
-                {isSubscribed ? t(T.subscribed) : t(T.subscribe)}
-              </button>
+              <>
+                <span className="sep" aria-hidden="true" />
+                <button
+                  className={`sub-toggle ${isSubscribed ? 'on' : ''}`}
+                  onClick={stop(onSubscribe)}
+                  aria-pressed={isSubscribed}
+                  aria-label={t(T.subscribeA11y)}
+                >
+                  {isSubscribed ? t(T.subscribed) : t(T.subscribe)}
+                </button>
+              </>
             )}
           </span>
         )}
