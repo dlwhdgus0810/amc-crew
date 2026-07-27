@@ -17,7 +17,8 @@ async function displayNameOf(user: { id: string; name: string }): Promise<string
 /** 공유 링크 상세 페이지용 단건 조회 (비로그인 허용) */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const post = await getPostView(id);
+  const viewer = await getSessionUser();
+  const post = await getPostView(id, viewer?.id);
   if (!post) {
     return await errJson(E.postNotFound, 404);
   }

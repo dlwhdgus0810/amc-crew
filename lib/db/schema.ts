@@ -89,10 +89,27 @@ export const postComments = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id),
+    // 답글이면 원 댓글 id. 한 단계만 쓴다 (답글의 답글도 같은 줄에 붙인다)
+    parentId: uuid('parent_id'),
     body: text('body').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('post_comments_post_idx').on(t.postId, t.createdAt)]
+);
+
+/** 댓글 좋아요(하트) — 한 사람이 한 댓글에 한 번 */
+export const commentLikes = pgTable(
+  'comment_likes',
+  {
+    commentId: uuid('comment_id')
+      .notNull()
+      .references(() => postComments.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.commentId, t.userId] })]
 );
 
 export const subscriptions = pgTable(

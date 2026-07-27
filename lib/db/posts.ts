@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, inArray, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
-import { favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
+import { commentLikes, favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
@@ -26,7 +26,20 @@ export interface PostView {
   isPast: boolean; // 종료 후 유예가 지났는지 (앱 시간대 기준, 서버가 판정)
   createdAt: string;
   participants: { id: string; name: string }[];
-  comments: { id: string; userId: string; name: string; body: string; createdAt: string }[];
+  comments: CommentView[];
+}
+
+export interface CommentView {
+  id: string;
+  userId: string;
+  name: string;
+  body: string;
+  createdAt: string;
+  /** 답글이면 원 댓글 id */
+  parentId: string | null;
+  likeCount: number;
+  /** 보고 있는 사람이 이미 눌렀는지 (비로그인이면 항상 false) */
+  likedByMe: boolean;
 }
 
 function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined, fallback: string): string {
@@ -42,7 +55,7 @@ function displayNameOf(row: { kakaoName: string; nickname: string | null } | und
  * 기준은 날짜가 아니라 (종료 시각 + 유예)이므로, 오늘 낮에 끝난 모임도 그날 바로 지난 모임이 된다.
  * past=false: 아직 안 끝난 모임, 가까운 순. past=true: 끝난 모임, 최근 순 최대 30개.
  */
-export async function listPosts(category: string, past = false): Promise<PostView[]> {
+export async function listPosts(category: string, past = false, viewerId?: string): Promise<PostView[]> {
   const db = await getDb();
   const { date: cutDate, time: cutTime } = pastCutoff();
   // 끝난 모임: 날짜가 지났거나, 같은 날인데 종료 시각이 기준 시각을 넘겼을 때
@@ -66,20 +79,20 @@ export async function listPosts(category: string, past = false): Promise<PostVie
         .from(posts)
         .where(and(eq(posts.category, category), upcoming))
         .orderBy(posts.date, posts.startTime);
-  return buildViews(postRows);
+  return buildViews(postRows, viewerId);
 }
 
 /** 공유 링크(/p/[id])용 단건 뷰 조회 */
-export async function getPostView(postId: string): Promise<PostView | null> {
+export async function getPostView(postId: string, viewerId?: string): Promise<PostView | null> {
   // 외부에서 들어오는 id이므로 uuid 형태가 아니면 캐스팅 에러 대신 404 처리
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) return null;
   const db = await getDb();
   const row = (await db.select().from(posts).where(eq(posts.id, postId)))[0];
   if (!row) return null;
-  return (await buildViews([row]))[0];
+  return (await buildViews([row], viewerId))[0];
 }
 
-async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<PostView[]> {
+async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: string): Promise<PostView[]> {
   if (postRows.length === 0) return [];
   const db = await getDb();
   const postIds = postRows.map((p) => p.id);
@@ -97,6 +110,18 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<Post
     .from(postComments)
     .where(inArray(postComments.postId, postIds))
     .orderBy(asc(postComments.createdAt));
+  // 좋아요는 댓글 수만큼 나오므로 한 번에 모아 집계한다
+  const commentIds = commentRows.map((c) => c.id);
+  const likeRows = commentIds.length
+    ? await db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds))
+    : [];
+  const likeCount = new Map<string, number>();
+  const likedByViewer = new Set<string>();
+  for (const l of likeRows) {
+    likeCount.set(l.commentId, (likeCount.get(l.commentId) ?? 0) + 1);
+    if (viewerId && l.userId === viewerId) likedByViewer.add(l.commentId);
+  }
+
   const commentsByPost = new Map<string, PostView['comments']>();
   for (const c of commentRows) {
     if (!commentsByPost.has(c.postId)) commentsByPost.set(c.postId, []);
@@ -106,6 +131,9 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<Post
       name: displayNameOf(userById.get(c.userId), '알 수 없음'),
       body: c.body,
       createdAt: c.createdAt.toISOString(),
+      parentId: c.parentId ?? null,
+      likeCount: likeCount.get(c.id) ?? 0,
+      likedByMe: likedByViewer.has(c.id),
     });
   }
 
@@ -130,11 +158,42 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[]): Promise<Post
   }));
 }
 
-export async function addComment(postId: string, userId: string, body: string): Promise<string> {
+export async function addComment(
+  postId: string,
+  userId: string,
+  body: string,
+  parentId?: string
+): Promise<string> {
   const db = await getDb();
   const id = crypto.randomUUID();
-  await db.insert(postComments).values({ id, postId, userId, body });
+  await db.insert(postComments).values({ id, postId, userId, body, parentId: parentId ?? null });
   return id;
+}
+
+/** 좋아요 토글 — 누른 뒤 상태와 개수를 돌려준다 */
+export async function toggleCommentLike(
+  commentId: string,
+  userId: string
+): Promise<{ liked: boolean; likeCount: number }> {
+  const db = await getDb();
+  const existing = await db
+    .select()
+    .from(commentLikes)
+    .where(and(eq(commentLikes.commentId, commentId), eq(commentLikes.userId, userId)));
+
+  if (existing.length > 0) {
+    await db
+      .delete(commentLikes)
+      .where(and(eq(commentLikes.commentId, commentId), eq(commentLikes.userId, userId)));
+  } else {
+    await db.insert(commentLikes).values({ commentId, userId }).onConflictDoNothing();
+  }
+
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(commentLikes)
+    .where(eq(commentLikes.commentId, commentId));
+  return { liked: existing.length === 0, likeCount: row?.n ?? 0 };
 }
 
 /** 댓글 알림: 댓글 단 사람을 제외한 참가자 전원에게 인앱 + 카톡 발송 */
@@ -143,10 +202,15 @@ export async function notifyComment(
   commenterId: string,
   commenterName: string,
   body: string,
-  origin: string
+  origin: string,
+  /** 답글이면 원 댓글 작성자 — 참가자가 아니어도 알려준다 */
+  parentAuthorId?: string
 ): Promise<void> {
   const db = await getDb();
-  const recipients = await participantIdsExcept(post.id, commenterId);
+  const participants = await participantIdsExcept(post.id, commenterId);
+  const recipients = [...new Set(
+    parentAuthorId && parentAuthorId !== commenterId ? [...participants, parentAuthorId] : participants
+  )];
   if (recipients.length === 0) return;
 
   const snippet = body.length > 60 ? `${body.slice(0, 60)}…` : body;

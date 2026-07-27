@@ -17,9 +17,6 @@ const T = {
   allMeetups: { ko: '전체 모임 보기 →', en: 'See all meetups →' },
   requestFailed: { ko: '요청 실패', en: 'Request failed' },
   joined: { ko: '참가 완료! 모임에서 만나요.', en: 'You’re in — see you there!' },
-  commentFailed: { ko: '댓글 작성 실패', en: 'Couldn’t post the comment' },
-  commentDeleteConfirm: { ko: '댓글을 삭제할까요?', en: 'Delete this comment?' },
-  commentDeleteFailed: { ko: '댓글 삭제 실패', en: 'Couldn’t delete the comment' },
   copied: {
     ko: '모임 링크를 복사했어요. 카톡에 붙여넣어 공유하세요!',
     en: 'Link copied — paste it in a chat to share.',
@@ -44,14 +41,11 @@ const T = {
   gcal: { ko: 'Google 캘린더', en: 'Google Calendar' },
   ics: { ko: '캘린더 파일(.ics)', en: 'Calendar file (.ics)' },
   comments: { ko: '댓글', en: 'Comments' },
-  commentEmpty: { ko: '첫 댓글을 남겨보세요.', en: 'Be the first to comment.' },
-  commentPh: { ko: '댓글 남기기', en: 'Leave a comment' },
-  commentSubmit: { ko: '등록', en: 'Post' },
-  commentLogin: { ko: '카카오 로그인 후 댓글을 남길 수 있어요.', en: 'Log in with Kakao to comment.' },
   del: { ko: '삭제', en: 'Delete' },
 };
 import type { PostView } from '@/lib/db/posts';
 import { TMDB_IMG } from '@/lib/tmdb';
+import CommentThread from '../../comment-thread';
 
 interface SessionUser {
   id: string;
@@ -81,7 +75,6 @@ export default function PostClient({ id }: { id: string }) {
   const locale = useLocale();
   const dateLabel = (d: string) => fmtDate(d, locale);
   const to12h = (time: string) => fmtTime(time, locale);
-  const [commentInput, setCommentInput] = useState('');
 
   async function loadPost() {
     const res = await fetch(`/api/posts/${id}`);
@@ -122,38 +115,7 @@ export default function PostClient({ id }: { id: string }) {
     setBusy(false);
   }
 
-  async function sendComment() {
-    if (!post) return;
-    const text = commentInput.trim();
-    if (!text) return;
-    setBusy(true);
-    setMsg(null);
-    const res = await fetch(`/api/posts/${post.id}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ body: text }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? t(T.commentFailed) });
-    } else {
-      setCommentInput('');
-    }
-    await loadPost();
-    setBusy(false);
-  }
 
-  async function removeComment(commentId: string) {
-    if (!confirm(t(T.commentDeleteConfirm))) return;
-    setBusy(true);
-    const res = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setMsg({ type: 'err', text: data.error ?? t(T.commentDeleteFailed) });
-    }
-    await loadPost();
-    setBusy(false);
-  }
 
   async function copyLink() {
     const url = `${window.location.origin}/p/${id}`;
@@ -304,40 +266,14 @@ export default function PostClient({ id }: { id: string }) {
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
       <h2>{t(T.comments)} {post.comments.length > 0 ? post.comments.length : ''}</h2>
-      <div className="comments" style={{ marginTop: 0 }}>
-        {post.comments.length === 0 && (
-          <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.commentEmpty)}</div>
-        )}
-        {post.comments.map((c) => (
-          <div key={c.id} className="comment-row">
-            <span className="comment-author">{c.name}</span>
-            <span className="comment-body">{c.body}</span>
-            {(user?.id === c.userId || isAdmin) && (
-              <button className="danger comment-delete" disabled={busy} onClick={() => removeComment(c.id)}>
-                {t(T.del)}
-              </button>
-            )}
-          </div>
-        ))}
-        {user ? (
-          <div className="field-row" style={{ marginTop: 12 }}>
-            <input
-              type="text"
-              placeholder={t(T.commentPh)}
-              value={commentInput}
-              maxLength={300}
-              onChange={(e) => setCommentInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !busy && sendComment()}
-              style={{ maxWidth: 420 }}
-            />
-            <button className="secondary" disabled={busy || !commentInput.trim()} onClick={sendComment}>
-              {t(T.commentSubmit)}
-            </button>
-          </div>
-        ) : (
-          <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.commentLogin)}</div>
-        )}
-      </div>
+      <CommentThread
+        postId={post.id}
+        comments={post.comments}
+        {...(user ? { currentUserId: user.id } : {})}
+        isAdmin={isAdmin}
+        onChanged={loadPost}
+        onError={(text) => setMsg({ type: 'err', text })}
+      />
     </>
   );
 }

@@ -17,7 +17,9 @@ export async function GET(req: NextRequest) {
   if (!POST_CATEGORY_SLUGS.includes(category)) {
     return await errJson(E.badCategory, 400);
   }
-  return NextResponse.json({ posts: await listPosts(category, past) });
+  // 좋아요 표시는 보는 사람마다 다르므로 세션을 넘긴다 (비로그인도 목록은 볼 수 있다)
+  const viewer = await getSessionUser();
+  return NextResponse.json({ posts: await listPosts(category, past, viewer?.id) });
 }
 
 export async function POST(req: NextRequest) {

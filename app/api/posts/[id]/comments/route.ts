@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
-import { addComment, getPost, notifyComment } from '@/lib/db/posts';
+import { addComment, getComment, getPost, notifyComment } from '@/lib/db/posts';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -24,13 +24,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return await errJson(E.comment, 400);
   }
 
+  // 답글이면 같은 모임의 댓글이어야 한다. 답글의 답글은 원 댓글에 붙여 한 단계로 유지한다.
+  let parentId: string | undefined;
+  let parentAuthorId: string | undefined;
+  if (typeof body?.parentId === 'string' && body.parentId) {
+    const parent = await getComment(body.parentId);
+    if (!parent || parent.postId !== id) {
+      return await errJson(E.commentNotFound, 404);
+    }
+    parentId = parent.parentId ?? parent.id;
+    parentAuthorId = parent.userId;
+  }
+
   await ensureUser(user);
-  const commentId = await addComment(id, user.id, text);
+  const commentId = await addComment(id, user.id, text, parentId);
 
   // 참가자(작성자 제외)에게 댓글 알림 — 실패해도 댓글 작성은 성공 처리
   try {
     const profile = (await getProfiles())[user.id];
-    await notifyComment(post, user.id, resolveDisplayName(profile, user.name), text, req.nextUrl.origin);
+    await notifyComment(post, user.id, resolveDisplayName(profile, user.name), text, req.nextUrl.origin, parentAuthorId);
   } catch (e) {
     console.error('[comments] notify failed:', e);
   }
