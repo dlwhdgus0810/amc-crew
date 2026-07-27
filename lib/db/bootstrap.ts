@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS posts (
   title text,
   title_meta jsonb,
   recurring_rule_id uuid REFERENCES recurring_rules(id) ON DELETE SET NULL,
+  amc_showtime_id text,
   date text NOT NULL,
   start_time text NOT NULL,
   end_time text NOT NULL,

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Showtime, Selections } from '@/lib/types';
 import { useLocale, useT } from '../../i18n';
 import { dateLabelShort, timeLabel } from '@/lib/datefmt';
@@ -18,6 +20,14 @@ const T = {
     en: 'Nobody has picked yet. Save your picks in “Showtimes” first.',
   },
   matched: { ko: 'Matched — 매칭된 그룹 ({n})', en: 'Matched — groups ({n})' },
+  makeMeetup: { ko: '이 회차로 모임 만들기 →', en: 'Turn into a meetup →' },
+  openMeetup: { ko: '모임 보기 →', en: 'Open meetup →' },
+  making: { ko: '만드는 중…', en: 'Creating…' },
+  madeMeetup: {
+    ko: '모임을 만들었어요. 이 회차를 고른 {n}명이 참가자로 들어갔어요.',
+    en: 'Meetup created — the {n} people who picked this showtime were added.',
+  },
+  makeFailed: { ko: '모임 만들기 실패', en: 'Couldn’t create the meetup' },
   solo: { ko: 'Solo — 아직 혼자인 회차', en: 'Solo — nobody else yet' },
   hurry: { ko: '{note} — 예매를 서두르세요', en: '{note} — book soon' },
   participants: { ko: '참여자', en: 'Participants' },
@@ -51,6 +61,11 @@ export default function GroupsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
+  // 회차 id → 이미 만들어진 모임 id
+  const [meetups, setMeetups] = useState<Record<string, string>>({});
+  const [making, setMaking] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const router = useRouter();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPicked, setEditPicked] = useState<Set<string>>(new Set());
@@ -62,7 +77,29 @@ export default function GroupsPage() {
   async function load() {
     const data = await fetch('/api/schedule').then((r) => r.json());
     setSelections(data.selections ?? {});
+    setMeetups(data.meetups ?? {});
     setLoading(false);
+  }
+
+  /** 회차 그룹을 실제 모임으로 — 댓글·리마인더·캘린더가 그때부터 붙는다 */
+  async function makeMeetup(showtimeId: string) {
+    setMaking(showtimeId);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/movie/meetup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showtimeId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(T.makeFailed));
+      if (!data.existed) setMsg({ type: 'ok', text: t(T.madeMeetup, { n: data.joined }) });
+      router.push(`/p/${data.postId}`);
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.makeFailed) });
+    } finally {
+      setMaking(null);
+    }
   }
 
   useEffect(() => {
@@ -166,6 +203,8 @@ export default function GroupsPage() {
         <div className="card">{t(T.empty)}</div>
       )}
 
+      {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
+
       {matched.length > 0 && <h2>{t(T.matched, { n: matched.length })}</h2>}
       {matched.map((g) => (
         <div key={g.showtime.id} className="card group-card">
@@ -177,6 +216,23 @@ export default function GroupsPage() {
               {g.members.map((m, i) => (
                 <span key={i} className="member-chip">{m}</span>
               ))}
+            </div>
+            <div className="group-actions">
+              {meetups[g.showtime.id] ? (
+                <Link href={`/p/${meetups[g.showtime.id]}`} className="profile-link">
+                  {t(T.openMeetup)}
+                </Link>
+              ) : (
+                me && (
+                  <button
+                    className="secondary"
+                    disabled={making === g.showtime.id}
+                    onClick={() => makeMeetup(g.showtime.id)}
+                  >
+                    {making === g.showtime.id ? t(T.making) : t(T.makeMeetup)}
+                  </button>
+                )
+              )}
             </div>
           </div>
         </div>

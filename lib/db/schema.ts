@@ -53,6 +53,8 @@ export const posts = pgTable(
     titleMeta: jsonb('title_meta').$type<TitleMeta>(), // TMDB 메타 (평점·감독·출연·포스터), 검색으로 고른 경우만
     // 정기 모임에서 생성된 회차면 규칙 id (규칙 삭제 시 회차는 남기고 연결만 끊는다)
     recurringRuleId: uuid('recurring_rule_id').references(() => recurringRules.id, { onDelete: 'set null' }),
+    // AMC 회차에서 만든 모임이면 그 회차 id — 같은 회차로 두 번 만들지 않기 위해 쓴다
+    amcShowtimeId: text('amc_showtime_id'),
 
     date: text('date').notNull(), // YYYY-MM-DD (사전순 = 시간순)
     startTime: text('start_time').notNull(), // HH:mm

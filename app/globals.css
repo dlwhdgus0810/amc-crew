@@ -430,3 +430,6 @@ a:hover .notif-item { background: var(--surface-2); }
 .movie-head { display: flex; align-items: baseline; gap: 14px; margin: 0 0 20px; flex-wrap: wrap; }
 .movie-name { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
 .movie-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--text-dim); }
+
+/* AMC 그룹 → 모임 만들기 */
+.group-actions { margin-top: 14px; }

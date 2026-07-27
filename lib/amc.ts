@@ -17,6 +17,9 @@ const API_BASE = process.env.AMC_API_BASE ?? 'https://api.amctheatres.com/v2';
 /** AMC Town Center 20 (Leawood, KS) */
 const DEFAULT_THEATRE_ID = '38';
 
+/** 모임 장소로 쓰는 극장 이름 */
+export const AMC_THEATRE_NAME = process.env.AMC_THEATRE_NAME ?? 'AMC Town Center 20';
+
 /** 발급 포털이 부르는 이름이 제각각이라 둘 다 받는다 */
 function vendorKey(): string | undefined {
   return process.env.AMC_VENDOR_KEY ?? process.env.AMC_API_KEY;

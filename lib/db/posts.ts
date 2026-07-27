@@ -342,6 +342,7 @@ export async function createPost(input: {
   description?: string;
   capacity?: number;
   recurringRuleId?: string; // 정기 모임 규칙에서 생성된 회차면 규칙 id
+  amcShowtimeId?: string; // AMC 회차에서 만든 모임이면 그 회차 id
   label?: Msg; // 알림 문구 (기본 '새 모임', 정기 모임은 '이번 주 모임')
   origin?: string; // 카톡 알림의 "모임 보기" 링크 base URL (요청 origin)
 }): Promise<string> {
@@ -377,6 +378,7 @@ export async function createPost(input: {
     title: input.title ?? null,
     titleMeta: input.titleMeta ?? null,
     recurringRuleId: input.recurringRuleId ?? null,
+    amcShowtimeId: input.amcShowtimeId ?? null,
     date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,
@@ -414,6 +416,38 @@ export async function createPost(input: {
     await sendNotice(notice, `${input.origin}/p/${postId}`);
   }
   return postId;
+}
+
+/** 이 AMC 회차로 이미 만든 모임이 있는지 */
+export async function findPostByShowtime(showtimeId: string): Promise<{ id: string } | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ id: posts.id })
+    .from(posts)
+    .where(eq(posts.amcShowtimeId, showtimeId))
+    .limit(1);
+  return row ?? null;
+}
+
+/** 회차 id → 모임 id 매핑 (여러 개를 한 번에) */
+export async function postIdsByShowtime(showtimeIds: string[]): Promise<Record<string, string>> {
+  if (showtimeIds.length === 0) return {};
+  const db = await getDb();
+  const rows = await db
+    .select({ id: posts.id, showtimeId: posts.amcShowtimeId })
+    .from(posts)
+    .where(inArray(posts.amcShowtimeId, showtimeIds));
+  return Object.fromEntries(rows.filter((r) => r.showtimeId).map((r) => [r.showtimeId as string, r.id]));
+}
+
+/** 회차를 고른 사람들을 한 번에 참가자로 넣는다 (이미 있으면 그대로 둔다) */
+export async function addParticipants(postId: string, userIds: string[]): Promise<void> {
+  if (userIds.length === 0) return;
+  const db = await getDb();
+  await db
+    .insert(postParticipants)
+    .values(userIds.map((userId) => ({ postId, userId })))
+    .onConflictDoNothing();
 }
 
 export async function getPost(postId: string) {

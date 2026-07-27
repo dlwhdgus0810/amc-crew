@@ -3,6 +3,7 @@ import { getDaySchedule, getProfiles, getSelections, resolveDisplayName } from '
 import { Selections } from '@/lib/types';
 import { amcConfigured } from '@/lib/amc';
 import { scheduleDates } from '@/lib/seed';
+import { postIdsByShowtime } from '@/lib/db/posts';
 import { todayLocal } from '@/lib/dates';
 
 export const dynamic = 'force-dynamic';
@@ -38,11 +39,16 @@ export async function GET(req: NextRequest) {
     error = e instanceof Error ? e.message : 'AMC 상영표를 불러오지 못했어요.';
   }
 
+  // 어떤 회차가 이미 모임으로 만들어졌는지 (그룹 화면이 버튼 대신 링크를 보여준다)
+  const pickedIds = [...new Set(Object.values(selections).flatMap((s) => s.picks.map((p) => p.id)))];
+  const meetups = await postIdsByShowtime(pickedIds);
+
   return NextResponse.json({
     date,
     dates,
     movies,
     selections: resolved,
+    meetups,
     sample,
     amcConfigured: amcConfigured(),
     ...(error ? { error } : {}),
