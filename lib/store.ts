@@ -58,7 +58,13 @@ function normalize(raw: Record<string, unknown> | null | undefined): Selections 
  * AMC 호출이 실패하면 화면 전체가 죽지 않도록 빈 상영표를 돌려준다 (호출부에서 안내).
  */
 export async function getDaySchedule(date: string): Promise<DaySchedule> {
-  if (!amcConfigured()) return seedDay(date);
+  if (!amcConfigured()) {
+    // 시드는 개발 편의용이다. 프로덕션에서 없는 영화를 실제 상영표처럼 보여주면 안 된다.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('AMC 키가 설정되지 않았습니다. (AMC_VENDOR_KEY 또는 AMC_API_KEY)');
+    }
+    return seedDay(date);
+  }
 
   if (hasRedis()) {
     const cached = await redis().get<DaySchedule>(dayKey(date));
