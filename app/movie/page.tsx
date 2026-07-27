@@ -30,9 +30,9 @@ const T = {
     ko: 'AMC 상영표를 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
     en: 'Couldn’t load showtimes from AMC. Please try again shortly.',
   },
-  seedNotice: {
-    ko: 'AMC 키가 없어 예시 상영표를 보여주고 있어요.',
-    en: 'No AMC key configured — showing sample showtimes.',
+  sampleNotice: {
+    ko: '⚠️ 아래 상영표는 예시예요. AMC에서 발급한 키가 목요일에 활성화되면 실제 상영표로 바뀝니다.',
+    en: '⚠️ These showtimes are samples. They switch to the real AMC listings once our API key goes live on Thursday.',
   },
   runtimeRating: { ko: '{runtime}분 · {rating}', en: '{runtime} min · {rating}' },
   pickedElsewhere: { ko: '다른 날짜 포함 {n}개 선택됨', en: '{n} picked across all dates' },
@@ -97,7 +97,7 @@ export default function PickPage() {
   const [date, setDate] = useState('');
   const [dates, setDates] = useState<string[]>([]);
   const [amcError, setAmcError] = useState<string | null>(null);
-  const [amcOn, setAmcOn] = useState(true);
+  const [sample, setSample] = useState(false);
   const [loadingDay, setLoadingDay] = useState(false);
   const [selections, setSelections] = useState<Selections>({});
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -131,7 +131,7 @@ export default function PickPage() {
     setDates(data.dates ?? []);
     setMovies(data.movies ?? []);
     setSelections(data.selections ?? {});
-    setAmcOn(Boolean(data.amcConfigured));
+    setSample(Boolean(data.sample));
     setAmcError(data.error ?? null);
   }
 
@@ -318,8 +318,8 @@ export default function PickPage() {
         })}
       </div>
 
-      {!amcOn && <div className="msg">{t(T.seedNotice)}</div>}
-      {amcError && <div className="msg err">{t(T.amcDown)}</div>}
+      {sample && <div className="msg err">{t(T.sampleNotice)}</div>}
+      {amcError && !sample && <div className="msg err">{t(T.amcDown)}</div>}
 
       {loadingDay ? (
         <p className="subtitle">{t(T.loading)}</p>

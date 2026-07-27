@@ -27,9 +27,12 @@ export async function GET(req: NextRequest) {
 
   // AMC 호출이 실패해도 선택 현황은 보여준다
   let movies: Awaited<ReturnType<typeof getDaySchedule>>['movies'] = [];
+  let sample = false;
   let error: string | null = null;
   try {
-    movies = (await getDaySchedule(date)).movies;
+    const day = await getDaySchedule(date);
+    movies = day.movies;
+    sample = Boolean(day.sample);
   } catch (e) {
     console.error('[schedule] day fetch failed:', e);
     error = e instanceof Error ? e.message : 'AMC 상영표를 불러오지 못했어요.';
@@ -40,6 +43,7 @@ export async function GET(req: NextRequest) {
     dates,
     movies,
     selections: resolved,
+    sample,
     amcConfigured: amcConfigured(),
     ...(error ? { error } : {}),
   });

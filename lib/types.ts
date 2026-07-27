@@ -22,6 +22,8 @@ export interface Showtime {
 export interface DaySchedule {
   date: string;
   movies: { movie: Movie; showtimes: Showtime[] }[];
+  /** 실제 AMC 상영표가 아니라 예시 데이터임 — 화면에 반드시 표시한다 */
+  sample?: boolean;
 }
 
 export interface UserSelection {

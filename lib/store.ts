@@ -58,13 +58,9 @@ function normalize(raw: Record<string, unknown> | null | undefined): Selections 
  * AMC 호출이 실패하면 화면 전체가 죽지 않도록 빈 상영표를 돌려준다 (호출부에서 안내).
  */
 export async function getDaySchedule(date: string): Promise<DaySchedule> {
-  if (!amcConfigured()) {
-    // 시드는 개발 편의용이다. 프로덕션에서 없는 영화를 실제 상영표처럼 보여주면 안 된다.
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('AMC 키가 설정되지 않았습니다. (AMC_VENDOR_KEY 또는 AMC_API_KEY)');
-    }
-    return seedDay(date);
-  }
+  // 키가 없거나 아직 활성화되지 않은 동안에는 예시 상영표로 화면을 볼 수 있게 한다.
+  // 반드시 sample 플래그를 달아 화면에서 "예시"임을 밝힌다 (실제 상영표로 오해하면 안 된다).
+  if (!amcConfigured()) return { ...seedDay(date), sample: true };
 
   if (hasRedis()) {
     const cached = await redis().get<DaySchedule>(dayKey(date));
@@ -77,11 +73,9 @@ export async function getDaySchedule(date: string): Promise<DaySchedule> {
   try {
     day = await fetchAmcDay(date);
   } catch (e) {
-    // 개발 중에는 키가 없거나 막혀 있어도 화면을 볼 수 있어야 한다.
-    // 프로덕션에서는 가짜 상영표를 보여주지 않고 그대로 실패시킨다.
-    if (process.env.NODE_ENV === 'production') throw e;
-    console.error('[amc] 상영표 조회 실패 — 개발용 시드로 대체:', e instanceof Error ? e.message : e);
-    return seedDay(date);
+    // 키가 아직 승인 전이면 403이 온다 — 그동안은 예시 상영표로 대체하고 화면에 밝힌다
+    console.error('[amc] 상영표 조회 실패 — 예시 상영표로 대체:', e instanceof Error ? e.message : e);
+    return { ...seedDay(date), sample: true };
   }
   if (hasRedis()) {
     await redis().set(dayKey(date), day, { ex: DAY_TTL });
