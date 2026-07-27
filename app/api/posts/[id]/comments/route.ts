@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return await errJson(E.comment, 400);
   }
 
-  // 답글이면 같은 모임의 댓글이어야 한다. 답글의 답글은 원 댓글에 붙여 한 단계로 유지한다.
+  // 답글이면 같은 모임의 댓글이어야 한다 (깊이는 제한하지 않고, 화면에서 들여쓰기만 제한한다)
   let parentId: string | undefined;
   let parentAuthorId: string | undefined;
   if (typeof body?.parentId === 'string' && body.parentId) {
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!parent || parent.postId !== id) {
       return await errJson(E.commentNotFound, 404);
     }
-    parentId = parent.parentId ?? parent.id;
+    parentId = parent.id;
     parentAuthorId = parent.userId;
   }
 

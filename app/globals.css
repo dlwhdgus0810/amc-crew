@@ -302,9 +302,10 @@ a:hover .notif-item { background: var(--surface-2); }
 .comment-body { flex: 1; }
 .comment-delete { font-size: 11px; flex: none; }
 /* 답글은 원 댓글 아래에 한 단계만 들여쓴다 */
-.comment-row.reply { padding-left: 22px; position: relative; }
+.comment-row.reply { padding-left: var(--indent, 22px); position: relative; }
 .comment-row.reply::before {
-  content: '↳'; position: absolute; left: 4px; color: var(--text-dim); font-size: 11px;
+  content: '↳'; position: absolute; left: calc(var(--indent, 22px) - 18px);
+  color: var(--text-dim); font-size: 11px;
 }
 /* 액션은 평소엔 흐리게 두고, 줄에 마우스를 올리면 또렷해진다 */
 .comment-actions { display: flex; align-items: center; gap: 12px; flex: none; opacity: 0.55; transition: opacity 0.15s ease; }

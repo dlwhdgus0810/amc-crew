@@ -28,8 +28,11 @@ const T = {
   failed: { ko: '요청 실패', en: 'Something went wrong' },
 };
 
+/** 들여쓰기는 이 깊이까지만 — 더 깊어져도 답글은 달리되 가로 공간이 무너지지 않는다 */
+const MAX_INDENT = 4;
+
 /**
- * 모임 댓글 — 답글은 한 단계까지만 접고, 좋아요(하트)는 누른 즉시 화면에 반영한다.
+ * 모임 댓글 — 답글에 다시 답글을 달 수 있고, 좋아요(하트)는 누른 즉시 화면에 반영한다.
  * 피드와 공유 페이지가 함께 쓴다.
  */
 export default function CommentThread({
@@ -55,7 +58,9 @@ export default function CommentThread({
   // 하트는 응답을 기다리지 않고 먼저 칠한다 (실패하면 새로고침으로 되돌아온다)
   const [optimistic, setOptimistic] = useState<Record<string, { liked: boolean; likeCount: number }>>({});
 
-  const roots = comments.filter((c) => !c.parentId);
+  // 부모가 지워진 답글은 최상위로 올린다 — 그러지 않으면 트리에서 빠져 화면에서 사라진다
+  const byId = new Map(comments.map((c) => [c.id, c]));
+  const roots = comments.filter((c) => !c.parentId || !byId.has(c.parentId));
   const repliesOf = (id: string) => comments.filter((c) => c.parentId === id);
 
   async function send() {
@@ -109,10 +114,19 @@ export default function CommentThread({
     setBusy(false);
   }
 
-  function row(c: CommentView, isReply: boolean) {
+  function row(c: CommentView, depth: number) {
     const like = optimistic[c.id] ?? { liked: c.likedByMe, likeCount: c.likeCount };
     return (
-      <div key={c.id} className={`comment-row ${isReply ? 'reply' : ''}`}>
+      <div
+        key={c.id}
+        className={`comment-row ${depth > 0 ? 'reply' : ''}`}
+        // 들여쓰기 폭을 CSS 변수로 넘겨 ↳ 표시도 같이 따라오게 한다
+        style={
+          depth > 0
+            ? ({ '--indent': `${Math.min(depth, MAX_INDENT) * 22}px` } as React.CSSProperties)
+            : undefined
+        }
+      >
         <span className="comment-author">{c.name}</span>
         <span className="comment-body">{c.body}</span>
         <span className="comment-actions">
@@ -126,7 +140,7 @@ export default function CommentThread({
             {like.liked ? '♥' : '♡'}
             {like.likeCount > 0 && <span className="heart-count">{like.likeCount}</span>}
           </button>
-          {currentUserId && !isReply && (
+          {currentUserId && (
             <button className="secondary" disabled={busy} onClick={() => setReplyTo(c)}>
               {t(T.reply)}
             </button>
@@ -141,17 +155,22 @@ export default function CommentThread({
     );
   }
 
+  /** 답글의 답글까지 따라 내려가며 그린다 */
+  function renderTree(c: CommentView, depth: number): React.ReactNode {
+    return (
+      <div key={c.id}>
+        {row(c, depth)}
+        {repliesOf(c.id).map((r) => renderTree(r, depth + 1))}
+      </div>
+    );
+  }
+
   return (
     <div className="comments">
       {roots.length === 0 && (
         <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.empty)}</div>
       )}
-      {roots.map((c) => (
-        <div key={c.id}>
-          {row(c, false)}
-          {repliesOf(c.id).map((r) => row(r, true))}
-        </div>
-      ))}
+      {roots.map((c) => renderTree(c, 0))}
 
       {currentUserId ? (
         <div className="field-row" style={{ marginTop: 12 }}>
