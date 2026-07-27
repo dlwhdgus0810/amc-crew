@@ -6,6 +6,7 @@ import { countParticipants, deletePost, getPost, getPostView, updatePost } from 
 import { getCategory } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
 import { todayLocal } from '@/lib/dates';
+import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,7 +99,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     location,
     description: description || null,
     capacity,
-    origin: req.nextUrl.origin,
+    origin: siteUrl(req.nextUrl.origin),
   });
   return NextResponse.json({ ok: true });
 }
@@ -117,6 +118,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (post.authorId !== user.id && !isAdmin(user)) {
     return await errJson(E.authorOnlyDelete, 403);
   }
-  await deletePost(post, user.id, await displayNameOf(user), req.nextUrl.origin);
+  await deletePost(post, user.id, await displayNameOf(user), siteUrl(req.nextUrl.origin));
   return NextResponse.json({ ok: true });
 }

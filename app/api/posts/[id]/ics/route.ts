@@ -3,6 +3,7 @@ import { getPostView } from '@/lib/db/posts';
 import { catName, getCategory } from '@/lib/categories';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
+import { siteUrl } from '@/lib/site';
 
 const T = {
   notFound: { ko: '포스트를 찾을 수 없어요.', en: 'Meetup not found.' },
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     cat: catName(post.category, locale),
     title: post.title ? ` 〈${post.title}〉` : '',
   });
-  const detailUrl = `${req.nextUrl.origin}/p/${post.id}`;
+  const detailUrl = `${siteUrl(req.nextUrl.origin)}/p/${post.id}`;
   const description = [post.description, pick(locale, T.page, { url: detailUrl })]
     .filter(Boolean)
     .join('\n');

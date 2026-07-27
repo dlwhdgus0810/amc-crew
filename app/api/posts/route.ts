@@ -8,6 +8,7 @@ import { createRecurringRule } from '@/lib/db/recurring';
 import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
 import { isPastSlot } from '@/lib/dates';
+import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
     location,
     ...(description ? { description } : {}),
     ...(capacity !== undefined ? { capacity } : {}),
-    origin: req.nextUrl.origin,
+    origin: siteUrl(req.nextUrl.origin),
   };
 
   // 매주 반복이면 규칙을 만들고 첫 회차를 생성한다 (이후 회차는 크론이 매일 채운다)

@@ -198,6 +198,12 @@ export async function sendKakaoMemos(
   linkUrl: string,
   buttonTitle: string = DEFAULT_BUTTON_TITLE
 ): Promise<void> {
+  // 개발 중에는 실제 사람에게 카톡을 보내지 않는다.
+  // (예전에 로컬에서 보낸 알림에 localhost 링크가 박혀 나가 열 수 없었다)
+  if (process.env.NODE_ENV !== 'production' && process.env.KAKAO_MEMO_IN_DEV !== '1') {
+    console.info('[kakao-memo] 개발 환경이라 발송을 건너뜁니다:', userIds.length + '명', '|', text.slice(0, 60));
+    return;
+  }
   await Promise.allSettled(
     userIds.map(async (userId) => {
       try {

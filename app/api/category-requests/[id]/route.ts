@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getCategoryRequest, reviewCategoryRequest } from '@/lib/db/category-requests';
+import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     ...(adminNote ? { adminNote } : {}),
     requesterId: request.userId,
     requestName: request.name,
-    origin: req.nextUrl.origin,
+    origin: siteUrl(req.nextUrl.origin),
   });
   return NextResponse.json({ ok: true });
 }

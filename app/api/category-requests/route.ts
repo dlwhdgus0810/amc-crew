@@ -5,6 +5,7 @@ import { ensureUser } from '@/lib/db/users';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { createCategoryRequest, listCategoryRequests } from '@/lib/db/category-requests';
 import { isExistingCategoryName } from '@/lib/categories';
+import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
     color,
     description,
     ...(featureRequest ? { featureRequest } : {}),
-    origin: req.nextUrl.origin,
+    origin: siteUrl(req.nextUrl.origin),
   });
   return NextResponse.json({ ok: true, id });
 }

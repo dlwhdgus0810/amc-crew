@@ -46,6 +46,7 @@ const T = {
 import type { PostView } from '@/lib/db/posts';
 import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread from '../../comment-thread';
+import { siteUrl } from '@/lib/site';
 
 interface SessionUser {
   id: string;
@@ -118,7 +119,7 @@ export default function PostClient({ id }: { id: string }) {
 
 
   async function copyLink() {
-    const url = `${window.location.origin}/p/${id}`;
+    const url = `${siteUrl(window.location.origin)}/p/${id}`;
     try {
       if (navigator.share) {
         await navigator.share({ url });
@@ -162,7 +163,7 @@ export default function PostClient({ id }: { id: string }) {
     `&dates=${gcalDates}&ctz=America/Chicago` +
     `&location=${encodeURIComponent(post.location)}` +
     `&details=${encodeURIComponent(
-      t(T.gcalDetails, { url: `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${id}` })
+      t(T.gcalDetails, { url: `${siteUrl(typeof window !== 'undefined' ? window.location.origin : '')}/p/${id}` })
     )}`;
 
   return (

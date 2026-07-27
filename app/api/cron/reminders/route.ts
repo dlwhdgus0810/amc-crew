@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTodayReminders } from '@/lib/db/posts';
 import { materializeDueOccurrences } from '@/lib/db/recurring';
+import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   } else if (req.headers.get('authorization') !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
-  const origin = req.nextUrl.origin;
+  const origin = siteUrl(req.nextUrl.origin);
   const recurring = await materializeDueOccurrences(origin);
   const reminders = await sendTodayReminders(origin);
   return NextResponse.json({ ok: true, recurring, reminders });

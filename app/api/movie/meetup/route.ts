@@ -6,6 +6,7 @@ import { getProfiles, getSelections, resolveDisplayName } from '@/lib/store';
 import { addParticipants, createPost, findPostByShowtime } from '@/lib/db/posts';
 import { AMC_THEATRE_NAME } from '@/lib/amc';
 import { Showtime } from '@/lib/types';
+import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     endTime: endTime(showtime.time),
     location: AMC_THEATRE_NAME,
     amcShowtimeId: showtimeId,
-    origin: req.nextUrl.origin,
+    origin: siteUrl(req.nextUrl.origin),
   });
 
   // 이 회차를 고른 사람들을 참가자로 (작성자는 createPost가 이미 넣었다)

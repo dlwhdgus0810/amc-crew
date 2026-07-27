@@ -7,6 +7,7 @@ import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday 
 import type { TitleMeta, TitleSearchResult } from '@/lib/tmdb';
 import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread, { CommentView } from '../../comment-thread';
+import { siteUrl } from '@/lib/site';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -390,7 +391,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
   }
 
   async function share(post: PostView) {
-    const url = `${window.location.origin}/p/${post.id}`;
+    const url = `${siteUrl(window.location.origin)}/p/${post.id}`;
     try {
       if (navigator.share) {
         await navigator.share({
