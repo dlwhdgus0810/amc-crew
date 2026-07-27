@@ -433,3 +433,16 @@ a:hover .notif-item { background: var(--surface-2); }
 
 /* AMC 그룹 → 모임 만들기 */
 .group-actions { margin-top: 14px; }
+
+/* ── 홈 화면 추가 / 카톡 인앱 브라우저 안내 ── */
+.install-hint {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap;
+  border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  padding: 16px 18px; margin: 0 0 32px;
+}
+.install-body { display: flex; flex-direction: column; gap: 4px; max-width: 60ch; }
+.install-body strong { font-size: 14.5px; font-weight: 600; }
+.install-body span { font-size: 13.5px; color: var(--text-dim); }
+.install-actions { display: flex; align-items: center; gap: 16px; flex: none; }
+.install-actions .dim { color: var(--text-dim); border-bottom-color: var(--text-dim); }

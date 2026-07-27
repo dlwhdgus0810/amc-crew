@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import NavLinks from './nav';
 import ServiceWorkerRegistrar from './sw-register';
+import InstallPrompt from './install-prompt';
 import { I18nProvider } from './i18n';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
@@ -47,7 +48,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <NavLinks />
             </div>
           </header>
-          <main className="container">{children}</main>
+          <main className="container">
+            <InstallPrompt />
+            {children}
+          </main>
           <footer className="site-footer">
             <div className="container">
               <span>© 2026 KANSAS KOREAN</span>
