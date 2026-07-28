@@ -31,8 +31,6 @@
   --tabbar-inset: 14px;
 }
 
-/* hover 스타일은 마우스가 있는 기기에서만 — 손가락으로 쓰는 기기(iOS)는 hover가 있는 요소를
-   "첫 탭은 hover, 두 번째 탭이 실행"으로 다뤄서, 탭바 버튼을 두 번 눌러야 하는 일이 생긴다. */
 * { box-sizing: border-box; }
 
 body {
@@ -75,7 +73,7 @@ body {
 }
 .avatar.on { background: var(--text); color: #fff; border-color: var(--text); }
 
-main { flex: 1; width: 100%; }
+main { padding: 8px 0 calc(var(--tabbar) + 16px); flex: 1; width: 100%; }
 .site-footer { display: none; }
 
 /* ── 하단 탭바 — 2a 플로팅 아일랜드 ─────────────────────── */
@@ -124,7 +122,18 @@ nav.tabbar {
   font-size: 10.5px; font-weight: 700;
 }
 .tabbar a.active .t-ava { background: var(--text); color: #fff; }
-
+/* 새 모임 만들기 (＋) — 캡슐 안 오른쪽에 흡수 */
+.tab-fab {
+  grid-column: auto; justify-self: end;
+  width: 44px; height: 44px; border-radius: 999px; flex: none;
+  margin: 0 2px 0 6px;
+  background: var(--text); color: #fff; border: none;
+  font-size: 22px; font-weight: 400; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; text-decoration: none;
+}
+@media (hover: hover) { .tab-fab:hover { opacity: 0.85; color: #fff; } }
+nav.tabbar:has(.tab-fab) { grid-template-columns: repeat(4, 1fr) auto; grid-auto-flow: row; }
 
 /* 화면 안 문맥 탭 (AMC의 회차/그룹, 피드의 예정/지난 등) */
 .segbar { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 2px; }
@@ -346,6 +355,7 @@ button.big-cta .arrow { color: #fff; }
 .comment-body { font-size: 13.5px; margin-top: 3px; text-wrap: pretty; overflow-wrap: anywhere; }
 .comment-actions { display: flex; align-items: center; gap: 14px; margin-top: 2px; }
 .comment-actions .link-btn { min-height: 32px; font-size: 11.5px; font-weight: 600; color: var(--text-dim); }
+.compose-row .link-btn.strong { flex: none; }
 .comment-empty { font-size: 13px; color: var(--text-dim); }
 
 .heart {
@@ -567,8 +577,9 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .site-header { background: rgba(247, 246, 242, 0.92); }
   .header-inner { min-height: 72px; }
   .container { max-width: 1100px; padding: 0 40px; }
+  main { padding: 12px 0 80px; }
 
-  nav.tabbar {
+  nav.tabbar, nav.tabbar:has(.tab-fab) {
     top: 0; bottom: 0; left: 0; right: auto; width: 232px;
     display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start;
     gap: 2px;
@@ -584,6 +595,11 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .tabbar .t-icon, .tabbar .t-ava { width: 18px; height: 18px; }
   .tabbar a .bell-badge { position: static; margin: 0 0 0 auto; border: none; }
   .tabbar a.active { background: var(--surface-2); }
+  .tab-fab {
+    justify-self: stretch; width: 100%; margin: 12px 0 0;
+    border-radius: 999px; height: auto; min-height: 46px;
+    font-size: 15px; font-weight: 600;
+  }
   .car, .cat-grid { grid-template-columns: repeat(3, 1fr); }
   .times { grid-template-columns: repeat(6, 1fr); }
   h1, .statement { font-size: clamp(30px, 3.4vw, 44px); }
@@ -635,21 +651,24 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
 
 /* 구독 — 검은 알약 버튼 대신 텍스트 토글 */
 .sub-text {
-  flex: none; background: transparent; border: none; padding: 0 2px;
+  flex: none; background: transparent; border: none; border-radius: 0;
+  padding: 0 2px; margin: 0; box-shadow: none;
   min-height: 44px; display: inline-flex; align-items: center; gap: 6px;
-  color: var(--text-dim); font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--text-dim); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
 }
-@media (hover: hover) { .sub-text:hover { opacity: 1; color: var(--text); } }
+@media (hover: hover) { .sub-text:hover { opacity: 1; color: var(--text); background: transparent; } }
 .sub-text.on { color: var(--text); }
 
-.feed-tabs { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
+.feed-tabs { display: flex; align-items: center; gap: 18px; margin-bottom: 6px; }
 .feed-tabs button {
-  background: transparent; border: none; padding: 0;
+  background: transparent; border: none; border-radius: 0;
+  padding: 0; margin: 0; box-shadow: none;
   min-height: 40px; color: var(--text-dim);
-  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer;
+  border-bottom: 1.5px solid transparent;
 }
-@media (hover: hover) { .feed-tabs button:hover { color: var(--text); opacity: 1; } }
-.feed-tabs button.on { color: var(--text); font-weight: 600; box-shadow: inset 0 -1.5px 0 var(--text); }
+@media (hover: hover) { .feed-tabs button:hover { color: var(--text); opacity: 1; background: transparent; } }
+.feed-tabs button.on { color: var(--text); font-weight: 600; border-bottom-color: var(--text); }
 
 .day-block { margin-top: 4px; }
 .day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 0 10px; }
@@ -704,24 +723,26 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
 /* 액션 — 색 버튼 없이 텍스트로 */
 .post-actions { display: flex; align-items: center; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
 .link-btn {
-  background: transparent; border: none; padding: 0;
+  background: transparent; border: none; border-radius: 0;
+  padding: 0; margin: 0; box-shadow: none;
   min-height: 40px; display: inline-flex; align-items: center; gap: 5px;
   color: var(--text-mid); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
 }
-@media (hover: hover) { .link-btn:hover { color: var(--text); opacity: 1; } }
+@media (hover: hover) { .link-btn:hover { color: var(--text); opacity: 1; background: transparent; } }
 .link-btn.strong { color: var(--text); }
 .link-btn.danger-text { color: var(--danger); }
 .link-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .join-text {
   margin-left: auto; flex: none;
-  background: transparent; border: none; padding: 0 1px;
+  background: transparent; border: none; border-radius: 0; box-shadow: none;
+  padding: 0 1px;
   min-height: 40px; display: inline-flex; align-items: center;
   font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
-  color: var(--accent); box-shadow: 0 1.5px 0 var(--accent);
+  color: var(--accent); border-bottom: 1.5px solid var(--accent);
 }
-@media (hover: hover) { .join-text:hover { opacity: 0.8; } }
-.join-text.joined { color: var(--text); box-shadow: 0 1.5px 0 var(--text); }
-.join-text:disabled { color: var(--text-dim); box-shadow: none; cursor: not-allowed; }
+@media (hover: hover) { .join-text:hover { opacity: 0.8; background: transparent; } }
+.join-text.joined { color: var(--text); border-bottom-color: var(--text); }
+.join-text:disabled { color: var(--text-dim); border-bottom-color: transparent; cursor: not-allowed; }
 .post-owner-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 
 .icon-btn {
@@ -740,8 +761,8 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
 .new-inline {
   width: 100%; min-height: 48px; margin-top: 8px;
   background: transparent; color: var(--text-mid);
-  border: 1px dashed var(--border); border-radius: 999px;
-  font-size: 13.5px; font-weight: 600;
+  border: 1px dashed var(--border); border-radius: 12px;
+  font-family: inherit; font-size: 13.5px; font-weight: 600;
 }
 @media (hover: hover) { .new-inline:hover { background: var(--surface); color: var(--text); opacity: 1; } }
 .feed-empty .new-inline { width: auto; padding: 0 20px; margin-top: 0; }
@@ -803,4 +824,3 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .create-foot .big-cta { max-width: 320px; }
   .new-inline { width: auto; padding: 0 28px; }
 }
-
