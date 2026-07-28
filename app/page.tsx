@@ -13,9 +13,9 @@ import {
 } from '@dnd-kit/core';
 import {
   arrayMove,
-  horizontalListSortingStrategy,
   SortableContext,
   sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useT } from './i18n';
@@ -40,8 +40,6 @@ const T = {
     ko: '하고 싶은 취미가 없나요? 카테고리 제안하기 →',
     en: 'Missing your hobby? Suggest a category →',
   },
-  prev: { ko: '이전', en: 'Previous' },
-  next: { ko: '다음', en: 'Next' },
 };
 
 /**
@@ -57,8 +55,6 @@ const SCROLL_KEY = 'kk-home-scroll';
  */
 const RESTORE_SETTLE_MS = 400;
 const RESTORE_HOLD_MAX_MS = 2500;
-/** 이만큼 넘게 끌면 스크롤로 본다 (그 아래는 그냥 클릭) */
-const DRAG_SCROLL_THRESHOLD = 4;
 
 interface SessionUser {
   id: string;
@@ -83,8 +79,7 @@ export default function HubPage() {
   const [favList, setFavList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const carRef = useRef<HTMLDivElement>(null);
-  // 끄는 동안에는 캐러셀의 scroll-snap을 꺼야 카드가 손을 따라온다
+  // 끄는 동안에는 카드가 손을 따라오도록 hover 들림을 멈춘다
   const [reordering, setReordering] = useState(false);
   const t = useT();
   const favs = useMemo(() => new Set(favList), [favList]);
@@ -113,36 +108,31 @@ export default function HubPage() {
   }, []);
 
   /**
-   * 카테고리를 보고 nav로 돌아왔을 때 보던 자리를 그대로 둔다.
-   * 캐러셀의 가로 위치와 세로 스크롤을 기억한다.
+   * 카테고리를 보고 탭바로 돌아왔을 때 보던 자리를 그대로 둔다.
    * 카드가 그려진 뒤에 복원해야 하므로 loading이 끝나고 나서 건다.
    */
   useEffect(() => {
     if (loading) return;
-    const car = carRef.current;
 
     /*
-     * 브라우저가 히스토리 항목마다 기억해둔 스크롤을 되살리는데, 캐러셀 같은 스크롤 상자까지
-     * 자기가 기억한 값(대개 0)으로 되돌려놓는다. 우리가 맞춰놓은 자리를 덮어쓰는 주범이라 끈다.
-     * 화면 위치는 Next와 이 훅이 책임진다.
+     * 브라우저가 히스토리 항목마다 기억해둔 스크롤을 되살리면서 우리가 맞춰놓은 자리를
+     * 자기가 기억한 값(대개 0)으로 덮어쓴다. 화면 위치는 Next와 이 훅이 책임진다.
      */
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
-    let target: { x: number; y: number } | null = null;
+    let target: number | null = null;
     const saved = localStorage.getItem(SCROLL_KEY);
     if (saved) {
       try {
-        const { x, y } = JSON.parse(saved) as { x?: number; y?: number };
-        target = { x: x ?? 0, y: y ?? 0 };
+        const { y } = JSON.parse(saved) as { y?: number };
+        target = y ?? 0;
       } catch {
         localStorage.removeItem(SCROLL_KEY); // 형태가 깨졌으면 버린다
       }
     }
 
     const apply = () => {
-      if (!target) return;
-      if (car && target.x) car.scrollLeft = target.x;
-      if (target.y) window.scrollTo(0, target.y);
+      if (target) window.scrollTo(0, target);
     };
 
     /*
@@ -159,8 +149,8 @@ export default function HubPage() {
 
     /*
      * 한 번만 맞추면 놓친다 — Next의 맨 위로 올리기, 브라우저의 자체 스크롤 복원,
-     * 레이아웃이 늦게 잡히는 경우가 착지 직후 제각각 끼어들어 캐러셀을 맨 앞으로 되돌린다.
-     * 그래서 잠깐 동안 프레임마다 다시 맞춘다. 사람이 화면을 만지는 순간 즉시 손을 뗀다.
+     * 레이아웃이 늦게 잡히는 경우가 착지 직후 제각각 끼어들어 맨 위로 되돌린다.
+     * 그래서 잠깐 동안 되풀이해 맞춘다. 사람이 화면을 만지는 순간 즉시 손을 뗀다.
      */
     apply();
     // rAF 대신 타이머 — 화면이 가려진 동안에는 rAF가 멈춰서 복원을 놓친다
@@ -168,7 +158,7 @@ export default function HubPage() {
     let stableSince = 0;
     const hold = setInterval(() => {
       // 사람이 만졌거나, 자리가 충분히 오래 유지됐거나, 시간이 다 되면 손을 뗀다
-      const atTarget = !target || !car || Math.abs(car.scrollLeft - target.x) < 2;
+      const atTarget = !target || Math.abs(window.scrollY - target) < 2;
       if (atTarget && !stableSince) stableSince = performance.now();
       if (!atTarget) stableSince = 0;
       const settled = stableSince && performance.now() - stableSince > RESTORE_SETTLE_MS;
@@ -182,15 +172,10 @@ export default function HubPage() {
     // 떠날 때 읽으면 Next가 맨 위로 올린 뒤일 수 있어, 움직일 때마다 적어둔다
     const save = () => {
       if (!armed) return;
-      localStorage.setItem(
-        SCROLL_KEY,
-        JSON.stringify({ x: car?.scrollLeft ?? 0, y: window.scrollY, at: Date.now() })
-      );
+      localStorage.setItem(SCROLL_KEY, JSON.stringify({ y: window.scrollY, at: Date.now() }));
     };
-    car?.addEventListener('scroll', save, { passive: true });
     window.addEventListener('scroll', save, { passive: true });
     // 손을 뗀 뒤 미끄러지다 멈춘 자리까지 잡는다 (iOS는 미끄러지는 동안 scroll을 늦게 준다)
-    car?.addEventListener('scrollend', save);
     window.addEventListener('scrollend', save);
     // 카드를 눌러 떠나는 순간의 위치 — 미끄러지는 중에 눌러도 그 자리가 남는다
     document.addEventListener('click', save, true);
@@ -199,64 +184,10 @@ export default function HubPage() {
     return () => {
       clearInterval(hold);
       inputs.forEach((type) => window.removeEventListener(type, arm));
-      car?.removeEventListener('scroll', save);
       window.removeEventListener('scroll', save);
-      car?.removeEventListener('scrollend', save);
       window.removeEventListener('scrollend', save);
       document.removeEventListener('click', save, true);
       window.removeEventListener('pagehide', save);
-    };
-  }, [loading]);
-
-  /**
-   * 마우스로 카드를 끌어 캐러셀을 좌우로 움직인다.
-   * 터치는 브라우저 기본 스크롤(관성)이 더 좋으므로 손대지 않고, 마우스일 때만 가로챈다.
-   * 손잡이(⠿)와 토글 버튼에서 시작한 건 각자 처리하므로 비켜준다.
-   */
-  useEffect(() => {
-    if (loading) return;
-    const car = carRef.current;
-    if (!car) return;
-
-    let startX = 0;
-    let startLeft = 0;
-    let moved = 0;
-    let dragging = false;
-
-    const down = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse' || e.button !== 0) return;
-      if ((e.target as HTMLElement).closest('button')) return;
-      dragging = true;
-      moved = 0;
-      startX = e.clientX;
-      startLeft = car.scrollLeft;
-    };
-    const move = (e: PointerEvent) => {
-      if (!dragging) return;
-      const dx = e.clientX - startX;
-      moved = Math.max(moved, Math.abs(dx));
-      if (moved <= DRAG_SCROLL_THRESHOLD) return;
-      car.classList.add('grabbing');
-      car.scrollLeft = startLeft - dx;
-      e.preventDefault(); // 끄는 동안 글자가 선택되지 않게
-    };
-    const up = () => {
-      if (!dragging) return;
-      dragging = false;
-      car.classList.remove('grabbing');
-      // 끌고 나서 손을 떼면 카드가 열리면 안 된다 — 직후 클릭 한 번만 삼킨다
-      if (moved > DRAG_SCROLL_THRESHOLD) swallowClick.current = true;
-    };
-
-    car.addEventListener('pointerdown', down);
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
-    return () => {
-      car.removeEventListener('pointerdown', down);
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', up);
     };
   }, [loading]);
 
@@ -358,10 +289,6 @@ export default function HubPage() {
     if (res.ok) setFavList((await res.json()).favorites ?? next);
   }
 
-  function scroll(dir: number) {
-    carRef.current?.scrollBy({ left: dir * 580, behavior: 'smooth' });
-  }
-
   if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   // 즐겨찾기가 있으면 홈에는 그것만 — 사용자가 정한 순서대로. 나머지는 "전체 카테고리"에서 본다
@@ -396,7 +323,7 @@ export default function HubPage() {
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      <div className={`car ${reordering ? 'reordering' : ''}`} ref={carRef}>
+      <div className={`car ${reordering ? 'reordering' : ''}`}>
         {canReorder ? (
           <DndContext
             sensors={sensors}
@@ -405,7 +332,7 @@ export default function HubPage() {
             onDragCancel={() => setReordering(false)}
             onDragEnd={onDragEnd}
           >
-            <SortableContext items={favList} strategy={horizontalListSortingStrategy}>
+            <SortableContext items={favList} strategy={verticalListSortingStrategy}>
               {shown.map((c) => (
                 <SortableCategoryCard
                   key={c.slug}
@@ -435,21 +362,13 @@ export default function HubPage() {
         )}
       </div>
       {canReorder && <div className="drag-hint">{t(T.dragHint)}</div>}
-      <div className="car-arrows">
-        <span className="car-links">
-          <Link href="/categories" className="profile-link">
-            {t(T.allCategories)}
-          </Link>
-          <Link href="/suggest" className="profile-link">
-            {t(T.suggest)}
-          </Link>
-        </span>
-        <button onClick={() => scroll(-1)} aria-label={t(T.prev)}>
-          ←
-        </button>
-        <button onClick={() => scroll(1)} aria-label={t(T.next)}>
-          →
-        </button>
+      <div className="car-links">
+        <Link href="/categories" className="profile-link">
+          {t(T.allCategories)}
+        </Link>
+        <Link href="/suggest" className="profile-link">
+          {t(T.suggest)}
+        </Link>
       </div>
     </>
   );
