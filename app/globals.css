@@ -27,7 +27,7 @@
   --r: 14px;
   --r-sm: 12px;
   /* 하단 탭바가 차지하는 높이 (safe-area 포함) */
-  --tabbar: calc(52px + env(safe-area-inset-bottom, 0px));
+  --tabbar: calc(48px + env(safe-area-inset-bottom, 0px));
 }
 
 * { box-sizing: border-box; }
@@ -82,23 +82,28 @@ main.container { padding-top: 8px; padding-bottom: calc(var(--tabbar) + 16px); }
 nav.tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
-  padding: 5px 16px calc(7px + env(safe-area-inset-bottom, 0px));
+  gap: 8px;
+  padding: 5px 12px calc(7px + env(safe-area-inset-bottom, 0px));
   background: rgba(247, 246, 242, 0.95);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
 }
-.tabbar-links { display: flex; align-items: center; gap: 18px; min-width: 0; }
+/* 항목이 늘어나거나 영어처럼 긴 말이 들어와도 잘리지 않게, 넘치면 가로로 밀린다 */
+.tabbar-links { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tabbar-links::-webkit-scrollbar { display: none; }
 .tabbar a {
   display: flex; align-items: center; gap: 6px;
-  min-height: 40px;
+  flex: none;
+  min-height: 36px; padding: 0 10px;
+  /* 글자만 나열하면 어디까지가 한 버튼인지 안 보인다 — 알약 모양으로 경계를 준다 */
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
   color: var(--text-dim); text-decoration: none;
-  font-size: 13.5px; font-weight: 500;
+  font-size: 12.5px; font-weight: 500;
   white-space: nowrap;
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 .tabbar a:hover { color: var(--text); }
-.tabbar a.active { color: var(--text); font-weight: 600; }
+.tabbar a.active { background: var(--text); border-color: var(--text); color: #fff; font-weight: 600; }
 .bell-badge {
   min-width: 18px; height: 18px; border-radius: 999px;
   background: var(--accent); color: #fff;
@@ -551,9 +556,12 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
     background: var(--bg); backdrop-filter: none;
   }
   .tabbar-links { flex-direction: column; align-items: stretch; gap: 2px; }
-  .tabbar a { min-height: 42px; padding: 0 12px; border-radius: var(--r-sm); font-size: 14.5px; }
+  .tabbar a {
+    min-height: 42px; padding: 0 12px; border-radius: var(--r-sm); font-size: 14.5px;
+    background: transparent; border-color: transparent;
+  }
   .tabbar a .bell-badge { margin-left: auto; }
-  .tabbar a.active { background: var(--surface-2); }
+  .tabbar a.active { background: var(--surface-2); border-color: transparent; color: var(--text); }
   .tab-fab { width: 100%; border-radius: 999px; min-height: 46px; font-size: 15px; font-weight: 600; margin-top: 12px; }
   /* 데스크톱에서는 탭바가 좌측 레일이라 스크롤로 감추지 않는다 (세로로 밀려나면 통째로 사라진다) */
   body[data-chrome='hidden'] .site-header,
