@@ -134,3 +134,26 @@ body[data-chrome='hidden'] nav.tabbar {
 
 /* 비공개 모임 배지 — 링크를 아는 사람만 볼 수 있는 모임 */
 .repeat-badge.private { color: var(--accent); border-color: var(--accent); }
+
+/* ── 만들기 패널의 날짜·시간 칸 ─────────────────────────────
+   시안은 시작/종료를 flex: 1로 나란히 놓는데, flex 항목의 기본 min-width가
+   auto라 "내용보다 작아질 수 없다". iOS의 <input type="time">은 AM/PM 때문에
+   최소 폭이 크롬보다 넓어서, 두 칸이 카드 밖으로 밀려났다.
+   min-width: 0으로 줄어들 수 있게 하고, 그래도 좁으면 두 줄로 넘어가게 한다. */
+.stack-field {
+  min-width: 0;
+  flex: 1 1 140px;
+}
+.stack-field input {
+  min-width: 0;
+  width: 100%;
+}
+/* 좁은 폰에서는 시작/종료를 아예 위아래로 놓는다.
+   iOS의 시간 컨트롤은 AM/PM까지 들어가 최소 폭이 단단해서, 줄여 넣으려 하면
+   글자가 잘리거나 칸이 밖으로 밀린다. 한 줄에 하나씩이면 그 위험이 없다.
+   (입력 글자는 16px보다 작게 못 줄인다 — 그 아래면 iOS가 화면을 확대한다) */
+@media (max-width: 400px) {
+  .create-panel .field-row .stack-field {
+    flex: 1 1 100%;
+  }
+}

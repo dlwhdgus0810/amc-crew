@@ -709,11 +709,11 @@ export default function CategoryClient({ slug }: { slug: string }) {
               <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} />
             </label>
             <div className="field-row" style={{ marginTop: 8 }}>
-              <label className="stack-field" style={{ flex: 1 }}>
+              <label className="stack-field">
                 <span className="stack-label">{t(T.fieldStart)}</span>
                 <input type="time" value={fStart} onChange={(e) => setFStart(e.target.value)} />
               </label>
-              <label className="stack-field" style={{ flex: 1 }}>
+              <label className="stack-field">
                 <span className="stack-label">{t(T.fieldEnd)}</span>
                 <input type="time" value={fEnd} onChange={(e) => setFEnd(e.target.value)} />
               </label>
