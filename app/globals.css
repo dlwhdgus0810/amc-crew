@@ -219,7 +219,10 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 11px; font-wei
 .statement-meta { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; color: var(--text-dim); margin: 44px 0 0; }
 .home-login { display: flex; align-items: center; gap: 18px; margin: 34px 0 0; }
 
-.car { display: flex; gap: 20px; overflow-x: auto; scrollbar-width: none; margin-top: 70px; scroll-snap-type: x mandatory; }
+/* 스냅을 쓰지 않는다 — 손을 뗀 자리에 그대로 선다(연속 스크롤).
+   proximity로도 브라우저가 카드 선으로 끌어당겨서, 보던 자리로 되돌아오는 복원이 매번 어긋났다.
+   (카드 정렬을 되살리려면 scroll-snap-type: x mandatory — 대신 복원이 카드 단위로 뭉개진다) */
+.car { display: flex; gap: 20px; overflow-x: auto; scrollbar-width: none; margin-top: 70px; scroll-snap-type: none; }
 .car::-webkit-scrollbar { display: none; }
 .car-card {
   position: relative; flex: none; width: min(560px, 82vw); height: 420px;

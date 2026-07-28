@@ -158,6 +158,11 @@ export default function HubPage() {
     };
     car?.addEventListener('scroll', save, { passive: true });
     window.addEventListener('scroll', save, { passive: true });
+    // 손을 뗀 뒤 미끄러지다 멈춘 자리까지 잡는다 (iOS는 미끄러지는 동안 scroll을 늦게 준다)
+    car?.addEventListener('scrollend', save);
+    window.addEventListener('scrollend', save);
+    // 카드를 눌러 떠나는 순간의 위치 — 미끄러지는 중에 눌러도 그 자리가 남는다
+    document.addEventListener('click', save, true);
     // PWA는 예고 없이 종료될 수 있어 화면을 벗어나는 순간에도 한 번 남긴다
     window.addEventListener('pagehide', save);
     return () => {
@@ -165,6 +170,9 @@ export default function HubPage() {
       inputs.forEach((type) => window.removeEventListener(type, arm));
       car?.removeEventListener('scroll', save);
       window.removeEventListener('scroll', save);
+      car?.removeEventListener('scrollend', save);
+      window.removeEventListener('scrollend', save);
+      document.removeEventListener('click', save, true);
       window.removeEventListener('pagehide', save);
     };
   }, [loading]);
