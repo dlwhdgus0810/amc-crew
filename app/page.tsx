@@ -51,10 +51,14 @@ const T = {
  */
 const SCROLL_KEY = 'kk-home-scroll';
 /**
- * 착지 후 이만큼은 복원한 자리를 지켜낸다.
- * Next·브라우저·레이아웃이 제각각 늦게 끼어들어 맨 앞으로 되돌리기 때문이다.
+ * 착지 후 복원한 자리를 지켜내는 시간.
+ * Next·브라우저·레이아웃이 제각각 늦게 끼어들어 맨 앞으로 되돌리기 때문에 한 번으로는 부족하다.
+ * 자리가 SETTLE만큼 유지되면 일찍 손을 떼고, 아무리 늦어도 MAX에서 멈춘다.
  */
-const RESTORE_HOLD_MS = 700;
+const RESTORE_SETTLE_MS = 400;
+const RESTORE_HOLD_MAX_MS = 2500;
+/** 이만큼 넘게 끌면 스크롤로 본다 (그 아래는 그냥 클릭) */
+const DRAG_SCROLL_THRESHOLD = 4;
 
 interface SessionUser {
   id: string;
@@ -117,6 +121,13 @@ export default function HubPage() {
     if (loading) return;
     const car = carRef.current;
 
+    /*
+     * 브라우저가 히스토리 항목마다 기억해둔 스크롤을 되살리는데, 캐러셀 같은 스크롤 상자까지
+     * 자기가 기억한 값(대개 0)으로 되돌려놓는다. 우리가 맞춰놓은 자리를 덮어쓰는 주범이라 끈다.
+     * 화면 위치는 Next와 이 훅이 책임진다.
+     */
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
     let target: { x: number; y: number } | null = null;
     const saved = localStorage.getItem(SCROLL_KEY);
     if (saved) {
@@ -153,9 +164,15 @@ export default function HubPage() {
      */
     apply();
     // rAF 대신 타이머 — 화면이 가려진 동안에는 rAF가 멈춰서 복원을 놓친다
-    const until = performance.now() + RESTORE_HOLD_MS;
+    const until = performance.now() + RESTORE_HOLD_MAX_MS;
+    let stableSince = 0;
     const hold = setInterval(() => {
-      if (armed || !target || performance.now() > until) {
+      // 사람이 만졌거나, 자리가 충분히 오래 유지됐거나, 시간이 다 되면 손을 뗀다
+      const atTarget = !target || !car || Math.abs(car.scrollLeft - target.x) < 2;
+      if (atTarget && !stableSince) stableSince = performance.now();
+      if (!atTarget) stableSince = 0;
+      const settled = stableSince && performance.now() - stableSince > RESTORE_SETTLE_MS;
+      if (armed || !target || settled || performance.now() > until) {
         clearInterval(hold);
         return;
       }
@@ -188,6 +205,58 @@ export default function HubPage() {
       window.removeEventListener('scrollend', save);
       document.removeEventListener('click', save, true);
       window.removeEventListener('pagehide', save);
+    };
+  }, [loading]);
+
+  /**
+   * 마우스로 카드를 끌어 캐러셀을 좌우로 움직인다.
+   * 터치는 브라우저 기본 스크롤(관성)이 더 좋으므로 손대지 않고, 마우스일 때만 가로챈다.
+   * 손잡이(⠿)와 토글 버튼에서 시작한 건 각자 처리하므로 비켜준다.
+   */
+  useEffect(() => {
+    if (loading) return;
+    const car = carRef.current;
+    if (!car) return;
+
+    let startX = 0;
+    let startLeft = 0;
+    let moved = 0;
+    let dragging = false;
+
+    const down = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      if ((e.target as HTMLElement).closest('button')) return;
+      dragging = true;
+      moved = 0;
+      startX = e.clientX;
+      startLeft = car.scrollLeft;
+    };
+    const move = (e: PointerEvent) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      moved = Math.max(moved, Math.abs(dx));
+      if (moved <= DRAG_SCROLL_THRESHOLD) return;
+      car.classList.add('grabbing');
+      car.scrollLeft = startLeft - dx;
+      e.preventDefault(); // 끄는 동안 글자가 선택되지 않게
+    };
+    const up = () => {
+      if (!dragging) return;
+      dragging = false;
+      car.classList.remove('grabbing');
+      // 끌고 나서 손을 떼면 카드가 열리면 안 된다 — 직후 클릭 한 번만 삼킨다
+      if (moved > DRAG_SCROLL_THRESHOLD) swallowClick.current = true;
+    };
+
+    car.addEventListener('pointerdown', down);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    return () => {
+      car.removeEventListener('pointerdown', down);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
     };
   }, [loading]);
 
