@@ -675,7 +675,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
         {editId === post.id ? (
           <div style={{ flexBasis: '100%' }}>{editForm(saveEditPost, () => { setEditId(null); resetForm(); }, t(T.save))}</div>
         ) : (
-          <span style={{ display: 'flex', gap: 20, flex: 'none' }}>
+          <span className="post-actions">
             {!past && (
               <button className="secondary" disabled={busy} onClick={() => share(post)}>
                 {t(T.share)}
