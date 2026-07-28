@@ -5,6 +5,8 @@ export const users = pgTable('users', {
   id: text('id').primaryKey(), // 카카오 회원번호
   kakaoName: text('kakao_name').notNull(),
   nickname: text('nickname'), // null이면 카카오 닉네임 폴백
+  // 프로필 사진 — 브라우저에서 256px로 줄인 data URL. 친구 규모라 별도 저장소를 두지 않는다.
+  avatar: text('avatar'),
   kakaoNameHistory: jsonb('kakao_name_history').$type<{ name: string; at: string }[]>().notNull().default([]),
   birthday: text('birthday'), // YYYY-MM-DD, null이면 온보딩 미완료
   gender: text('gender'), // 'male' | 'female', null이면 온보딩 미완료

@@ -17,6 +17,7 @@ export async function GET() {
   return NextResponse.json({
     user: { id: user.id, name: resolveDisplayName(profile, user.name) },
     nickname: row?.nickname ?? null,
+    avatar: row?.avatar ?? null,
     kakaoName: row?.kakaoName || user.name,
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,

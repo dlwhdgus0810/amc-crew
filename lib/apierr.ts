@@ -58,6 +58,8 @@ export const E = {
   catFeature: { ko: '원하는 기능은 1000자 이하로 입력해주세요.', en: 'Feature request must be 1000 characters or fewer.' },
   catExists: { ko: '이미 있는 카테고리예요.', en: 'That category already exists.' },
   badStatus: { ko: '상태 값이 올바르지 않습니다.', en: 'Invalid status.' },
+  avatarType: { ko: '이미지 파일만 올릴 수 있어요.', en: 'Only image files can be uploaded.' },
+  avatarSize: { ko: '사진 용량이 너무 커요. 다른 사진을 골라주세요.', en: 'That photo is too large. Please pick another.' },
   ticketNotFound: { ko: '건의를 찾을 수 없어요.', en: 'Ticket not found.' },
   ticketTitle: { ko: '한 줄 요약을 1~80자로 입력해주세요.', en: 'The summary must be 1–80 characters.' },
   ticketBody: { ko: '자세한 내용은 2000자 이하로 입력해주세요.', en: 'Details must be 2000 characters or fewer.' },

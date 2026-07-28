@@ -125,6 +125,27 @@ nav.tabbar {
   font-size: 10.5px; font-weight: 700;
 }
 .tabbar a.active .t-ava { background: var(--text); color: #fff; }
+/* 사진을 넣으면 동그란 아바타를 꽉 채운다 */
+.tabbar .t-ava img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
+
+/* 프로필 화면의 큰 아바타 */
+.avatar-lg {
+  width: 72px; height: 72px; border-radius: 999px; flex: none; overflow: hidden;
+  background: var(--surface-2); color: var(--text-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 700;
+}
+.avatar-lg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 파일 입력은 감추고 라벨을 버튼처럼 쓴다 */
+.photo-pick {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 0 16px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.photo-pick:hover { background: var(--bg); }
+.photo-pick input { display: none; }
+.hint { font-size: 12.5px; color: var(--text-dim); }
 /* 아래로 내릴 때는 상·하단 바를 치워 화면을 넓게 쓴다 (위로 올리면 다시 나온다) */
 .site-header, nav.tabbar { transition: transform 0.25s ease; will-change: transform; }
 body[data-chrome='hidden'] .site-header { transform: translateY(-100%); }

@@ -8,6 +8,11 @@ import { isLocale, Locale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from '@/lib/i1
 
 export const dynamic = 'force-dynamic';
 
+/** 브라우저에서 줄여 보낸 사진만 받는다 (형식·크기 모두 서버에서 다시 확인) */
+const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+/** base64 기준 상한 — 256px로 줄이면 보통 30KB 안쪽이라 넉넉하다 */
+const AVATAR_MAX_CHARS = 400_000;
+
 /** 프로필 부분 업데이트: 닉네임(빈 값이면 해제) / 생년월일 / 성별 / 언어 */
 export async function PUT(req: NextRequest) {
   const user = await getSessionUser();
@@ -20,7 +25,7 @@ export async function PUT(req: NextRequest) {
     return await errJson(E.badRequest, 400);
   }
 
-  const patch: { nickname?: string | null; birthday?: string; gender?: string; locale?: Locale } = {};
+  const patch: { nickname?: string | null; birthday?: string; gender?: string; locale?: Locale; avatar?: string | null } = {};
 
   if (body.nickname !== undefined) {
     if (typeof body.nickname !== 'string') {
@@ -62,6 +67,19 @@ export async function PUT(req: NextRequest) {
     patch.locale = body.locale;
   }
 
+  if (body.avatar !== undefined) {
+    // 빈 값이면 사진을 내린다
+    if (body.avatar === null || body.avatar === '') {
+      patch.avatar = null;
+    } else if (typeof body.avatar !== 'string' || !AVATAR_DATA_URL.test(body.avatar)) {
+      return await errJson(E.avatarType, 400);
+    } else if (body.avatar.length > AVATAR_MAX_CHARS) {
+      return await errJson(E.avatarSize, 400);
+    } else {
+      patch.avatar = body.avatar;
+    }
+  }
+
   if (Object.keys(patch).length === 0) {
     return await errJson(E.noChange, 400);
   }
@@ -77,6 +95,7 @@ export async function PUT(req: NextRequest) {
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,
     locale: row?.locale ?? null,
+    avatar: row?.avatar ?? null,
   });
   // 서버 렌더가 첫 화면부터 맞는 언어로 그려지도록 쿠키에도 반영
   if (patch.locale) {

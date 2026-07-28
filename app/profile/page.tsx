@@ -4,20 +4,35 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES } from '@/lib/categories';
 import { useLocale, useT } from '../i18n';
+import { PROFILE_UPDATED } from '../nav';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
+
+/** 저장할 사진 한 변의 길이 (px) */
+const AVATAR_PX = 256;
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   title: { ko: '프로필', en: 'Profile' },
   subtitle: {
-    ko: '닉네임, 기본 정보, 언어, 구독을 관리해요.',
-    en: 'Manage your nickname, basic info, language and subscriptions.',
+    ko: '사진, 닉네임, 기본 정보, 언어, 구독을 관리해요.',
+    en: 'Manage your photo, nickname, basic info, language and subscriptions.',
   },
   loginPrompt: {
     ko: '카카오 로그인 후 프로필을 관리할 수 있어요.',
     en: 'Log in with Kakao to manage your profile.',
   },
   kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
+  photo: { ko: '프로필 사진', en: 'Profile photo' },
+  photoPick: { ko: '사진 고르기', en: 'Choose a photo' },
+  photoChange: { ko: '사진 바꾸기', en: 'Change photo' },
+  photoRemove: { ko: '사진 지우기', en: 'Remove photo' },
+  photoHint: {
+    ko: '정사각형으로 잘라 256px로 줄여서 저장해요. 지우면 이름 첫 글자가 보여요.',
+    en: 'Cropped square and stored at 256px. Remove it to fall back to your initial.',
+  },
+  photoSaved: { ko: '프로필 사진을 저장했어요.', en: 'Profile photo saved.' },
+  photoRemoved: { ko: '프로필 사진을 지웠어요.', en: 'Profile photo removed.' },
+  photoBad: { ko: '이미지 파일만 올릴 수 있어요.', en: 'Only image files can be uploaded.' },
   nickname: { ko: '닉네임', en: 'Nickname' },
   nicknamePh: { ko: '닉네임', en: 'Nickname' },
   nicknameSaved: { ko: '닉네임을 저장했어요.', en: 'Nickname saved.' },
@@ -112,6 +127,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; name: string } | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [kakaoName, setKakaoName] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | ''>('');
@@ -141,6 +157,7 @@ export default function ProfilePage() {
       .then(([auth, sub]) => {
         setUser(auth.user ?? null);
         setNickname(auth.nickname ?? null);
+        setAvatar(auth.avatar ?? null);
         setKakaoName(auth.kakaoName ?? '');
         setBirthday(auth.birthday ?? '');
         setGender(auth.gender ?? '');
@@ -165,6 +182,43 @@ export default function ProfilePage() {
     window.history.replaceState(null, '', '/profile');
   }, []);
 
+  /** 고른 사진을 정사각형으로 잘라 256px JPEG data URL로 줄인다 (원본을 그대로 담지 않기 위해) */
+  function shrink(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const side = Math.min(img.width, img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = AVATAR_PX;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('canvas'));
+        ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, AVATAR_PX, AVATAR_PX);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('image'));
+      };
+      img.src = url;
+    });
+  }
+
+  async function pickPhoto(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setMsg({ type: 'err', text: t(T.photoBad) });
+      return;
+    }
+    try {
+      const dataUrl = await shrink(file);
+      await saveProfile({ avatar: dataUrl }, t(T.photoSaved));
+    } catch {
+      setMsg({ type: 'err', text: t(T.photoBad) });
+    }
+  }
+
   async function saveProfile(body: Record<string, unknown>, okText: string) {
     setSaving(true);
     setMsg(null);
@@ -178,12 +232,14 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
       setUser((u) => (u ? { ...u, name: data.name } : u));
       setNickname(data.nickname ?? null);
+      if (data.avatar !== undefined) setAvatar(data.avatar);
       setKakaoName(data.kakaoName ?? '');
       setBirthday(data.birthday ?? '');
       setGender(data.gender ?? '');
       setEditingName(false);
       setEditingInfo(false);
       setMsg({ type: 'ok', text: okText });
+      window.dispatchEvent(new Event(PROFILE_UPDATED)); // 탭바 아바타·이름 갱신
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.saveFailed) });
     } finally {
@@ -299,6 +355,37 @@ export default function ProfilePage() {
     <>
       <h1>{t(T.title)}</h1>
       <p className="subtitle">{t(T.subtitle)}</p>
+
+      <h2>{t(T.photo)}</h2>
+      <div className="card">
+        <div className="field-row" style={{ gap: 16 }}>
+          <span className="avatar-lg">
+            {avatar ? <img src={avatar} alt="" /> : (user.name.slice(0, 1) || '·')}
+          </span>
+          <span style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
+            <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <label className="secondary photo-pick">
+                {avatar ? t(T.photoChange) : t(T.photoPick)}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={saving}
+                  onChange={(e) => {
+                    pickPhoto(e.target.files?.[0]);
+                    e.target.value = ''; // 같은 파일을 다시 골라도 반응하도록
+                  }}
+                />
+              </label>
+              {avatar && (
+                <button className="danger" disabled={saving} onClick={() => saveProfile({ avatar: null }, t(T.photoRemoved))}>
+                  {t(T.photoRemove)}
+                </button>
+              )}
+            </span>
+            <span className="hint">{t(T.photoHint)}</span>
+          </span>
+        </div>
+      </div>
 
       <h2>{t(T.nickname)}</h2>
       <div className="card">

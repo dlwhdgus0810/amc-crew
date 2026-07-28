@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   id text PRIMARY KEY,
   kakao_name text NOT NULL,
   nickname text,
+  avatar text,
   kakao_name_history jsonb NOT NULL DEFAULT '[]',
   birthday text,
   gender text,
