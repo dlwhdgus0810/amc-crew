@@ -43,6 +43,9 @@ const T = {
   },
   pastSection: { ko: '지난 모임', en: 'Past meetups' },
   emptyPast: { ko: '아직 지난 모임이 없어요.', en: 'No past meetups yet.' },
+  fieldDate: { ko: '날짜', en: 'Date' },
+  fieldStart: { ko: '시작', en: 'Starts' },
+  fieldEnd: { ko: '종료', en: 'Ends' },
   capacityPh: { ko: '정원 (선택)', en: 'Capacity (optional)' },
   memoPh: { ko: '메모 (선택)', en: 'Note (optional)' },
   titleSearchPh: { ko: '{label} 제목 검색 (예: 듄: 파트2)', en: 'Search {label} (e.g. Dune: Part Two)' },
@@ -517,11 +520,24 @@ export default function CategoryClient({ slug }: { slug: string }) {
           </button>
         </div>
       )}
-      <div className="field-row" style={{ marginBottom: 14 }}>
-        <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} style={{ maxWidth: 170 }} />
-        <input type="time" value={fStart} onChange={(e) => setFStart(e.target.value)} style={{ maxWidth: 140 }} />
-        <span style={{ color: 'var(--text-dim)' }}>~</span>
-        <input type="time" value={fEnd} onChange={(e) => setFEnd(e.target.value)} style={{ maxWidth: 140 }} />
+      {/* 날짜·시간 칸은 placeholder를 달 수 없어(브라우저가 무시한다) 라벨을 위에 붙인다 */}
+      <div className="field-row" style={{ marginBottom: 14, alignItems: 'flex-end' }}>
+        <label className="field" style={{ maxWidth: 190 }}>
+          <span className="field-label">{t(T.fieldDate)}</span>
+          <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} />
+        </label>
+        {/* 시작~종료는 한 덩어리로 묶어, 좁은 화면에서 줄이 바뀌어도 ~가 혼자 남지 않게 */}
+        <span className="time-pair">
+          <label className="field">
+            <span className="field-label">{t(T.fieldStart)}</span>
+            <input type="time" value={fStart} onChange={(e) => setFStart(e.target.value)} />
+          </label>
+          <span className="field-sep">~</span>
+          <label className="field">
+            <span className="field-label">{t(T.fieldEnd)}</span>
+            <input type="time" value={fEnd} onChange={(e) => setFEnd(e.target.value)} />
+          </label>
+        </span>
       </div>
       <div className="field-row" style={{ marginBottom: 14 }}>
         <input

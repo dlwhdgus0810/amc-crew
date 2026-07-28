@@ -263,6 +263,11 @@ button.big-cta .arrow { color: #fff; }
 .field-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .field-row input[type='text'], .field-row input[type='password'] { max-width: none; flex: 1 1 180px; }
 .field-label { font-family: var(--mono); font-size: 10.5px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+/* 라벨을 머리에 인 입력 칸 — 날짜·시간처럼 placeholder를 못 쓰는 칸에 쓴다 */
+.field { display: flex; flex-direction: column; min-width: 0; flex: 1 1 120px; }
+.field .field-label { margin-bottom: 6px; }
+.field-sep { color: var(--text-dim); padding-bottom: 13px; flex: none; }
+.time-pair { display: flex; align-items: flex-end; gap: 10px; flex: 1 1 250px; min-width: 0; }
 
 .msg {
   border: 1px solid var(--border); border-radius: var(--r-sm);
