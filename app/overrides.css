@@ -148,6 +148,26 @@ body[data-chrome='hidden'] nav.tabbar {
   min-width: 0;
   width: 100%;
 }
+/*
+ * iOS는 date/time 입력의 폭을 네이티브 컨트롤 기준으로 잡아서 width: 100%도,
+ * min-width: 0도 듣지 않는다 — 칸이 카드 밖으로 삐져나온다.
+ * appearance: none으로 네이티브 크기 계산을 끄면 그때부터 폭 지정을 따른다.
+ * 데스크톱 크롬에서는 이 규칙이 달력 아이콘까지 지워버리므로 iOS에서만 건다
+ * (@supports (-webkit-touch-callout: none)는 iOS WebKit에서만 참이다).
+ */
+@supports (-webkit-touch-callout: none) {
+  .stack-field input[type='date'],
+  .stack-field input[type='time'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    /* 네이티브 크기 계산을 끄면 가운데 정렬이 풀리므로 명시한다 */
+    text-align: left;
+  }
+}
+
 /* 좁은 폰에서는 시작/종료를 아예 위아래로 놓는다.
    iOS의 시간 컨트롤은 AM/PM까지 들어가 최소 폭이 단단해서, 줄여 넣으려 하면
    글자가 잘리거나 칸이 밖으로 밀린다. 한 줄에 하나씩이면 그 위험이 없다.
