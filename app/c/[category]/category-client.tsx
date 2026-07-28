@@ -57,8 +57,8 @@ const T = {
   repeatBadge: { ko: '매주 {day}', en: 'Every {day}' },
   privateToggle: { ko: '비공개 모임', en: 'Private meetup' },
   privateHint: {
-    ko: '— 링크를 받은 사람만 볼 수 있어요. 목록·구독 알림에 나오지 않아요',
-    en: '— only people with the link can see it; it stays out of the feed and subscriber alerts',
+    ko: '— 링크를 받은 사람만 볼 수 있어요. 목록·구독 알림에 나오지 않고, 관리자에게도 보이지 않아요',
+    en: '— only people with the link can see it. It stays out of the feed and subscriber alerts, and admins can’t see it either',
   },
   privateBadge: { ko: '비공개', en: 'Private' },
   notifyHintPrivate: {
