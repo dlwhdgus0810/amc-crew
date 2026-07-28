@@ -72,7 +72,10 @@ body {
 }
 .avatar.on { background: var(--text); color: #fff; border-color: var(--text); }
 
-main { padding: 8px 0 calc(var(--tabbar) + 16px); flex: 1; width: 100%; }
+main { flex: 1; width: 100%; }
+/* .container(클래스)가 요소 선택자를 이기므로 main.container로 세로 여백을 되찾는다.
+   아래 여백이 없으면 마지막 내용이 고정된 하단 탭바에 가려진다. */
+main.container { padding-top: 8px; padding-bottom: calc(var(--tabbar) + 16px); }
 .site-footer { display: none; }
 
 /* ── 하단 탭바 ──────────────────────────────────────────── */
@@ -524,7 +527,7 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .site-header { background: rgba(247, 246, 242, 0.92); }
   .header-inner { min-height: 72px; }
   .container { max-width: 1100px; padding: 0 40px; }
-  main { padding: 12px 0 80px; }
+  main.container { padding-top: 12px; padding-bottom: 80px; }
 
   nav.tabbar {
     top: 0; bottom: 0; right: auto; width: 232px;
