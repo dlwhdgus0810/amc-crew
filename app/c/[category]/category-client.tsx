@@ -611,7 +611,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
       {posts.map((post) => renderPost(post, false))}
 
       <h2 style={{ marginTop: 64 }}>
-        <button className="secondary" style={{ fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', color: 'inherit', border: 'none' }} onClick={togglePast}>
+        <button className="section-toggle" aria-expanded={showPast} onClick={togglePast}>
           {t(T.pastSection)} {showPast ? '−' : '+'}
         </button>
       </h2>
