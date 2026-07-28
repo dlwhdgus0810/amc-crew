@@ -47,7 +47,7 @@ export const CATEGORIES: Category[] = [
     fg: '#101010',
     kind: 'movie',
     name: { ko: 'AMC', en: 'AMC' },
-    description: { ko: '영화 회차 맞추기 (목요일 실제 상영표 연결)', en: 'Match movie showtimes (real listings from Thursday)' },
+    description: { ko: '영화 회차 맞추기 (AMC Town Center 20)', en: 'Match movie showtimes (AMC Town Center 20)' },
   },
   {
     slug: 'movienight',

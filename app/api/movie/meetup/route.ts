@@ -13,9 +13,15 @@ export const dynamic = 'force-dynamic';
 /** 상영 시작부터 이만큼을 모임 시간으로 잡는다 (예고편 + 본편 + 나오는 시간) */
 const RUNTIME_MINUTES = 180;
 
+/**
+ * 모임은 (date, endTime) 한 쌍으로만 저장돼서 자정을 넘는 끝 시각을 표현할 수 없다.
+ * 그냥 24시간으로 나머지를 취하면 22:00 회차의 끝이 01:00이 되어, 그날 아침부터
+ * 이미 지난 모임으로 취급되고 캘린더 파일도 끝이 시작보다 앞서게 된다.
+ * 넘어가는 회차는 그날의 마지막 순간으로 자른다.
+ */
 function endTime(start: string): string {
   const [h, m] = start.split(':').map(Number);
-  const total = (h * 60 + m + RUNTIME_MINUTES) % (24 * 60);
+  const total = Math.min(h * 60 + m + RUNTIME_MINUTES, 23 * 60 + 59);
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
