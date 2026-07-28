@@ -31,6 +31,9 @@
   --tabbar-inset: 14px;
 }
 
+/* hover 스타일은 마우스가 있는 기기에서만 — 손가락으로 쓰는 기기(iOS)는 hover가 있는 요소를
+   "첫 탭은 hover, 두 번째 탭이 실행"으로 다뤄서, 탭바 버튼을 두 번 눌러야 하는 일이 생긴다.
+   그래서 아래의 :hover 규칙들은 전부 @media (hover: hover)로 감싸 두었다. */
 * { box-sizing: border-box; }
 
 body {
@@ -104,7 +107,7 @@ nav.tabbar {
   white-space: nowrap; position: relative;
   transition: color 0.15s ease, background 0.15s ease;
 }
-.tabbar a:hover { color: var(--text); background: var(--bg); }
+@media (hover: hover) { .tabbar a:hover { color: var(--text); background: var(--bg); } }
 .tabbar a.active { color: var(--text); font-weight: 600; background: var(--border-soft); }
 .tabbar .t-icon { width: 20px; height: 20px; display: block; }
 /* 아이콘에 붙는 뱃지 — 라벨을 덮거나 잘리지 않는다 */
@@ -143,7 +146,7 @@ nav.tabbar {
   background: var(--surface); border: 1px solid var(--border);
   font-size: 14px; font-weight: 600; cursor: pointer;
 }
-.photo-pick:hover { background: var(--bg); }
+@media (hover: hover) { .photo-pick:hover { background: var(--bg); } }
 .photo-pick input { display: none; }
 .hint { font-size: 12.5px; color: var(--text-dim); }
 
@@ -178,7 +181,7 @@ h2 { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spaci
 .eyebrow { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--text-dim); }
 
 a { color: inherit; }
-a:hover { color: var(--accent); }
+@media (hover: hover) { a:hover { color: var(--accent); } }
 
 /* ── 카드 ───────────────────────────────────────────────── */
 .card {
@@ -222,27 +225,27 @@ button {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   transition: opacity 0.15s ease;
 }
-button:hover { opacity: 0.85; }
+@media (hover: hover) { button:hover { opacity: 0.85; } }
 button:disabled { opacity: 0.35; cursor: not-allowed; }
 button.secondary {
   background: var(--surface); color: var(--text);
   border: 1px solid var(--border);
   min-height: 44px; padding: 0 16px; font-size: 14px; font-weight: 600;
 }
-button.secondary:hover { background: var(--bg); opacity: 1; }
+@media (hover: hover) { button.secondary:hover { background: var(--bg); opacity: 1; } }
 button.danger {
   background: transparent; color: var(--danger);
   border: 1px solid transparent;
   min-height: 44px; padding: 0 10px; font-size: 13.5px; font-weight: 600;
 }
-button.danger:hover { background: var(--accent-soft); opacity: 1; }
+@media (hover: hover) { button.danger:hover { background: var(--accent-soft); opacity: 1; } }
 button.big-cta {
   background: var(--accent); border-color: var(--accent); color: #fff;
   min-height: 52px; padding: 0 24px; border-radius: 999px;
   font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em;
   width: 100%;
 }
-button.big-cta:hover { opacity: 0.9; }
+@media (hover: hover) { button.big-cta:hover { opacity: 0.9; } }
 button.big-cta .arrow { color: #fff; }
 
 .profile-link {
@@ -250,7 +253,7 @@ button.big-cta .arrow { color: #fff; }
   font-size: 14px; font-weight: 600;
   display: inline-flex; align-items: center; min-height: 44px;
 }
-.profile-link:hover { color: var(--accent); }
+@media (hover: hover) { .profile-link:hover { color: var(--accent); } }
 
 .kakao-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -259,7 +262,7 @@ button.big-cta .arrow { color: #fff; }
   min-height: 48px; padding: 0 22px; font-size: 14.5px; font-weight: 700;
   font-family: inherit; text-decoration: none; cursor: pointer;
 }
-.kakao-btn:hover { filter: brightness(0.96); color: #191919; }
+@media (hover: hover) { .kakao-btn:hover { filter: brightness(0.96); color: #191919; } }
 
 .field-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .field-row input[type='text'], .field-row input[type='password'] { max-width: none; flex: 1 1 180px; }
@@ -291,7 +294,7 @@ button.big-cta .arrow { color: #fff; }
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
   transition: transform 0.2s ease;
 }
-.car-card:hover { transform: none; opacity: 0.95; color: inherit; }
+@media (hover: hover) { .car-card:hover { transform: none; opacity: 0.95; color: inherit; } }
 .car-card .car-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; row-gap: 6px; }
 .car-card .car-idx { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; display: inline-flex; align-items: center; }
 .car-card .car-name { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
@@ -305,7 +308,7 @@ button.big-cta .arrow { color: #fff; }
   display: inline-flex; align-items: center; gap: 6px;
   opacity: 0.78; cursor: pointer;
 }
-.sub-toggle:hover { opacity: 1; background: rgba(255, 255, 255, 0.16); }
+@media (hover: hover) { .sub-toggle:hover { opacity: 1; background: rgba(255, 255, 255, 0.16); } }
 .sub-toggle.on { opacity: 1; border-color: currentColor; }
 .sub-toggle .star { font-size: 13px; line-height: 1; }
 .car-drag {
@@ -313,9 +316,9 @@ button.big-cta .arrow { color: #fff; }
   font-size: 18px; line-height: 1; cursor: grab; touch-action: none;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
-.car-drag:hover { background: transparent; opacity: 0.6; }
+@media (hover: hover) { .car-drag:hover { background: transparent; opacity: 0.6; } }
 .car-card.dragging { opacity: 0.55; }
-.car.reordering .car-card:hover { transform: none; }
+@media (hover: hover) { .car.reordering .car-card:hover { transform: none; } }
 .car.grabbing .car-card { cursor: grabbing; }
 .drag-hint { margin-top: 12px; font-size: 12.5px; color: var(--text-dim); }
 
@@ -333,7 +336,7 @@ button.big-cta .arrow { color: #fff; }
   font-size: 15px; font-weight: 500;
   transition: border-color 0.15s ease;
 }
-a:hover .notif-item { border-color: var(--text); }
+@media (hover: hover) { a:hover .notif-item { border-color: var(--text); } }
 .notif-item.unread { border-left: 3px solid var(--accent); }
 .notif-item.unread .notif-message::before { content: none; }
 .notif-message { flex: 1; }
@@ -367,13 +370,13 @@ a:hover .notif-item { border-color: var(--text); }
 .comment-actions { display: flex; align-items: center; gap: 6px; flex: none; }
 .comment-actions button { min-height: 36px; padding: 0 10px; font-size: 12px; }
 .comment-actions button.secondary { border-color: transparent; background: transparent; color: var(--text-dim); }
-.comment-actions button.secondary:hover { background: var(--bg); color: var(--text); }
+@media (hover: hover) { .comment-actions button.secondary:hover { background: var(--bg); color: var(--text); } }
 .heart {
   border: none; background: transparent; min-height: 36px; padding: 0 6px;
   color: var(--text-dim); font-size: 14px; line-height: 1;
   display: inline-flex; align-items: center; gap: 4px;
 }
-.heart:hover { background: transparent; opacity: 1; color: var(--danger); }
+@media (hover: hover) { .heart:hover { background: transparent; opacity: 1; color: var(--danger); } }
 .heart.on { color: var(--danger); opacity: 1; }
 .heart:disabled { opacity: 0.4; cursor: default; }
 .heart-count { font-family: var(--mono); font-size: 10.5px; }
@@ -385,7 +388,7 @@ a:hover .notif-item { border-color: var(--text); }
   border: 1px solid var(--border); border-radius: 999px;
   min-height: 44px; padding: 0 18px; font-size: 14px; font-weight: 600;
 }
-.seg:hover { background: var(--bg); color: var(--text); opacity: 1; }
+@media (hover: hover) { .seg:hover { background: var(--bg); color: var(--text); opacity: 1; } }
 .seg.on { background: var(--text); border-color: var(--text); color: #fff; }
 
 /* ── 영화: 날짜 / 회차 ──────────────────────────────────── */
@@ -399,7 +402,7 @@ a:hover .notif-item { border-color: var(--text); }
   display: flex; flex-direction: column; align-items: center; gap: 1px;
 }
 .date-pill small { font-family: var(--mono); font-size: 10px; font-weight: 400; color: var(--text-dim); }
-.date-pill:hover { opacity: 1; background: var(--bg); }
+@media (hover: hover) { .date-pill:hover { opacity: 1; background: var(--bg); } }
 .date-pill.on { background: var(--text); border-color: var(--text); color: #fff; }
 .date-pill.on small { color: #fff; opacity: 0.75; }
 
@@ -435,7 +438,7 @@ a:hover .notif-item { border-color: var(--text); }
   line-height: 1.15; position: relative;
   transition: background 0.15s ease;
 }
-.time-chip:hover { background: var(--surface-2); border-color: var(--border); }
+@media (hover: hover) { .time-chip:hover { background: var(--surface-2); border-color: var(--border); } }
 .time-chip.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
 .time-chip .note { display: block; font-family: var(--mono); font-size: 9px; font-weight: 600; color: var(--accent); }
 .time-chip.selected .note { color: #fff; opacity: 0.9; }
@@ -453,7 +456,7 @@ a:hover .notif-item { border-color: var(--text); }
   pointer-events: none; z-index: 20;
 }
 .chip-tip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--text); }
-.time-chip:hover .chip-tip, .chip-tip.open { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+@media (hover: hover) { .time-chip:hover .chip-tip, .chip-tip.open { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); } }
 .chip-tip-name { font-family: var(--mono); font-size: 11px; font-weight: 400; white-space: nowrap; }
 
 /* ── 그룹 ───────────────────────────────────────────────── */
@@ -528,7 +531,7 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   max-height: 320px; overflow-y: auto;
 }
 .search-item { display: flex; gap: 11px; align-items: center; padding: 10px 12px; cursor: pointer; font-size: 14px; line-height: 1.35; }
-.search-item:hover { background: var(--bg); }
+@media (hover: hover) { .search-item:hover { background: var(--bg); } }
 .search-item img, .search-item .si-noposter { width: 34px; height: 50px; object-fit: cover; border-radius: 6px; background: var(--surface-2); flex: none; }
 .search-item .si-sub { display: block; color: var(--text-dim); font-size: 12px; }
 .title-meta-box { display: flex; gap: 12px; align-items: center; background: var(--bg); border-radius: var(--r-sm); padding: 12px; margin-bottom: 12px; }
@@ -549,7 +552,7 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
 .suggest-preview { min-height: 150px; border-radius: var(--r); padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; transition: background 0.2s ease, color 0.2s ease; }
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .swatch { width: 36px; height: 36px; min-height: 0; border-radius: 999px; border: none; padding: 0; cursor: pointer; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1); transition: transform 0.12s ease; }
-.swatch:hover { opacity: 1; transform: scale(1.08); }
+@media (hover: hover) { .swatch:hover { opacity: 1; transform: scale(1.08); } }
 .swatch.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
 .swatch-custom { font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 .swatch-custom input { width: 30px; height: 30px; min-height: 0; padding: 0; border: none; background: none; cursor: pointer; }
@@ -616,13 +619,15 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; line-height: 1; cursor: pointer;
 }
-.car-icon:hover { opacity: 1; background: rgba(255, 255, 255, 0.18); }
+@media (hover: hover) { .car-icon:hover { opacity: 1; background: rgba(255, 255, 255, 0.18); } }
 .car-icon.on { background: rgba(255, 255, 255, 0.22); border-color: transparent; }
 /* 밝은 카드(노랑 등)는 흰 오버레이가 보이지 않으므로 어두운 쪽으로 */
 .car-card[style*='rgb(233, 163, 0)'] .car-icon,
 .car-card[style*='#E9A300'] .car-icon { border-color: rgba(16, 16, 16, 0.28); }
-.car-card[style*='rgb(233, 163, 0)'] .car-icon:hover,
-.car-card[style*='#E9A300'] .car-icon:hover { background: rgba(16, 16, 16, 0.1); }
+@media (hover: hover) {
+  .car-card[style*='rgb(233, 163, 0)'] .car-icon:hover,
+  .car-card[style*='#E9A300'] .car-icon:hover { background: rgba(16, 16, 16, 0.1); }
+}
 .car-card[style*='rgb(233, 163, 0)'] .car-icon.on,
 .car-card[style*='#E9A300'] .car-icon.on { background: rgba(16, 16, 16, 0.14); }
 
@@ -669,7 +674,7 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   color: var(--text-mid); font-size: 13px; font-weight: 600;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.icon-btn:hover { background: var(--surface-2); opacity: 1; color: var(--text); }
+@media (hover: hover) { .icon-btn:hover { background: var(--surface-2); opacity: 1; color: var(--text); } }
 .post-owner-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
 .post-owner-actions button { min-height: 38px; font-size: 12.5px; padding: 0 12px; }
 
@@ -684,7 +689,7 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   letter-spacing: 0.12em; text-transform: uppercase;
   min-height: 44px; padding: 0; cursor: pointer;
 }
-.section-toggle:hover { color: var(--text); opacity: 1; }
+@media (hover: hover) { .section-toggle:hover { color: var(--text); opacity: 1; } }
 
 /* ── 모임 만들기 / 수정: 전체 화면 패널 ───────────────── */
 .create-panel {

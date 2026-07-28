@@ -28,8 +28,20 @@ export default function ChromeAutoHide() {
       document.body.dataset.chrome = y > ALWAYS_SHOW_ABOVE && dy > 0 ? 'hidden' : 'shown';
     };
 
+    /*
+     * 손이 닿는 순간 바를 즉시 되돌린다. 감춰져 있다가 되돌아오는 0.25초 사이에 누르면
+     * 움직이는 표적을 누르는 셈이라 첫 탭이 새는 일이 있다.
+     */
+    const reveal = () => {
+      if (document.body.dataset.chrome === 'hidden') document.body.dataset.chrome = 'shown';
+    };
+
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener('touchstart', reveal, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('touchstart', reveal);
+    };
   }, [pathname]);
 
   return null;
