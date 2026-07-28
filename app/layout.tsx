@@ -17,6 +17,7 @@ import { pick } from '@/lib/i18n';
 import './globals.css';
 // 시안 파일(globals.css)을 통째로 갈아끼워도 살아남아야 하는 보정 — 반드시 뒤에 온다
 import './overrides.css';
+import './calendar.css';
 
 const META = {
   title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?' },

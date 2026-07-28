@@ -1,0 +1,236 @@
+/* ============================================================
+   달력 화면(app/calendar/page.tsx) 전용 스타일.
+
+   globals.css는 디자인 시안이 통째로 갈아끼우는 파일이라 여기에 두지 않는다.
+   보정이 아니라 새 화면의 스타일이므로 overrides.css와도 분리해 둔다.
+   ============================================================ */
+
+/* ── 달 이동 줄 ─────────────────────────────────────────── */
+.cal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+.cal-month {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  min-width: 7.5em;
+  text-align: center;
+}
+.cal-nav {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cal-nav:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* "오늘" 은 다른 달을 보고 있을 때만 나온다 — 오른쪽 끝으로 민다 */
+.cal-today {
+  margin-left: auto;
+}
+
+/* ── 격자 ───────────────────────────────────────────────── */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 10px;
+}
+.cal-grid.loading {
+  opacity: 0.5;
+}
+.cal-wd {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding-bottom: 4px;
+}
+/* 일요일·토요일은 살짝 구분 */
+.cal-wd:first-child,
+.cal-wd:nth-child(7) {
+  color: var(--text-mid);
+}
+
+.cal-day {
+  /* 정사각형에 가깝게 — 폭이 좁아져도 점 자리가 남는다 */
+  aspect-ratio: 1 / 1.15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 5px 2px 0;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.cal-day.out {
+  color: var(--text-dim);
+  opacity: 0.45;
+}
+.cal-n {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.4;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 오늘은 채운 원, 선택한 날은 테두리 — 둘이 겹쳐도 서로 안 가린다 */
+.cal-day.today .cal-n {
+  background: var(--text);
+  color: var(--surface);
+  font-weight: 700;
+}
+.cal-day.on {
+  border-color: var(--text);
+  background: var(--border-soft);
+}
+
+.cal-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 8px;
+  flex-wrap: nowrap;
+}
+.cal-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  flex: none;
+}
+/* 지난 모임 점은 채우지 않고 테두리만 — 색(카테고리)은 유지한다 */
+.cal-dots i.past {
+  background: none !important;
+  box-shadow: inset 0 0 0 1.5px var(--text-dim);
+}
+.cal-dots b {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  line-height: 1;
+}
+
+.cal-empty {
+  margin: 10px 2px 0;
+}
+.cal-daytitle {
+  margin-top: 26px;
+}
+
+/* ── 그날의 모임 목록 ───────────────────────────────────── */
+.cal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cal-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+.cal-item.past {
+  opacity: 0.6;
+}
+/* 카테고리 색 띠 */
+.cal-bar {
+  width: 4px;
+  border-radius: 999px;
+  flex: none;
+}
+.cal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.cal-when {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-mid);
+}
+.cal-cat {
+  font-family: var(--sans, inherit);
+  font-weight: 600;
+  color: var(--text);
+}
+.cal-tag {
+  font-family: var(--sans, inherit);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.cal-tag.on {
+  border-color: var(--text);
+  color: var(--text);
+}
+.cal-what {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.cal-meta {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .cal-day:hover {
+    background: var(--border-soft);
+  }
+  .cal-nav:hover:not(:disabled) {
+    background: var(--bg);
+  }
+  .cal-item:hover {
+    border-color: var(--text);
+  }
+}
+
+/* 넓은 화면에서는 칸을 너무 키우지 않는다 — 달력이 화면 전체를 먹으면 목록이 밀린다 */
+@media (min-width: 640px) {
+  .cal-day {
+    aspect-ratio: 1 / 0.72;
+  }
+  .cal-n {
+    font-size: 13.5px;
+  }
+}

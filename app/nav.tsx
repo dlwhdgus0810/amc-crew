@@ -18,7 +18,9 @@ export const PROFILE_UPDATED = 'kk-profile-updated';
 const T = {
   home: { ko: '홈', en: 'Home' },
   categories: { ko: '둘러보기', en: 'Browse' },
-  tickets: { ko: '건의함', en: 'Suggestions' },
+  calendar: { ko: '캘린더', en: 'Calendar' },
+  // 탭 칸은 6개로 나뉘어 좁다 — 영어 'Suggestions'는 칸을 넘어 옆 라벨과 겹친다
+  tickets: { ko: '건의함', en: 'Feedback' },
   showtimes: { ko: '회차 고르기', en: 'Showtimes' },
   groups: { ko: '그룹', en: 'Groups' },
   profile: { ko: '프로필', en: 'Profile' },
@@ -39,6 +41,12 @@ const BrowseIcon = () => (
   <svg {...icon} aria-hidden>
     <circle cx="12" cy="12" r="9" />
     <path d="m15 9-2.4 5.6L7 17l2.4-5.6z" />
+  </svg>
+);
+const CalendarIcon = () => (
+  <svg {...icon} aria-hidden>
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M3 10h18M8 3v4M16 3v4" />
   </svg>
 );
 const TicketIcon = () => (
@@ -109,6 +117,10 @@ export default function NavLinks() {
         <Link href="/categories" className={pathname.startsWith('/categories') ? 'active' : ''}>
           <BrowseIcon />
           <span>{t(T.categories)}</span>
+        </Link>
+        <Link href="/calendar" className={pathname.startsWith('/calendar') ? 'active' : ''}>
+          <CalendarIcon />
+          <span>{t(T.calendar)}</span>
         </Link>
         <Link href="/notifications" className={pathname === '/notifications' ? 'active' : ''}>
           <BellIcon />
