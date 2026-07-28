@@ -27,7 +27,7 @@
   --r: 14px;
   --r-sm: 12px;
   /* 하단 탭바가 차지하는 높이 (safe-area 포함) */
-  --tabbar: calc(78px + env(safe-area-inset-bottom, 0px));
+  --tabbar: calc(52px + env(safe-area-inset-bottom, 0px));
 }
 
 * { box-sizing: border-box; }
@@ -80,17 +80,17 @@ nav.tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px;
-  padding: 8px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+  padding: 5px 16px calc(7px + env(safe-area-inset-bottom, 0px));
   background: rgba(247, 246, 242, 0.95);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
 }
-.tabbar-links { display: flex; align-items: center; gap: 22px; min-width: 0; }
+.tabbar-links { display: flex; align-items: center; gap: 18px; min-width: 0; }
 .tabbar a {
   display: flex; align-items: center; gap: 6px;
-  min-height: 44px;
+  min-height: 40px;
   color: var(--text-dim); text-decoration: none;
-  font-size: 14.5px; font-weight: 500;
+  font-size: 13.5px; font-weight: 500;
   white-space: nowrap;
   transition: color 0.15s ease;
 }
@@ -105,9 +105,9 @@ nav.tabbar {
 }
 /* 새 모임 만들기 (＋) — 카테고리 화면에서만 노출 */
 .tab-fab {
-  width: 48px; height: 48px; border-radius: 999px; flex: none;
+  width: 40px; height: 40px; border-radius: 999px; flex: none;
   background: var(--text); color: #fff; border: none;
-  font-size: 24px; font-weight: 400; line-height: 1;
+  font-size: 21px; font-weight: 400; line-height: 1;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; padding: 0;
 }
