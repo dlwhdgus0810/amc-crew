@@ -15,6 +15,34 @@ interface CategoryRequest {
   adminNote: string | null;
 }
 
+interface Ticket {
+  id: string;
+  number: number;
+  userName: string;
+  kind: 'feature' | 'improve' | 'bug' | 'other';
+  title: string;
+  body: string | null;
+  status: 'open' | 'planned' | 'done' | 'declined';
+  adminNote: string | null;
+}
+
+const TICKET_KIND_LABEL: Record<Ticket['kind'], Msg> = {
+  feature: { ko: '새 기능', en: 'New feature' },
+  improve: { ko: '개선', en: 'Improvement' },
+  bug: { ko: '오류', en: 'Broken' },
+  other: { ko: '기타', en: 'Other' },
+};
+
+const TICKET_STATUS_LABEL: Record<Ticket['status'], Msg> = {
+  open: { ko: '접수됨', en: 'Received' },
+  planned: { ko: '반영 예정', en: 'Planned' },
+  done: { ko: '반영됨', en: 'Shipped' },
+  declined: { ko: '보류', en: 'Not planned' },
+};
+
+/** 상태를 바꾸는 버튼 순서 */
+const TICKET_ACTIONS: Ticket['status'][] = ['open', 'planned', 'done', 'declined'];
+
 const REQ_STATUS_LABEL: Record<CategoryRequest['status'], Msg> = {
   pending: { ko: '검토 중', en: 'In review' },
   approved: { ko: '승인됨', en: 'Approved' },
@@ -37,6 +65,14 @@ const T = {
   reviewFailed: { ko: '처리 실패', en: 'Couldn’t process' },
   approved: { ko: '승인했어요. 제안자에게 알림이 갔어요.', en: 'Approved — the requester has been notified.' },
   rejected: { ko: '반려했어요.', en: 'Declined.' },
+  ticketTitle: { ko: '건의함', en: 'Suggestion box' },
+  ticketDesc: {
+    ko: '사용자들이 낸 건의예요. 상태를 바꾸면 낸 사람에게 알림이 갑니다.',
+    en: 'Tickets from members. Changing the status notifies whoever filed it.',
+  },
+  ticketEmpty: { ko: '아직 들어온 건의가 없어요.', en: 'No tickets yet.' },
+  ticketReplyPh: { ko: '답변 (선택) — 낸 사람에게 함께 전달돼요', en: 'Reply (optional) — sent with the update' },
+  ticketUpdated: { ko: '상태를 바꿨어요. 낸 사람에게 알림이 갔어요.', en: 'Updated — the member has been notified.' },
   clearConfirm: {
     ko: '정말 모든 사람의 선택을 삭제할까요? 되돌릴 수 없어요.',
     en: 'Delete everyone’s showtime picks? This can’t be undone.',
@@ -71,6 +107,7 @@ const T = {
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState('');
   const [requests, setRequests] = useState<CategoryRequest[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [amcInfo, setAmcInfo] = useState<{ theatreId: string; theatres: { id: string; name: string; city?: string }[] } | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -83,13 +120,42 @@ export default function AdminPage() {
       .then((r) => r.json())
       .then((auth) => {
         setIsKakaoAdmin(Boolean(auth.isAdmin));
-        if (auth.isAdmin) loadRequests();
+        if (auth.isAdmin) {
+          loadRequests();
+          loadTickets();
+        }
       });
   }, []);
 
   async function loadRequests() {
     const res = await fetch('/api/category-requests');
     if (res.ok) setRequests((await res.json()).requests ?? []);
+  }
+
+  async function loadTickets() {
+    const res = await fetch('/api/tickets');
+    if (res.ok) setTickets((await res.json()).tickets ?? []);
+  }
+
+  /** 건의 상태 변경 — 낸 사람에게 알림이 나간다 */
+  async function reviewTicket(id: string, status: Ticket['status']) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/tickets/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, adminNote: notes[id] ?? '' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(T.reviewFailed));
+      setMsg({ type: 'ok', text: t(T.ticketUpdated) });
+      await loadTickets();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.reviewFailed) });
+    } finally {
+      setBusy(false);
+    }
   }
 
   /** 제안 승인/반려 — 제안자에게 알림이 나간다 */
@@ -201,6 +267,51 @@ export default function AdminPage() {
                     </button>
                   </div>
                 )}
+              </div>
+            ))
+          )}
+        </>
+      )}
+
+      {isKakaoAdmin && (
+        <>
+          <h1 style={{ marginTop: 80 }}>{t(T.ticketTitle)}</h1>
+          <p className="subtitle">{t(T.ticketDesc)}</p>
+          {tickets.length === 0 ? (
+            <p className="subtitle">{t(T.ticketEmpty)}</p>
+          ) : (
+            tickets.map((tk) => (
+              <div key={tk.id} className="card ticket-row">
+                <div className="ticket-head">
+                  <span className="ticket-no">#{tk.number}</span>
+                  <span className="ticket-title">{tk.title}</span>
+                  <span className={`ticket-status ${tk.status}`}>{t(TICKET_STATUS_LABEL[tk.status])}</span>
+                </div>
+                <p className="ticket-by">
+                  {t(TICKET_KIND_LABEL[tk.kind])} · {tk.userName}
+                </p>
+                {tk.body && <p className="ticket-body">{tk.body}</p>}
+                {tk.adminNote && <p className="ticket-note">{t(T.reply, { text: tk.adminNote })}</p>}
+                <div className="field-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    placeholder={t(T.ticketReplyPh)}
+                    value={notes[tk.id] ?? ''}
+                    maxLength={500}
+                    onChange={(e) => setNotes((prev) => ({ ...prev, [tk.id]: e.target.value }))}
+                    style={{ maxWidth: 420 }}
+                  />
+                  {TICKET_ACTIONS.filter((st) => st !== tk.status).map((st) => (
+                    <button
+                      key={st}
+                      className={st === 'declined' ? 'danger' : 'secondary'}
+                      disabled={busy}
+                      onClick={() => reviewTicket(tk.id, st)}
+                    >
+                      {t(TICKET_STATUS_LABEL[st])}
+                    </button>
+                  ))}
+                </div>
               </div>
             ))
           )}

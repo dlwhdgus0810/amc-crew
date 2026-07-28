@@ -462,3 +462,21 @@ a:hover .notif-item { background: var(--surface-2); }
 .install-body span { font-size: 13.5px; color: var(--text-dim); }
 .install-actions { display: flex; align-items: center; gap: 16px; flex: none; }
 .install-actions .dim { color: var(--text-dim); border-bottom-color: var(--text-dim); }
+
+/* ── 건의함 티켓 ── */
+.ticket-row { padding: 22px 0; }
+.ticket-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ticket-no { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.06em; }
+.ticket-title { font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em; min-width: 0; }
+.ticket-status {
+  margin-left: auto; font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid currentColor;
+  border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.ticket-status.open { color: var(--text-dim); }
+.ticket-status.planned { color: #002FA7; }
+.ticket-status.done { color: #008542; }
+.ticket-status.declined { color: var(--danger); }
+.ticket-body { margin: 10px 0 0; font-size: 14.5px; color: var(--text-dim); white-space: pre-wrap; }
+.ticket-note { margin: 10px 0 0; font-size: 14px; font-weight: 500; border-left: 2px solid var(--text); padding-left: 12px; }
+.ticket-by { font-size: 13px; color: var(--text-dim); }
