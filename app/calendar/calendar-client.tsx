@@ -87,7 +87,8 @@ function rangeOf(view: View, anchor: string): { from: string; to: string } {
  * 주 보기는 7일치를 통째로 나열한다 — 한 주쯤은 눌러보지 않고 한 번에 읽는 게 낫다.
  */
 export default function CalendarClient({ today }: { today: string }) {
-  const [view, setView] = useState<View>('month');
+  // 기본은 주 보기 — 대부분 "이번 주에 뭐 있지?"를 보러 온다
+  const [view, setView] = useState<View>('week');
   /** 지금 보고 있는 기간 안의 아무 날짜 — 달/주를 이 날짜에서 계산한다 */
   const [anchor, setAnchor] = useState(today);
   const [meetups, setMeetups] = useState<CalendarMeetup[]>([]);
