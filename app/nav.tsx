@@ -21,7 +21,6 @@ const T = {
   profile: { ko: '프로필', en: 'Profile' },
   admin: { ko: '관리자', en: 'Admin' },
   notifications: { ko: '알림', en: 'Alerts' },
-  create: { ko: '모임 만들기', en: 'New meetup' },
 };
 
 /* 20px 라인 아이콘 — 굵기 1.8로 통일 */
@@ -36,6 +35,11 @@ const BrowseIcon = () => (
   <svg {...icon} aria-hidden>
     <circle cx="12" cy="12" r="9" />
     <path d="m15 9-2.4 5.6L7 17l2.4-5.6z" />
+  </svg>
+);
+const TicketIcon = () => (
+  <svg {...icon} aria-hidden>
+    <path d="M20 15a2 2 0 0 1-2 2H8l-4 3V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" />
   </svg>
 );
 const BellIcon = () => (
@@ -111,10 +115,11 @@ export default function NavLinks() {
             <span>{t(T.profile)}</span>
           </a>
         )}
+        <Link href="/tickets" className={pathname.startsWith('/tickets') ? 'active' : ''}>
+          <TicketIcon />
+          <span>{t(T.tickets)}</span>
+        </Link>
       </span>
-      <Link href="/categories" className="tab-fab" aria-label={t(T.create)}>
-        +
-      </Link>
     </nav>
   );
 }
