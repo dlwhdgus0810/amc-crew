@@ -180,11 +180,11 @@ export default function CalendarClient({ today }: { today: string }) {
       {error && <div className="msg err">{t(T.failed)}</div>}
 
       <div className="segbar cal-views">
-        <button className={view === 'month' ? 'on' : ''} onClick={() => changeView('month')}>
-          {t(T.monthView)}
-        </button>
         <button className={view === 'week' ? 'on' : ''} onClick={() => changeView('week')}>
           {t(T.weekView)}
+        </button>
+        <button className={view === 'month' ? 'on' : ''} onClick={() => changeView('month')}>
+          {t(T.monthView)}
         </button>
       </div>
 
