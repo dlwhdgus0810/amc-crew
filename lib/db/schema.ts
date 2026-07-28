@@ -37,6 +37,8 @@ export const recurringRules = pgTable(
     location: text('location').notNull(),
     description: text('description'),
     capacity: integer('capacity'),
+    // 규칙에서 열리는 회차의 공개 범위 — 비공개로 만든 정기 모임은 다음 주도 비공개여야 한다
+    visibility: text('visibility').notNull().default('public'),
     active: boolean('active').notNull().default(true), // 중단해도 행은 남긴다 (생성된 회차의 참조 유지)
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -57,6 +59,12 @@ export const posts = pgTable(
     recurringRuleId: uuid('recurring_rule_id').references(() => recurringRules.id, { onDelete: 'set null' }),
     // AMC 회차에서 만든 모임이면 그 회차 id — 같은 회차로 두 번 만들지 않기 위해 쓴다
     amcShowtimeId: text('amc_showtime_id'),
+
+    /**
+     * 공개 범위. 'public'은 카테고리 피드에 보이고 구독자에게 알림이 간다.
+     * 'link'는 링크(/p/<id>)를 아는 사람만 열 수 있고, 목록·알림·홈 요약에서 빠진다.
+     */
+    visibility: text('visibility').notNull().default('public'),
 
     date: text('date').notNull(), // YYYY-MM-DD (사전순 = 시간순)
     startTime: text('start_time').notNull(), // HH:mm

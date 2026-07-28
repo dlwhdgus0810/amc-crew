@@ -23,6 +23,8 @@ export interface PostView {
   location: string;
   description: string | null;
   capacity: number | null;
+  /** 'link'면 링크를 아는 사람만 볼 수 있는 비공개 모임 */
+  visibility: 'public' | 'link';
   isPast: boolean; // 종료 후 유예가 지났는지 (앱 시간대 기준, 서버가 판정)
   createdAt: string;
   participants: { id: string; name: string }[];
@@ -58,6 +60,20 @@ function displayNameOf(row: { kakaoName: string; nickname: string | null } | und
 export async function listPosts(category: string, past = false, viewerId?: string): Promise<PostView[]> {
   const db = await getDb();
   const { date: cutDate, time: cutTime } = pastCutoff();
+  /*
+   * 비공개(link) 모임은 목록에서 뺀다. 단, 만든 사람과 이미 참가한 사람은 계속 봐야 한다 —
+   * 그러지 않으면 링크를 잃어버린 순간 자기 모임을 찾을 길이 없다.
+   */
+  const visible = viewerId
+    ? or(
+        eq(posts.visibility, 'public'),
+        eq(posts.authorId, viewerId),
+        inArray(
+          posts.id,
+          db.select({ id: postParticipants.postId }).from(postParticipants).where(eq(postParticipants.userId, viewerId))
+        )
+      )
+    : eq(posts.visibility, 'public');
   // 끝난 모임: 날짜가 지났거나, 같은 날인데 종료 시각이 기준 시각을 넘겼을 때
   const ended = or(
     lt(posts.date, cutDate),
@@ -71,13 +87,13 @@ export async function listPosts(category: string, past = false, viewerId?: strin
     ? await db
         .select()
         .from(posts)
-        .where(and(eq(posts.category, category), ended))
+        .where(and(eq(posts.category, category), ended, visible))
         .orderBy(desc(posts.date), desc(posts.startTime))
         .limit(30)
     : await db
         .select()
         .from(posts)
-        .where(and(eq(posts.category, category), upcoming))
+        .where(and(eq(posts.category, category), upcoming, visible))
         .orderBy(posts.date, posts.startTime);
   return buildViews(postRows, viewerId);
 }
@@ -151,6 +167,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     location: p.location,
     description: p.description,
     capacity: p.capacity,
+    visibility: p.visibility === 'link' ? 'link' : 'public',
     isPast: isPastSlot(p.date, p.endTime),
     createdAt: p.createdAt.toISOString(),
     participants: byPost.get(p.id) ?? [],
@@ -343,16 +360,24 @@ export async function createPost(input: {
   capacity?: number;
   recurringRuleId?: string; // 정기 모임 규칙에서 생성된 회차면 규칙 id
   amcShowtimeId?: string; // AMC 회차에서 만든 모임이면 그 회차 id
+  visibility?: 'public' | 'link'; // 'link'면 구독자 알림을 보내지 않는다
   label?: Msg; // 알림 문구 (기본 '새 모임', 정기 모임은 '이번 주 모임')
   origin?: string; // 카톡 알림의 "모임 보기" 링크 base URL (요청 origin)
 }): Promise<string> {
   const db = await getDb();
   const postId = crypto.randomUUID();
 
-  const subscriberRows = await db
-    .select({ userId: subscriptions.userId })
-    .from(subscriptions)
-    .where(and(eq(subscriptions.category, input.category), ne(subscriptions.userId, input.authorId)));
+  /*
+   * 비공개 모임은 구독자에게 알리지 않는다. 알림에 제목·시간·장소가 그대로 담기므로
+   * 링크를 받지 않은 사람에게 내용이 새는 통로가 된다.
+   */
+  const subscriberRows =
+    input.visibility === 'link'
+      ? []
+      : await db
+          .select({ userId: subscriptions.userId })
+          .from(subscriptions)
+          .where(and(eq(subscriptions.category, input.category), ne(subscriptions.userId, input.authorId)));
 
   const notice = await buildNotice(
     subscriberRows.map((r) => r.userId),
@@ -385,6 +410,7 @@ export async function createPost(input: {
     location: input.location,
     description: input.description ?? null,
     capacity: input.capacity ?? null,
+    visibility: input.visibility ?? 'public',
   };
   const notificationValues = notice.rows.map((r) => ({
     id: crypto.randomUUID(),
@@ -488,6 +514,8 @@ export async function updatePost(input: {
   location: string;
   description: string | null;
   capacity: number | null;
+  /** 주지 않으면 지금 값을 그대로 둔다 */
+  visibility?: 'public' | 'link';
   origin?: string;
 }): Promise<void> {
   const db = await getDb();
@@ -514,6 +542,7 @@ export async function updatePost(input: {
     startTime: input.startTime,
     endTime: input.endTime,
     location: input.location,
+    ...(input.visibility ? { visibility: input.visibility } : {}),
     description: input.description,
     capacity: input.capacity,
   };

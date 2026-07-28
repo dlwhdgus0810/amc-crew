@@ -25,6 +25,7 @@ export interface RuleInput {
   capacity?: number;
   title?: string;
   titleMeta?: TitleMeta;
+  visibility?: 'public' | 'link';
   origin?: string;
 }
 
@@ -49,6 +50,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
     location: input.location,
     description: input.description ?? null,
     capacity: input.capacity ?? null,
+    visibility: input.visibility ?? 'public',
   });
 
   const postId = await createPost({
@@ -63,6 +65,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
     location: input.location,
     ...(input.description ? { description: input.description } : {}),
     ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
+    ...(input.visibility ? { visibility: input.visibility } : {}),
     recurringRuleId: ruleId,
     ...(input.origin ? { origin: input.origin } : {}),
   });
@@ -122,6 +125,7 @@ export async function materializeDueOccurrences(origin: string): Promise<{ creat
         location: rule.location,
         ...(rule.description ? { description: rule.description } : {}),
         ...(rule.capacity !== null ? { capacity: rule.capacity } : {}),
+        visibility: rule.visibility === 'link' ? 'link' : 'public',
         recurringRuleId: rule.id,
         label: WEEKLY_LABEL,
         origin,

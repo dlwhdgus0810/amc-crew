@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS recurring_rules (
   location text NOT NULL,
   description text,
   capacity integer,
+  visibility text NOT NULL DEFAULT 'public',
   active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS posts (
   title_meta jsonb,
   recurring_rule_id uuid REFERENCES recurring_rules(id) ON DELETE SET NULL,
   amc_showtime_id text,
+  visibility text NOT NULL DEFAULT 'public',
   date text NOT NULL,
   start_time text NOT NULL,
   end_time text NOT NULL,
