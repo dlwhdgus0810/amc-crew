@@ -13,9 +13,9 @@ import {
 } from '@dnd-kit/core';
 import {
   arrayMove,
+  rectSortingStrategy,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useT } from './i18n';
@@ -323,6 +323,8 @@ export default function HubPage() {
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
+      {/* 카드가 폰에서는 한 줄로 쌓이고 데스크톱에서는 3열 그리드가 된다.
+          rect 전략은 실제 위치를 재므로 둘 다 맞는다 (세로 전용 전략은 그리드에서 어긋난다) */}
       <div className={`car ${reordering ? 'reordering' : ''}`}>
         {canReorder ? (
           <DndContext
@@ -332,7 +334,7 @@ export default function HubPage() {
             onDragCancel={() => setReordering(false)}
             onDragEnd={onDragEnd}
           >
-            <SortableContext items={favList} strategy={verticalListSortingStrategy}>
+            <SortableContext items={favList} strategy={rectSortingStrategy}>
               {shown.map((c) => (
                 <SortableCategoryCard
                   key={c.slug}

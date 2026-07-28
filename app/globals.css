@@ -279,7 +279,9 @@ button.big-cta .arrow { color: #fff; }
 .sub-toggle.on { opacity: 1; border-color: currentColor; }
 .sub-toggle .star { font-size: 11px; line-height: 1; }
 .car-drag {
-  background: transparent; color: inherit; border: none; min-height: 34px; padding: 0 10px 0 0;
+  background: transparent; color: inherit; border: none; min-height: 34px;
+  /* 글리프는 제자리에 두고 잡히는 넓이만 넓힌다 (22px는 마우스로 집기에 좁다) */
+  padding: 0 10px 0 8px; margin-left: -8px;
   font-size: 18px; line-height: 1; cursor: grab; touch-action: none;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
