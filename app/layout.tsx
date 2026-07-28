@@ -1,6 +1,12 @@
-import type { Metadata } from 'next';
+/* ============================================================
+   app/layout.tsx 를 이 파일로 교체하세요.
+   달라진 점: 헤더는 로고 + (문맥 탭)만 남고, 내비게이션은
+   본문 뒤의 하단 탭바(NavLinks)로 내려갑니다. 푸터는 CSS에서 숨김.
+   ============================================================ */
+
+import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
-import NavLinks from './nav';
+import NavLinks, { ContextTabs } from './nav';
 import ServiceWorkerRegistrar from './sw-register';
 import InstallPrompt from './install-prompt';
 import { I18nProvider } from './i18n';
@@ -14,7 +20,6 @@ const META = {
     ko: '영화·피클볼·볼링·축구·밥친구·카페 — 취미 모임 만들고 같이 놀 사람 모으기',
     en: 'Movies, pickleball, bowling, soccer, meals, cafés — create a meetup and find people to join',
   },
-  footer: { ko: '캔자스 코리안 — 취미 모임', en: 'Kansas Korean — hobby meetups' },
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,6 +38,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+/** 하단 탭바가 홈 인디케이터 영역까지 깔리도록 — env(safe-area-inset-*)가 동작하려면 필요 */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   return (
@@ -45,19 +57,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/" className="logo">
                 Kansas&nbsp;Korean<sup>®</sup>
               </Link>
-              <NavLinks />
             </div>
           </header>
           <main className="container">
+            <ContextTabs />
             <InstallPrompt />
             {children}
           </main>
-          <footer className="site-footer">
-            <div className="container">
-              <span>© 2026 KANSAS KOREAN</span>
-              <span>{pick(locale, META.footer)}</span>
-            </div>
-          </footer>
+          <NavLinks />
         </I18nProvider>
       </body>
     </html>
