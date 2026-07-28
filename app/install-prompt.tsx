@@ -20,14 +20,26 @@ const T = {
 
   // 설치 안내
   installTitle: { ko: '홈 화면에 추가하기', en: 'Add to your home screen' },
-  installAndroid: {
+  installWhy: {
     ko: '앱처럼 전체화면으로 열리고, 다음부터 바로 들어올 수 있어요.',
     en: 'It opens full screen like an app, and you can jump back in anytime.',
   },
-  installIos: {
-    ko: '아래 공유 버튼을 누르고 "홈 화면에 추가"를 선택하면 앱처럼 쓸 수 있어요.',
-    en: 'Tap the share button below, then choose “Add to Home Screen” to use it like an app.',
+  // *별표* 사이는 굵게 나온다 — 실제 버튼 이름을 눈에 띄게 하려고
+  iosStep1: {
+    ko: '화면 아래 *공유* 버튼(⬆︎)을 누르세요. 안 보이면 *⋯ (더보기)* → *공유* 순서예요.',
+    en: 'Tap *Share* (⬆︎) in the bottom bar. Don’t see it? Tap *⋯ (More)* → *Share*.',
   },
+  iosStep2: {
+    ko: '목록을 아래로 내려 *홈 화면에 추가* 를 누르세요.',
+    en: 'Scroll down the list and tap *Add to Home Screen*.',
+  },
+  iosStep3: {
+    ko: '오른쪽 위 *추가* 를 누르면 끝이에요.',
+    en: 'Tap *Add* in the top right. That’s it.',
+  },
+  iosChromeStep1: { ko: '오른쪽 아래 *⋯* 를 누르세요.', en: 'Tap *⋯* at the bottom right.' },
+  iosChromeStep2: { ko: '*홈 화면에 추가* 를 누르세요.', en: 'Tap *Add to Home Screen*.' },
+  iosChromeStep3: { ko: '*추가* 를 누르면 끝이에요.', en: 'Tap *Add*. That’s it.' },
   install: { ko: '설치하기', en: 'Install' },
   dismiss: { ko: '닫기', en: 'Dismiss' },
 };
@@ -39,7 +51,12 @@ interface InstallEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-type Mode = 'kakao-ios' | 'kakao-android' | 'install-android' | 'install-ios' | null;
+type Mode = 'kakao-ios' | 'kakao-android' | 'install-android' | 'install-ios' | 'install-ios-chrome' | null;
+
+/** *별표* 사이를 굵게 — 눌러야 할 버튼 이름을 문장 안에서 찾기 쉽게 */
+function withBold(text: string) {
+  return text.split(/\*(.+?)\*/g).map((part, i) => (i % 2 ? <strong key={i}>{part}</strong> : part));
+}
 
 export default function InstallPrompt() {
   const t = useT();
@@ -64,8 +81,8 @@ export default function InstallPrompt() {
       setMode(isAndroid ? 'kakao-android' : 'kakao-ios');
       return;
     }
-    // iOS Safari에는 설치 API가 없어 안내만 띄운다
-    if (isIOS) setMode('install-ios');
+    // iOS에는 설치 API가 없어 안내만 띄운다. 사파리와 크롬은 누르는 곳이 다르다.
+    if (isIOS) setMode(/CriOS/i.test(ua) ? 'install-ios-chrome' : 'install-ios');
 
     // 안드로이드 크롬은 설치 가능해지면 이 이벤트로 알려준다 (서비스 워커가 있어야 발생)
     const onPrompt = (e: Event) => {
@@ -111,15 +128,31 @@ export default function InstallPrompt() {
   const body = {
     'kakao-ios': t(T.kakaoIos),
     'kakao-android': t(T.kakaoAndroid),
-    'install-android': t(T.installAndroid),
-    'install-ios': t(T.installIos),
+    'install-android': t(T.installWhy),
+    'install-ios': t(T.installWhy),
+    'install-ios-chrome': t(T.installWhy),
   }[mode];
+
+  // iOS는 설치 버튼을 만들 수 없어서, 어디를 누르면 되는지 순서대로 적어준다
+  const steps =
+    mode === 'install-ios'
+      ? [T.iosStep1, T.iosStep2, T.iosStep3]
+      : mode === 'install-ios-chrome'
+        ? [T.iosChromeStep1, T.iosChromeStep2, T.iosChromeStep3]
+        : [];
 
   return (
     <div className="install-hint">
       <div className="install-body">
         <strong>{title}</strong>
         <span>{note ?? body}</span>
+        {!note && steps.length > 0 && (
+          <ol className="install-steps">
+            {steps.map((step, i) => (
+              <li key={i}>{withBold(t(step))}</li>
+            ))}
+          </ol>
+        )}
       </div>
       <div className="install-actions">
         {mode === 'kakao-android' && (

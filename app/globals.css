@@ -492,3 +492,8 @@ a:hover .notif-item { background: var(--surface-2); }
 .ticket-body { margin: 10px 0 0; font-size: 14.5px; color: var(--text-dim); white-space: pre-wrap; }
 .ticket-note { margin: 10px 0 0; font-size: 14px; font-weight: 500; border-left: 2px solid var(--text); padding-left: 12px; }
 .ticket-by { font-size: 13px; color: var(--text-dim); }
+
+/* 홈 화면에 추가 — iOS는 버튼을 만들 수 없어 누를 곳을 순서대로 적어준다 */
+.install-steps { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
+.install-steps li { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.install-steps strong { color: var(--text); font-weight: 600; }
