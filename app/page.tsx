@@ -44,6 +44,9 @@ const T = {
   next: { ko: '다음', en: 'Next' },
 };
 
+/** 홈에서 보던 위치 (탭 단위) — 카테고리를 갔다 와도 그 자리로 돌아온다 */
+const SCROLL_KEY = 'kk-home-scroll';
+
 interface SessionUser {
   id: string;
   name: string;
@@ -95,6 +98,38 @@ export default function HubPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  /**
+   * 카테고리를 보고 nav로 돌아왔을 때 보던 자리를 그대로 둔다.
+   * 캐러셀의 가로 위치와 세로 스크롤을 탭 단위(sessionStorage)로 기억한다.
+   * 카드가 그려진 뒤에 복원해야 하므로 loading이 끝나고 나서 건다.
+   */
+  useEffect(() => {
+    if (loading) return;
+    const car = carRef.current;
+
+    const saved = sessionStorage.getItem(SCROLL_KEY);
+    if (saved) {
+      try {
+        const { x, y } = JSON.parse(saved) as { x?: number; y?: number };
+        if (car && x) car.scrollLeft = x;
+        if (y) window.scrollTo(0, y);
+      } catch {
+        sessionStorage.removeItem(SCROLL_KEY); // 형태가 깨졌으면 버린다
+      }
+    }
+
+    // 떠날 때 읽으면 Next가 맨 위로 올린 뒤일 수 있어, 움직일 때마다 적어둔다
+    const save = () => {
+      sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ x: car?.scrollLeft ?? 0, y: window.scrollY }));
+    };
+    car?.addEventListener('scroll', save, { passive: true });
+    window.addEventListener('scroll', save, { passive: true });
+    return () => {
+      car?.removeEventListener('scroll', save);
+      window.removeEventListener('scroll', save);
+    };
+  }, [loading]);
 
   async function toggleSub(category: string) {
     if (!user) {
