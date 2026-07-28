@@ -89,7 +89,7 @@ nav.tabbar {
   border-top: 1px solid var(--border);
 }
 /* 항목이 늘어나거나 영어처럼 긴 말이 들어와도 잘리지 않게, 넘치면 가로로 밀린다 */
-.tabbar-links { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tabbar-links { display: flex; align-items: center; gap: 7px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .tabbar-links::-webkit-scrollbar { display: none; }
 .tabbar a {
   display: flex; align-items: center; gap: 6px;
@@ -266,18 +266,18 @@ button.big-cta .arrow { color: #fff; }
 .car-card .car-idx { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; display: inline-flex; align-items: center; }
 .car-card .car-name { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
 .car-card .car-desc { font-size: 13px; opacity: 0.8; margin-top: 6px; font-weight: 500; }
-.car-card .car-toggles { display: flex; align-items: center; gap: 14px; flex: none; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; }
-.car-card .car-toggles .sep { width: 1px; height: 11px; background: currentColor; opacity: 0.4; flex: none; }
+.car-card .car-toggles { display: flex; align-items: center; gap: 10px; flex: none; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; }
+.car-card .car-toggles .sep { width: 1px; height: 9px; background: currentColor; opacity: 0.4; flex: none; }
 .sub-toggle {
   background: transparent; color: inherit; border: 1px solid transparent;
-  border-radius: 999px; min-height: 34px; padding: 0 10px;
+  border-radius: 999px; min-height: 26px; padding: 0 8px;
   font: inherit; letter-spacing: inherit;
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 5px;
   opacity: 0.78; cursor: pointer;
 }
 .sub-toggle:hover { opacity: 1; background: rgba(255, 255, 255, 0.16); }
 .sub-toggle.on { opacity: 1; border-color: currentColor; }
-.sub-toggle .star { font-size: 13px; line-height: 1; }
+.sub-toggle .star { font-size: 11px; line-height: 1; }
 .car-drag {
   background: transparent; color: inherit; border: none; min-height: 34px; padding: 0 10px 0 0;
   font-size: 18px; line-height: 1; cursor: grab; touch-action: none;
@@ -317,8 +317,8 @@ a:hover .notif-item { border-color: var(--text); }
 .post-desc { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 .post-count { font-family: var(--mono); font-size: 11.5px; margin-left: 0; }
 .post-actions {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-soft);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft);
 }
 .post-actions button { min-height: 32px; padding: 0 12px; font-size: 12.5px; }
 .post-actions button.danger { padding: 0 8px; }
@@ -326,7 +326,7 @@ a:hover .notif-item { border-color: var(--text); }
 .feed-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .feed-head h1 { font-size: clamp(22px, 6vw, 28px); }
 .feed-head > div:first-child { align-items: center !important; gap: 10px !important; }
-.feed-actions { display: flex; gap: 8px; align-items: center; padding-bottom: 0; flex-wrap: wrap; }
+.feed-actions { display: flex; gap: 10px; align-items: center; padding-bottom: 0; flex-wrap: wrap; }
 
 /* ── 댓글 ───────────────────────────────────────────────── */
 .comments { flex-basis: 100%; border-top: 1px solid var(--border-soft); margin-top: 12px; padding-top: 10px; }
