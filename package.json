@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "css:fix": "node scripts/no-touch-hover.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

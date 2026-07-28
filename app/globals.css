@@ -76,9 +76,6 @@ body {
 .avatar.on { background: var(--text); color: #fff; border-color: var(--text); }
 
 main { flex: 1; width: 100%; }
-/* .container(클래스)가 요소 선택자를 이기므로 main.container로 세로 여백을 되찾는다.
-   아래 여백이 없으면 마지막 내용이 떠 있는 탭바에 가려진다. */
-main.container { padding-top: 8px; padding-bottom: calc(var(--tabbar) + 16px); }
 .site-footer { display: none; }
 
 /* ── 하단 탭바 — 2a 플로팅 아일랜드 ─────────────────────── */
@@ -127,37 +124,7 @@ nav.tabbar {
   font-size: 10.5px; font-weight: 700;
 }
 .tabbar a.active .t-ava { background: var(--text); color: #fff; }
-/* 사진을 넣으면 동그란 아바타를 꽉 채운다 */
-.tabbar .t-ava img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
 
-/* 프로필 화면의 큰 아바타 */
-.avatar-lg {
-  width: 72px; height: 72px; border-radius: 999px; flex: none; overflow: hidden;
-  background: var(--surface-2); color: var(--text-mid);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px; font-weight: 700;
-}
-.avatar-lg img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* 파일 입력은 감추고 라벨을 버튼처럼 쓴다 */
-.photo-pick {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 44px; padding: 0 16px; border-radius: 999px;
-  background: var(--surface); border: 1px solid var(--border);
-  font-size: 14px; font-weight: 600; cursor: pointer;
-}
-.photo-pick input { display: none; }
-.hint { font-size: 12.5px; color: var(--text-dim); }
-
-/* 아래로 내릴 때는 상·하단 바를 치워 화면을 넓게 쓴다 (위로 올리면 다시 나온다) */
-.site-header, nav.tabbar { transition: transform 0.25s ease; will-change: transform; }
-body[data-chrome='hidden'] .site-header { transform: translateY(-100%); }
-/* 캡슐은 바닥에서 떠 있으니 띄운 만큼 더 내려야 완전히 사라진다 */
-body[data-chrome='hidden'] nav.tabbar {
-  transform: translateY(calc(100% + var(--tabbar-inset) + env(safe-area-inset-bottom, 0px)));
-}
-@media (prefers-reduced-motion: reduce) {
-  .site-header, nav.tabbar { transition: none; }
-}
 
 /* 화면 안 문맥 탭 (AMC의 회차/그룹, 피드의 예정/지난 등) */
 .segbar { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 2px; }
@@ -600,7 +567,6 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .site-header { background: rgba(247, 246, 242, 0.92); }
   .header-inner { min-height: 72px; }
   .container { max-width: 1100px; padding: 0 40px; }
-  main.container { padding-top: 12px; padding-bottom: 80px; }
 
   nav.tabbar {
     top: 0; bottom: 0; left: 0; right: auto; width: 232px;
@@ -618,10 +584,6 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .tabbar .t-icon, .tabbar .t-ava { width: 18px; height: 18px; }
   .tabbar a .bell-badge { position: static; margin: 0 0 0 auto; border: none; }
   .tabbar a.active { background: var(--surface-2); }
-  /* 데스크톱에서는 탭바가 좌측 레일이라 스크롤로 감추지 않는다 (세로로 밀려나면 통째로 사라진다) */
-  body[data-chrome='hidden'] .site-header,
-  body[data-chrome='hidden'] nav.tabbar { transform: none; }
-
   .car, .cat-grid { grid-template-columns: repeat(3, 1fr); }
   .times { grid-template-columns: repeat(6, 1fr); }
   h1, .statement { font-size: clamp(30px, 3.4vw, 44px); }
@@ -842,7 +804,3 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .new-inline { width: auto; padding: 0 28px; }
 }
 
-/* 홈 화면에 추가 — iOS는 버튼을 만들 수 없어 누를 곳을 순서대로 적어준다 */
-.install-steps { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
-.install-steps li { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
-.install-steps strong { color: var(--text); font-weight: 600; }

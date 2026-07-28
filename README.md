@@ -145,6 +145,30 @@
 2. `TMDB_API_KEY` 환경변수에 입력 (로컬 `.env.local` + Vercel). v4 Read Access Token(`eyJ…`)도 지원
 3. 키가 없으면 자동완성만 꺼지고 제목은 일반 텍스트로 입력됩니다
 
+## 디자인 파일을 새로 받았을 때
+
+시안 파일(`app/globals.css`)은 통째로 갈아끼우는 일이 잦습니다. 그때 함께 지워지던
+수정들은 **`app/overrides.css`** 로 옮겨두었습니다. `layout.tsx`가 globals 다음에 불러오므로
+시안이 무엇을 정의하든 이쪽이 이깁니다.
+
+```bash
+cp ../handoff/globals.css app/globals.css   # 1. 시안 덮어쓰기
+npm run css:fix                             # 2. hover 규칙 감싸기
+```
+
+`overrides.css`는 건드리지 않습니다. 지금 담고 있는 것:
+
+- `main.container` 세로 여백 — 없으면 페이지 맨 끝 내용이 떠 있는 탭바 뒤로 들어갑니다
+- 스크롤 시 상·하단 바 감추기 (데스크톱 좌측 레일에서는 끔)
+- 프로필 사진 (탭바 아바타 이미지, 프로필 화면 사진 고르기)
+- 홈 화면에 추가 안내의 단계 목록
+
+**`npm run css:fix`** (= `scripts/no-touch-hover.mjs`)는 globals.css의 `:hover` 규칙을
+`@media (hover: hover)`로 감쌉니다. iOS는 hover 스타일이 있는 요소를 "첫 탭은 hover,
+두 번째 탭이 실행"으로 다뤄서, 감싸지 않으면 탭바 버튼을 두 번 눌러야 합니다.
+이것만은 덧붙이기로 안 되고 시안의 규칙 자체를 감싸야 해서 스크립트로 뒀습니다.
+여러 번 돌려도 안전합니다(이미 감싼 건 건너뜁니다).
+
 ## 로컬 개발
 
 ```bash

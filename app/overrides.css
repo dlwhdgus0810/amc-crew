@@ -1,0 +1,133 @@
+/* ============================================================
+   globals.css 다음에 불러오는 보정 파일.
+
+   디자인 시안 파일(globals.css)은 통째로 갈아끼우는 일이 잦아서, 그때마다
+   함께 지워지던 수정들을 여기로 옮겨 두었다. 새 시안을 받으면 globals.css만
+   덮어쓰면 되고 이 파일은 건드리지 않는다.
+
+   여기 있는 건 전부 "덧붙이는" 규칙이다. 시안이 같은 문제를 제대로 다루기
+   시작하면 해당 블록을 지우면 된다.
+   (시안 파일의 :hover 규칙을 감싸는 작업만은 덧붙이기로 안 돼서
+    scripts/no-touch-hover.mjs 로 따로 처리한다 — README 참고)
+   ============================================================ */
+
+/* ── 본문 세로 여백 ─────────────────────────────────────────
+   .container(클래스)가 main(요소 선택자)을 이기기 때문에, 시안이 main에
+   padding을 걸어도 통째로 덮인다. 아래 여백이 0이면 페이지 맨 끝 내용이
+   떠 있는 탭바 뒤로 들어간다. */
+main.container {
+  padding-top: 8px;
+  padding-bottom: calc(var(--tabbar) + 16px);
+}
+
+/* ── 스크롤하면 상·하단 바 치우기 ───────────────────────────
+   내릴 때 감추고 올릴 때 되돌린다. 상태는 app/chrome-autohide.tsx가
+   body[data-chrome]에 적어준다. */
+.site-header,
+nav.tabbar {
+  transition: transform 0.25s ease;
+  will-change: transform;
+}
+body[data-chrome='hidden'] .site-header {
+  transform: translateY(-100%);
+}
+/* 캡슐형 탭바는 바닥에서 떠 있으니 띄운 만큼 더 내려야 완전히 사라진다 */
+body[data-chrome='hidden'] nav.tabbar {
+  transform: translateY(calc(100% + var(--tabbar-inset, 0px) + env(safe-area-inset-bottom, 0px)));
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  nav.tabbar {
+    transition: none;
+  }
+}
+
+/* ── 프로필 사진 ────────────────────────────────────────────
+   탭바 아바타와 프로필 화면에서 함께 쓴다. 사진이 없으면 이름 첫 글자. */
+.tabbar .t-ava img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  display: block;
+}
+.avatar-lg {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  flex: none;
+  overflow: hidden;
+  background: var(--surface-2);
+  color: var(--text-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+}
+.avatar-lg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* 파일 입력은 감추고 라벨을 버튼처럼 쓴다 */
+.photo-pick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.photo-pick input {
+  display: none;
+}
+.hint {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* ── 홈 화면에 추가 안내 ────────────────────────────────────
+   iOS는 설치 버튼을 만들 수 없어 누를 곳을 순서대로 적어준다. */
+.install-steps {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.install-steps li {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.install-steps strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── 데스크톱 ───────────────────────────────────────────────
+   탭바가 좌측 레일이라 스크롤로 감추면 통째로 사라진다. */
+@media (min-width: 1024px) {
+  main.container {
+    padding-top: 12px;
+    padding-bottom: 80px;
+  }
+  body[data-chrome='hidden'] .site-header,
+  body[data-chrome='hidden'] nav.tabbar {
+    transform: none;
+  }
+}
+
+/* 마우스가 있는 기기에서만 hover — 이 파일에서 새로 만든 규칙에도 같은 원칙 */
+@media (hover: hover) {
+  .photo-pick:hover {
+    background: var(--bg);
+  }
+}
