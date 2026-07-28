@@ -177,3 +177,16 @@ body[data-chrome='hidden'] nav.tabbar {
     flex: 1 1 100%;
   }
 }
+
+/* 테스트 계정으로 보는 중임을 알리는 띠 — 관리자 화면이 사라진 걸 고장으로 오해하지 않도록 */
+.viewing-as {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 18px;
+  background: var(--warn); color: #101010;
+  font-size: 12.5px; font-weight: 600;
+}
+.viewing-as .link-btn { color: #101010; text-decoration: underline; }
+/* 상단 바도 sticky top: 0이라 그냥 두면 띠 아래에 완전히 가려진다.
+   높이는 app/viewing-as.tsx가 실제로 재서 --viewing-as-h로 넘겨준다. */
+body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }

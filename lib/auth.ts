@@ -12,6 +12,8 @@ export const STATE_COOKIE = 'kakao_oauth_state';
 export const LOGIN_NEXT_COOKIE = 'login_next';
 /** 이번 로그인이 "카톡 알림 재동의" 목적이었는지 표시 (콜백의 결과 안내·확인 메모용) */
 export const LOGIN_PURPOSE_COOKIE = 'login_purpose';
+/** 테스트 계정으로 보는 동안 원래(관리자) 세션을 담아두는 곳 — 돌아갈 때 쓴다 */
+export const IMPERSONATOR_COOKIE = 'impersonator';
 export const TALK_MESSAGE_PURPOSE = 'talk_message';
 
 /** 로그인 후 복귀 경로 검증: 사이트 내 경로만 허용 (open redirect 방지) */

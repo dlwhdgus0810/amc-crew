@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
 import type { Msg } from '@/lib/i18n';
+import { TEST_USERS } from '@/lib/test-users';
 
 interface CategoryRequest {
   id: string;
@@ -66,6 +67,16 @@ const T = {
   reviewFailed: { ko: '처리 실패', en: 'Couldn’t process' },
   approved: { ko: '승인했어요. 제안자에게 알림이 갔어요.', en: 'Approved — the requester has been notified.' },
   rejected: { ko: '반려했어요.', en: 'Declined.' },
+  viewAsTitle: { ko: '테스트 계정으로 보기', en: 'View as a test account' },
+  viewAsDesc: {
+    ko: '일반 회원 화면을 그대로 확인할 수 있어요. 실제 회원으로는 들어갈 수 없어요 — 비공개 모임이 그 사람에게만 보이기 때문이에요.',
+    en: 'See the app as an ordinary member. Real members cannot be impersonated — their private meetups are meant for them alone.',
+  },
+  viewAsWarn: {
+    ko: '테스트 계정으로 모임을 만들거나 댓글을 달면 구독자·참가자에게 진짜 알림이 갑니다.',
+    en: 'Anything you create or comment on as a test account sends real alerts to subscribers and participants.',
+  },
+  viewAsFailed: { ko: '전환 실패', en: 'Couldn’t switch' },
   ticketTitle: { ko: '건의함', en: 'Suggestion box' },
   ticketDesc: {
     ko: '사용자들이 낸 건의예요. 상태를 바꾸면 낸 사람에게 알림이 갑니다.',
@@ -131,6 +142,25 @@ export default function AdminPage() {
   async function loadRequests() {
     const res = await fetch('/api/category-requests');
     if (res.ok) setRequests((await res.json()).requests ?? []);
+  }
+
+  /** 테스트 계정으로 전환 — 세션 쿠키가 바뀌므로 홈으로 새로 연다 */
+  async function viewAs(id: string) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(T.viewAsFailed));
+      window.location.href = '/';
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.viewAsFailed) });
+      setBusy(false);
+    }
   }
 
   async function loadTickets() {
@@ -276,6 +306,19 @@ export default function AdminPage() {
 
       {isKakaoAdmin && (
         <>
+          <h1 style={{ marginTop: 80 }}>{t(T.viewAsTitle)}</h1>
+          <p className="subtitle">{t(T.viewAsDesc)}</p>
+          <div className="card">
+            <div className="seg-group" style={{ flexWrap: 'wrap' }}>
+              {TEST_USERS.map((u) => (
+                <button key={u.id} className="seg" disabled={busy} onClick={() => viewAs(u.id)}>
+                  {u.name}
+                </button>
+              ))}
+            </div>
+            <p className="hint" style={{ marginTop: 12 }}>{t(T.viewAsWarn)}</p>
+          </div>
+
           <h1 style={{ marginTop: 80 }}>{t(T.ticketTitle)}</h1>
           <p className="subtitle">{t(T.ticketDesc)}</p>
           {tickets.length === 0 ? (

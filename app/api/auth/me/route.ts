@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSessionUser, isAdmin } from '@/lib/auth';
+import { cookies } from 'next/headers';
+import { getSessionUser, IMPERSONATOR_COOKIE, isAdmin, verifySessionToken } from '@/lib/auth';
 import { resolveDisplayName } from '@/lib/store';
 import { dbGetUser } from '@/lib/db/users';
 
@@ -7,6 +8,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const user = await getSessionUser();
+  // 관리자가 테스트 계정으로 보는 중이면 원래 세션이 쿠키에 남아 있다
+  const realUser = verifySessionToken((await cookies()).get(IMPERSONATOR_COOKIE)?.value);
   if (!user) {
     return NextResponse.json({ user: null, isAdmin: false, needsOnboarding: false });
   }
@@ -26,5 +29,6 @@ export async function GET() {
     kakaoTalkMessage: row?.kakaoTalkMessage ?? null,
     locale: row?.locale ?? null,
     isAdmin: isAdmin(user),
+    ...(realUser ? { viewingAs: { backTo: realUser.name } } : {}),
   });
 }
