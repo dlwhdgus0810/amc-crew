@@ -12,6 +12,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useT } from './i18n';
 
+/** 프로필이 바뀌었음을 탭바에 알리는 신호 */
+export const PROFILE_UPDATED = 'kk-profile-updated';
+
 const T = {
   home: { ko: '홈', en: 'Home' },
   categories: { ko: '둘러보기', en: 'Browse' },
@@ -56,21 +59,28 @@ function useSession() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [name, setName] = useState('');
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((auth) => {
-        setIsAdmin(Boolean(auth.isAdmin));
-        setLoggedIn(Boolean(auth.user));
-        setName(auth.user?.name ?? '');
-        if (auth.user && auth.needsOnboarding && pathname !== '/welcome') {
-          // 온보딩 후 원래 보던 페이지(공유 링크 등)로 복귀할 수 있게 경로를 넘긴다
-          router.replace(`/welcome?next=${encodeURIComponent(pathname)}`);
-        }
-      })
-      .catch(() => {});
+    const load = () =>
+      fetch('/api/auth/me')
+        .then((r) => r.json())
+        .then((auth) => {
+          setIsAdmin(Boolean(auth.isAdmin));
+          setAvatar(auth.avatar ?? null);
+          setLoggedIn(Boolean(auth.user));
+          setName(auth.user?.name ?? '');
+          if (auth.user && auth.needsOnboarding && pathname !== '/welcome') {
+            // 온보딩 후 원래 보던 페이지(공유 링크 등)로 복귀할 수 있게 경로를 넘긴다
+            router.replace(`/welcome?next=${encodeURIComponent(pathname)}`);
+          }
+        })
+        .catch(() => {});
+    load();
+    // 프로필에서 사진·닉네임을 바꾸면 화면을 옮기지 않아도 탭바가 따라오도록
+    window.addEventListener(PROFILE_UPDATED, load);
+    return () => window.removeEventListener(PROFILE_UPDATED, load);
   }, [pathname, router]);
 
   useEffect(() => {
@@ -80,12 +90,12 @@ function useSession() {
       .catch(() => {});
   }, [pathname]);
 
-  return { isAdmin, loggedIn, name, unread, pathname };
+  return { isAdmin, loggedIn, name, avatar, unread, pathname };
 }
 
 /** 떠 있는 하단 탭바 — 좁은 폰에서도 줄바꿈되지 않고, 콘텐츠 위에 얹힌다 */
 export default function NavLinks() {
-  const { loggedIn, name, unread, pathname } = useSession();
+  const { loggedIn, name, avatar, unread, pathname } = useSession();
   const t = useT();
 
   return (
@@ -104,9 +114,15 @@ export default function NavLinks() {
           <span>{t(T.notifications)}</span>
           {loggedIn && unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
         </Link>
+        <Link href="/tickets" className={pathname.startsWith('/tickets') ? 'active' : ''}>
+          <TicketIcon />
+          <span>{t(T.tickets)}</span>
+        </Link>
         {loggedIn ? (
           <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>
-            <span className="t-ava">{name.slice(0, 1) || '·'}</span>
+            <span className="t-ava">
+              {avatar ? <img src={avatar} alt="" /> : name.slice(0, 1) || '·'}
+            </span>
             <span>{t(T.profile)}</span>
           </Link>
         ) : (
@@ -115,10 +131,6 @@ export default function NavLinks() {
             <span>{t(T.profile)}</span>
           </a>
         )}
-        <Link href="/tickets" className={pathname.startsWith('/tickets') ? 'active' : ''}>
-          <TicketIcon />
-          <span>{t(T.tickets)}</span>
-        </Link>
       </span>
     </nav>
   );
