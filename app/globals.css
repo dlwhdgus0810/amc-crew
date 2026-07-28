@@ -229,6 +229,10 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 11px; font-wei
   padding: 32px 36px; display: flex; flex-direction: column; justify-content: space-between;
   text-decoration: none; cursor: pointer; scroll-snap-align: start;
   transition: transform 0.25s ease;
+  /* 카드가 통째로 링크라, 순서를 바꾸려고 길게 누르면 iOS가 "링크 복사" 메뉴를 띄운다 */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .car-card:hover { transform: translateY(-6px); opacity: 1; }
 .car-card .car-top { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
@@ -258,6 +262,7 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 11px; font-wei
 .car-drag {
   background: transparent; color: inherit; border: none; padding: 0 10px 0 0;
   font-size: 18px; line-height: 1; cursor: grab; touch-action: none;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .car-drag:hover { background: transparent; opacity: 0.6; }
 .car-drag:active { cursor: grabbing; }
@@ -265,6 +270,10 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 11px; font-wei
 /* 끄는 동안에는 스냅과 hover 들림을 멈춘다 — 카드가 손을 안 따라오고 튀는 원인 */
 .car.reordering { scroll-snap-type: none; }
 .car.reordering .car-card:hover { transform: none; }
+/* 마우스로 카드를 끌어 좌우로 움직이는 중 */
+.car.grabbing { cursor: grabbing; }
+.car.grabbing .car-card { cursor: grabbing; }
+.car.grabbing .car-card:hover { transform: none; }
 .drag-hint { margin-top: 14px; font-size: 13px; color: var(--text-dim); }
 /* 전체 카테고리 탭 — 캐러셀과 같은 카드를 그리드로 편다 */
 /* min(320px, 100%) — 트랙 최소폭이 화면보다 커지지 않게. 그냥 minmax(320px, …)이면

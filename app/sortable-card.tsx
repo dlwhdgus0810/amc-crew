@@ -49,6 +49,8 @@ export default function SortableCategoryCard({
             e.preventDefault();
             e.stopPropagation();
           }}
+          // 길게 눌러 순서를 바꿀 때 링크 메뉴("링크 복사")가 뜨지 않도록
+          onContextMenu={(e) => e.preventDefault()}
         >
           ⠿
         </button>
