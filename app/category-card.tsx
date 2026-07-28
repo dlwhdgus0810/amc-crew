@@ -18,10 +18,21 @@ const T = {
   noUpcoming: { ko: '예정된 모임 없음', en: 'No upcoming meetups' },
 };
 
-const BellIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+/** 구독 중이면 ★처럼 속을 채운다 (색은 카드 글자색을 따라간다) */
+const BellIcon = ({ filled }: { filled: boolean }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill={filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth={1.9}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
     <path d="M18 15V10a6 6 0 1 0-12 0v5l-1.5 3h15z" />
-    <path d="M10 21h4" />
+    <path d="M10 21h4" fill="none" />
   </svg>
 );
 
@@ -100,7 +111,7 @@ export default function CategoryCard({
                 aria-pressed={isSubscribed}
                 aria-label={t(T.subscribeA11y)}
               >
-                <BellIcon />
+                <BellIcon filled={isSubscribed} />
               </button>
             )}
           </span>
