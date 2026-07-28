@@ -2,8 +2,9 @@
 
 /* ============================================================
    app/nav.tsx 를 이 파일로 교체하세요.
-   1e 적용본: 헤더의 줄바꿈되는 링크 목록 → 하단 탭바(홈·둘러보기·건의함·알림)
-   + 프로필 아바타. AMC의 회차/그룹과 관리자는 문맥 탭(ContextTabs)으로 내립니다.
+   2a 플로팅 아일랜드: 좌우 14px 떠 있는 캡슐 안에
+   홈 · 둘러보기 · 알림 · 프로필 + ＋(모임 만들기).
+   AMC의 회차/그룹과 관리자는 문맥 탭(ContextTabs)으로 내립니다.
    ============================================================ */
 
 import Link from 'next/link';
@@ -20,7 +21,29 @@ const T = {
   profile: { ko: '프로필', en: 'Profile' },
   admin: { ko: '관리자', en: 'Admin' },
   notifications: { ko: '알림', en: 'Alerts' },
+  create: { ko: '모임 만들기', en: 'New meetup' },
 };
+
+/* 20px 라인 아이콘 — 굵기 1.8로 통일 */
+const icon = { className: 't-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+
+const HomeIcon = () => (
+  <svg {...icon} aria-hidden>
+    <path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
+  </svg>
+);
+const BrowseIcon = () => (
+  <svg {...icon} aria-hidden>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m15 9-2.4 5.6L7 17l2.4-5.6z" />
+  </svg>
+);
+const BellIcon = () => (
+  <svg {...icon} aria-hidden>
+    <path d="M18 15V10a6 6 0 1 0-12 0v5l-1.5 3h15z" />
+    <path d="M10 21h4" />
+  </svg>
+);
 
 /** 로그인 상태·안 읽은 알림 수를 한 번만 읽어 두 컴포넌트가 함께 쓴다 */
 function useSession() {
@@ -56,45 +79,42 @@ function useSession() {
   return { isAdmin, loggedIn, name, unread, pathname };
 }
 
-/** 하단 탭바 — 화면 어디서나 같은 자리에 있고, 좁은 폰에서도 줄바꿈되지 않는다 */
+/** 떠 있는 하단 탭바 — 좁은 폰에서도 줄바꿈되지 않고, 콘텐츠 위에 얹힌다 */
 export default function NavLinks() {
   const { loggedIn, name, unread, pathname } = useSession();
   const t = useT();
 
-  const tabs = [
-    { href: '/', label: t(T.home) },
-    { href: '/categories', label: t(T.categories) },
-    { href: '/tickets', label: t(T.tickets) },
-  ];
-
   return (
     <nav className="tabbar">
       <span className="tabbar-links">
-        {tabs.map((tab) => (
-          <Link key={tab.href} href={tab.href} className={pathname === tab.href ? 'active' : ''}>
-            {tab.label}
+        <Link href="/" className={pathname === '/' ? 'active' : ''}>
+          <HomeIcon />
+          <span>{t(T.home)}</span>
+        </Link>
+        <Link href="/categories" className={pathname.startsWith('/categories') ? 'active' : ''}>
+          <BrowseIcon />
+          <span>{t(T.categories)}</span>
+        </Link>
+        <Link href="/notifications" className={pathname === '/notifications' ? 'active' : ''}>
+          <BellIcon />
+          <span>{t(T.notifications)}</span>
+          {loggedIn && unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
+        </Link>
+        {loggedIn ? (
+          <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>
+            <span className="t-ava">{name.slice(0, 1) || '·'}</span>
+            <span>{t(T.profile)}</span>
           </Link>
-        ))}
-        {loggedIn && (
-          <Link href="/notifications" className={pathname === '/notifications' ? 'active' : ''}>
-            {t(T.notifications)}
-            {unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
-          </Link>
+        ) : (
+          <a href="/api/auth/login">
+            <span className="t-ava">·</span>
+            <span>{t(T.profile)}</span>
+          </a>
         )}
       </span>
-      {loggedIn ? (
-        <Link
-          href="/profile"
-          className={`avatar ${pathname === '/profile' ? 'on' : ''}`}
-          aria-label={t(T.profile)}
-        >
-          {name.slice(0, 1) || '·'}
-        </Link>
-      ) : (
-        <a className="avatar" href="/api/auth/login" aria-label={t(T.profile)}>
-          ·
-        </a>
-      )}
+      <Link href="/categories" className="tab-fab" aria-label={t(T.create)}>
+        +
+      </Link>
     </nav>
   );
 }
@@ -108,6 +128,7 @@ export function ContextTabs() {
   if (pathname.startsWith('/movie')) {
     links.push({ href: '/movie', label: t(T.showtimes) }, { href: '/movie/groups', label: t(T.groups) });
   }
+  if (pathname.startsWith('/tickets')) links.push({ href: '/tickets', label: t(T.tickets) });
   if (isAdmin) links.push({ href: '/admin', label: t(T.admin) });
   if (links.length === 0) return null;
 

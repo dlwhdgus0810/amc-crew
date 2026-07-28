@@ -26,8 +26,9 @@
   --mono: 'IBM Plex Mono', monospace;
   --r: 14px;
   --r-sm: 12px;
-  /* 하단 탭바가 차지하는 높이 (safe-area 포함) */
-  --tabbar: calc(48px + env(safe-area-inset-bottom, 0px));
+  /* 떠 있는 탭바가 차지하는 높이 (캡슐 64px + 아래 여백 14px + safe-area) */
+  --tabbar: calc(78px + env(safe-area-inset-bottom, 0px));
+  --tabbar-inset: 14px;
 }
 
 * { box-sizing: border-box; }
@@ -72,62 +73,67 @@ body {
 }
 .avatar.on { background: var(--text); color: #fff; border-color: var(--text); }
 
-main { flex: 1; width: 100%; }
-/* .container(클래스)가 요소 선택자를 이기므로 main.container로 세로 여백을 되찾는다.
-   아래 여백이 없으면 마지막 내용이 고정된 하단 탭바에 가려진다. */
-main.container { padding-top: 8px; padding-bottom: calc(var(--tabbar) + 16px); }
+main { padding: 8px 0 calc(var(--tabbar) + 16px); flex: 1; width: 100%; }
 .site-footer { display: none; }
 
-/* ── 하단 탭바 ──────────────────────────────────────────── */
+/* ── 하단 탭바 — 2a 플로팅 아일랜드 ─────────────────────── */
+/* 화면 폭을 덮지 않는 떠 있는 캡슐. 콘텐츠가 아래로 살짝 비쳐 보인다. */
 nav.tabbar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px;
-  padding: 5px 12px calc(7px + env(safe-area-inset-bottom, 0px));
-  background: rgba(247, 246, 242, 0.95);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border);
+  position: fixed; z-index: 30;
+  left: var(--tabbar-inset); right: var(--tabbar-inset);
+  bottom: calc(var(--tabbar-inset) + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  align-items: center; gap: 2px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: 0 10px 28px rgba(16, 16, 16, 0.1);
 }
-/* 항목이 늘어나거나 영어처럼 긴 말이 들어와도 잘리지 않게, 넘치면 가로로 밀린다 */
-.tabbar-links { display: flex; align-items: center; gap: 7px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.tabbar-links::-webkit-scrollbar { display: none; }
+.tabbar-links { display: contents; }
 .tabbar a {
-  display: flex; align-items: center; gap: 6px;
-  flex: none;
-  min-height: 36px; padding: 0 10px;
-  /* 글자만 나열하면 어디까지가 한 버튼인지 안 보인다 — 알약 모양으로 경계를 준다 */
-  border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: 52px; border-radius: 16px;
   color: var(--text-dim); text-decoration: none;
-  font-size: 12.5px; font-weight: 500;
-  white-space: nowrap;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  font-size: 10.5px; font-weight: 500;
+  white-space: nowrap; position: relative;
+  transition: color 0.15s ease, background 0.15s ease;
 }
-.tabbar a:hover { color: var(--text); }
-.tabbar a.active { background: var(--text); border-color: var(--text); color: #fff; font-weight: 600; }
+.tabbar a:hover { color: var(--text); background: var(--bg); }
+.tabbar a.active { color: var(--text); font-weight: 600; background: var(--border-soft); }
+.tabbar .t-icon { width: 20px; height: 20px; display: block; }
+/* 아이콘에 붙는 뱃지 — 라벨을 덮거나 잘리지 않는다 */
 .bell-badge {
-  min-width: 18px; height: 18px; border-radius: 999px;
+  position: absolute; top: 6px; left: 50%; margin-left: 5px;
+  min-width: 16px; height: 16px; border-radius: 999px;
   background: var(--accent); color: #fff;
-  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  font-family: var(--mono); font-size: 9.5px; font-weight: 600;
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 0 5px; line-height: 1;
+  padding: 0 4px; line-height: 1;
+  border: 2px solid var(--surface);
 }
-/* 새 모임 만들기 (＋) — 카테고리 화면에서만 노출 */
-.tab-fab {
-  width: 40px; height: 40px; border-radius: 999px; flex: none;
-  background: var(--text); color: #fff; border: none;
-  font-size: 21px; font-weight: 400; line-height: 1;
+/* 프로필 탭의 이니셜 아바타 */
+.tabbar .t-ava {
+  width: 20px; height: 20px; border-radius: 999px; flex: none;
+  background: var(--surface-2); color: var(--text-mid);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; padding: 0;
+  font-size: 10.5px; font-weight: 700;
 }
-.tab-fab:hover { opacity: 0.85; }
-
-/* 아래로 내릴 때는 상·하단 바를 치워 화면을 넓게 쓴다 (위로 올리면 다시 나온다) */
-.site-header, nav.tabbar { transition: transform 0.25s ease; will-change: transform; }
-body[data-chrome='hidden'] .site-header { transform: translateY(-100%); }
-body[data-chrome='hidden'] nav.tabbar { transform: translateY(100%); }
-@media (prefers-reduced-motion: reduce) {
-  .site-header, nav.tabbar { transition: none; }
+.tabbar a.active .t-ava { background: var(--text); color: #fff; }
+/* 새 모임 만들기 (＋) — 캡슐 안 오른쪽에 흡수 */
+.tab-fab {
+  grid-column: auto; justify-self: end;
+  width: 44px; height: 44px; border-radius: 999px; flex: none;
+  margin: 0 2px 0 6px;
+  background: var(--text); color: #fff; border: none;
+  font-size: 22px; font-weight: 400; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; text-decoration: none;
 }
+.tab-fab:hover { opacity: 0.85; color: #fff; }
+nav.tabbar:has(.tab-fab) { grid-template-columns: repeat(4, 1fr) auto; grid-auto-flow: row; }
 
 /* 화면 안 문맥 탭 (AMC의 회차/그룹, 피드의 예정/지난 등) */
 .segbar { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 2px; }
@@ -252,6 +258,7 @@ button.big-cta .arrow { color: #fff; }
 .home-login { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; flex-wrap: wrap; }
 
 .car { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; overflow: visible; }
+.car::-webkit-scrollbar { display: none; }
 .car-card {
   position: relative; flex: none; width: auto; height: auto; min-height: 150px;
   border-radius: var(--r);
@@ -266,33 +273,34 @@ button.big-cta .arrow { color: #fff; }
 .car-card .car-idx { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; display: inline-flex; align-items: center; }
 .car-card .car-name { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
 .car-card .car-desc { font-size: 13px; opacity: 0.8; margin-top: 6px; font-weight: 500; }
-.car-card .car-toggles { display: flex; align-items: center; gap: 10px; flex: none; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; }
-.car-card .car-toggles .sep { width: 1px; height: 9px; background: currentColor; opacity: 0.4; flex: none; }
+.car-card .car-toggles { display: flex; align-items: center; gap: 14px; flex: none; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; }
+.car-card .car-toggles .sep { width: 1px; height: 11px; background: currentColor; opacity: 0.4; flex: none; }
 .sub-toggle {
   background: transparent; color: inherit; border: 1px solid transparent;
-  border-radius: 999px; min-height: 26px; padding: 0 8px;
+  border-radius: 999px; min-height: 34px; padding: 0 10px;
   font: inherit; letter-spacing: inherit;
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 6px;
   opacity: 0.78; cursor: pointer;
 }
 .sub-toggle:hover { opacity: 1; background: rgba(255, 255, 255, 0.16); }
 .sub-toggle.on { opacity: 1; border-color: currentColor; }
-.sub-toggle .star { font-size: 11px; line-height: 1; }
+.sub-toggle .star { font-size: 13px; line-height: 1; }
 .car-drag {
-  background: transparent; color: inherit; border: none; min-height: 34px;
-  /* 글리프는 제자리에 두고 잡히는 넓이만 넓힌다 (22px는 마우스로 집기에 좁다) */
-  padding: 0 10px 0 8px; margin-left: -8px;
+  background: transparent; color: inherit; border: none; min-height: 34px; padding: 0 10px 0 0;
   font-size: 18px; line-height: 1; cursor: grab; touch-action: none;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .car-drag:hover { background: transparent; opacity: 0.6; }
 .car-card.dragging { opacity: 0.55; }
 .car.reordering .car-card:hover { transform: none; }
+.car.grabbing .car-card { cursor: grabbing; }
 .drag-hint { margin-top: 12px; font-size: 12.5px; color: var(--text-dim); }
 
 .cat-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
 .cat-grid .car-card { min-height: 132px; }
-.car-links { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.car-links { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.car-arrows { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.car-arrows button:not(.secondary) { display: none; } /* 세로 스택에서는 좌우 화살표가 필요 없다 */
 
 /* ── 알림 ───────────────────────────────────────────────── */
 .notif-item {
@@ -318,27 +326,12 @@ a:hover .notif-item { border-color: var(--text); }
 .post-meta { color: var(--text-dim); font-size: 13px; font-weight: 500; }
 .post-desc { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
 .post-count { font-family: var(--mono); font-size: 11.5px; margin-left: 0; }
-.post-actions {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft);
-}
-.post-actions button { min-height: 32px; padding: 0 12px; font-size: 12.5px; }
-.post-actions button.danger { padding: 0 8px; }
+.post-row > span:last-of-type { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .feed-dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; margin-top: 0; flex: none; }
 .feed-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .feed-head h1 { font-size: clamp(22px, 6vw, 28px); }
 .feed-head > div:first-child { align-items: center !important; gap: 10px !important; }
-.feed-actions { display: flex; gap: 10px; align-items: center; padding-bottom: 0; flex-wrap: wrap; }
-
-/* 접었다 펴는 섹션 제목 — 버튼이지만 제목처럼 보여야 한다 (h2의 서체·색을 그대로 물려받는다) */
-.section-toggle {
-  background: transparent; border: none; border-radius: 0;
-  min-height: 0; padding: 0;
-  font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit;
-  display: inline-flex; align-items: center; gap: 6px;
-  cursor: pointer;
-}
-.section-toggle:hover { background: transparent; opacity: 0.65; }
+.feed-actions { display: flex; gap: 8px; align-items: center; padding-bottom: 0; flex-wrap: wrap; }
 
 /* ── 댓글 ───────────────────────────────────────────────── */
 .comments { flex-basis: 100%; border-top: 1px solid var(--border-soft); margin-top: 12px; padding-top: 10px; }
@@ -557,34 +550,30 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .site-header { background: rgba(247, 246, 242, 0.92); }
   .header-inner { min-height: 72px; }
   .container { max-width: 1100px; padding: 0 40px; }
-  main.container { padding-top: 12px; padding-bottom: 80px; }
+  main { padding: 12px 0 80px; }
 
-  nav.tabbar {
-    top: 0; bottom: 0; right: auto; width: 232px;
-    flex-direction: column; align-items: stretch; justify-content: flex-start;
-    gap: 4px;
+  nav.tabbar, nav.tabbar:has(.tab-fab) {
+    top: 0; bottom: 0; left: 0; right: auto; width: 232px;
+    display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start;
+    gap: 2px;
     padding: 26px 18px;
-    border-top: none; border-right: 1px solid var(--border);
-    background: var(--bg); backdrop-filter: none;
+    border: none; border-right: 1px solid var(--border); border-radius: 0;
+    background: var(--bg); backdrop-filter: none; box-shadow: none;
   }
-  .tabbar-links { flex-direction: column; align-items: stretch; gap: 2px; }
+  .tabbar-links { display: flex; flex-direction: column; align-items: stretch; gap: 2px; }
   .tabbar a {
+    flex-direction: row; justify-content: flex-start; gap: 10px;
     min-height: 42px; padding: 0 12px; border-radius: var(--r-sm); font-size: 14.5px;
-    background: transparent; border-color: transparent;
   }
-  .tabbar a .bell-badge { margin-left: auto; }
-  .tabbar a.active { background: var(--surface-2); border-color: transparent; color: var(--text); }
-  .tab-fab { width: 100%; border-radius: 999px; min-height: 46px; font-size: 15px; font-weight: 600; margin-top: 12px; }
-  /* 데스크톱에서는 탭바가 좌측 레일이라 스크롤로 감추지 않는다 (세로로 밀려나면 통째로 사라진다) */
-  body[data-chrome='hidden'] .site-header,
-  body[data-chrome='hidden'] nav.tabbar { transform: none; }
-
+  .tabbar .t-icon, .tabbar .t-ava { width: 18px; height: 18px; }
+  .tabbar a .bell-badge { position: static; margin: 0 0 0 auto; border: none; }
+  .tabbar a.active { background: var(--surface-2); }
+  .tab-fab {
+    justify-self: stretch; width: 100%; margin: 12px 0 0;
+    border-radius: 999px; height: auto; min-height: 46px;
+    font-size: 15px; font-weight: 600;
+  }
   .car, .cat-grid { grid-template-columns: repeat(3, 1fr); }
   .times { grid-template-columns: repeat(6, 1fr); }
   h1, .statement { font-size: clamp(30px, 3.4vw, 44px); }
 }
-
-/* 홈 화면에 추가 — iOS는 버튼을 만들 수 없어 누를 곳을 순서대로 적어준다 */
-.install-steps { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
-.install-steps li { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
-.install-steps strong { color: var(--text); font-weight: 600; }
