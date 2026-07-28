@@ -8,7 +8,7 @@ import type { Msg } from '@/lib/i18n';
 interface Ticket {
   id: string;
   number: number;
-  kind: 'feature' | 'improve' | 'bug' | 'other';
+  kind: 'feature' | 'improve' | 'bug' | 'other' | 'cheer';
   title: string;
   body: string | null;
   status: 'open' | 'planned' | 'done' | 'declined';
@@ -37,6 +37,11 @@ const KINDS: { value: Ticket['kind']; label: Msg; hint: Msg }[] = [
     label: { ko: '기타', en: 'Anything else' },
     hint: { ko: '무엇이든 편하게 적어주세요', en: 'Tell us anything' },
   },
+  {
+    value: 'cheer',
+    label: { ko: '응원의 말', en: 'Kind words' },
+    hint: { ko: '예: 덕분에 주말이 즐거워요', en: 'e.g. this made my weekend' },
+  },
 ];
 
 const STATUS_LABEL: Record<Ticket['status'], Msg> = {
@@ -60,17 +65,29 @@ const T = {
   kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
   kind: { ko: '어떤 건의인가요?', en: 'What kind of ticket?' },
   summary: { ko: '한 줄 요약', en: 'One-line summary' },
+  summaryCheer: { ko: '한마디', en: 'Your message' },
   detail: { ko: '자세한 내용 (선택)', en: 'Details (optional)' },
+  detailCheer: { ko: '더 하고 싶은 말 (선택)', en: 'More, if you like (optional)' },
   detailPh: {
     ko: '어떤 상황에서 필요한지, 어떻게 동작하면 좋을지 적어주시면 그대로 만들어드릴게요.',
     en: 'When you’d use it and how it should behave — the more you write, the closer we build it.',
   },
+  detailCheerPh: {
+    ko: '어떤 점이 좋았는지 적어주시면 더 잘 만들 수 있어요.',
+    en: 'What worked for you? It helps us know what to keep.',
+  },
   submit: { ko: '티켓 발급받기 →', en: 'Get a ticket →' },
+  submitCheer: { ko: '응원 보내기 →', en: 'Send it →' },
   submitting: { ko: '발급 중…', en: 'Issuing…' },
+  sending: { ko: '보내는 중…', en: 'Sending…' },
   submitFailed: { ko: '발급 실패', en: 'Couldn’t file it' },
   issued: {
     ko: '#{n} 티켓이 발급됐어요! 진행 상황은 알림으로 알려드릴게요.',
     en: 'Ticket #{n} is open — we’ll ping you as it moves.',
+  },
+  cheered: {
+    ko: '고맙습니다! 잘 전달했어요. 덕분에 힘내서 만들게요. 💪',
+    en: 'Thank you — it’s been passed along. This is what keeps us building. 💪',
   },
   mine: { ko: '내가 낸 건의', en: 'Your tickets' },
   mineEmpty: { ko: '아직 낸 건의가 없어요.', en: 'No tickets yet.' },
@@ -130,7 +147,10 @@ export default function TicketsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.submitFailed));
-      setMsg({ type: 'ok', text: t(T.issued, { n: String(data.number) }) });
+      setMsg({
+        type: 'ok',
+        text: kind === 'cheer' ? t(T.cheered) : t(T.issued, { n: String(data.number) }),
+      });
       setTitle('');
       setBody('');
       await loadMine();
@@ -144,6 +164,7 @@ export default function TicketsPage() {
   if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   const activeKind = KINDS.find((k) => k.value === kind);
+  const isCheer = kind === 'cheer';
 
   return (
     <>
@@ -173,7 +194,7 @@ export default function TicketsPage() {
             ))}
           </div>
 
-          <h2>{t(T.summary)}</h2>
+          <h2>{isCheer ? t(T.summaryCheer) : t(T.summary)}</h2>
           <input
             type="text"
             value={title}
@@ -183,12 +204,20 @@ export default function TicketsPage() {
             onKeyDown={(e) => e.key === 'Enter' && !saving && title.trim() && submit()}
           />
 
-          <h2>{t(T.detail)}</h2>
-          <textarea rows={4} value={body} maxLength={2000} placeholder={t(T.detailPh)} onChange={(e) => setBody(e.target.value)} />
+          <h2>{isCheer ? t(T.detailCheer) : t(T.detail)}</h2>
+          <textarea
+            rows={4}
+            value={body}
+            maxLength={2000}
+            placeholder={isCheer ? t(T.detailCheerPh) : t(T.detailPh)}
+            onChange={(e) => setBody(e.target.value)}
+          />
 
           <div className="field-row" style={{ marginTop: 20 }}>
             <button className="big-cta" disabled={saving || !title.trim()} onClick={submit}>
-              {saving ? t(T.submitting) : t(T.submit)}
+              {saving
+                ? t(isCheer ? T.sending : T.submitting)
+                : t(isCheer ? T.submitCheer : T.submit)}
             </button>
           </div>
         </div>

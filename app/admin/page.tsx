@@ -19,7 +19,7 @@ interface Ticket {
   id: string;
   number: number;
   userName: string;
-  kind: 'feature' | 'improve' | 'bug' | 'other';
+  kind: 'feature' | 'improve' | 'bug' | 'other' | 'cheer';
   title: string;
   body: string | null;
   status: 'open' | 'planned' | 'done' | 'declined';
@@ -31,6 +31,7 @@ const TICKET_KIND_LABEL: Record<Ticket['kind'], Msg> = {
   improve: { ko: '개선', en: 'Improvement' },
   bug: { ko: '오류', en: 'Broken' },
   other: { ko: '기타', en: 'Other' },
+  cheer: { ko: '응원의 말', en: 'Kind words' },
 };
 
 const TICKET_STATUS_LABEL: Record<Ticket['status'], Msg> = {

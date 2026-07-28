@@ -6,15 +6,16 @@ import { sendKakaoMemos } from '../kakao';
 import { notifyAdmins } from './admin-notify';
 import { Msg, pick, toLocale } from '../i18n';
 
-export type TicketKind = 'feature' | 'improve' | 'bug' | 'other';
+export type TicketKind = 'feature' | 'improve' | 'bug' | 'other' | 'cheer';
 export type TicketStatus = 'open' | 'planned' | 'done' | 'declined';
 
-export const TICKET_KINDS: TicketKind[] = ['feature', 'improve', 'bug', 'other'];
+export const TICKET_KINDS: TicketKind[] = ['feature', 'improve', 'bug', 'other', 'cheer'];
 export const TICKET_STATUSES: TicketStatus[] = ['open', 'planned', 'done', 'declined'];
 
 /** 알림 문구 (수신자 언어로 렌더된다) */
 const N = {
   newTicket: { ko: '📮 새 건의 #{n}: {title} — {by}', en: '📮 New ticket #{n}: {title} — {by}' },
+  newCheer: { ko: '💌 응원 한마디 #{n}: {title} — {by}', en: '💌 A kind word #{n}: {title} — {by}' },
   btnReview: { ko: '건의 보기', en: 'Open ticket' },
   btnMine: { ko: '내 건의 보기', en: 'View my tickets' },
   verdict: { ko: '📮 건의 #{n} "{title}" — {status}{note}', en: '📮 Ticket #{n} “{title}” — {status}{note}' },
@@ -115,7 +116,11 @@ export async function createTicket(input: {
   await notifyAdmins({
     exclude: input.userId,
     message: (locale) =>
-      pick(locale, N.newTicket, { n: String(row?.number ?? 0), title: input.title, by: input.userName }),
+      pick(locale, input.kind === 'cheer' ? N.newCheer : N.newTicket, {
+        n: String(row?.number ?? 0),
+        title: input.title,
+        by: input.userName,
+      }),
     button: (locale) => pick(locale, N.btnReview),
     linkUrl: `${input.origin}/admin`,
     tag: 'ticket',
