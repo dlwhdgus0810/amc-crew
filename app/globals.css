@@ -116,6 +116,14 @@ nav.tabbar {
 }
 .tab-fab:hover { opacity: 0.85; }
 
+/* 아래로 내릴 때는 상·하단 바를 치워 화면을 넓게 쓴다 (위로 올리면 다시 나온다) */
+.site-header, nav.tabbar { transition: transform 0.25s ease; will-change: transform; }
+body[data-chrome='hidden'] .site-header { transform: translateY(-100%); }
+body[data-chrome='hidden'] nav.tabbar { transform: translateY(100%); }
+@media (prefers-reduced-motion: reduce) {
+  .site-header, nav.tabbar { transition: none; }
+}
+
 /* 화면 안 문맥 탭 (AMC의 회차/그룹, 피드의 예정/지난 등) */
 .segbar { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 2px; }
 .segbar::-webkit-scrollbar { display: none; }
@@ -542,6 +550,10 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .tabbar a .bell-badge { margin-left: auto; }
   .tabbar a.active { background: var(--surface-2); }
   .tab-fab { width: 100%; border-radius: 999px; min-height: 46px; font-size: 15px; font-weight: 600; margin-top: 12px; }
+  /* 데스크톱에서는 탭바가 좌측 레일이라 스크롤로 감추지 않는다 (세로로 밀려나면 통째로 사라진다) */
+  body[data-chrome='hidden'] .site-header,
+  body[data-chrome='hidden'] nav.tabbar { transform: none; }
+
   .car, .cat-grid { grid-template-columns: repeat(3, 1fr); }
   .times { grid-template-columns: repeat(6, 1fr); }
   h1, .statement { font-size: clamp(30px, 3.4vw, 44px); }
