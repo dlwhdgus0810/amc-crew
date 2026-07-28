@@ -99,6 +99,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     location,
     description: description || null,
     capacity,
+    ...(body?.visibility === 'link' || body?.visibility === 'public'
+      ? { visibility: body.visibility as 'public' | 'link' }
+      : {}),
     origin: siteUrl(req.nextUrl.origin),
   });
   return NextResponse.json({ ok: true });

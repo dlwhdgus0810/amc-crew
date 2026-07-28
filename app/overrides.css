@@ -131,3 +131,6 @@ body[data-chrome='hidden'] nav.tabbar {
     background: var(--bg);
   }
 }
+
+/* 비공개 모임 배지 — 링크를 아는 사람만 볼 수 있는 모임 */
+.repeat-badge.private { color: var(--accent); border-color: var(--accent); }

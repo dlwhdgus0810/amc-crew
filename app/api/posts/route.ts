@@ -89,6 +89,8 @@ export async function POST(req: NextRequest) {
     location,
     ...(description ? { description } : {}),
     ...(capacity !== undefined ? { capacity } : {}),
+    // 비공개면 링크를 아는 사람만 볼 수 있다 (목록·구독 알림·홈 요약에서 빠진다)
+    ...(body?.visibility === 'link' ? { visibility: 'link' as const } : {}),
     origin: siteUrl(req.nextUrl.origin),
   };
 

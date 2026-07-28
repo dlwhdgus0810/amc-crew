@@ -55,6 +55,16 @@ const T = {
     en: '— a meetup opens automatically every {day} at the same time',
   },
   repeatBadge: { ko: '매주 {day}', en: 'Every {day}' },
+  privateToggle: { ko: '비공개 모임', en: 'Private meetup' },
+  privateHint: {
+    ko: '— 링크를 받은 사람만 볼 수 있어요. 목록·구독 알림에 나오지 않아요',
+    en: '— only people with the link can see it; it stays out of the feed and subscriber alerts',
+  },
+  privateBadge: { ko: '비공개', en: 'Private' },
+  notifyHintPrivate: {
+    ko: '알림 없이 만들어져요 — 링크를 직접 보내주세요',
+    en: 'Created quietly — send the link yourself',
+  },
   emptyUpcoming: {
     ko: '아직 예정된 모임이 없어요. 첫 모임을 만들어보세요.',
     en: 'No upcoming meetups yet. Create the first one.',
@@ -139,6 +149,7 @@ interface PostView {
   location: string;
   description: string | null;
   capacity: number | null;
+  visibility: 'public' | 'link';
   participants: { id: string; name: string }[];
   comments: CommentView[];
 }
@@ -200,6 +211,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const [fMemo, setFMemo] = useState('');
   const [fCapacity, setFCapacity] = useState('');
   const [fRepeat, setFRepeat] = useState(false); // 매주 반복 (새 모임 만들 때만)
+  const [fPrivate, setFPrivate] = useState(false); // 비공개 — 링크를 아는 사람만
 
   function resetForm() {
     setFTitle('');
@@ -212,6 +224,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setFMemo('');
     setFCapacity('');
     setFRepeat(false);
+    setFPrivate(false);
   }
 
   // 지난 모임
@@ -320,6 +333,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           description: fMemo,
           capacity: fCapacity || undefined,
           repeatWeekly: fRepeat,
+          visibility: fPrivate ? 'link' : 'public',
         }),
       });
       const data = await res.json();
@@ -351,6 +365,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setFLocation(post.location);
     setFMemo(post.description ?? '');
     setFCapacity(post.capacity != null ? String(post.capacity) : '');
+    setFPrivate(post.visibility === 'link');
   }
 
   async function saveEditPost() {
@@ -370,6 +385,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
+          visibility: fPrivate ? 'link' : 'public',
         }),
       });
       const data = await res.json();
@@ -747,6 +763,13 @@ export default function CategoryClient({ slug }: { slug: string }) {
               onChange={(e) => setFMemo(e.target.value)}
               style={{ marginTop: 8 }}
             />
+            <label className="repeat-check" style={{ marginTop: 10 }}>
+              <input type="checkbox" checked={fPrivate} onChange={(e) => setFPrivate(e.target.checked)} />
+              <span>
+                {t(T.privateToggle)}
+                <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}> {t(T.privateHint)}</span>
+              </span>
+            </label>
           </div>
         </div>
 
@@ -754,7 +777,9 @@ export default function CategoryClient({ slug }: { slug: string }) {
           <button className="big-cta" disabled={busy || !canSave} onClick={onSave}>
             {busy ? t(T.saving) : isCreate ? t(T.create) : t(T.save)}
           </button>
-          {isCreate && <div className="create-hint">{t(T.notifyHint)}</div>}
+          {isCreate && (
+            <div className="create-hint">{fPrivate ? t(T.notifyHintPrivate) : t(T.notifyHint)}</div>
+          )}
         </div>
       </div>
     );
@@ -778,6 +803,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
       <article key={post.id} className={`post-card ${past ? 'past' : ''}`}>
         <div className="post-when">
           {to12h(post.startTime)} – {to12h(post.endTime)}
+          {post.visibility === 'link' && <span className="repeat-badge private">{t(T.privateBadge)}</span>}
           {post.recurringRuleId && (
             <span className="repeat-badge">{t(T.repeatBadge, { day: weekdayLabel(post.date) })}</span>
           )}
