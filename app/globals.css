@@ -146,6 +146,7 @@ nav.tabbar {
 .photo-pick:hover { background: var(--bg); }
 .photo-pick input { display: none; }
 .hint { font-size: 12.5px; color: var(--text-dim); }
+
 /* 아래로 내릴 때는 상·하단 바를 치워 화면을 넓게 쓴다 (위로 올리면 다시 나온다) */
 .site-header, nav.tabbar { transition: transform 0.25s ease; will-change: transform; }
 body[data-chrome='hidden'] .site-header { transform: translateY(-100%); }
@@ -263,11 +264,6 @@ button.big-cta .arrow { color: #fff; }
 .field-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .field-row input[type='text'], .field-row input[type='password'] { max-width: none; flex: 1 1 180px; }
 .field-label { font-family: var(--mono); font-size: 10.5px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
-/* 라벨을 머리에 인 입력 칸 — 날짜·시간처럼 placeholder를 못 쓰는 칸에 쓴다 */
-.field { display: flex; flex-direction: column; min-width: 0; flex: 1 1 120px; }
-.field .field-label { margin-bottom: 6px; }
-.field-sep { color: var(--text-dim); padding-bottom: 13px; flex: none; }
-.time-pair { display: flex; align-items: flex-end; gap: 10px; flex: 1 1 250px; min-width: 0; }
 
 .msg {
   border: 1px solid var(--border); border-radius: var(--r-sm);
@@ -603,3 +599,153 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
   .times { grid-template-columns: repeat(6, 1fr); }
   h1, .statement { font-size: clamp(30px, 3.4vw, 44px); }
 }
+
+/* ============================================================
+   시안 3a — 카테고리 카드 / 날짜 그룹 피드 / 만들기 패널
+   (위의 1e 기본형을 덮어쓰는 블록이라 파일 끝에 둡니다)
+   ============================================================ */
+
+/* ── 카드: 컬러 블록 + 다음 일정 한 줄 ─────────────────── */
+.car-card { gap: 20px; }
+.car-top { align-items: center; }
+.car-actions { display: flex; gap: 6px; flex: none; }
+.car-icon {
+  width: 34px; height: 34px; min-height: 0; padding: 0; flex: none;
+  border-radius: 999px; background: transparent; color: inherit;
+  border: 1px solid currentColor; border-color: rgba(255, 255, 255, 0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; line-height: 1; cursor: pointer;
+}
+.car-icon:hover { opacity: 1; background: rgba(255, 255, 255, 0.18); }
+.car-icon.on { background: rgba(255, 255, 255, 0.22); border-color: transparent; }
+/* 밝은 카드(노랑 등)는 흰 오버레이가 보이지 않으므로 어두운 쪽으로 */
+.car-card[style*='rgb(233, 163, 0)'] .car-icon,
+.car-card[style*='#E9A300'] .car-icon { border-color: rgba(16, 16, 16, 0.28); }
+.car-card[style*='rgb(233, 163, 0)'] .car-icon:hover,
+.car-card[style*='#E9A300'] .car-icon:hover { background: rgba(16, 16, 16, 0.1); }
+.car-card[style*='rgb(233, 163, 0)'] .car-icon.on,
+.car-card[style*='#E9A300'] .car-icon.on { background: rgba(16, 16, 16, 0.14); }
+
+.car-foot {
+  display: flex; align-items: center; gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.24);
+  padding-top: 12px; min-width: 0;
+}
+.car-foot-when { font-family: var(--mono); font-size: 11px; opacity: 0.85; flex: none; }
+.car-foot-sep { width: 3px; height: 3px; border-radius: 999px; background: currentColor; opacity: 0.5; flex: none; }
+.car-foot-detail { font-size: 13px; opacity: 0.85; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.car-foot-go { margin-left: auto; font-size: 15px; opacity: 0.7; flex: none; }
+
+/* ── 피드: 날짜 그룹 ───────────────────────────────────── */
+.day-group { display: flex; gap: 12px; margin-bottom: 18px; }
+.day-col { width: 46px; flex: none; padding-top: 2px; }
+.day-month { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--text-dim); }
+.day-num { display: block; font-size: 26px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; }
+.day-week { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); }
+.day-posts { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.post-row { margin-bottom: 0; padding: 15px; gap: 5px; }
+.post-when { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.post-meta { color: var(--text-mid); font-size: 13.5px; }
+.post-desc { color: var(--text-dim); font-size: 13px; margin-top: 3px; }
+
+.post-people { display: flex; align-items: center; gap: 9px; margin-top: 6px; }
+.ava-stack { display: flex; flex: none; }
+.ava {
+  width: 24px; height: 24px; border-radius: 999px;
+  background: var(--surface-2); border: 1.5px solid var(--surface);
+  font-size: 10.5px; font-weight: 700; color: var(--text-mid);
+  display: flex; align-items: center; justify-content: center; flex: none;
+}
+.ava + .ava { margin-left: -7px; }
+.post-count { font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); margin-left: 0; }
+
+.post-row > .post-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: nowrap; }
+.post-actions .join { flex: 1; min-height: 44px; border-radius: 999px; font-size: 14px; }
+.post-actions .join.secondary { border-color: var(--text); color: var(--text); background: var(--surface); }
+.icon-btn {
+  width: 44px; height: 44px; min-height: 44px; padding: 0; flex: none;
+  border-radius: 999px; background: var(--bg); border: none;
+  color: var(--text-mid); font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.icon-btn:hover { background: var(--surface-2); opacity: 1; color: var(--text); }
+.post-owner-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.post-owner-actions button { min-height: 38px; font-size: 12.5px; padding: 0 12px; }
+
+.new-meetup-btn {
+  width: 100%; min-height: 52px; border-radius: 999px;
+  background: var(--text); border-color: var(--text); color: #fff;
+  font-size: 15.5px; font-weight: 600; margin-top: 4px;
+}
+.section-toggle {
+  background: transparent; border: none; color: var(--text-dim);
+  font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  min-height: 44px; padding: 0; cursor: pointer;
+}
+.section-toggle:hover { color: var(--text); opacity: 1; }
+
+/* ── 모임 만들기 / 수정: 전체 화면 패널 ───────────────── */
+.create-panel {
+  position: fixed; inset: 0; z-index: 40;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+}
+.create-head {
+  flex: none; display: flex; align-items: center; gap: 10px;
+  min-height: 58px; padding: 0 12px 0 6px;
+  border-bottom: 1px solid var(--border-soft);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.create-head .icon-btn { background: transparent; font-size: 20px; color: var(--text-dim); }
+.create-title { flex: 1; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.create-cat { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); flex: none; }
+.create-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 18px 150px; }
+.create-foot {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 14px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(rgba(247, 246, 242, 0), var(--bg) 45%);
+}
+.create-hint { text-align: center; font-size: 12.5px; color: var(--text-dim); margin-top: 8px; }
+
+.form-section {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 16px; margin-bottom: 12px;
+}
+.form-section > .field-label { margin-bottom: 10px; }
+.form-section input[type='text'], .form-section input[type='number'],
+.form-section input[type='date'], .form-section input[type='time'], .form-section textarea { background: var(--bg); }
+.form-section textarea { min-height: 88px; resize: vertical; }
+
+/* 날짜·시간 칸은 placeholder를 달 수 없어 라벨을 칸 안 왼쪽에 얹는다 */
+.stack-field { position: relative; display: block; }
+.stack-label {
+  position: absolute; top: 8px; left: 14px; z-index: 1;
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-dim); pointer-events: none;
+}
+.stack-field input { padding-top: 22px; padding-bottom: 8px; min-height: 58px; }
+
+/* 다른 페이지(영화·건의함·제안)가 쓰는 예전 폼 조각 — 호환 유지 */
+.field { display: block; }
+.time-pair { display: flex; gap: 10px; align-items: flex-end; }
+.field-sep { color: var(--text-dim); padding-bottom: 14px; }
+
+@media (min-width: 700px) {
+  .day-col { width: 60px; }
+  .post-actions .join { flex: none; padding: 0 26px; }
+}
+
+@media (min-width: 1024px) {
+  .create-panel { left: 232px; }
+  .create-body { padding: 24px 40px 150px; max-width: 720px; }
+  .create-foot { padding-left: 40px; padding-right: 40px; }
+  .create-foot .big-cta { max-width: 320px; }
+  .new-meetup-btn { width: auto; padding: 0 28px; }
+}
+
+/* 홈 화면에 추가 — iOS는 버튼을 만들 수 없어 누를 곳을 순서대로 적어준다 */
+.install-steps { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
+.install-steps li { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.install-steps strong { color: var(--text); font-weight: 600; }

@@ -1,17 +1,29 @@
 'use client';
 
+/* ============================================================
+   app/category-card.tsx 를 이 파일로 교체하세요. (시안 3a)
+   컬러 블록 카드 + 하단에 "다음 일정 한 줄".
+   ★/구독은 글자 대신 아이콘 버튼 2개로 줄여 제목과 겹치지 않습니다.
+   summary 는 optional 이라 기존 호출부(page.tsx / categories/page.tsx)를
+   수정하지 않아도 그대로 컴파일됩니다 — 넘기면 하단 줄이 나타납니다.
+   ============================================================ */
+
 import Link from 'next/link';
 import { Category } from '@/lib/categories';
 import { useT } from './i18n';
 
-// 라벨은 카드 좌측 상단의 car-idx처럼 언어와 무관한 모노 대문자 표기다
 const T = {
-  favorite: { ko: 'FAV', en: 'FAV' },
-  subscribe: { ko: 'SUBSCRIBE', en: 'SUBSCRIBE' },
-  subscribed: { ko: 'SUBSCRIBED', en: 'SUBSCRIBED' },
   favoriteA11y: { ko: '즐겨찾기', en: 'Favourite' },
-  subscribeA11y: { ko: '구독', en: 'Subscribe' },
+  subscribeA11y: { ko: '구독 알림', en: 'Subscription alerts' },
+  noUpcoming: { ko: '예정된 모임 없음', en: 'No upcoming meetups' },
 };
+
+const BellIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M18 15V10a6 6 0 1 0-12 0v5l-1.5 3h15z" />
+    <path d="M10 21h4" />
+  </svg>
+);
 
 /**
  * 홈 캐러셀과 카테고리 목록이 함께 쓰는 카드.
@@ -28,6 +40,7 @@ export default function CategoryCard({
   dragging,
   nodeRef,
   style,
+  summary,
 }: {
   category: Category;
   showToggles: boolean;
@@ -41,6 +54,8 @@ export default function CategoryCard({
   /** 아래 둘은 dnd-kit이 카드를 잡고 움직이기 위해 넘긴다 */
   nodeRef?: (node: HTMLElement | null) => void;
   style?: React.CSSProperties;
+  /** 카드 하단 한 줄 — when은 모노(“토 15:00”), detail은 장소·인원 */
+  summary?: { when?: string; detail?: string } | null;
 }) {
   const t = useT();
   // 카드 전체가 링크라 토글 클릭이 이동으로 새지 않게 막는다
@@ -67,9 +82,9 @@ export default function CategoryCard({
           {category.en}
         </span>
         {showToggles && (
-          <span className="car-toggles">
+          <span className="car-actions">
             <button
-              className={`sub-toggle ${isFavorite ? 'on' : ''}`}
+              className={`car-icon ${isFavorite ? 'on' : ''}`}
               onClick={stop(onFavorite)}
               aria-pressed={isFavorite}
               aria-label={t(T.favoriteA11y)}
@@ -77,20 +92,16 @@ export default function CategoryCard({
               <span className="star" aria-hidden="true">
                 {isFavorite ? '★' : '☆'}
               </span>
-              {t(T.favorite)}
             </button>
             {category.kind === 'posts' && (
-              <>
-                <span className="sep" aria-hidden="true" />
-                <button
-                  className={`sub-toggle ${isSubscribed ? 'on' : ''}`}
-                  onClick={stop(onSubscribe)}
-                  aria-pressed={isSubscribed}
-                  aria-label={t(T.subscribeA11y)}
-                >
-                  {isSubscribed ? t(T.subscribed) : t(T.subscribe)}
-                </button>
-              </>
+              <button
+                className={`car-icon ${isSubscribed ? 'on' : ''}`}
+                onClick={stop(onSubscribe)}
+                aria-pressed={isSubscribed}
+                aria-label={t(T.subscribeA11y)}
+              >
+                <BellIcon />
+              </button>
             )}
           </span>
         )}
@@ -99,6 +110,16 @@ export default function CategoryCard({
         <div className="car-name">{t(category.name)}</div>
         <div className="car-desc">{t(category.description)}</div>
       </div>
+      {summary && (
+        <div className="car-foot">
+          {summary.when && <span className="car-foot-when">{summary.when}</span>}
+          {summary.when && summary.detail && <span className="car-foot-sep" aria-hidden="true" />}
+          <span className="car-foot-detail">{summary.detail ?? t(T.noUpcoming)}</span>
+          <span className="car-foot-go" aria-hidden="true">
+            ›
+          </span>
+        </div>
+      )}
     </Link>
   );
 }

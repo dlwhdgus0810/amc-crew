@@ -24,6 +24,7 @@ const T = {
   profile: { ko: '프로필', en: 'Profile' },
   admin: { ko: '관리자', en: 'Admin' },
   notifications: { ko: '알림', en: 'Alerts' },
+  create: { ko: '모임 만들기', en: 'New meetup' },
 };
 
 /* 20px 라인 아이콘 — 굵기 1.8로 통일 */
@@ -68,9 +69,9 @@ function useSession() {
         .then((r) => r.json())
         .then((auth) => {
           setIsAdmin(Boolean(auth.isAdmin));
-          setAvatar(auth.avatar ?? null);
           setLoggedIn(Boolean(auth.user));
           setName(auth.user?.name ?? '');
+          setAvatar(auth.avatar ?? null);
           if (auth.user && auth.needsOnboarding && pathname !== '/welcome') {
             // 온보딩 후 원래 보던 페이지(공유 링크 등)로 복귀할 수 있게 경로를 넘긴다
             router.replace(`/welcome?next=${encodeURIComponent(pathname)}`);
