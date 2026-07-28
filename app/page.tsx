@@ -50,8 +50,11 @@ const T = {
  * 세션이 새로 시작돼(iOS는 백그라운드에서 앱을 자주 정리한다) 세션 저장소가 비어 있다.
  */
 const SCROLL_KEY = 'kk-home-scroll';
-/** 이만큼 지난 위치는 무시한다 */
-const SCROLL_TTL = 30 * 60 * 1000;
+/**
+ * 착지 후 이만큼은 복원한 자리를 지켜낸다.
+ * Next·브라우저·레이아웃이 제각각 늦게 끼어들어 맨 앞으로 되돌리기 때문이다.
+ */
+const RESTORE_HOLD_MS = 700;
 
 interface SessionUser {
   id: string;
@@ -118,10 +121,8 @@ export default function HubPage() {
     const saved = localStorage.getItem(SCROLL_KEY);
     if (saved) {
       try {
-        const { x, y, at } = JSON.parse(saved) as { x?: number; y?: number; at?: number };
-        // 오래된 위치는 버린다 — 며칠 뒤에 열었는데 중간부터 뜨면 오히려 이상하다
-        if (!at || Date.now() - at > SCROLL_TTL) localStorage.removeItem(SCROLL_KEY);
-        else target = { x: x ?? 0, y: y ?? 0 };
+        const { x, y } = JSON.parse(saved) as { x?: number; y?: number };
+        target = { x: x ?? 0, y: y ?? 0 };
       } catch {
         localStorage.removeItem(SCROLL_KEY); // 형태가 깨졌으면 버린다
       }
@@ -132,9 +133,6 @@ export default function HubPage() {
       if (car && target.x) car.scrollLeft = target.x;
       if (target.y) window.scrollTo(0, target.y);
     };
-    apply();
-    // Next는 새 화면을 그린 뒤 맨 위로 올리므로 다음 프레임에 한 번 더 맞춘다
-    const raf = requestAnimationFrame(apply);
 
     /*
      * 기록은 사람이 실제로 화면을 만진 뒤부터 한다.
@@ -147,6 +145,22 @@ export default function HubPage() {
     };
     const inputs = ['pointerdown', 'wheel', 'touchstart', 'keydown'] as const;
     inputs.forEach((type) => window.addEventListener(type, arm, { passive: true }));
+
+    /*
+     * 한 번만 맞추면 놓친다 — Next의 맨 위로 올리기, 브라우저의 자체 스크롤 복원,
+     * 레이아웃이 늦게 잡히는 경우가 착지 직후 제각각 끼어들어 캐러셀을 맨 앞으로 되돌린다.
+     * 그래서 잠깐 동안 프레임마다 다시 맞춘다. 사람이 화면을 만지는 순간 즉시 손을 뗀다.
+     */
+    apply();
+    // rAF 대신 타이머 — 화면이 가려진 동안에는 rAF가 멈춰서 복원을 놓친다
+    const until = performance.now() + RESTORE_HOLD_MS;
+    const hold = setInterval(() => {
+      if (armed || !target || performance.now() > until) {
+        clearInterval(hold);
+        return;
+      }
+      apply();
+    }, 50);
 
     // 떠날 때 읽으면 Next가 맨 위로 올린 뒤일 수 있어, 움직일 때마다 적어둔다
     const save = () => {
@@ -166,7 +180,7 @@ export default function HubPage() {
     // PWA는 예고 없이 종료될 수 있어 화면을 벗어나는 순간에도 한 번 남긴다
     window.addEventListener('pagehide', save);
     return () => {
-      cancelAnimationFrame(raf);
+      clearInterval(hold);
       inputs.forEach((type) => window.removeEventListener(type, arm));
       car?.removeEventListener('scroll', save);
       window.removeEventListener('scroll', save);
