@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import type { TitleMeta } from '../tmdb';
 
 export const users = pgTable('users', {
@@ -157,6 +157,29 @@ export const categoryRequests = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('category_requests_status_idx').on(t.status, t.createdAt)]
+);
+
+/**
+ * 건의함 티켓 — 사소한 개선부터 새 기능까지 뭐든 받는다.
+ * 카테고리 제안(category_requests)은 이름·색이 필요한 별도 양식이라 따로 둔다.
+ */
+export const tickets = pgTable(
+  'tickets',
+  {
+    id: uuid('id').primaryKey(),
+    // 발급 번호 — 사람이 부르기 위한 것 (#12). uuid와 별개로 순번을 매긴다.
+    number: serial('number').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    kind: text('kind').notNull(), // feature | improve | bug | other
+    title: text('title').notNull(),
+    body: text('body'),
+    status: text('status').notNull().default('open'), // open | planned | done | declined
+    adminNote: text('admin_note'), // 관리자 답변
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('tickets_status_idx').on(t.status, t.createdAt)]
 );
 
 export const notifications = pgTable(

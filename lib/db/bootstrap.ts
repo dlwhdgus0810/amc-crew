@@ -107,6 +107,19 @@ CREATE TABLE IF NOT EXISTS category_requests (
 );
 CREATE INDEX IF NOT EXISTS category_requests_status_idx ON category_requests (status, created_at);
 
+CREATE TABLE IF NOT EXISTS tickets (
+  id uuid PRIMARY KEY,
+  number serial NOT NULL,
+  user_id text NOT NULL REFERENCES users(id),
+  kind text NOT NULL,
+  title text NOT NULL,
+  body text,
+  status text NOT NULL DEFAULT 'open',
+  admin_note text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS tickets_status_idx ON tickets (status, created_at);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id uuid PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id),
