@@ -1,18 +1,21 @@
 'use client';
 
 /* ============================================================
-   app/c/[category]/category-client.tsx 를 이 파일로 교체하세요. (시안 3a)
-   달라진 점 — 로직/API 호출은 원본과 동일합니다.
-   1) 피드를 날짜로 묶고 날짜는 왼쪽 고정 열(.day-col)에 한 번만 표시
-   2) 모임 만들기·수정을 전체 화면 패널(.create-panel)로 — 섹션(언제/어디서/함께)
-      + 하단 고정 저장 버튼
-   3) 참가 버튼이 카드 안에서 주 버튼(flex:1), 공유·댓글 등은 44px 아이콘 버튼
+   app/c/[category]/category-client.tsx 를 이 파일로 교체하세요. (시안 4c)
+   달라진 점 — API 호출·상태 로직은 원본과 동일합니다.
+   1) 날짜 열을 없애고 날짜를 구분 헤더로 올려 카드가 전폭을 씁니다
+      (좁은 폰에서 댓글이 40px 더 넓어집니다)
+   2) 참여자 전용 행 — 아바타 + 이름, 오른쪽 "3/8 ▾"를 눌러 전체 명단을 펼칩니다
+   3) 구독은 헤더 텍스트 토글, 모임 만들기는 날짜 헤더 옆 ＋, 참가는 밑줄 텍스트 —
+      색 버튼을 최소화했습니다
+   4) 댓글은 "댓글 2 ▾"로 열고 닫습니다 (닫힘이 기본)
    ============================================================ */
 
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../../i18n';
 import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
+import { todayLocal, addDays } from '@/lib/dates';
 import type { TitleMeta, TitleSearchResult } from '@/lib/tmdb';
 import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread, { CommentView } from '../../comment-thread';
@@ -22,8 +25,8 @@ const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   subscribed: { ko: '구독중', en: 'Subscribed' },
   subscribe: { ko: '구독', en: 'Subscribe' },
-  close: { ko: '닫기', en: 'Close' },
-  newMeetup: { ko: '모임 만들기 +', en: 'New meetup +' },
+  newMeetup: { ko: '＋ 만들기', en: '＋ New' },
+  newMeetupWide: { ko: '＋ 모임 만들기', en: '＋ New meetup' },
   newMeetupTitle: { ko: '모임 만들기', en: 'New meetup' },
   editMeetupTitle: { ko: '모임 수정', en: 'Edit meetup' },
   create: { ko: '모임 만들기', en: 'Create meetup' },
@@ -34,13 +37,17 @@ const T = {
   del: { ko: '삭제', en: 'Delete' },
   share: { ko: '공유', en: 'Share' },
   comments: { ko: '댓글', en: 'Comments' },
-  join: { ko: '참가하기', en: 'Join' },
+  join: { ko: '참가하기 →', en: 'Join →' },
   leave: { ko: '참가 취소', en: 'Leave' },
   full: { ko: '마감', en: 'Full' },
-  people: { ko: '{n}명', en: '{n} joined' },
-  peopleCap: { ko: '{n}/{cap}명', en: '{n}/{cap} joined' },
-  fullSuffix: { ko: ' — 마감', en: ' — full' },
-  me: { ko: ' (나)', en: ' (you)' },
+  thisWeek: { ko: '이번 주', en: 'This week' },
+  today: { ko: '오늘', en: 'Today' },
+  tomorrow: { ko: '내일', en: 'Tomorrow' },
+  seats: { ko: '{n}자리 남음', en: '{n} spots left' },
+  me: { ko: '나', en: 'You' },
+  tabUpcoming: { ko: '예정 {n}', en: 'Upcoming {n}' },
+  tabPast: { ko: '지난 {n}', en: 'Past {n}' },
+  tabPastPlain: { ko: '지난 모임', en: 'Past' },
   stopRepeat: { ko: '반복 중단', en: 'Stop repeating' },
   repeatWeekly: { ko: '매주 반복', en: 'Repeat weekly' },
   repeatHint: {
@@ -52,7 +59,6 @@ const T = {
     ko: '아직 예정된 모임이 없어요. 첫 모임을 만들어보세요.',
     en: 'No upcoming meetups yet. Create the first one.',
   },
-  pastSection: { ko: '지난 모임', en: 'Past meetups' },
   emptyPast: { ko: '아직 지난 모임이 없어요.', en: 'No past meetups yet.' },
   secWhen: { ko: '언제', en: 'When' },
   secWhere: { ko: '어디서', en: 'Where' },
@@ -113,8 +119,6 @@ const T = {
   deleteFailed: { ko: '삭제 실패', en: 'Couldn’t delete' },
 };
 
-const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 interface SessionUser {
   id: string;
   name: string;
@@ -172,15 +176,15 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const dateLabel = (d: string) => fmtDate(d, locale);
   const to12h = (time: string) => fmtTime(time, locale);
   const weekdayLabel = (d: string) => fmtWeekday(d, locale);
-  /** 날짜 열에 쓰는 조각들 — 'YYYY-MM-DD' */
-  const dateParts = (d: string) => {
-    const [, m, day] = d.split('-');
-    return {
-      month: locale === 'ko' ? `${Number(m)}월` : MONTHS_EN[Number(m) - 1],
-      day: String(Number(day)),
-      weekday: weekdayLabel(d),
-    };
-  };
+
+  /** 날짜 헤더 오른쪽에 붙는 짧은 힌트 — 오늘/내일/이번 주 */
+  function whenHint(date: string) {
+    const today = todayLocal();
+    if (date === today) return t(T.today);
+    if (date === addDays(today, 1)) return t(T.tomorrow);
+    if (date <= addDays(today, 6)) return t(T.thisWeek);
+    return null;
+  }
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -215,8 +219,9 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const [showPast, setShowPast] = useState(false);
   const [loadingPast, setLoadingPast] = useState(false);
 
-  // 댓글
+  // 펼침 상태 — 댓글, 참여자 명단
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
+  const [openPeople, setOpenPeople] = useState<Set<string>>(new Set());
 
   async function loadPosts() {
     const data = await fetch(`/api/posts?category=${slug}`).then((r) => r.json());
@@ -241,13 +246,11 @@ export default function CategoryClient({ slug }: { slug: string }) {
     if (pastPosts !== null) await loadPast();
   }
 
-  function toggleComments(postId: string) {
-    setOpenComments((prev) => {
-      const s = new Set(prev);
-      if (s.has(postId)) s.delete(postId);
-      else s.add(postId);
-      return s;
-    });
+  function toggleIn(set: Set<string>, id: string) {
+    const s = new Set(set);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    return s;
   }
 
   useEffect(() => {
@@ -289,6 +292,14 @@ export default function CategoryClient({ slug }: { slug: string }) {
       body: JSON.stringify({ category: slug, subscribed: next }),
     });
     if (!res.ok) setSubscribed(!next);
+  }
+
+  /** 날짜 헤더의 ＋ — 그 날짜를 미리 채운 채로 만들기 패널을 연다 */
+  function openCreate(date?: string) {
+    setEditId(null);
+    resetForm();
+    if (date) setFDate(date);
+    setShowForm(true);
   }
 
   async function createPost() {
@@ -495,76 +506,88 @@ export default function CategoryClient({ slug }: { slug: string }) {
   return (
     <>
       <div className="feed-head">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <span className="feed-dot" style={{ background: color }} />
           <h1 style={{ margin: 0 }}>{name}</h1>
         </div>
-        <div className="feed-actions">
-          <button className={subscribed ? '' : 'secondary'} onClick={toggleSub}>
-            {subscribed ? t(T.subscribed) : t(T.subscribe)}
-          </button>
-        </div>
+        <button
+          className={`sub-text ${subscribed ? 'on' : ''}`}
+          onClick={toggleSub}
+          aria-pressed={subscribed}
+          style={subscribed ? { color } : undefined}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M18 15V10a6 6 0 1 0-12 0v5l-1.5 3h15z" />
+            <path d="M10 21h4" />
+          </svg>
+          {subscribed ? t(T.subscribed) : t(T.subscribe)}
+        </button>
+      </div>
+
+      <div className="feed-tabs">
+        <button className={showPast ? '' : 'on'} onClick={() => setShowPast(false)}>
+          {t(T.tabUpcoming, { n: posts.length })}
+        </button>
+        <button className={showPast ? 'on' : ''} onClick={togglePast}>
+          {pastPosts ? t(T.tabPast, { n: pastPosts.length }) : t(T.tabPastPlain)}
+        </button>
       </div>
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
-      {posts.length === 0 && (
-        <div className="card" style={{ color: 'var(--text-dim)' }}>
-          {t(T.emptyUpcoming)}
-        </div>
-      )}
-
-      {groupByDate(posts).map((group) => {
-        const p = dateParts(group.date);
-        return (
-          <div className="day-group" key={group.date}>
-            <div className="day-col" aria-label={dateLabel(group.date)}>
-              <span className="day-month">{p.month}</span>
-              <span className="day-num">{p.day}</span>
-              <span className="day-week">{p.weekday}</span>
+      {!showPast && (
+        <>
+          {posts.length === 0 && (
+            <div className="feed-empty">
+              {t(T.emptyUpcoming)}
+              {user && (
+                <button className="new-inline" onClick={() => openCreate()}>
+                  {t(T.newMeetupWide)}
+                </button>
+              )}
             </div>
-            <div className="day-posts">{group.posts.map((post) => renderPost(post, false))}</div>
-          </div>
-        );
-      })}
-
-      {user && (
-        <button className="new-meetup-btn" onClick={() => { setEditId(null); resetForm(); setShowForm(true); }}>
-          {t(T.newMeetup)}
-        </button>
+          )}
+          {groupByDate(posts).map((group) => renderGroup(group, false))}
+          {user && posts.length > 0 && (
+            <button className="new-inline" onClick={() => openCreate()}>
+              {t(T.newMeetupWide)}
+            </button>
+          )}
+        </>
       )}
 
-      <h2 style={{ marginTop: 40 }}>
-        <button className="section-toggle" aria-expanded={showPast} onClick={togglePast}>
-          {t(T.pastSection)} {showPast ? '−' : '+'}
-        </button>
-      </h2>
       {showPast &&
         (loadingPast ? (
           <p className="subtitle">{t(T.loading)}</p>
         ) : (pastPosts ?? []).length === 0 ? (
-          <div className="card" style={{ color: 'var(--text-dim)' }}>
-            {t(T.emptyPast)}
-          </div>
+          <div className="feed-empty">{t(T.emptyPast)}</div>
         ) : (
-          groupByDate(pastPosts ?? []).map((group) => {
-            const p = dateParts(group.date);
-            return (
-              <div className="day-group" key={`past-${group.date}`}>
-                <div className="day-col" aria-label={dateLabel(group.date)}>
-                  <span className="day-month">{p.month}</span>
-                  <span className="day-num">{p.day}</span>
-                  <span className="day-week">{p.weekday}</span>
-                </div>
-                <div className="day-posts">{group.posts.map((post) => renderPost(post, true))}</div>
-              </div>
-            );
-          })
+          groupByDate(pastPosts ?? []).map((group) => renderGroup(group, true))
         ))}
 
       {panelOpen && renderCreatePanel()}
     </>
   );
+
+  function renderGroup(group: { date: string; posts: PostView[] }, past: boolean) {
+    const hint = past ? null : whenHint(group.date);
+    return (
+      <section className="day-block" key={`${past ? 'past-' : ''}${group.date}`}>
+        <div className="day-head">
+          <h2 className="day-title">
+            {dateLabel(group.date)}
+            {hint && <span className="day-hint">{hint}</span>}
+          </h2>
+          {user && !past && (
+            <button className="link-btn" onClick={() => openCreate(group.date)}>
+              {t(T.newMeetup)}
+            </button>
+          )}
+        </div>
+        {group.posts.map((post) => renderPost(post, past))}
+      </section>
+    );
+  }
 
   /** 모임 만들기 / 수정 — 전체 화면 패널 */
   function renderCreatePanel() {
@@ -655,7 +678,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
                         .join(' · ')}
                     </div>
                   </div>
-                  <button className="danger" style={{ marginLeft: 'auto', flex: 'none' }} onClick={() => setFTitleMeta(null)}>
+                  <button className="link-btn danger-text" style={{ marginLeft: 'auto', flex: 'none' }} onClick={() => setFTitleMeta(null)}>
                     {t(T.clearPick)}
                   </button>
                 </div>
@@ -742,85 +765,124 @@ export default function CategoryClient({ slug }: { slug: string }) {
     const mine = user?.id === post.authorId;
     const full = post.capacity != null && post.participants.length >= post.capacity;
     const commentsOpen = openComments.has(post.id);
+    const peopleOpen = openPeople.has(post.id);
     const canJoin = !past && (!mine || post.recurringRuleId);
+    const shown = post.participants.slice(0, 3);
+    const left = post.capacity != null ? post.capacity - post.participants.length : null;
+    // 참여자 이름 요약 — 나는 "나"로 바꿔 한 줄에 더 들어가게 한다
+    const namesLine = post.participants
+      .map((p) => (user && p.id === user.id ? t(T.me) : p.name))
+      .join(', ');
+
     return (
-      <div key={post.id} className="post-row" style={past ? { opacity: 0.75 } : undefined}>
-        <span className="post-when">
-          {to12h(post.startTime)} ~ {to12h(post.endTime)}
+      <article key={post.id} className={`post-card ${past ? 'past' : ''}`}>
+        <div className="post-when">
+          {to12h(post.startTime)} – {to12h(post.endTime)}
           {post.recurringRuleId && (
             <span className="repeat-badge">{t(T.repeatBadge, { day: weekdayLabel(post.date) })}</span>
           )}
-        </span>
-        <span className="post-meta">
-          {post.title && <span style={{ display: 'block', fontWeight: 700, color: 'var(--text)' }}>〈{post.title}〉</span>}
-          {post.titleMeta && (
-            <span style={{ display: 'block', fontSize: 12.5, color: 'var(--text-dim)' }}>
-              {[
-                post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
-                post.titleMeta.year,
-                post.titleMeta.director
-                  ? `${post.titleMeta.mediaType === 'tv' ? t(T.creator) : t(T.director)} ${post.titleMeta.director}`
-                  : null,
-                post.titleMeta.cast?.length ? post.titleMeta.cast.join(', ') : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </span>
-          )}
+        </div>
+
+        {post.title && <div className="post-title">〈{post.title}〉</div>}
+        {post.titleMeta && (
+          <div className="post-titlemeta">
+            {[
+              post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
+              post.titleMeta.year,
+              post.titleMeta.director
+                ? `${post.titleMeta.mediaType === 'tv' ? t(T.creator) : t(T.director)} ${post.titleMeta.director}`
+                : null,
+              post.titleMeta.cast?.length ? post.titleMeta.cast.join(', ') : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </div>
+        )}
+        <div className="post-meta">
           {post.location} · {post.authorName}
-          {post.description && <span className="post-desc" style={{ display: 'block' }}>“{post.description}”</span>}
-        </span>
-        <span className="post-people">
+        </div>
+        {post.description && <div className="post-desc">“{post.description}”</div>}
+
+        {/* 참여자 — 눌러서 전체 명단을 펼친다 */}
+        <button
+          className={`people-row ${peopleOpen ? 'open' : ''}`}
+          onClick={() => setOpenPeople((s) => toggleIn(s, post.id))}
+          aria-expanded={peopleOpen}
+        >
           {post.participants.length > 0 && (
             <span className="ava-stack" aria-hidden="true">
-              {post.participants.slice(0, 3).map((p) => (
-                <span className="ava" key={p.id}>
+              {shown.map((p) => (
+                <span className={`ava ${user && p.id === user.id ? 'me' : ''}`} key={p.id}>
                   {p.name.slice(0, 1)}
                 </span>
               ))}
-              {post.participants.length > 3 && <span className="ava">+{post.participants.length - 3}</span>}
+              {post.participants.length > 3 && <span className="ava more">+{post.participants.length - 3}</span>}
             </span>
           )}
-          <span className="post-count">
-            {post.capacity != null
-              ? t(T.peopleCap, { n: post.participants.length, cap: post.capacity })
-              : t(T.people, { n: post.participants.length })}
-            {!past && full ? t(T.fullSuffix) : ''}
+          <span className="people-names">{namesLine || '—'}</span>
+          <span className="people-count">
+            {post.capacity != null ? `${post.participants.length}/${post.capacity}` : `${post.participants.length}`}
+            <span className="caret" aria-hidden="true">
+              {peopleOpen ? '▴' : '▾'}
+            </span>
           </span>
-        </span>
+        </button>
+        {peopleOpen && (
+          <div className="people-list">
+            {post.participants.map((p) => (
+              <span className="person-chip" key={p.id}>
+                {p.name}
+                {user && p.id === user.id ? ` (${t(T.me)})` : ''}
+              </span>
+            ))}
+            {left != null && left > 0 && <span className="person-chip open-seat">{t(T.seats, { n: left })}</span>}
+          </div>
+        )}
 
-        <span className="post-actions">
-          {canJoin && (
-            <button className={`join ${joined ? 'secondary' : ''}`} disabled={busy || (!joined && full)} onClick={() => join(post)}>
-              {joined ? t(T.leave) : full ? t(T.full) : t(T.join)}
-            </button>
-          )}
-          <button className="icon-btn" disabled={busy} onClick={() => toggleComments(post.id)} aria-label={t(T.comments)}>
-            💬{post.comments.length > 0 ? post.comments.length : ''}
+        <div className="post-actions">
+          <button
+            className={`link-btn ${commentsOpen ? 'strong' : ''}`}
+            onClick={() => setOpenComments((s) => toggleIn(s, post.id))}
+            aria-expanded={commentsOpen}
+          >
+            {t(T.comments)}
+            {post.comments.length > 0 ? ` ${post.comments.length}` : ''}
+            <span className="caret" aria-hidden="true">
+              {commentsOpen ? '▴' : '▾'}
+            </span>
           </button>
           {!past && (
-            <button className="icon-btn" disabled={busy} onClick={() => share(post)} aria-label={t(T.share)}>
-              ↗
+            <button className="link-btn" disabled={busy} onClick={() => share(post)}>
+              {t(T.share)}
             </button>
           )}
           {(mine || isAdmin) && !past && (
-            <button className="icon-btn" disabled={busy} onClick={() => startEditPost(post)} aria-label={t(T.edit)}>
-              ✎
+            <button className="link-btn" disabled={busy} onClick={() => startEditPost(post)}>
+              {t(T.edit)}
             </button>
           )}
-        </span>
+          {canJoin && (
+            <button
+              className={`join-text ${joined ? 'joined' : ''}`}
+              disabled={busy || (!joined && full)}
+              onClick={() => join(post)}
+            >
+              {joined ? t(T.leave) : full ? t(T.full) : t(T.join)}
+            </button>
+          )}
+        </div>
 
         {(mine || isAdmin) && (
-          <span className="post-owner-actions">
+          <div className="post-owner-actions">
             {!past && post.recurringRuleId && (
-              <button className="secondary" disabled={busy} onClick={() => stopRepeat(post)}>
+              <button className="link-btn" disabled={busy} onClick={() => stopRepeat(post)}>
                 {t(T.stopRepeat)}
               </button>
             )}
-            <button className="danger" disabled={busy} onClick={() => remove(post)}>
+            <button className="link-btn danger-text" disabled={busy} onClick={() => remove(post)}>
               {t(T.del)}
             </button>
-          </span>
+          </div>
         )}
 
         {commentsOpen && (
@@ -833,7 +895,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
             onError={(text) => setMsg({ type: 'err', text })}
           />
         )}
-      </div>
+      </article>
     );
   }
 }

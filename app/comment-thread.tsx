@@ -1,5 +1,14 @@
 'use client';
 
+/* ============================================================
+   app/comment-thread.tsx 를 이 파일로 교체하세요. (시안 4c)
+   달라진 점 — API 호출·좋아요 낙관적 반영 로직은 원본과 동일합니다.
+   1) 「이름 | 본문 | 액션」 가로 3분할을 버리고 세로로 쌓습니다.
+      이름·시간·하트가 윗줄, 본문은 전폭 → 긴 닉네임이 본문 폭을 먹지 않습니다.
+   2) 답글은 왼쪽 세로선으로 깊이를 표시(들여쓰기 14px)해 좁은 폭에서도 안 무너집니다.
+   3) 답글/삭제는 본문 아래 작은 텍스트 버튼.
+   ============================================================ */
+
 import { useState } from 'react';
 import { useT } from './i18n';
 
@@ -26,10 +35,14 @@ const T = {
   loginToComment: { ko: '카카오 로그인 후 댓글을 남길 수 있어요.', en: 'Log in with Kakao to comment.' },
   likeA11y: { ko: '좋아요', en: 'Like' },
   failed: { ko: '요청 실패', en: 'Something went wrong' },
+  justNow: { ko: '방금', en: 'now' },
+  minsAgo: { ko: '{n}분', en: '{n}m' },
+  hoursAgo: { ko: '{n}시간', en: '{n}h' },
+  daysAgo: { ko: '{n}일', en: '{n}d' },
 };
 
 /** 들여쓰기는 이 깊이까지만 — 더 깊어져도 답글은 달리되 가로 공간이 무너지지 않는다 */
-const MAX_INDENT = 4;
+const MAX_INDENT = 3;
 
 /**
  * 모임 댓글 — 답글에 다시 답글을 달 수 있고, 좋아요(하트)는 누른 즉시 화면에 반영한다.
@@ -62,6 +75,17 @@ export default function CommentThread({
   const byId = new Map(comments.map((c) => [c.id, c]));
   const roots = comments.filter((c) => !c.parentId || !byId.has(c.parentId));
   const repliesOf = (id: string) => comments.filter((c) => c.parentId === id);
+
+  /** "2시간" 처럼 짧게 — 좁은 폭에서 이름 옆에 얹기 위해 */
+  function ago(iso: string) {
+    const ms = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1) return t(T.justNow);
+    if (mins < 60) return t(T.minsAgo, { n: mins });
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return t(T.hoursAgo, { n: hours });
+    return t(T.daysAgo, { n: Math.floor(hours / 24) });
+  }
 
   async function send() {
     const body = text.trim();
@@ -116,20 +140,21 @@ export default function CommentThread({
 
   function row(c: CommentView, depth: number) {
     const like = optimistic[c.id] ?? { liked: c.likedByMe, likeCount: c.likeCount };
+    const mine = currentUserId === c.userId;
     return (
       <div
         key={c.id}
         className={`comment-row ${depth > 0 ? 'reply' : ''}`}
-        // 들여쓰기 폭을 CSS 변수로 넘겨 ↳ 표시도 같이 따라오게 한다
+        // 들여쓰기 폭을 CSS 변수로 넘겨 세로선도 같이 따라오게 한다
         style={
           depth > 0
-            ? ({ '--indent': `${Math.min(depth, MAX_INDENT) * 22}px` } as React.CSSProperties)
+            ? ({ '--indent': `${Math.min(depth, MAX_INDENT) * 14}px` } as React.CSSProperties)
             : undefined
         }
       >
-        <span className="comment-author">{c.name}</span>
-        <span className="comment-body">{c.body}</span>
-        <span className="comment-actions">
+        <div className="comment-head">
+          <span className="comment-author">{c.name}</span>
+          <span className="comment-time">{ago(c.createdAt)}</span>
           <button
             className={`heart ${like.liked ? 'on' : ''}`}
             onClick={() => toggleLike(c)}
@@ -140,17 +165,22 @@ export default function CommentThread({
             {like.liked ? '♥' : '♡'}
             {like.likeCount > 0 && <span className="heart-count">{like.likeCount}</span>}
           </button>
-          {currentUserId && (
-            <button className="secondary" disabled={busy} onClick={() => setReplyTo(c)}>
-              {t(T.reply)}
-            </button>
-          )}
-          {(currentUserId === c.userId || isAdmin) && (
-            <button className="danger" disabled={busy} onClick={() => remove(c)}>
-              {t(T.del)}
-            </button>
-          )}
-        </span>
+        </div>
+        <div className="comment-body">{c.body}</div>
+        {(currentUserId || mine || isAdmin) && (
+          <div className="comment-actions">
+            {currentUserId && (
+              <button className="link-btn" disabled={busy} onClick={() => setReplyTo(c)}>
+                {t(T.reply)}
+              </button>
+            )}
+            {(mine || isAdmin) && (
+              <button className="link-btn danger-text" disabled={busy} onClick={() => remove(c)}>
+                {t(T.del)}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -167,33 +197,35 @@ export default function CommentThread({
 
   return (
     <div className="comments">
-      {roots.length === 0 && (
-        <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.empty)}</div>
-      )}
+      {roots.length === 0 && <div className="comment-empty">{t(T.empty)}</div>}
       {roots.map((c) => renderTree(c, 0))}
 
       {currentUserId ? (
-        <div className="field-row" style={{ marginTop: 12 }}>
-          <input
-            type="text"
-            placeholder={replyTo ? t(T.replyPlaceholder, { name: replyTo.name }) : t(T.placeholder)}
-            value={text}
-            maxLength={300}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !busy && send()}
-            style={{ maxWidth: 420 }}
-          />
-          <button className="secondary" disabled={busy || !text.trim()} onClick={send}>
-            {t(T.submit)}
-          </button>
+        <div className="comment-compose">
           {replyTo && (
-            <button className="secondary" disabled={busy} onClick={() => setReplyTo(null)}>
-              {t(T.cancel)}
-            </button>
+            <div className="reply-chip">
+              <span>{t(T.replyPlaceholder, { name: replyTo.name })}</span>
+              <button className="link-btn" disabled={busy} onClick={() => setReplyTo(null)}>
+                {t(T.cancel)}
+              </button>
+            </div>
           )}
+          <div className="compose-row">
+            <input
+              type="text"
+              placeholder={replyTo ? t(T.replyPlaceholder, { name: replyTo.name }) : t(T.placeholder)}
+              value={text}
+              maxLength={300}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !busy && send()}
+            />
+            <button className="link-btn strong" disabled={busy || !text.trim()} onClick={send}>
+              {t(T.submit)}
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="comment-row" style={{ color: 'var(--text-dim)' }}>{t(T.loginToComment)}</div>
+        <div className="comment-empty">{t(T.loginToComment)}</div>
       )}
     </div>
   );
