@@ -1,9 +1,16 @@
 'use client';
 
+/* ============================================================
+   app/categories/page.tsx 를 이 파일로 교체하세요.
+   달라진 점: useNextMeetups() 훅을 붙여 카드마다
+   summary={...} 를 넘긴 것뿐입니다 (나머지는 원본과 동일).
+   ============================================================ */
+
 import { useEffect, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useT } from '../i18n';
 import CategoryCard from '../category-card';
+import useNextMeetups from '../use-next-meetups';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -36,6 +43,8 @@ export default function CategoriesPage() {
   const [favs, setFavs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const t = useT();
+  // 카드 하단 「다음 일정」 한 줄
+  const summaryFor = useNextMeetups();
 
   useEffect(() => {
     Promise.all([
@@ -102,6 +111,7 @@ export default function CategoriesPage() {
             isSubscribed={subs.has(c.slug)}
             onFavorite={() => toggle('favorites', c.slug)}
             onSubscribe={() => toggle('subscriptions', c.slug)}
+            summary={summaryFor(c.slug, c.kind)}
           />
         ))}
       </div>

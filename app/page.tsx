@@ -1,5 +1,12 @@
 'use client';
 
+/* ============================================================
+   app/page.tsx 를 이 파일로 교체하세요.
+   달라진 점 — 스크롤 복원·드래그 정렬 로직은 원본과 100% 동일합니다.
+   1) useNextMeetups() 훅으로 카테고리별 다음 모임을 한 번에 불러옵니다
+   2) 카드에 summary={...} 를 넘겨 하단 「다음 일정」 한 줄을 채웁니다
+   ============================================================ */
+
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -21,6 +28,7 @@ import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useT } from './i18n';
 import CategoryCard from './category-card';
 import SortableCategoryCard from './sortable-card';
+import useNextMeetups from './use-next-meetups';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -83,6 +91,8 @@ export default function HubPage() {
   const [reordering, setReordering] = useState(false);
   const t = useT();
   const favs = useMemo(() => new Set(favList), [favList]);
+  // 카드 하단 「다음 일정」 한 줄 — 늦게 도착해도 레이아웃이 흔들리지 않는다
+  const summaryFor = useNextMeetups();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -345,6 +355,7 @@ export default function HubPage() {
                   isSubscribed={subs.has(c.slug)}
                   onFavorite={() => toggleFav(c.slug)}
                   onSubscribe={() => toggleSub(c.slug)}
+                  summary={summaryFor(c.slug, c.kind)}
                 />
               ))}
             </SortableContext>
@@ -359,6 +370,7 @@ export default function HubPage() {
               isSubscribed={subs.has(c.slug)}
               onFavorite={() => toggleFav(c.slug)}
               onSubscribe={() => toggleSub(c.slug)}
+              summary={summaryFor(c.slug, c.kind)}
             />
           ))
         )}

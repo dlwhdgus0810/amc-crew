@@ -1,5 +1,11 @@
 'use client';
 
+/* ============================================================
+   app/sortable-card.tsx 를 이 파일로 교체하세요.
+   달라진 점: summary prop 하나를 타입에 추가했을 뿐입니다
+   (본문은 ...cardProps 로 그대로 흘려보냅니다).
+   ============================================================ */
+
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Category } from '@/lib/categories';
@@ -21,6 +27,8 @@ export default function SortableCategoryCard({
   isSubscribed: boolean;
   onFavorite: () => void;
   onSubscribe: () => void;
+  /** 카드 하단 「다음 일정」 한 줄 */
+  summary?: { when?: string; detail?: string } | null;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.slug,
