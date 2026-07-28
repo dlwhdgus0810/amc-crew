@@ -9,6 +9,7 @@ import Link from 'next/link';
 import NavLinks, { ContextTabs } from './nav';
 import ServiceWorkerRegistrar from './sw-register';
 import InstallPrompt from './install-prompt';
+import ChromeAutoHide from './chrome-autohide';
 import { I18nProvider } from './i18n';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <I18nProvider locale={locale}>
           <ServiceWorkerRegistrar />
+          <ChromeAutoHide />
           <header className="site-header">
             <div className="container header-inner">
               <Link href="/" className="logo">
