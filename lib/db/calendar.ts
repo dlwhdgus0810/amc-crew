@@ -26,16 +26,17 @@ export interface CalendarMeetup {
 }
 
 /**
- * 한 달치 모임 (month: YYYY-MM).
+ * from~to (양끝 포함) 사이의 모임.
  *
+ * 달력은 월 격자든 한 주든 "화면에 그릴 기간"이 그때그때 달라서 날짜 범위로 받는다.
  * 목록 화면과 달리 지난 모임도 함께 준다 — 달력은 "그날 무슨 일이 있었나"를 보는 화면이라
  * 지난 날짜가 빈칸이면 오히려 고장처럼 보인다.
  */
-export async function listMonthMeetups(month: string, viewerId?: string): Promise<CalendarMeetup[]> {
+export async function listMeetupsBetween(from: string, to: string, viewerId?: string): Promise<CalendarMeetup[]> {
   const db = await getDb();
 
-  // YYYY-MM-DD는 사전순 비교가 곧 날짜순 비교다 (-01 ~ -31이면 그 달 전체를 덮는다)
-  const inMonth = and(gte(posts.date, `${month}-01`), lte(posts.date, `${month}-31`));
+  // YYYY-MM-DD는 사전순 비교가 곧 날짜순 비교라 문자열 그대로 범위를 잡을 수 있다
+  const inRange = and(gte(posts.date, from), lte(posts.date, to));
   // 비공개(link) 모임은 만든 사람과 참가자에게만 보인다 — 목록 화면과 같은 규칙
   const visible = viewerId
     ? or(
@@ -61,7 +62,7 @@ export async function listMonthMeetups(month: string, viewerId?: string): Promis
       visibility: posts.visibility,
     })
     .from(posts)
-    .where(and(inMonth, visible))
+    .where(and(inRange, visible))
     .orderBy(asc(posts.date), asc(posts.startTime));
 
   if (rows.length === 0) return [];

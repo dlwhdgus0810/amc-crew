@@ -19,8 +19,8 @@ const T = {
   home: { ko: '홈', en: 'Home' },
   categories: { ko: '둘러보기', en: 'Browse' },
   calendar: { ko: '캘린더', en: 'Calendar' },
-  // 탭 칸은 6개로 나뉘어 좁다 — 영어 'Suggestions'는 칸을 넘어 옆 라벨과 겹친다
-  tickets: { ko: '건의함', en: 'Feedback' },
+  // 탭바에서는 내렸고(프로필 안으로), 문맥 탭에서만 쓴다
+  tickets: { ko: '건의함', en: 'Suggestions' },
   showtimes: { ko: '회차 고르기', en: 'Showtimes' },
   groups: { ko: '그룹', en: 'Groups' },
   profile: { ko: '프로필', en: 'Profile' },
@@ -47,11 +47,6 @@ const CalendarIcon = () => (
   <svg {...icon} aria-hidden>
     <rect x="3" y="5" width="18" height="16" rx="2" />
     <path d="M3 10h18M8 3v4M16 3v4" />
-  </svg>
-);
-const TicketIcon = () => (
-  <svg {...icon} aria-hidden>
-    <path d="M20 15a2 2 0 0 1-2 2H8l-4 3V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" />
   </svg>
 );
 const BellIcon = () => (
@@ -126,10 +121,6 @@ export default function NavLinks() {
           <BellIcon />
           <span>{t(T.notifications)}</span>
           {loggedIn && unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
-        </Link>
-        <Link href="/tickets" className={pathname.startsWith('/tickets') ? 'active' : ''}>
-          <TicketIcon />
-          <span>{t(T.tickets)}</span>
         </Link>
         {loggedIn ? (
           <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>

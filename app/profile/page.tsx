@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { CATEGORIES } from '@/lib/categories';
 import { useLocale, useT } from '../i18n';
 import { PROFILE_UPDATED } from '../nav';
@@ -109,6 +110,12 @@ const T = {
   saving: { ko: '저장 중…', en: 'Saving…' },
   cancel: { ko: '취소', en: 'Cancel' },
   saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
+  tickets: { ko: '건의함', en: 'Suggestion box' },
+  ticketsDesc: {
+    ko: '사소한 기능 개선부터 원하시는 모든 기능을 넣어드려요. 티켓을 남기면 처리 상태를 알림으로 알려드려요.',
+    en: 'Anything from a tiny tweak to a whole new feature. Leave a ticket and we’ll tell you when it moves.',
+  },
+  ticketsGo: { ko: '건의함 열기 →', en: 'Open the suggestion box →' },
   logout: { ko: '로그아웃', en: 'Log out' },
 };
 
@@ -562,6 +569,16 @@ export default function ProfilePage() {
             {t(T.talkUnknownHint)}
           </p>
         )}
+      </div>
+
+      <h2>{t(T.tickets)}</h2>
+      <div className="card">
+        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
+          {t(T.ticketsDesc)}
+        </p>
+        <Link className="link-btn strong" href="/tickets">
+          {t(T.ticketsGo)}
+        </Link>
       </div>
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}

@@ -5,7 +5,17 @@
    보정이 아니라 새 화면의 스타일이므로 overrides.css와도 분리해 둔다.
    ============================================================ */
 
-/* ── 달 이동 줄 ─────────────────────────────────────────── */
+/* ── 월/주 전환 ─────────────────────────────────────────── */
+.cal-views {
+  margin: 2px 0 10px;
+}
+/* 두 글자짜리 버튼이라 그냥 두면 손톱만 하다 */
+.cal-views button {
+  min-width: 64px;
+  justify-content: center;
+}
+
+/* ── 기간 이동 줄 ───────────────────────────────────────── */
 .cal-head {
   display: flex;
   align-items: center;
@@ -18,6 +28,12 @@
   letter-spacing: -0.01em;
   min-width: 7.5em;
   text-align: center;
+}
+/* 주 보기 제목은 "7/26 (일) – 8/1 (토)"라 길다 — 남는 폭을 다 쓰고 글자를 줄인다 */
+.cal-month.week {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
 }
 .cal-nav {
   width: 36px;
@@ -136,11 +152,34 @@
   line-height: 1;
 }
 
+/* 주 보기 — 한 줄 7칸. 아래 목록이 본체라 칸은 낮게 눌러 둔다 */
+.cal-grid.week .cal-day {
+  aspect-ratio: auto;
+  min-height: 52px;
+  padding-bottom: 5px;
+  justify-content: center;
+}
+
 .cal-empty {
   margin: 10px 2px 0;
 }
 .cal-daytitle {
   margin-top: 26px;
+}
+/* 날짜를 눌러 그 요일로 건너뛸 때 상단 바에 제목이 가리지 않도록 */
+.cal-list-day {
+  scroll-margin-top: 72px;
+}
+/* 주 보기는 날짜 제목이 여러 개 이어져서, 오늘이 어디인지 표시해 준다 */
+.cal-daytitle.today::after {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  vertical-align: middle;
 }
 
 /* ── 그날의 모임 목록 ───────────────────────────────────── */
