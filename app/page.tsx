@@ -44,8 +44,14 @@ const T = {
   next: { ko: '다음', en: 'Next' },
 };
 
-/** 홈에서 보던 위치 (탭 단위) — 카테고리를 갔다 와도 그 자리로 돌아온다 */
+/**
+ * 홈에서 보던 위치 — 카테고리를 갔다 와도 그 자리로 돌아온다.
+ * sessionStorage가 아니라 localStorage인 이유: 홈 화면에 설치한 PWA는 앱을 다시 열 때마다
+ * 세션이 새로 시작돼(iOS는 백그라운드에서 앱을 자주 정리한다) 세션 저장소가 비어 있다.
+ */
 const SCROLL_KEY = 'kk-home-scroll';
+/** 이만큼 지난 위치는 무시한다 */
+const SCROLL_TTL = 30 * 60 * 1000;
 
 interface SessionUser {
   id: string;
@@ -101,33 +107,65 @@ export default function HubPage() {
 
   /**
    * 카테고리를 보고 nav로 돌아왔을 때 보던 자리를 그대로 둔다.
-   * 캐러셀의 가로 위치와 세로 스크롤을 탭 단위(sessionStorage)로 기억한다.
+   * 캐러셀의 가로 위치와 세로 스크롤을 기억한다.
    * 카드가 그려진 뒤에 복원해야 하므로 loading이 끝나고 나서 건다.
    */
   useEffect(() => {
     if (loading) return;
     const car = carRef.current;
 
-    const saved = sessionStorage.getItem(SCROLL_KEY);
+    let target: { x: number; y: number } | null = null;
+    const saved = localStorage.getItem(SCROLL_KEY);
     if (saved) {
       try {
-        const { x, y } = JSON.parse(saved) as { x?: number; y?: number };
-        if (car && x) car.scrollLeft = x;
-        if (y) window.scrollTo(0, y);
+        const { x, y, at } = JSON.parse(saved) as { x?: number; y?: number; at?: number };
+        // 오래된 위치는 버린다 — 며칠 뒤에 열었는데 중간부터 뜨면 오히려 이상하다
+        if (!at || Date.now() - at > SCROLL_TTL) localStorage.removeItem(SCROLL_KEY);
+        else target = { x: x ?? 0, y: y ?? 0 };
       } catch {
-        sessionStorage.removeItem(SCROLL_KEY); // 형태가 깨졌으면 버린다
+        localStorage.removeItem(SCROLL_KEY); // 형태가 깨졌으면 버린다
       }
     }
 
+    const apply = () => {
+      if (!target) return;
+      if (car && target.x) car.scrollLeft = target.x;
+      if (target.y) window.scrollTo(0, target.y);
+    };
+    apply();
+    // Next는 새 화면을 그린 뒤 맨 위로 올리므로 다음 프레임에 한 번 더 맞춘다
+    const raf = requestAnimationFrame(apply);
+
+    /*
+     * 기록은 사람이 실제로 화면을 만진 뒤부터 한다.
+     * 착지 직후에도 스크롤 이벤트가 오는데(Next의 맨 위로 올리기, 앱 복귀 시 재배치),
+     * 그때 저장해버리면 방금 복원한 위치가 0으로 덮여 다음번엔 맨 위에서 시작한다.
+     */
+    let armed = false;
+    const arm = () => {
+      armed = true;
+    };
+    const inputs = ['pointerdown', 'wheel', 'touchstart', 'keydown'] as const;
+    inputs.forEach((type) => window.addEventListener(type, arm, { passive: true }));
+
     // 떠날 때 읽으면 Next가 맨 위로 올린 뒤일 수 있어, 움직일 때마다 적어둔다
     const save = () => {
-      sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ x: car?.scrollLeft ?? 0, y: window.scrollY }));
+      if (!armed) return;
+      localStorage.setItem(
+        SCROLL_KEY,
+        JSON.stringify({ x: car?.scrollLeft ?? 0, y: window.scrollY, at: Date.now() })
+      );
     };
     car?.addEventListener('scroll', save, { passive: true });
     window.addEventListener('scroll', save, { passive: true });
+    // PWA는 예고 없이 종료될 수 있어 화면을 벗어나는 순간에도 한 번 남긴다
+    window.addEventListener('pagehide', save);
     return () => {
+      cancelAnimationFrame(raf);
+      inputs.forEach((type) => window.removeEventListener(type, arm));
       car?.removeEventListener('scroll', save);
       window.removeEventListener('scroll', save);
+      window.removeEventListener('pagehide', save);
     };
   }, [loading]);
 
