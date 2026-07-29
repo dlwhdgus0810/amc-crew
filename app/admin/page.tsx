@@ -70,8 +70,8 @@ const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   onlineTitle: { ko: '지금 접속 중', en: 'Online now' },
   onlineDesc: {
-    ko: '앱을 화면에 띄워 두고 있는 사람이에요. {n}분 안에 신호가 온 사람만 세고, 마지막 시각만 저장해요 (접속 기록은 남기지 않아요).',
-    en: 'Members with the app open. Counts anyone we heard from in the last {n} minutes; only the latest timestamp is stored — no history.',
+    ko: '앱을 화면에 띄워 두고 있는 사람이에요. {n}분 안에 신호가 온 사람만 세요.',
+    en: 'Members with the app open — anyone we heard from in the last {n} minutes.',
   },
   onlineNone: { ko: '지금은 아무도 접속해 있지 않아요.', en: 'Nobody is online right now.' },
   onlineCount: { ko: '{n} / {total}명 접속 중', en: '{n} of {total} online' },

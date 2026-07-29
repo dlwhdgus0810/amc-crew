@@ -110,10 +110,6 @@ const T = {
   saving: { ko: '저장 중…', en: 'Saving…' },
   cancel: { ko: '취소', en: 'Cancel' },
   saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
-  presenceNote: {
-    ko: '앱을 열어 두면 관리자 화면에 "지금 접속 중"으로 표시돼요. 마지막 시각만 저장하고 접속 기록은 남기지 않아요.',
-    en: 'While the app is open you show up as “online now” on the admin screen. Only the latest timestamp is kept — no history.',
-  },
   tickets: { ko: '건의함', en: 'Suggestion box' },
   ticketsDesc: {
     ko: '사소한 기능 개선부터 원하시는 모든 기능을 넣어드려요. 티켓을 남기면 처리 상태를 알림으로 알려드려요.',
@@ -574,10 +570,6 @@ export default function ProfilePage() {
           </p>
         )}
       </div>
-
-      <p className="hint" style={{ marginTop: 28 }}>
-        {t(T.presenceNote)}
-      </p>
 
       <h2>{t(T.tickets)}</h2>
       <div className="card">
