@@ -49,7 +49,7 @@ const T = {
   peopleCap: { ko: '{n}/{cap}명', en: '{n}/{cap}' },
   me: { ko: '나', en: 'You' },
   tabUpcoming: { ko: '예정 {n}', en: 'Upcoming {n}' },
-  tabPast: { ko: '지난 {n}', en: 'Past {n}' },
+  tabPast: { ko: '지난 모임 {n}', en: 'Past {n}' },
   tabPastPlain: { ko: '지난 모임', en: 'Past' },
   stopRepeat: { ko: '반복 중단', en: 'Stop repeating' },
   repeatWeekly: { ko: '매주 반복', en: 'Repeat weekly' },
