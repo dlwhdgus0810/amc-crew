@@ -32,7 +32,10 @@ export const DEFAULT_LOCATION_HINT: Msg = {
 
 // 배열 순서가 곧 홈 캐러셀 노출 순서다 (카드 번호 01·02…도 여기서 나온다)
 export const CATEGORIES: Category[] = [
-  // 색은 노출 순서대로 빨강 → 노랑 → 초록 → 파랑 → 보라, 그 뒤로 자홍 → 커피 브라운
+  // 카드 색은 이 순서대로 색상환을 한 바퀴 돈다:
+  //   빨강 → 연두 → 초록 → 청록 → 파랑 → 보라 → 자홍
+  // 그 뒤에 채도가 낮은 둘(커피 브라운·아이언 그레이)을 둔다 — 무지개 중간에 끼면 흐름이 끊긴다.
+  // 카테고리를 더할 때는 색상 각도를 재서 맞는 자리에 끼워 넣을 것.
   {
     slug: 'soccer',
     emoji: '⚽',
@@ -42,6 +45,19 @@ export const CATEGORIES: Category[] = [
     kind: 'posts',
     name: { ko: '축구', en: 'Soccer' },
     description: { ko: '같이 할 사람 모집', en: 'Find players' },
+  },
+  {
+    slug: 'tennis',
+    emoji: '🎾',
+    en: 'TENNIS',
+    color: '#7CB342',
+    // 밝은 연두라 흰 글씨는 대비가 2.4:1밖에 안 나온다 — AMC 노랑처럼 검은 글씨를 쓴다
+    fg: '#101010',
+    kind: 'posts',
+    name: { ko: '테니스 🎾', en: 'Tennis' },
+    description: { ko: '같이 해뇨', en: 'Find players' },
+    locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts' },
+    proposedBy: 'sarah 예지 park',
   },
   {
     slug: 'movienight',
@@ -64,6 +80,19 @@ export const CATEGORIES: Category[] = [
         en: 'Pick a showtime at AMC Town Center 20 and everyone who picked the same one becomes a meetup.',
       },
     },
+  },
+  {
+    slug: 'baking',
+    emoji: '🧁',
+    en: 'BAKING',
+    color: '#00838F',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '베이킹 클래스', en: 'Baking Class' },
+    description: { ko: '같이 구울 사람 모집', en: 'Find people to bake with' },
+    titleLabel: { ko: '만들 것', en: 'What we’re baking' },
+    locationLabel: { ko: '장소', en: 'Place' },
+    locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio' },
   },
   {
     slug: 'pickleball',
@@ -111,19 +140,6 @@ export const CATEGORIES: Category[] = [
     locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall' },
   },
   {
-    slug: 'baking',
-    emoji: '🧁',
-    en: 'BAKING',
-    color: '#00838F',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '베이킹 클래스', en: 'Baking Class' },
-    description: { ko: '같이 구울 사람 모집', en: 'Find people to bake with' },
-    titleLabel: { ko: '만들 것', en: 'What we’re baking' },
-    locationLabel: { ko: '장소', en: 'Place' },
-    locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio' },
-  },
-  {
     slug: 'gym',
     emoji: '🏋️',
     en: 'GYM',
@@ -134,19 +150,6 @@ export const CATEGORIES: Category[] = [
     description: { ko: '같이 운동할 사람 모집', en: 'Find a workout buddy' },
     locationLabel: { ko: '헬스장', en: 'Gym' },
     locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park' },
-  },
-  {
-    slug: 'tennis',
-    emoji: '🎾',
-    en: 'TENNIS',
-    color: '#7CB342',
-    // 밝은 연두라 흰 글씨는 대비가 2.4:1밖에 안 나온다 — AMC 노랑처럼 검은 글씨를 쓴다
-    fg: '#101010',
-    kind: 'posts',
-    name: { ko: '테니스 🎾', en: 'Tennis' },
-    description: { ko: '같이 해뇨', en: 'Find players' },
-    locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts' },
-    proposedBy: 'sarah 예지 park',
   },
 ];
 
