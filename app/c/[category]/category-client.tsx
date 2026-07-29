@@ -90,6 +90,7 @@ const T = {
   cast: { ko: '출연 {names}', en: 'Cast {names}' },
   loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
   loginToJoin: { ko: '카카오 로그인 후 참가할 수 있어요.', en: 'Log in with Kakao to join.' },
+  proposedBy: { ko: '{name} 님이 제안한 카테고리예요.', en: 'Suggested by {name}.' },
   createFailed: { ko: '모임 만들기 실패', en: 'Couldn’t create the meetup' },
   createdOnce: {
     ko: '모임을 만들었어요! 구독자들에게 알림이 갔어요.',
@@ -540,6 +541,10 @@ export default function CategoryClient({ slug }: { slug: string }) {
           {subscribed ? t(T.subscribed) : t(T.subscribe)}
         </button>
       </div>
+
+      {category?.proposedBy && (
+        <p className="feed-credit">{t(T.proposedBy, { name: category.proposedBy })}</p>
+      )}
 
       <div className="feed-tabs">
         <button className={showPast ? '' : 'on'} onClick={() => setShowPast(false)}>

@@ -17,6 +17,8 @@ export interface Category {
   locationLabel?: Msg;
   /** 장소 입력 placeholder에 붙는 예시 문구 */
   locationHint?: Msg;
+  /** 이 카테고리를 제안한 사람 — 카테고리 화면에 이름을 적어 준다 */
+  proposedBy?: string;
 }
 
 /** 카테고리별로 지정하지 않았을 때 쓰는 장소 문구 */
@@ -135,12 +137,14 @@ export const CATEGORIES: Category[] = [
     slug: 'tennis',
     emoji: '🎾',
     en: 'TENNIS',
-    color: '#827717',
-    fg: '#F6F4EE',
+    color: '#7CB342',
+    // 밝은 연두라 흰 글씨는 대비가 2.4:1밖에 안 나온다 — AMC 노랑처럼 검은 글씨를 쓴다
+    fg: '#101010',
     kind: 'posts',
     name: { ko: '테니스', en: 'Tennis' },
-    description: { ko: '같이 칠 사람 모집', en: 'Find players' },
+    description: { ko: '같이 해뇨', en: 'Find players' },
     locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts' },
+    proposedBy: 'sarah 예지 park',
   },
 ];
 

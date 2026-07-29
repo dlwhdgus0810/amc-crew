@@ -192,6 +192,13 @@ body[data-chrome='hidden'] nav.tabbar {
   min-width: 0;
 }
 
+/* 카테고리를 제안한 사람 — 제목 바로 아래 한 줄 */
+.feed-credit {
+  margin: 6px 2px 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
 /* ── 관리자: 지금 접속 중 목록 ──────────────────────────── */
 .online-list {
   list-style: none;
