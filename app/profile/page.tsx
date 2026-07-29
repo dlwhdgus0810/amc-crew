@@ -56,6 +56,12 @@ const T = {
   },
   languageSaved: { ko: '언어를 바꿨어요.', en: 'Language updated.' },
   failed: { ko: '저장하지 못했어요.', en: 'Couldn’t save.' },
+  news: { ko: '새 소식', en: 'What’s new' },
+  newsDesc: {
+    ko: '앱에 무엇이 바뀌었는지 모아 뒀어요.',
+    en: 'Everything that’s changed in the app.',
+  },
+  newsGo: { ko: '새 소식 보기 →', en: 'See what’s new →' },
   favOrder: { ko: '즐겨찾기 순서', en: 'Favourite order' },
   favOrderDesc: {
     ko: '홈에 뜨는 차례예요. 홈에서 카드를 끌어 옮겨도 되고, 여기서 위아래로 옮겨도 돼요.',
@@ -674,6 +680,16 @@ export default function ProfilePage() {
           </div>
         </>
       )}
+
+      <h2>{t(T.news)}</h2>
+      <div className="card">
+        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
+          {t(T.newsDesc)}
+        </p>
+        <Link className="link-btn strong" href="/whats-new">
+          {t(T.newsGo)}
+        </Link>
+      </div>
 
       <h2>{t(T.tickets)}</h2>
       <div className="card">

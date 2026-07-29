@@ -29,6 +29,7 @@ import { useT } from './i18n';
 import CategoryCard from './category-card';
 import SortableCategoryCard from './sortable-card';
 import useNextMeetups from './use-next-meetups';
+import WhatsNewCard from './whats-new-card';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -314,6 +315,8 @@ export default function HubPage() {
       </div>
       {/* 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다 */}
       <div className="statement-meta">{CATEGORIES.map((c) => c.en).join(' — ')}</div>
+
+      <WhatsNewCard />
 
       <div className="home-login">
         {user ? (

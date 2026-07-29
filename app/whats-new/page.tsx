@@ -1,0 +1,60 @@
+'use client';
+
+import { useEffect } from 'react';
+import { CHANGELOG, latestNotable } from '@/lib/changelog';
+import { dateLabel } from '@/lib/datefmt';
+import { useLocale, useT } from '../i18n';
+import { WHATS_NEW_SEEN } from '../whats-new-card';
+
+const T = {
+  title: { ko: '새 소식', en: 'What’s new' },
+  subtitle: {
+    ko: '앱에 무엇이 바뀌었는지 모아 둔 곳이에요. 바라는 게 있으면 건의함에 남겨주세요.',
+    en: 'Everything that’s changed in the app. Want something? Leave it in the suggestion box.',
+  },
+  empty: { ko: '아직 소식이 없어요.', en: 'Nothing yet.' },
+};
+
+/**
+ * 업데이트 소식 목록.
+ *
+ * 이 화면을 열면 홈의 "새 소식" 카드는 사라진다 — 이미 봤으니까.
+ */
+export default function WhatsNewPage() {
+  const t = useT();
+  const locale = useLocale();
+
+  useEffect(() => {
+    const latest = latestNotable();
+    if (latest) {
+      try {
+        localStorage.setItem(WHATS_NEW_SEEN, latest.date);
+      } catch {
+        // 사파리 사생활 보호 모드 등 — 카드가 한 번 더 보이는 것뿐이라 넘어간다
+      }
+    }
+  }, []);
+
+  return (
+    <>
+      <h1>{t(T.title)}</h1>
+      <p className="subtitle">{t(T.subtitle)}</p>
+
+      {CHANGELOG.length === 0 ? (
+        <p className="hint">{t(T.empty)}</p>
+      ) : (
+        CHANGELOG.map((entry) => (
+          <section key={entry.date} className="news-entry">
+            <div className="news-date">{dateLabel(entry.date, locale)}</div>
+            <h2 className="news-title">{t(entry.title)}</h2>
+            <ul className="news-items">
+              {entry.items.map((item, i) => (
+                <li key={i}>{t(item)}</li>
+              ))}
+            </ul>
+          </section>
+        ))
+      )}
+    </>
+  );
+}
