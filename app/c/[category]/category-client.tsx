@@ -152,7 +152,7 @@ interface PostView {
   description: string | null;
   capacity: number | null;
   visibility: 'public' | 'link';
-  participants: { id: string; name: string }[];
+  participants: { id: string; name: string; avatar: string | null }[];
   comments: CommentView[];
 }
 
@@ -251,9 +251,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
   }
 
   async function togglePast() {
-    const next = !showPast;
-    setShowPast(next);
-    if (next && pastPosts === null) await loadPast();
+    setShowPast(!showPast);
   }
 
   async function reloadAll() {
@@ -271,10 +269,12 @@ export default function CategoryClient({ slug }: { slug: string }) {
   useEffect(() => {
     Promise.all([
       loadPosts(),
+      // 탭 라벨에 개수를 바로 띄우려면 눌리기 전에 받아 둬야 한다 (최대 30개짜리 조회다)
+      loadPast(),
       fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
     ])
-      .then(([, auth, sub]) => {
+      .then(([, , auth, sub]) => {
         setUser(auth.user ?? null);
         setIsAdmin(Boolean(auth.isAdmin));
         setSubscribed((sub.subscriptions ?? []).includes(slug));
@@ -798,7 +798,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
     const commentsOpen = openComments.has(post.id);
     const peopleOpen = openPeople.has(post.id);
     const canJoin = !past && (!mine || post.recurringRuleId);
-    const shown = post.participants.slice(0, 3);
+    // 이름 줄을 얼굴로 바꾼 만큼 자리가 넉넉해져 6명까지 보여준다
+    const shown = post.participants.slice(0, 6);
     const left = post.capacity != null ? post.capacity - post.participants.length : null;
     // 참여자 이름 요약 — 나는 "나"로 바꿔 한 줄에 더 들어가게 한다
     const namesLine = post.participants
@@ -840,18 +841,19 @@ export default function CategoryClient({ slug }: { slug: string }) {
           className={`people-row ${peopleOpen ? 'open' : ''}`}
           onClick={() => setOpenPeople((s) => toggleIn(s, post.id))}
           aria-expanded={peopleOpen}
+          /* 얼굴만 보이는 줄이라, 읽어 주는 기계에는 이름을 그대로 넘긴다 */
+          aria-label={namesLine || undefined}
         >
-          {post.participants.length > 0 && (
-            <span className="ava-stack" aria-hidden="true">
-              {shown.map((p) => (
-                <span className={`ava ${user && p.id === user.id ? 'me' : ''}`} key={p.id}>
-                  {p.name.slice(0, 1)}
-                </span>
-              ))}
-              {post.participants.length > 3 && <span className="ava more">+{post.participants.length - 3}</span>}
-            </span>
-          )}
-          <span className="people-names">{namesLine || '—'}</span>
+          <span className="ava-stack" aria-hidden="true">
+            {shown.map((p) => (
+              <span className={`ava ${user && p.id === user.id ? 'me' : ''}`} key={p.id} title={p.name}>
+                {p.avatar ? <img src={p.avatar} alt="" /> : p.name.slice(0, 1)}
+              </span>
+            ))}
+            {post.participants.length > shown.length && (
+              <span className="ava more">+{post.participants.length - shown.length}</span>
+            )}
+          </span>
           <span className="people-count">
             {post.capacity != null ? `${post.participants.length}/${post.capacity}` : `${post.participants.length}`}
             <span className="caret" aria-hidden="true">

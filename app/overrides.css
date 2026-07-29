@@ -192,6 +192,25 @@ body[data-chrome='hidden'] nav.tabbar {
   min-width: 0;
 }
 
+/* ── 모임 카드의 참여자 줄 ──────────────────────────────────
+   접혀 있을 때는 이름 대신 얼굴만 보여준다. 이름은 눌러서 펼치면 나온다. */
+.ava-stack {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.ava img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  display: block;
+}
+/* 사진이 들어가면 이니셜용 배경이 테두리처럼 비쳐서 지운다 */
+.ava:has(img) {
+  background: none;
+}
+
 /* 카테고리를 제안한 사람 — 제목 바로 아래 한 줄 */
 .feed-credit {
   margin: 6px 2px 0;
