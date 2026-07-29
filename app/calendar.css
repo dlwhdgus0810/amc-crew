@@ -125,6 +125,11 @@
   background: var(--border-soft);
 }
 
+/* 칸의 최소 폭을 0으로 — 아래 점 줄이 nowrap이라, 모임이 많은 날이면 그 요일 열만
+   넓어지고 나머지 6칸이 좁아진다 (repeat(7, 1fr)의 최소값이 auto라서). */
+.cal-grid > * {
+  min-width: 0;
+}
 .cal-dots {
   display: flex;
   align-items: center;
@@ -132,6 +137,9 @@
   gap: 2px;
   min-height: 8px;
   flex-wrap: nowrap;
+  /* 칸이 0까지 줄 수 있게 된 만큼, 넘칠 때 칸 밖으로 삐져나가지 않게 막는다 */
+  max-width: 100%;
+  overflow: hidden;
 }
 .cal-dots i {
   width: 5px;
@@ -166,6 +174,21 @@
 .cal-daytitle {
   margin-top: 26px;
 }
+/* 아주 좁은 폰(320px)에서는 칸이 34px까지 줄어, 점 3개 + "+99"(36px)가 안 들어간다.
+   점과 글자를 조금 줄여 잘리지 않고 다 보이게 한다. */
+@media (max-width: 360px) {
+  .cal-dots {
+    gap: 1.5px;
+  }
+  .cal-dots i {
+    width: 4px;
+    height: 4px;
+  }
+  .cal-dots b {
+    font-size: 8px;
+  }
+}
+
 /* 날짜를 눌러 그 요일로 건너뛸 때 상단 바에 제목이 가리지 않도록 */
 .cal-list-day {
   scroll-margin-top: 72px;
