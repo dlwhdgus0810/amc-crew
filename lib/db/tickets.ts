@@ -15,7 +15,8 @@ export const TICKET_STATUSES: TicketStatus[] = ['open', 'planned', 'done', 'decl
 /** 알림 문구 (수신자 언어로 렌더된다) */
 const N = {
   newTicket: { ko: '📮 새 건의 #{n}: {title} — {by}', en: '📮 New ticket #{n}: {title} — {by}' },
-  newCheer: { ko: '💌 응원 한마디 #{n}: {title} — {by}', en: '💌 A kind word #{n}: {title} — {by}' },
+  newCheer: { ko: '💌 쪽지 #{n}: {title} — {by}', en: '💌 Note #{n}: {title} — {by}' },
+  anonymous: { ko: '익명', en: 'anonymous' },
   btnReview: { ko: '건의 보기', en: 'Open ticket' },
   btnMine: { ko: '내 건의 보기', en: 'View my tickets' },
   verdict: { ko: '📮 건의 #{n} "{title}" — {status}{note}', en: '📮 Ticket #{n} “{title}” — {status}{note}' },
@@ -34,7 +35,9 @@ export interface TicketView {
   id: string;
   number: number;
   userId: string;
-  userName: string;
+  /** 익명 건의면 null — 이름은 서버에서부터 실어 보내지 않는다 */
+  userName: string | null;
+  anonymous: boolean;
   kind: TicketKind;
   title: string;
   body: string | null;
@@ -69,12 +72,15 @@ export async function listTickets(userId?: string): Promise<TicketView[]> {
       id: r.id,
       number: r.number,
       userId: r.userId,
-      userName: p
-        ? resolveDisplayName(
-            { kakaoName: p.kakaoName, ...(p.nickname ? { nickname: p.nickname } : {}), kakaoNameHistory: [] },
-            '알 수 없음'
-          )
-        : '알 수 없음',
+      userName: r.anonymous
+        ? null
+        : p
+          ? resolveDisplayName(
+              { kakaoName: p.kakaoName, ...(p.nickname ? { nickname: p.nickname } : {}), kakaoNameHistory: [] },
+              '알 수 없음'
+            )
+          : '알 수 없음',
+      anonymous: r.anonymous,
       kind: r.kind as TicketKind,
       title: r.title,
       body: r.body,
@@ -97,6 +103,7 @@ export async function createTicket(input: {
   kind: TicketKind;
   title: string;
   body?: string;
+  anonymous?: boolean;
   origin: string;
 }): Promise<{ id: string; number: number }> {
   const db = await getDb();
@@ -110,6 +117,7 @@ export async function createTicket(input: {
       kind: input.kind,
       title: input.title,
       body: input.body ?? null,
+      anonymous: input.anonymous ?? false,
     })
     .returning();
 
@@ -119,7 +127,8 @@ export async function createTicket(input: {
       pick(locale, input.kind === 'cheer' ? N.newCheer : N.newTicket, {
         n: String(row?.number ?? 0),
         title: input.title,
-        by: input.userName,
+        // 익명이면 관리자 알림에도 이름을 싣지 않는다 — 여기서 새면 가린 의미가 없다
+        by: input.anonymous ? pick(locale, N.anonymous) : input.userName,
       }),
     button: (locale) => pick(locale, N.btnReview),
     linkUrl: `${input.origin}/admin`,

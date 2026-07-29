@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   title text NOT NULL,
   body text,
   status text NOT NULL DEFAULT 'open',
+  anonymous boolean NOT NULL DEFAULT false,
   admin_note text,
   created_at timestamptz NOT NULL DEFAULT now()
 );

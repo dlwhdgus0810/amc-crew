@@ -193,6 +193,12 @@ export const tickets = pgTable(
     title: text('title').notNull(),
     body: text('body'),
     status: text('status').notNull().default('open'), // open | planned | done | declined
+    /**
+     * 익명으로 낸 건의.
+     * userId는 그대로 남긴다 — 내 건의 목록과 처리 알림이 거기 달려 있다.
+     * 가리는 대상은 관리자 화면과 관리자 알림이다 (DB에는 남는다).
+     */
+    anonymous: boolean('anonymous').notNull().default(false),
     adminNote: text('admin_note'), // 관리자 답변
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

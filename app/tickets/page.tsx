@@ -38,9 +38,10 @@ const KINDS: { value: Ticket['kind']; label: Msg; hint: Msg }[] = [
     hint: { ko: '무엇이든 편하게 적어주세요', en: 'Tell us anything' },
   },
   {
+    // 값은 'cheer' 그대로 둔다 — 이미 쌓인 행이 있고, 이름만 바뀐 것이라 옮길 이유가 없다
     value: 'cheer',
-    label: { ko: '응원의 말', en: 'Kind words' },
-    hint: { ko: '예: 덕분에 주말이 즐거워요', en: 'e.g. this made my weekend' },
+    label: { ko: '쪽지', en: 'Note' },
+    hint: { ko: '아무거나 적어도 돼요', en: 'Anything at all' },
   },
 ];
 
@@ -65,19 +66,24 @@ const T = {
   kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
   kind: { ko: '어떤 건의인가요?', en: 'What kind of ticket?' },
   summary: { ko: '한 줄 요약', en: 'One-line summary' },
-  summaryCheer: { ko: '한마디', en: 'Your message' },
+  summaryCheer: { ko: '쪽지', en: 'Your note' },
   detail: { ko: '자세한 내용 (선택)', en: 'Details (optional)' },
   detailCheer: { ko: '더 하고 싶은 말 (선택)', en: 'More, if you like (optional)' },
+  anonymous: { ko: '익명으로 보내기', en: 'Send anonymously' },
+  anonymousHint: {
+    ko: '관리자 화면과 알림에 이름이 안 떠요. 처리 상태 알림은 그대로 받고, 내가 낸 목록에도 남아요. (데이터베이스에는 기록이 남습니다)',
+    en: 'Your name won’t appear on the admin screen or in its alerts. You still get status updates and still see it in your list. (It is still recorded in the database.)',
+  },
   detailPh: {
     ko: '어떤 상황에서 필요한지, 어떻게 동작하면 좋을지 적어주시면 그대로 만들어드릴게요.',
     en: 'When you’d use it and how it should behave — the more you write, the closer we build it.',
   },
   detailCheerPh: {
-    ko: '어떤 점이 좋았는지 적어주시면 더 잘 만들 수 있어요.',
-    en: 'What worked for you? It helps us know what to keep.',
+    ko: '아무거나 적어도 돼요. 하고 싶은 말, 좋았던 점, 그냥 안부도요.',
+    en: 'Anything at all — a thought, something you liked, or just hello.',
   },
   submit: { ko: '티켓 발급받기 →', en: 'Get a ticket →' },
-  submitCheer: { ko: '응원 보내기 →', en: 'Send it →' },
+  submitCheer: { ko: '쪽지 보내기 →', en: 'Send the note →' },
   submitting: { ko: '발급 중…', en: 'Issuing…' },
   sending: { ko: '보내는 중…', en: 'Sending…' },
   submitFailed: { ko: '발급 실패', en: 'Couldn’t file it' },
@@ -86,8 +92,8 @@ const T = {
     en: 'Ticket #{n} is open — we’ll ping you as it moves.',
   },
   cheered: {
-    ko: '고맙습니다! 잘 전달했어요. 덕분에 힘내서 만들게요. 💪',
-    en: 'Thank you — it’s been passed along. This is what keeps us building. 💪',
+    ko: '쪽지 잘 전달했어요. 고맙습니다! 💌',
+    en: 'Your note has been passed along — thank you! 💌',
   },
   mine: { ko: '내가 낸 건의', en: 'Your tickets' },
   mineEmpty: { ko: '아직 낸 건의가 없어요.', en: 'No tickets yet.' },
@@ -117,6 +123,7 @@ export default function TicketsPage() {
   const [kind, setKind] = useState<Ticket['kind']>('feature');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [anonymous, setAnonymous] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const t = useT();
@@ -143,7 +150,7 @@ export default function TicketsPage() {
       const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, title: title.trim(), body: body.trim() }),
+        body: JSON.stringify({ kind, title: title.trim(), body: body.trim(), anonymous }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.submitFailed));
@@ -212,6 +219,14 @@ export default function TicketsPage() {
             placeholder={isCheer ? t(T.detailCheerPh) : t(T.detailPh)}
             onChange={(e) => setBody(e.target.value)}
           />
+
+          <label className="anon-toggle">
+            <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+            <span>
+              <span className="anon-label">{t(T.anonymous)}</span>
+              <span className="anon-hint">{t(T.anonymousHint)}</span>
+            </span>
+          </label>
 
           <div className="field-row" style={{ marginTop: 20 }}>
             <button className="big-cta" disabled={saving || !title.trim()} onClick={submit}>
