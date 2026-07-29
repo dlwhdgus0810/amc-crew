@@ -119,6 +119,29 @@ export const CATEGORIES: Category[] = [
     locationLabel: { ko: '장소', en: 'Place' },
     locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio' },
   },
+  {
+    slug: 'gym',
+    emoji: '🏋️',
+    en: 'GYM',
+    color: '#455A64',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '헬스장', en: 'Gym' },
+    description: { ko: '같이 운동할 사람 모집', en: 'Find a workout buddy' },
+    locationLabel: { ko: '헬스장', en: 'Gym' },
+    locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park' },
+  },
+  {
+    slug: 'tennis',
+    emoji: '🎾',
+    en: 'TENNIS',
+    color: '#827717',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '테니스', en: 'Tennis' },
+    description: { ko: '같이 칠 사람 모집', en: 'Find players' },
+    locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts' },
+  },
 ];
 
 /** 포스트/구독이 가능한 카테고리 슬러그 (영화 제외) */
