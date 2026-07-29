@@ -1,4 +1,4 @@
-import { Msg } from './i18n';
+import {Msg} from './i18n';
 
 /**
  * 업데이트 소식.
@@ -62,8 +62,8 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: 'You can make a meetup that only people with the link can see.',
       },
       {
-        ko: '모임 카드에서 참여자 얼굴이 바로 보여요. 눌러야 이름이 나와요.',
-        en: 'Meetup cards show participants’ photos; tap for names.',
+        ko: '모임 카드에서 참여자 프로필 사진이 바로 보여요. 눌러야 이름이 나와요.',
+        en: 'Meetup cards show participants’ profile photo; tap for names.',
       },
       {
         ko: '프로필 사진을 설정할 수 있고, 즐겨찾기 순서도 프로필에서 바꿔요.',
