@@ -26,7 +26,22 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    at: '2026-07-29T16:40',
+    at: '2026-07-29T13:48',
+    notable: true,
+    title: { ko: '익명 댓글과 쪽지', en: 'Anonymous comments, and 쪽지' },
+    items: [
+      {
+        ko: '댓글을 익명으로 남길 수 있어요. 입력칸 아래 "익명으로"를 체크하면 다른 사람에게 닉네임이 안 보여요.',
+        en: 'You can comment anonymously — tick “Anonymously” under the box and others won’t see your nickname.',
+      },
+      {
+        ko: '건의함의 "응원의 말"이 "쪽지"가 됐어요. 하고 싶은 말, 좋았던 점, 그냥 안부까지 아무거나 적어도 돼요.',
+        en: '“Kind words” in the suggestion box is now “쪽지” — a note about anything at all.',
+      },
+    ],
+  },
+  {
+    at: '2026-07-29T11:30',
     notable: true,
     title: { ko: 'AMC가 무비나잇 안으로', en: 'AMC moved inside Movie Night' },
     items: [
