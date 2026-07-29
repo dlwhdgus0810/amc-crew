@@ -1,4 +1,4 @@
-import { Locale, Msg, pick } from './i18n';
+import {Locale, Msg, pick} from './i18n';
 
 export interface Category {
   slug: string;
@@ -141,7 +141,7 @@ export const CATEGORIES: Category[] = [
     // 밝은 연두라 흰 글씨는 대비가 2.4:1밖에 안 나온다 — AMC 노랑처럼 검은 글씨를 쓴다
     fg: '#101010',
     kind: 'posts',
-    name: { ko: '테니스', en: 'Tennis' },
+    name: { ko: '테니스 🎾', en: 'Tennis' },
     description: { ko: '같이 해뇨', en: 'Find players' },
     locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts' },
     proposedBy: 'sarah 예지 park',
