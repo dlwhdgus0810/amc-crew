@@ -35,8 +35,8 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: 'You can comment anonymously — tick “Anonymously” under the box and others won’t see your nickname.',
       },
       {
-        ko: '건의함의 "응원의 말"이 "쪽지"가 됐어요. 하고 싶은 말, 좋았던 점, 그냥 안부까지 아무거나 적어도 돼요.',
-        en: '“Kind words” in the suggestion box is now “쪽지” — a note about anything at all.',
+        ko: '건의함의 쪽지가 생겼어요. 그냥 안부나 아무거나 적어도 돼요.',
+        en: '“Kind words” in the suggestion box is now “Note” — a note about anything at all.',
       },
     ],
   },
