@@ -38,10 +38,7 @@ const T = {
   likeA11y: { ko: '좋아요', en: 'Like' },
   anonName: { ko: '익명', en: 'Anonymous' },
   anonToggle: { ko: '익명으로', en: 'Anonymously' },
-  anonHint: {
-    ko: '다른 사람에게 닉네임이 안 보여요. (데이터베이스에는 기록이 남습니다)',
-    en: 'Others won’t see your nickname. (It is still recorded in the database.)',
-  },
+  anonHint: { ko: '다른 사람에게 닉네임이 안 보여요', en: 'Others won’t see your nickname' },
   failed: { ko: '요청 실패', en: 'Something went wrong' },
   justNow: { ko: '방금', en: 'now' },
   minsAgo: { ko: '{n}분', en: '{n}m' },
