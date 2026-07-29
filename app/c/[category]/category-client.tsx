@@ -11,16 +11,16 @@
    4) 댓글은 "댓글 2 ▾"로 열고 닫습니다 (닫힘이 기본)
    ============================================================ */
 
-import { useEffect, useRef, useState } from 'react';
-import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, getCategory } from '@/lib/categories';
+import {useEffect, useRef, useState} from 'react';
+import {DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, getCategory} from '@/lib/categories';
 import PlaceLink from '@/app/place-link';
-import { useLocale, useT } from '../../i18n';
-import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
-import { todayLocal, addDays } from '@/lib/dates';
-import type { TitleMeta, TitleSearchResult } from '@/lib/tmdb';
-import { TMDB_IMG } from '@/lib/tmdb';
-import CommentThread, { CommentView } from '../../comment-thread';
-import { siteUrl } from '@/lib/site';
+import {useLocale, useT} from '../../i18n';
+import {dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday} from '@/lib/datefmt';
+import {addDays, todayLocal} from '@/lib/dates';
+import type {TitleMeta, TitleSearchResult} from '@/lib/tmdb';
+import {TMDB_IMG} from '@/lib/tmdb';
+import CommentThread, {CommentView} from '../../comment-thread';
+import {siteUrl} from '@/lib/site';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -58,8 +58,8 @@ const T = {
   repeatBadge: { ko: '매주 {day}', en: 'Every {day}' },
   privateToggle: { ko: '비공개 모임', en: 'Private meetup' },
   privateHint: {
-    ko: '— 링크를 받은 사람만 볼 수 있어요. 목록·구독 알림에 나오지 않고, 관리자에게도 보이지 않아요',
-    en: '— only people with the link can see it. It stays out of the feed and subscriber alerts, and admins can’t see it either',
+    ko: '— 링크를 받은 사람만 볼 수 있어요. 목록·구독 알림에 나오지 않아요',
+    en: '— only people with the link can see it. It stays out of the feed and subscriber alerts',
   },
   privateBadge: { ko: '비공개', en: 'Private' },
   notifyHintPrivate: {
