@@ -178,6 +178,20 @@ body[data-chrome='hidden'] nav.tabbar {
   }
 }
 
+/* ── 카테고리 카드 격자: 한 열만 넓어지는 문제 ──────────────
+   홈(.car)과 둘러보기(.cat-grid)는 화면이 넓어지면 1fr 1fr / repeat(3, 1fr)로 나뉜다.
+   그런데 1fr의 최소값은 auto — 즉 그 칸에 든 카드의 min-content다.
+   카드 맨 아래 "다음 일정" 줄의 장소는 white-space: nowrap이라, 장소 이름이 길수록
+   min-content가 통째로 커진다. 그러면 그 카드가 놓인 열만 넓어지고 옆 열이 그만큼
+   좁아져서, 같은 줄의 카드 폭이 서로 안 맞는다.
+
+   격자 항목의 최소 폭을 0으로 낮춰 트랙이 언제나 똑같이 나뉘게 한다.
+   장소 줄에는 이미 말줄임(text-overflow: ellipsis)이 걸려 있어 좁아져도 잘리지 않는다. */
+.car > *,
+.cat-grid > * {
+  min-width: 0;
+}
+
 /* 테스트 계정으로 보는 중임을 알리는 띠 — 관리자 화면이 사라진 걸 고장으로 오해하지 않도록 */
 .viewing-as {
   position: sticky; top: 0; z-index: 40;
