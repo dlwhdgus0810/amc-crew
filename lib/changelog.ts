@@ -12,8 +12,11 @@ import { Msg } from './i18n';
  *    알리면 사람들이 카드를 닫는 법부터 배운다.
  */
 export interface ChangelogEntry {
-  /** YYYY-MM-DD — 목록 정렬과 "읽음" 판정의 기준 */
-  date: string;
+  /**
+   * YYYY-MM-DDTHH:mm (앱 시간대). 목록 정렬, "읽음" 판정, 화면 표기를 다 이걸로 한다.
+   * ISO 문자열이라 사전순 비교가 곧 시간순 비교다 — 하루에 여러 번 올려도 순서가 선다.
+   */
+  at: string;
   title: Msg;
   items: Msg[];
   /** 홈에 "새 소식" 카드를 띄울 만한 묶음인지 */
@@ -23,7 +26,22 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    date: '2026-07-29',
+    at: '2026-07-29T16:40',
+    notable: true,
+    title: { ko: 'AMC가 무비나잇 안으로', en: 'AMC moved inside Movie Night' },
+    items: [
+      {
+        ko: 'AMC 카드를 없애고 무비나잇 안에서 열도록 했어요. 어차피 회차를 골라 만든 모임도 무비나잇으로 들어왔거든요.',
+        en: 'The AMC card is gone; you open the showtime picker from inside Movie Night. Meetups made from a showtime already landed there anyway.',
+      },
+      {
+        ko: '새 소식 알림을 켜면 업데이트를 카카오톡으로 받아볼 수 있어요. 프로필에서 켜고 끌 수 있어요.',
+        en: 'Turn on update alerts to get them on KakaoTalk. Toggle it in Profile.',
+      },
+    ],
+  },
+  {
+    at: '2026-07-29T09:00',
     notable: true,
     title: { ko: '캘린더와 새 카테고리', en: 'A calendar, and two new categories' },
     items: [

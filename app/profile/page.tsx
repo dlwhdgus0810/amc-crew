@@ -62,6 +62,10 @@ const T = {
     en: 'Everything that’s changed in the app.',
   },
   newsGo: { ko: '새 소식 보기 →', en: 'See what’s new →' },
+  newsAlertsOn: { ko: '카카오톡으로 받는 중', en: 'Getting them on KakaoTalk' },
+  newsAlertsOff: { ko: '카카오톡 알림 꺼짐', en: 'KakaoTalk alerts off' },
+  newsAlertsEnable: { ko: '알림 켜기', en: 'Turn on' },
+  newsAlertsDisable: { ko: '알림 끄기', en: 'Turn off' },
   favOrder: { ko: '즐겨찾기 순서', en: 'Favourite order' },
   favOrderDesc: {
     ko: '홈에 뜨는 차례예요. 홈에서 카드를 끌어 옮겨도 되고, 여기서 위아래로 옮겨도 돼요.',
@@ -167,6 +171,8 @@ export default function ProfilePage() {
   const [subs, setSubs] = useState<Set<string>>(new Set());
   // 즐겨찾기는 순서가 의미를 가지므로 Set이 아니라 배열로 들고 있는다
   const [favs, setFavs] = useState<string[]>([]);
+  const [newsAlerts, setNewsAlerts] = useState(false);
+  const [newsBusy, setNewsBusy] = useState(false);
   const [favBusy, setFavBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -190,8 +196,9 @@ export default function ProfilePage() {
       fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
       fetch('/api/favorites').then((r) => r.json()),
+      fetch('/api/news-alerts').then((r) => r.json()),
     ])
-      .then(([auth, sub, fav]) => {
+      .then(([auth, sub, fav, news]) => {
         setUser(auth.user ?? null);
         setIsAdmin(Boolean(auth.isAdmin));
         setNickname(auth.nickname ?? null);
@@ -202,6 +209,7 @@ export default function ProfilePage() {
         setTalkMessage(auth.kakaoTalkMessage ?? null);
         setSubs(new Set(sub.subscriptions ?? []));
         setFavs(fav.favorites ?? []);
+        setNewsAlerts(Boolean(news.newsAlerts));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -283,6 +291,24 @@ export default function ProfilePage() {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.saveFailed) });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function toggleNewsAlerts() {
+    const next = !newsAlerts;
+    setNewsBusy(true);
+    try {
+      const res = await fetch('/api/news-alerts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ on: next }),
+      });
+      if (!res.ok) throw new Error(t(T.failed));
+      setNewsAlerts(next);
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setNewsBusy(false);
     }
   }
 
@@ -686,7 +712,19 @@ export default function ProfilePage() {
         <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
           {t(T.newsDesc)}
         </p>
-        <Link className="link-btn strong" href="/whats-new">
+        <div className="field-row" style={{ justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 500, color: newsAlerts ? undefined : 'var(--text-dim)' }}>
+            {newsAlerts ? t(T.newsAlertsOn) : t(T.newsAlertsOff)}
+          </span>
+          <button
+            className={newsAlerts ? 'danger' : 'secondary'}
+            disabled={newsBusy}
+            onClick={toggleNewsAlerts}
+          >
+            {newsAlerts ? t(T.newsAlertsDisable) : t(T.newsAlertsEnable)}
+          </button>
+        </div>
+        <Link className="link-btn strong" href="/whats-new" style={{ marginTop: 14 }}>
           {t(T.newsGo)}
         </Link>
       </div>

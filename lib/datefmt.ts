@@ -36,6 +36,15 @@ export function dateLabelShort(date: string, locale: Locale): string {
     : `${m}/${d}(${WEEKDAYS.ko[weekday]})`;
 }
 
+/** YYYY-MM-DDTHH:mm → "7/29 (수) 오후 4:40" / "Wed, Jul 29 · 4:40 PM" */
+export function entryLabel(at: string, locale: Locale): string {
+  const [date, time] = at.split('T');
+  if (!time) return dateLabel(date, locale);
+  return locale === 'en'
+    ? `${dateLabel(date, locale)} · ${timeLabel(time, locale)}`
+    : `${dateLabel(date, locale)} ${timeLabel(time, locale)}`;
+}
+
 /** ko: 오후 6:00 · en: 6:00 PM */
 export function timeLabel(time: string, locale: Locale): string {
   const [h, min] = time.split(':').map(Number);

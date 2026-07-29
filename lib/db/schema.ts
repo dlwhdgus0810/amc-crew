@@ -21,6 +21,8 @@ export const users = pgTable('users', {
    * 일부러 최신 시각 하나만 덮어쓴다. 이력을 쌓으면 "누가 언제 들어왔나" 기록이 되어버린다.
    */
   lastSeen: timestamp('last_seen', { withTimezone: true }),
+  /** 새 소식(업데이트)을 카카오톡으로 받을지 — 기본은 꺼짐, 프로필에서 켠다 */
+  newsAlerts: boolean('news_alerts').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

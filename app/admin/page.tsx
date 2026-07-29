@@ -78,6 +78,19 @@ const T = {
   onlineJustNow: { ko: '방금', en: 'just now' },
   onlineMins: { ko: '{n}분 전', en: '{n}m ago' },
   onlineRefresh: { ko: '15초마다 자동으로 갱신돼요.', en: 'Refreshes every 15 seconds.' },
+  failed: { ko: '요청에 실패했어요.', en: 'Something went wrong.' },
+  newsTitle: { ko: '새 소식 알리기', en: 'Announce what’s new' },
+  newsDesc: {
+    ko: '가장 최근 소식을 "새 소식 알림"을 켜 둔 회원에게 보냅니다. 배포만으로는 아무것도 나가지 않아요. 같은 소식을 이미 받은 사람은 건너뜁니다.',
+    en: 'Sends the latest entry to members who turned update alerts on. Deploying sends nothing by itself, and anyone who already got this one is skipped.',
+  },
+  newsSend: { ko: '지금 보내기', en: 'Send now' },
+  newsSending: { ko: '보내는 중…', en: 'Sending…' },
+  newsConfirm: {
+    ko: '가장 최근 소식을 알림 켠 회원들에게 보낼까요? 카카오톡으로도 갑니다.',
+    en: 'Send the latest entry to members with alerts on? It also goes out on KakaoTalk.',
+  },
+  newsSent: { ko: '{n}명에게 보냈어요. ({skipped}명은 이미 받아서 건너뛰었어요)', en: 'Sent to {n}. ({skipped} already had it)' },
   statsTitle: { ko: '회원별 접속 기록', en: 'Time in the app' },
   statsDesc: {
     ko: '신호가 이어지는 동안을 한 번의 접속으로 묶어 잰 시간이에요. 최근 7일치만 봅니다.',
@@ -164,7 +177,25 @@ export default function AdminPage() {
   } | null>(null);
   // 기본은 접어 둔다 — 관리자 화면에 들를 때마다 볼 표는 아니다
   const [statsOpen, setStatsOpen] = useState(false);
+  const [newsBusy, setNewsBusy] = useState(false);
   const t = useT();
+
+  /** 최신 소식을 알림 켠 회원에게 발송 — 되돌릴 수 없어서 한 번 묻는다 */
+  async function sendNews() {
+    if (!confirm(t(T.newsConfirm))) return;
+    setNewsBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/news-alerts', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(T.failed));
+      setMsg({ type: 'ok', text: t(T.newsSent, { n: data.sent, skipped: data.skipped }) });
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setNewsBusy(false);
+    }
+  }
 
   /** 초 → "2시간 13분" / "13분" / "-" */
   function dur(seconds: number): string {
@@ -486,6 +517,14 @@ export default function AdminPage() {
 
       {isKakaoAdmin && (
         <>
+          <h1 style={{ marginTop: 80 }}>{t(T.newsTitle)}</h1>
+          <p className="subtitle">{t(T.newsDesc)}</p>
+          <div className="card">
+            <button className="secondary" disabled={newsBusy} onClick={sendNews}>
+              {newsBusy ? t(T.newsSending) : t(T.newsSend)}
+            </button>
+          </div>
+
           <h1 style={{ marginTop: 80 }}>{t(T.onlineTitle)}</h1>
           <p className="subtitle">{t(T.onlineDesc, { n: presence?.windowMinutes ?? 3 })}</p>
           <div className="card">

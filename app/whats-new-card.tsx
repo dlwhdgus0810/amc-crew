@@ -37,7 +37,7 @@ export default function WhatsNewCard() {
       // 저장소를 못 읽으면 그냥 보여준다 (안 보이는 것보다 낫다)
     }
     // YYYY-MM-DD는 사전순 비교가 곧 날짜순 비교다
-    setShow(!seen || seen < entry.date);
+    setShow(!seen || seen < entry.at);
   }, [entry]);
 
   if (!entry || !show) return null;
@@ -45,7 +45,7 @@ export default function WhatsNewCard() {
   function dismiss() {
     setShow(false);
     try {
-      if (entry) localStorage.setItem(WHATS_NEW_SEEN, entry.date);
+      if (entry) localStorage.setItem(WHATS_NEW_SEEN, entry.at);
     } catch {
       // 못 적으면 다음에 또 뜬다 — 그뿐이다
     }

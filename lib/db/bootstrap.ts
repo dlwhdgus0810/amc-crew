@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   kakao_refresh_token text,
   kakao_talk_message boolean,
   last_seen timestamptz,
+  news_alerts boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 

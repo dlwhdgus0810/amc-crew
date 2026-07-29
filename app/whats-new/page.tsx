@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { CHANGELOG, latestNotable } from '@/lib/changelog';
-import { dateLabel } from '@/lib/datefmt';
+import { entryLabel } from '@/lib/datefmt';
 import { useLocale, useT } from '../i18n';
 import { WHATS_NEW_SEEN } from '../whats-new-card';
 
@@ -28,7 +28,7 @@ export default function WhatsNewPage() {
     const latest = latestNotable();
     if (latest) {
       try {
-        localStorage.setItem(WHATS_NEW_SEEN, latest.date);
+        localStorage.setItem(WHATS_NEW_SEEN, latest.at);
       } catch {
         // 사파리 사생활 보호 모드 등 — 카드가 한 번 더 보이는 것뿐이라 넘어간다
       }
@@ -44,8 +44,8 @@ export default function WhatsNewPage() {
         <p className="hint">{t(T.empty)}</p>
       ) : (
         CHANGELOG.map((entry) => (
-          <section key={entry.date} className="news-entry">
-            <div className="news-date">{dateLabel(entry.date, locale)}</div>
+          <section key={entry.at} className="news-entry">
+            <div className="news-date">{entryLabel(entry.at, locale)}</div>
             <h2 className="news-title">{t(entry.title)}</h2>
             <ul className="news-items">
               {entry.items.map((item, i) => (
