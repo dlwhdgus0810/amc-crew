@@ -250,6 +250,35 @@ body[data-chrome='hidden'] nav.tabbar {
   color: var(--text-dim);
 }
 
+/* 제목을 그대로 누르는 접기 버튼 — 제목 크기·굵기를 h1에서 물려받는다 */
+.collapse-h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  min-height: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.collapse-caret {
+  font-size: 0.5em;
+  color: var(--text-dim);
+  line-height: 1;
+  /* ⌄ 글리프가 글자 아래쪽에 붙어 있어 제목 가운데로 끌어올린다 */
+  transform: translateY(-0.15em);
+}
+@media (hover: hover) {
+  .collapse-h1:hover {
+    background: none;
+    opacity: 0.7;
+  }
+}
+
 /* 회원별 접속 기록 표 — 좁은 폰에서는 표만 가로로 밀린다 (페이지는 안 밀린다) */
 .stats-scroll {
   overflow-x: auto;

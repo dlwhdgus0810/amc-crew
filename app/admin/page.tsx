@@ -162,6 +162,8 @@ export default function AdminPage() {
       lastSeenSecondsAgo: number | null;
     }[];
   } | null>(null);
+  // 기본은 접어 둔다 — 관리자 화면에 들를 때마다 볼 표는 아니다
+  const [statsOpen, setStatsOpen] = useState(false);
   const t = useT();
 
   /** 초 → "2시간 13분" / "13분" / "-" */
@@ -369,75 +371,6 @@ export default function AdminPage() {
 
       {isKakaoAdmin && (
         <>
-          <h1 style={{ marginTop: 80 }}>{t(T.onlineTitle)}</h1>
-          <p className="subtitle">{t(T.onlineDesc, { n: presence?.windowMinutes ?? 3 })}</p>
-          <div className="card">
-            {presence === null ? (
-              <p className="hint">{t(T.loading)}</p>
-            ) : presence.online.length === 0 ? (
-              <p className="hint">{t(T.onlineNone)}</p>
-            ) : (
-              <>
-                <div style={{ fontWeight: 700, marginBottom: 12 }}>
-                  {t(T.onlineCount, { n: presence.online.length, total: presence.total })}
-                </div>
-                <ul className="online-list">
-                  {presence.online.map((u) => (
-                    <li key={u.id}>
-                      <span className="online-dot" aria-hidden />
-                      <span className="avatar-sm">
-                        {u.avatar ? <img src={u.avatar} alt="" /> : u.name.slice(0, 1)}
-                      </span>
-                      <span className="online-name">{u.name}</span>
-                      <span className="online-ago">
-                        {u.secondsAgo < 60 ? t(T.onlineJustNow) : t(T.onlineMins, { n: Math.floor(u.secondsAgo / 60) })}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            <p className="hint" style={{ marginTop: 12 }}>{t(T.onlineRefresh)}</p>
-          </div>
-
-          <h1 style={{ marginTop: 80 }}>{t(T.statsTitle)}</h1>
-          <p className="subtitle">{t(T.statsDesc)}</p>
-          <div className="card">
-            {!presence?.stats?.length ? (
-              <p className="hint">{t(T.statsEmpty)}</p>
-            ) : (
-              <div className="stats-scroll">
-                <table className="stats-table">
-                  <thead>
-                    <tr>
-                      <th>{t(T.statsUser)}</th>
-                      <th>{t(T.statsDay)}</th>
-                      <th>{t(T.statsWeek)}</th>
-                      <th>{t(T.statsVisits)}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {presence.stats.map((u) => (
-                      <tr key={u.id}>
-                        <td>
-                          <span className="stats-name">
-                            <span className="avatar-sm">
-                              {u.avatar ? <img src={u.avatar} alt="" /> : u.name.slice(0, 1)}
-                            </span>
-                            {u.name}
-                          </span>
-                        </td>
-                        <td>{dur(u.daySeconds)}</td>
-                        <td>{u.weekSeconds > 0 ? dur(u.weekSeconds) : t(T.statsNever)}</td>
-                        <td>{t(T.statsVisitsUnit, { n: u.visits })}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
           <h1 style={{ marginTop: 80 }}>{t(T.viewAsTitle)}</h1>
           <p className="subtitle">{t(T.viewAsDesc)}</p>
           <div className="card">
@@ -549,6 +482,90 @@ export default function AdminPage() {
             {t(T.clearAll)}
           </button>
         </div>
+      )}
+
+      {isKakaoAdmin && (
+        <>
+          <h1 style={{ marginTop: 80 }}>{t(T.onlineTitle)}</h1>
+          <p className="subtitle">{t(T.onlineDesc, { n: presence?.windowMinutes ?? 3 })}</p>
+          <div className="card">
+            {presence === null ? (
+              <p className="hint">{t(T.loading)}</p>
+            ) : presence.online.length === 0 ? (
+              <p className="hint">{t(T.onlineNone)}</p>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, marginBottom: 12 }}>
+                  {t(T.onlineCount, { n: presence.online.length, total: presence.total })}
+                </div>
+                <ul className="online-list">
+                  {presence.online.map((u) => (
+                    <li key={u.id}>
+                      <span className="online-dot" aria-hidden />
+                      <span className="avatar-sm">
+                        {u.avatar ? <img src={u.avatar} alt="" /> : u.name.slice(0, 1)}
+                      </span>
+                      <span className="online-name">{u.name}</span>
+                      <span className="online-ago">
+                        {u.secondsAgo < 60 ? t(T.onlineJustNow) : t(T.onlineMins, { n: Math.floor(u.secondsAgo / 60) })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p className="hint" style={{ marginTop: 12 }}>{t(T.onlineRefresh)}</p>
+          </div>
+
+          <h1 style={{ marginTop: 80 }}>
+            <button className="collapse-h1" aria-expanded={statsOpen} onClick={() => setStatsOpen((v) => !v)}>
+              {t(T.statsTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {statsOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {statsOpen && (
+            <>
+          <p className="subtitle">{t(T.statsDesc)}</p>
+          <div className="card">
+            {!presence?.stats?.length ? (
+              <p className="hint">{t(T.statsEmpty)}</p>
+            ) : (
+              <div className="stats-scroll">
+                <table className="stats-table">
+                  <thead>
+                    <tr>
+                      <th>{t(T.statsUser)}</th>
+                      <th>{t(T.statsDay)}</th>
+                      <th>{t(T.statsWeek)}</th>
+                      <th>{t(T.statsVisits)}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {presence.stats.map((u) => (
+                      <tr key={u.id}>
+                        <td>
+                          <span className="stats-name">
+                            <span className="avatar-sm">
+                              {u.avatar ? <img src={u.avatar} alt="" /> : u.name.slice(0, 1)}
+                            </span>
+                            {u.name}
+                          </span>
+                        </td>
+                        <td>{dur(u.daySeconds)}</td>
+                        <td>{u.weekSeconds > 0 ? dur(u.weekSeconds) : t(T.statsNever)}</td>
+                        <td>{t(T.statsVisitsUnit, { n: u.visits })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+            </>
+          )}
+        </>
       )}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}

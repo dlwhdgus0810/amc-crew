@@ -150,7 +150,8 @@ export function ContextTabs() {
     links.push({ href: '/movie', label: t(T.showtimes) }, { href: '/movie/groups', label: t(T.groups) });
   }
   if (pathname.startsWith('/tickets')) links.push({ href: '/tickets', label: t(T.tickets) });
-  if (isAdmin) links.push({ href: '/admin', label: t(T.admin) });
+  // 관리자 진입은 프로필 화면에만 둔다 — 모든 화면 위에 띄울 만한 버튼이 아니다
+  if (isAdmin && pathname.startsWith('/admin')) links.push({ href: '/admin', label: t(T.admin) });
   if (links.length === 0) return null;
 
   return (

@@ -110,6 +110,12 @@ const T = {
   saving: { ko: '저장 중…', en: 'Saving…' },
   cancel: { ko: '취소', en: 'Cancel' },
   saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
+  admin: { ko: '관리자', en: 'Admin' },
+  adminDesc: {
+    ko: '카테고리 제안·건의함 처리, AMC 상영표 새로고침, 접속 현황을 볼 수 있어요.',
+    en: 'Category requests and tickets, AMC showtimes refresh, and who’s been around.',
+  },
+  adminGo: { ko: '관리자 화면 열기 →', en: 'Open admin →' },
   tickets: { ko: '건의함', en: 'Suggestion box' },
   ticketsDesc: {
     ko: '사소한 기능 개선부터 원하시는 모든 기능을 넣어드려요. 티켓을 남기면 처리 상태를 알림으로 알려드려요.',
@@ -133,6 +139,7 @@ function KakaoIcon() {
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; name: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [nickname, setNickname] = useState<string | null>(null);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [kakaoName, setKakaoName] = useState('');
@@ -163,6 +170,7 @@ export default function ProfilePage() {
     ])
       .then(([auth, sub]) => {
         setUser(auth.user ?? null);
+        setIsAdmin(Boolean(auth.isAdmin));
         setNickname(auth.nickname ?? null);
         setAvatar(auth.avatar ?? null);
         setKakaoName(auth.kakaoName ?? '');
@@ -570,6 +578,20 @@ export default function ProfilePage() {
           </p>
         )}
       </div>
+
+      {isAdmin && (
+        <>
+          <h2>{t(T.admin)}</h2>
+          <div className="card">
+            <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
+              {t(T.adminDesc)}
+            </p>
+            <Link className="link-btn strong" href="/admin">
+              {t(T.adminGo)}
+            </Link>
+          </div>
+        </>
+      )}
 
       <h2>{t(T.tickets)}</h2>
       <div className="card">
