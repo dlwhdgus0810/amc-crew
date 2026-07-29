@@ -19,6 +19,8 @@ export interface Category {
   locationHint?: Msg;
   /** 이 카테고리를 제안한 사람 — 카테고리 화면에 이름을 적어 준다 */
   proposedBy?: string;
+  /** 카테고리 안에서 여는 도구 (무비나잇 → AMC 회차 고르기) */
+  tool?: { href: string; label: Msg; desc: Msg };
 }
 
 /** 카테고리별로 지정하지 않았을 때 쓰는 장소 문구 */
@@ -42,16 +44,6 @@ export const CATEGORIES: Category[] = [
     description: { ko: '같이 할 사람 모집', en: 'Find players' },
   },
   {
-    slug: 'movie',
-    emoji: '🎬',
-    en: 'AMC',
-    color: '#E9A300',
-    fg: '#101010',
-    kind: 'movie',
-    name: { ko: 'AMC', en: 'AMC' },
-    description: { ko: '영화 회차 맞추기 (AMC Town Center 20)', en: 'Match movie showtimes (AMC Town Center 20)' },
-  },
-  {
     slug: 'movienight',
     emoji: '🍿',
     en: 'MOVIE NIGHT',
@@ -62,6 +54,16 @@ export const CATEGORIES: Category[] = [
     description: { ko: '같이 영화 볼 사람 모집', en: 'Find people for a movie night' },
     titleLabel: { ko: '영화/드라마', en: 'Movie/Show' },
     titleSearch: 'tmdb',
+    // AMC 회차 고르기는 따로 카드를 두지 않고 여기서 연다 — 회차에서 만든 모임도
+    // 어차피 무비나잇으로 들어오므로, 입구가 둘일 이유가 없다
+    tool: {
+      href: '/movie',
+      label: { ko: 'AMC 회차 고르기', en: 'Pick AMC showtimes' },
+      desc: {
+        ko: 'AMC Town Center 20 상영표에서 회차를 고르면, 같은 회차를 고른 사람끼리 모임이 만들어져요.',
+        en: 'Pick a showtime at AMC Town Center 20 and everyone who picked the same one becomes a meetup.',
+      },
+    },
   },
   {
     slug: 'pickleball',

@@ -732,7 +732,9 @@ export async function getFavorites(userId: string): Promise<string[]> {
     .from(favorites)
     .where(eq(favorites.userId, userId))
     .orderBy(asc(favorites.sort), asc(favorites.createdAt));
-  return rows.map((r) => r.category);
+  // 없어진 카테고리(예전 AMC)의 행은 걸러 낸다 — 지우진 않는다. 화면에 그릴 카드가
+  // 없는 슬러그가 목록에 남아 있으면 드래그 정렬이 유령 항목을 잡는다.
+  return rows.map((r) => r.category).filter((slug) => getCategory(slug) !== undefined);
 }
 
 export async function setFavorite(userId: string, category: string, on: boolean): Promise<void> {

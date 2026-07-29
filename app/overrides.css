@@ -372,6 +372,37 @@ body[data-chrome='hidden'] nav.tabbar {
   background: none;
 }
 
+/* 카테고리 안에서 여는 도구 (무비나잇 → AMC 회차 고르기).
+   피드 위에 얹는 카드 하나. 카테고리 카드를 따로 두는 대신 여기로 들어온다. */
+.cat-tool {
+  display: block;
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+.cat-tool-label {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cat-tool-desc {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+@media (hover: hover) {
+  .cat-tool:hover {
+    border-color: var(--text);
+  }
+}
+
 /* 카테고리를 제안한 사람 — 제목 아래 칩.
    흐린 회색 한 줄은 안 읽혔고, 글자만 카테고리 색으로 칠하면 밝은 색에서 오히려
    대비가 떨어진다(연두는 2.5:1). 카드와 똑같이 색을 채우고 그 카테고리가 이미

@@ -21,6 +21,7 @@ const T = {
   calendar: { ko: '캘린더', en: 'Calendar' },
   // 탭바에서는 내렸고(프로필 안으로), 문맥 탭에서만 쓴다
   tickets: { ko: '건의함', en: 'Suggestions' },
+  movienight: { ko: '무비나잇', en: 'Movie Night' },
   showtimes: { ko: '회차 고르기', en: 'Showtimes' },
   groups: { ko: '그룹', en: 'Groups' },
   profile: { ko: '프로필', en: 'Profile' },
@@ -147,7 +148,12 @@ export function ContextTabs() {
 
   const links: { href: string; label: string }[] = [];
   if (pathname.startsWith('/movie')) {
-    links.push({ href: '/movie', label: t(T.showtimes) }, { href: '/movie/groups', label: t(T.groups) });
+    links.push(
+      // AMC는 무비나잇 안의 도구라, 돌아갈 자리를 첫 칸에 둔다
+      { href: '/c/movienight', label: t(T.movienight) },
+      { href: '/movie', label: t(T.showtimes) },
+      { href: '/movie/groups', label: t(T.groups) }
+    );
   }
   if (pathname.startsWith('/tickets')) links.push({ href: '/tickets', label: t(T.tickets) });
   // 관리자 진입은 프로필 화면에만 둔다 — 모든 화면 위에 띄울 만한 버튼이 아니다

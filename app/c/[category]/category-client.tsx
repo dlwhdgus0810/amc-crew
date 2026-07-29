@@ -12,6 +12,7 @@
    ============================================================ */
 
 import {useEffect, useRef, useState} from 'react';
+import Link from 'next/link';
 import {DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, getCategory} from '@/lib/categories';
 import PlaceLink from '@/app/place-link';
 import {useLocale, useT} from '../../i18n';
@@ -543,6 +544,15 @@ export default function CategoryClient({ slug }: { slug: string }) {
           {subscribed ? t(T.subscribed) : t(T.subscribe)}
         </button>
       </div>
+
+      {category?.tool && (
+        <Link className="cat-tool" href={category.tool.href}>
+          <span className="cat-tool-label" style={{ color }}>
+            {t(category.tool.label)} →
+          </span>
+          <span className="cat-tool-desc">{t(category.tool.desc)}</span>
+        </Link>
+      )}
 
       {category?.proposedBy && (
         <p className="feed-credit" style={{ background: color, color: category.fg }}>
