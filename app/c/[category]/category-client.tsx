@@ -45,6 +45,8 @@ const T = {
   today: { ko: '오늘', en: 'Today' },
   tomorrow: { ko: '내일', en: 'Tomorrow' },
   seats: { ko: '{n}자리 남음', en: '{n} spots left' },
+  people: { ko: '{n}명', en: '{n}' },
+  peopleCap: { ko: '{n}/{cap}명', en: '{n}/{cap}' },
   me: { ko: '나', en: 'You' },
   tabUpcoming: { ko: '예정 {n}', en: 'Upcoming {n}' },
   tabPast: { ko: '지난 {n}', en: 'Past {n}' },
@@ -543,7 +545,12 @@ export default function CategoryClient({ slug }: { slug: string }) {
       </div>
 
       {category?.proposedBy && (
-        <p className="feed-credit">{t(T.proposedBy, { name: category.proposedBy })}</p>
+        <p className="feed-credit" style={{ background: color, color: category.fg }}>
+          <span className="feed-credit-icon" aria-hidden>
+            ✦
+          </span>
+          {t(T.proposedBy, { name: category.proposedBy })}
+        </p>
       )}
 
       <div className="feed-tabs">
@@ -798,8 +805,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
     const commentsOpen = openComments.has(post.id);
     const peopleOpen = openPeople.has(post.id);
     const canJoin = !past && (!mine || post.recurringRuleId);
-    // 이름 줄을 얼굴로 바꾼 만큼 자리가 넉넉해져 6명까지 보여준다
-    const shown = post.participants.slice(0, 6);
+    // 이름 줄을 얼굴로 바꾼 만큼 자리가 넉넉해져 10명까지 보여준다 (겹쳐 놓아서 폭은 얼마 안 든다)
+    const shown = post.participants.slice(0, 10);
     const left = post.capacity != null ? post.capacity - post.participants.length : null;
     // 참여자 이름 요약 — 나는 "나"로 바꿔 한 줄에 더 들어가게 한다
     const namesLine = post.participants
@@ -855,7 +862,9 @@ export default function CategoryClient({ slug }: { slug: string }) {
             )}
           </span>
           <span className="people-count">
-            {post.capacity != null ? `${post.participants.length}/${post.capacity}` : `${post.participants.length}`}
+            {post.capacity != null
+              ? t(T.peopleCap, { n: post.participants.length, cap: post.capacity })
+              : t(T.people, { n: post.participants.length })}
             <span className="caret" aria-hidden="true">
               {peopleOpen ? '▴' : '▾'}
             </span>

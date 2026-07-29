@@ -192,6 +192,63 @@ body[data-chrome='hidden'] nav.tabbar {
   min-width: 0;
 }
 
+/* ── 프로필: 즐겨찾기 순서 ─────────────────────────────────
+   홈의 드래그와 같은 순서를 다루지만, 설정 화면에서는 위아래 버튼이 확실하다
+   (드래그는 좁은 폰에서 페이지 스크롤과 다툰다). */
+.fav-order {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fav-order li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  min-width: 0;
+}
+.fav-order li + li {
+  border-top: 1px solid var(--border-soft);
+}
+.fav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: none;
+}
+.fav-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fav-move {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.fav-move:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+@media (hover: hover) {
+  .fav-move:hover:not(:disabled) {
+    background: var(--bg);
+  }
+}
+
 /* ── 모임 카드의 참여자 줄 ──────────────────────────────────
    접혀 있을 때는 이름 대신 얼굴만 보여준다. 이름은 눌러서 펼치면 나온다. */
 .ava-stack {
@@ -211,11 +268,25 @@ body[data-chrome='hidden'] nav.tabbar {
   background: none;
 }
 
-/* 카테고리를 제안한 사람 — 제목 바로 아래 한 줄 */
+/* 카테고리를 제안한 사람 — 제목 아래 칩.
+   흐린 회색 한 줄은 안 읽혔고, 글자만 카테고리 색으로 칠하면 밝은 색에서 오히려
+   대비가 떨어진다(연두는 2.5:1). 카드와 똑같이 색을 채우고 그 카테고리가 이미
+   쓰고 있는 글자색(fg)을 얹는다 — 대비는 카드에서 검증된 값 그대로다. */
 .feed-credit {
-  margin: 6px 2px 0;
-  font-size: 12.5px;
-  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 2px;
+  padding: 6px 13px;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.feed-credit-icon {
+  font-size: 11px;
+  opacity: 0.9;
 }
 
 /* ── 관리자: 지금 접속 중 목록 ──────────────────────────── */

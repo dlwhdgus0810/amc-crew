@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../i18n';
 import { PROFILE_UPDATED } from '../nav';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
@@ -55,6 +55,19 @@ const T = {
     en: 'Used for the app interface and notification messages.',
   },
   languageSaved: { ko: '언어를 바꿨어요.', en: 'Language updated.' },
+  failed: { ko: '저장하지 못했어요.', en: 'Couldn’t save.' },
+  favOrder: { ko: '즐겨찾기 순서', en: 'Favourite order' },
+  favOrderDesc: {
+    ko: '홈에 뜨는 차례예요. 홈에서 카드를 끌어 옮겨도 되고, 여기서 위아래로 옮겨도 돼요.',
+    en: 'The order they appear on the home screen. Drag the cards there, or move them here.',
+  },
+  favOrderEmpty: {
+    ko: '★를 눌러 즐겨찾기한 카테고리가 여기 순서대로 나와요.',
+    en: 'Categories you star with ★ show up here in order.',
+  },
+  moveUp: { ko: '위로', en: 'Move up' },
+  moveDown: { ko: '아래로', en: 'Move down' },
+  favOrderSaved: { ko: '즐겨찾기 순서를 저장했어요.', en: 'Favourite order saved.' },
   subs: { ko: '구독 중인 취미', en: 'Subscribed hobbies' },
   subsDesc: {
     ko: '구독한 취미에 새 모임이 올라오면 알림을 받아요.',
@@ -146,6 +159,9 @@ export default function ProfilePage() {
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | ''>('');
   const [subs, setSubs] = useState<Set<string>>(new Set());
+  // 즐겨찾기는 순서가 의미를 가지므로 Set이 아니라 배열로 들고 있는다
+  const [favs, setFavs] = useState<string[]>([]);
+  const [favBusy, setFavBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
@@ -167,8 +183,9 @@ export default function ProfilePage() {
     Promise.all([
       fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
+      fetch('/api/favorites').then((r) => r.json()),
     ])
-      .then(([auth, sub]) => {
+      .then(([auth, sub, fav]) => {
         setUser(auth.user ?? null);
         setIsAdmin(Boolean(auth.isAdmin));
         setNickname(auth.nickname ?? null);
@@ -178,6 +195,7 @@ export default function ProfilePage() {
         setGender(auth.gender ?? '');
         setTalkMessage(auth.kakaoTalkMessage ?? null);
         setSubs(new Set(sub.subscriptions ?? []));
+        setFavs(fav.favorites ?? []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -259,6 +277,32 @@ export default function ProfilePage() {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.saveFailed) });
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** 즐겨찾기 순서 바꾸기 — 화면을 먼저 옮기고 저장한다 (실패하면 서버 값으로 되돌린다) */
+  async function moveFav(index: number, delta: number) {
+    const to = index + delta;
+    if (to < 0 || to >= favs.length) return;
+    const next = [...favs];
+    [next[index], next[to]] = [next[to], next[index]];
+    setFavs(next);
+    setFavBusy(true);
+    try {
+      const res = await fetch('/api/favorites', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(T.failed));
+      setFavs(data.favorites ?? next);
+      setMsg({ type: 'ok', text: t(T.favOrderSaved) });
+    } catch (e) {
+      setFavs(favs);
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setFavBusy(false);
     }
   }
 
@@ -523,6 +567,44 @@ export default function ProfilePage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <h2>{t(T.favOrder)}</h2>
+      <div className="card">
+        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
+          {t(T.favOrderDesc)}
+        </p>
+        {favs.length === 0 ? (
+          <p className="hint">{t(T.favOrderEmpty)}</p>
+        ) : (
+          <ol className="fav-order">
+            {favs.map((slug, i) => {
+              const cat = getCategory(slug);
+              return (
+                <li key={slug}>
+                  <span className="fav-dot" style={{ background: cat?.color ?? 'var(--text-dim)' }} aria-hidden />
+                  <span className="fav-name">{cat ? t(cat.name) : slug}</span>
+                  <button
+                    className="fav-move"
+                    aria-label={t(T.moveUp)}
+                    disabled={favBusy || i === 0}
+                    onClick={() => moveFav(i, -1)}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    className="fav-move"
+                    aria-label={t(T.moveDown)}
+                    disabled={favBusy || i === favs.length - 1}
+                    onClick={() => moveFav(i, 1)}
+                  >
+                    ↓
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </div>
 
       <h2>{t(T.subs)}</h2>
