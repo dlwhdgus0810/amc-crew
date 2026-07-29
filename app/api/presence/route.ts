@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
-import { listOnline, ONLINE_WINDOW_MINUTES, totalUsers, touchPresence } from '@/lib/db/presence';
+import { listOnline, listPresenceStats, ONLINE_WINDOW_MINUTES, totalUsers, touchPresence } from '@/lib/db/presence';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +25,6 @@ export async function GET() {
   if (!isAdmin(user)) {
     return await errJson(E.adminOnly, 403);
   }
-  const [online, total] = await Promise.all([listOnline(), totalUsers()]);
-  return NextResponse.json({ online, total, windowMinutes: ONLINE_WINDOW_MINUTES });
+  const [online, total, stats] = await Promise.all([listOnline(), totalUsers(), listPresenceStats()]);
+  return NextResponse.json({ online, total, stats, windowMinutes: ONLINE_WINDOW_MINUTES });
 }

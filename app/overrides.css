@@ -250,6 +250,49 @@ body[data-chrome='hidden'] nav.tabbar {
   color: var(--text-dim);
 }
 
+/* 회원별 접속 기록 표 — 좁은 폰에서는 표만 가로로 밀린다 (페이지는 안 밀린다) */
+.stats-scroll {
+  overflow-x: auto;
+  margin: 0 -2px;
+}
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.stats-table th,
+.stats-table td {
+  padding: 8px 10px 8px 0;
+  text-align: right;
+  white-space: nowrap;
+}
+.stats-table th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.stats-table th:first-child,
+.stats-table td:first-child {
+  text-align: left;
+}
+.stats-table tbody tr + tr td {
+  border-top: 1px solid var(--border-soft);
+}
+.stats-table td {
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+/* td 자체를 flex로 만들면 셀이 표 레이아웃에서 빠져 구분선이 어긋난다 — 안에 넣는다 */
+.stats-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
 /* ── 장소 → 지도 링크 ───────────────────────────────────────
    글자 색은 그대로 두고 밑줄로만 누를 수 있음을 알린다 — 장소는 본문의 일부라
    링크색으로 칠하면 줄이 알록달록해진다. */

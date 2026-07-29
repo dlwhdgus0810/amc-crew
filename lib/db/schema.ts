@@ -211,3 +211,24 @@ export const notifications = pgTable(
   },
   (t) => [index('notifications_user_read_idx').on(t.userId, t.read)]
 );
+
+/**
+ * 접속 구간 — 신호(하트비트)가 이어지는 동안을 한 줄로 묶는다.
+ *
+ * 신호 하나당 한 줄씩 쌓으면 1분에 한 줄씩 늘어난다. 대신 직전 신호와 간격이
+ * PRESENCE_GAP 안이면 그 줄의 ended_at만 늘리고, 더 벌어졌으면 새 줄을 만든다.
+ * 그래서 줄 수 = 접속 횟수이고, ended_at - started_at 이 곧 머문 시간이다.
+ */
+export const presenceSessions = pgTable(
+  'presence_sessions',
+  {
+    id: uuid('id').primaryKey(), // 앱에서 생성
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    endedAt: timestamp('ended_at', { withTimezone: true }).notNull(),
+  },
+  // 조회는 늘 "이 사람의 최근 구간" 또는 "최근 N일" 이라 (user, ended) 순서가 맞다
+  (t) => [index('presence_sessions_user_ended_idx').on(t.userId, t.endedAt)]
+);

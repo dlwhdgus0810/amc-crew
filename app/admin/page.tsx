@@ -78,6 +78,18 @@ const T = {
   onlineJustNow: { ko: '방금', en: 'just now' },
   onlineMins: { ko: '{n}분 전', en: '{n}m ago' },
   onlineRefresh: { ko: '15초마다 자동으로 갱신돼요.', en: 'Refreshes every 15 seconds.' },
+  statsTitle: { ko: '회원별 접속 기록', en: 'Time in the app' },
+  statsDesc: {
+    ko: '신호가 이어지는 동안을 한 번의 접속으로 묶어 잰 시간이에요. 최근 7일치만 봅니다.',
+    en: 'Runs of consecutive check-ins counted as one visit. Last 7 days.',
+  },
+  statsUser: { ko: '회원', en: 'Member' },
+  statsDay: { ko: '24시간', en: '24h' },
+  statsWeek: { ko: '7일', en: '7d' },
+  statsVisits: { ko: '접속', en: 'Visits' },
+  statsVisitsUnit: { ko: '{n}회', en: '{n}' },
+  statsNever: { ko: '기록 없음', en: 'never' },
+  statsEmpty: { ko: '아직 쌓인 기록이 없어요.', en: 'Nothing recorded yet.' },
   viewAsTitle: { ko: '테스트 계정으로 보기', en: 'View as a test account' },
   viewAsDesc: {
     ko: '일반 회원 화면을 그대로 확인할 수 있어요. 실제 회원으로는 들어갈 수 없어요 — 비공개 모임이 그 사람에게만 보이기 때문이에요.',
@@ -140,8 +152,25 @@ export default function AdminPage() {
     online: { id: string; name: string; avatar: string | null; secondsAgo: number }[];
     total: number;
     windowMinutes: number;
+    stats: {
+      id: string;
+      name: string;
+      avatar: string | null;
+      daySeconds: number;
+      weekSeconds: number;
+      visits: number;
+      lastSeenSecondsAgo: number | null;
+    }[];
   } | null>(null);
   const t = useT();
+
+  /** 초 → "2시간 13분" / "13분" / "-" */
+  function dur(seconds: number): string {
+    if (seconds <= 0) return '–';
+    const m = Math.round(seconds / 60);
+    if (m < 60) return `${m}m`;
+    return `${Math.floor(m / 60)}h ${m % 60}m`;
+  }
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -369,6 +398,44 @@ export default function AdminPage() {
               </>
             )}
             <p className="hint" style={{ marginTop: 12 }}>{t(T.onlineRefresh)}</p>
+          </div>
+
+          <h1 style={{ marginTop: 80 }}>{t(T.statsTitle)}</h1>
+          <p className="subtitle">{t(T.statsDesc)}</p>
+          <div className="card">
+            {!presence?.stats?.length ? (
+              <p className="hint">{t(T.statsEmpty)}</p>
+            ) : (
+              <div className="stats-scroll">
+                <table className="stats-table">
+                  <thead>
+                    <tr>
+                      <th>{t(T.statsUser)}</th>
+                      <th>{t(T.statsDay)}</th>
+                      <th>{t(T.statsWeek)}</th>
+                      <th>{t(T.statsVisits)}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {presence.stats.map((u) => (
+                      <tr key={u.id}>
+                        <td>
+                          <span className="stats-name">
+                            <span className="avatar-sm">
+                              {u.avatar ? <img src={u.avatar} alt="" /> : u.name.slice(0, 1)}
+                            </span>
+                            {u.name}
+                          </span>
+                        </td>
+                        <td>{dur(u.daySeconds)}</td>
+                        <td>{u.weekSeconds > 0 ? dur(u.weekSeconds) : t(T.statsNever)}</td>
+                        <td>{t(T.statsVisitsUnit, { n: u.visits })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <h1 style={{ marginTop: 80 }}>{t(T.viewAsTitle)}</h1>

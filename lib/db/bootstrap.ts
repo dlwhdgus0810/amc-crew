@@ -133,4 +133,12 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS notifications_user_read_idx ON notifications (user_id, read);
+
+CREATE TABLE IF NOT EXISTS presence_sessions (
+  id uuid PRIMARY KEY,
+  user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  started_at timestamptz NOT NULL,
+  ended_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS presence_sessions_user_ended_idx ON presence_sessions (user_id, ended_at);
 `;
