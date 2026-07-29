@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import PlaceLink from '@/app/place-link';
 import { useEffect, useState } from 'react';
 import { getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../../i18n';
@@ -218,7 +219,7 @@ export default function PostClient({ id }: { id: string }) {
           )}
         </div>
         <div style={{ marginTop: 8, fontSize: 15.5 }}>
-          {post.location} — {post.authorName}
+          <PlaceLink location={post.location} /> — {post.authorName}
         </div>
         {post.description && (
           <div style={{ marginTop: 8, color: 'var(--text-dim)' }}>“{post.description}”</div>

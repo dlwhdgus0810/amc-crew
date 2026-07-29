@@ -1,0 +1,32 @@
+/**
+ * 장소 텍스트를 지도 검색 링크로.
+ *
+ * 장소는 자유 입력이라("Monarch Coffee", "Swope Soccer Village Field 12", "우리집")
+ * 좌표가 없다. 구글 지도 검색 URL은 키도 과금도 없이 이 문자열을 그대로 받아주고,
+ * 폰에서는 지도 앱이 대신 열려 바로 길찾기로 넘어간다.
+ */
+
+/** 도시 이름이 빠진 장소에 붙여 줄 지역 (검색이 엉뚱한 주로 새지 않게) */
+const REGION = process.env.NEXT_PUBLIC_MAPS_REGION ?? 'Kansas City';
+
+/** 이미 지역이 적혀 있으면 REGION을 덧붙이지 않는다 — "대장금 Overland Park Kansas City"가 되면 오히려 안 나온다 */
+const HAS_REGION =
+  /\b(KS|MO|Kansas|Missouri|Overland Park|Leawood|Olathe|Lenexa|Shawnee|Prairie Village|Merriam)\b/i;
+
+/**
+ * 지도에서 열 수 있는 장소인지.
+ * "우리집"처럼 개인적인 표현은 검색해 봐야 엉뚱한 곳이 나와서 링크를 걸지 않는다.
+ */
+const PERSONAL = /^(우리\s*집|저희\s*집|집|our place|my place|home)$/i;
+
+export function isMappable(location: string): boolean {
+  const s = location.trim();
+  return s.length >= 2 && !PERSONAL.test(s);
+}
+
+/** 구글 지도 검색 URL (설치돼 있으면 지도 앱이 받아간다) */
+export function mapsUrl(location: string): string {
+  const s = location.trim();
+  const query = HAS_REGION.test(s) ? s : `${s} ${REGION}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}

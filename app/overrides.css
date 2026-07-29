@@ -192,6 +192,30 @@ body[data-chrome='hidden'] nav.tabbar {
   min-width: 0;
 }
 
+/* ── 장소 → 지도 링크 ───────────────────────────────────────
+   글자 색은 그대로 두고 밑줄로만 누를 수 있음을 알린다 — 장소는 본문의 일부라
+   링크색으로 칠하면 줄이 알록달록해진다. */
+.place-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  /* 장소 이름은 얼마든지 길 수 있다 — 줄바꿈을 막으면 카드 밖으로 삐져나간다.
+     (핀이 혼자 다음 줄로 넘어가는 건 감수한다) */
+  overflow-wrap: anywhere;
+}
+.place-link .place-pin {
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 3px;
+  vertical-align: -0.1em;
+  opacity: 0.6;
+}
+@media (hover: hover) {
+  .place-link:hover .place-pin {
+    opacity: 1;
+  }
+}
+
 /* 테스트 계정으로 보는 중임을 알리는 띠 — 관리자 화면이 사라진 걸 고장으로 오해하지 않도록 */
 .viewing-as {
   position: sticky; top: 0; z-index: 40;

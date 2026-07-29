@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, getCategory } from '@/lib/categories';
+import PlaceLink from '@/app/place-link';
 import { useLocale, useT } from '../../i18n';
 import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
 import { todayLocal, addDays } from '@/lib/dates';
@@ -825,7 +826,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           </div>
         )}
         <div className="post-meta">
-          {post.location} · {post.authorName}
+          <PlaceLink location={post.location} /> · {post.authorName}
         </div>
         {post.description && <div className="post-desc">“{post.description}”</div>}
 
