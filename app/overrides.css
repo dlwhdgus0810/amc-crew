@@ -192,6 +192,64 @@ body[data-chrome='hidden'] nav.tabbar {
   min-width: 0;
 }
 
+/* ── 관리자: 지금 접속 중 목록 ──────────────────────────── */
+.online-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.online-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: none;
+  background: #12b76a;
+}
+.avatar-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  flex: none;
+  overflow: hidden;
+  background: var(--surface-2);
+  color: var(--text-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.avatar-sm img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.online-name {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 마지막 신호 시각은 오른쪽 끝에 */
+.online-ago {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
 /* ── 장소 → 지도 링크 ───────────────────────────────────────
    글자 색은 그대로 두고 밑줄로만 누를 수 있음을 알린다 — 장소는 본문의 일부라
    링크색으로 칠하면 줄이 알록달록해진다. */

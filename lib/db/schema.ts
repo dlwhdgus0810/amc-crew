@@ -16,6 +16,11 @@ export const users = pgTable('users', {
   kakaoTokenExpiresAt: timestamp('kakao_token_expires_at', { withTimezone: true }),
   kakaoRefreshToken: text('kakao_refresh_token'),
   kakaoTalkMessage: boolean('kakao_talk_message'), // talk_message 동의 여부 (null=미확인, false=미동의)
+  /**
+   * 마지막으로 앱을 보고 있던 시각 — 관리자 화면의 "지금 접속 중"에만 쓴다.
+   * 일부러 최신 시각 하나만 덮어쓴다. 이력을 쌓으면 "누가 언제 들어왔나" 기록이 되어버린다.
+   */
+  lastSeen: timestamp('last_seen', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

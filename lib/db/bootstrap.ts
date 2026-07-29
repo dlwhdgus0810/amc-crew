@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
   kakao_token_expires_at timestamptz,
   kakao_refresh_token text,
   kakao_talk_message boolean,
+  last_seen timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 

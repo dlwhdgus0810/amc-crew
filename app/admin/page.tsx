@@ -67,6 +67,17 @@ const T = {
   reviewFailed: { ko: '처리 실패', en: 'Couldn’t process' },
   approved: { ko: '승인했어요. 제안자에게 알림이 갔어요.', en: 'Approved — the requester has been notified.' },
   rejected: { ko: '반려했어요.', en: 'Declined.' },
+  loading: { ko: '불러오는 중…', en: 'Loading…' },
+  onlineTitle: { ko: '지금 접속 중', en: 'Online now' },
+  onlineDesc: {
+    ko: '앱을 화면에 띄워 두고 있는 사람이에요. {n}분 안에 신호가 온 사람만 세고, 마지막 시각만 저장해요 (접속 기록은 남기지 않아요).',
+    en: 'Members with the app open. Counts anyone we heard from in the last {n} minutes; only the latest timestamp is stored — no history.',
+  },
+  onlineNone: { ko: '지금은 아무도 접속해 있지 않아요.', en: 'Nobody is online right now.' },
+  onlineCount: { ko: '{n} / {total}명 접속 중', en: '{n} of {total} online' },
+  onlineJustNow: { ko: '방금', en: 'just now' },
+  onlineMins: { ko: '{n}분 전', en: '{n}m ago' },
+  onlineRefresh: { ko: '15초마다 자동으로 갱신돼요.', en: 'Refreshes every 15 seconds.' },
   viewAsTitle: { ko: '테스트 계정으로 보기', en: 'View as a test account' },
   viewAsDesc: {
     ko: '일반 회원 화면을 그대로 확인할 수 있어요. 실제 회원으로는 들어갈 수 없어요 — 비공개 모임이 그 사람에게만 보이기 때문이에요.',
@@ -125,6 +136,11 @@ export default function AdminPage() {
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [isKakaoAdmin, setIsKakaoAdmin] = useState(false);
+  const [presence, setPresence] = useState<{
+    online: { id: string; name: string; avatar: string | null; secondsAgo: number }[];
+    total: number;
+    windowMinutes: number;
+  } | null>(null);
   const t = useT();
 
   useEffect(() => {
@@ -138,6 +154,24 @@ export default function AdminPage() {
         }
       });
   }, []);
+
+  // 접속 현황은 계속 변하니 주기적으로 다시 받는다 (관리자 화면을 열어 둔 동안만)
+  useEffect(() => {
+    if (!isKakaoAdmin) return;
+    let alive = true;
+    const load = () =>
+      // 폴링이라 브라우저가 응답을 캐싱하면 목록이 멈춘 것처럼 보인다
+      fetch('/api/presence', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => alive && data && setPresence(data))
+        .catch(() => {});
+    load();
+    const timer = setInterval(load, 15_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [isKakaoAdmin]);
 
   async function loadRequests() {
     const res = await fetch('/api/category-requests');
@@ -306,6 +340,37 @@ export default function AdminPage() {
 
       {isKakaoAdmin && (
         <>
+          <h1 style={{ marginTop: 80 }}>{t(T.onlineTitle)}</h1>
+          <p className="subtitle">{t(T.onlineDesc, { n: presence?.windowMinutes ?? 3 })}</p>
+          <div className="card">
+            {presence === null ? (
+              <p className="hint">{t(T.loading)}</p>
+            ) : presence.online.length === 0 ? (
+              <p className="hint">{t(T.onlineNone)}</p>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, marginBottom: 12 }}>
+                  {t(T.onlineCount, { n: presence.online.length, total: presence.total })}
+                </div>
+                <ul className="online-list">
+                  {presence.online.map((u) => (
+                    <li key={u.id}>
+                      <span className="online-dot" aria-hidden />
+                      <span className="avatar-sm">
+                        {u.avatar ? <img src={u.avatar} alt="" /> : u.name.slice(0, 1)}
+                      </span>
+                      <span className="online-name">{u.name}</span>
+                      <span className="online-ago">
+                        {u.secondsAgo < 60 ? t(T.onlineJustNow) : t(T.onlineMins, { n: Math.floor(u.secondsAgo / 60) })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p className="hint" style={{ marginTop: 12 }}>{t(T.onlineRefresh)}</p>
+          </div>
+
           <h1 style={{ marginTop: 80 }}>{t(T.viewAsTitle)}</h1>
           <p className="subtitle">{t(T.viewAsDesc)}</p>
           <div className="card">
