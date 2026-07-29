@@ -236,10 +236,19 @@ export async function notifyComment(
   parentAuthorId?: string
 ): Promise<void> {
   const db = await getDb();
+  /*
+   * 그 모임에 참가하면서 카테고리를 구독한 사람에게만 보낸다.
+   *  - 참가자 전원에게 보내면 댓글 하나에 카톡이 우수수 나간다.
+   *  - 구독자 전원으로 바꾸면 안 가는 모임의 댓글까지 받게 되고, 정작 참가자는
+   *    "장소 바뀌었어요"를 놓친다. 그래서 둘의 교집합이다.
+   * 답글은 예외 — 내 댓글에 달린 답글은 구독과 무관하게 알려준다.
+   */
   const participants = await participantIdsExcept(post.id, commenterId);
-  const recipients = [...new Set(
-    parentAuthorId && parentAuthorId !== commenterId ? [...participants, parentAuthorId] : participants
-  )];
+  const subscribed = new Set(await subscriberIds(post.category));
+  const recipients = [...new Set([
+    ...participants.filter((id) => subscribed.has(id)),
+    ...(parentAuthorId && parentAuthorId !== commenterId ? [parentAuthorId] : []),
+  ])];
   if (recipients.length === 0) return;
 
   const snippet = body.length > 60 ? `${body.slice(0, 60)}…` : body;
@@ -503,6 +512,16 @@ export async function countParticipants(postId: string): Promise<number> {
 }
 
 /** 참가자(actor 제외) 목록 조회 — 변경/취소 알림 수신자 */
+/** 이 카테고리를 구독한 사람 */
+async function subscriberIds(category: string): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({ userId: subscriptions.userId })
+    .from(subscriptions)
+    .where(eq(subscriptions.category, category));
+  return rows.map((r) => r.userId);
+}
+
 async function participantIdsExcept(postId: string, actorId: string): Promise<string[]> {
   const db = await getDb();
   const rows = await db

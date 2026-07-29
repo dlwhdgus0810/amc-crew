@@ -16,8 +16,8 @@ const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   title: { ko: '카테고리', en: 'Categories' },
   subtitle: {
-    ko: '★ 즐겨찾기는 홈에 먼저 띄우는 용도이고, 구독은 새 모임 알림을 받는 용도예요.',
-    en: '★ Favourites show up first on the home screen; subscriptions send you alerts about new meetups.',
+    ko: '★ 즐겨찾기는 홈에 먼저 띄우는 용도이고, 구독은 새 모임과 내가 참가한 모임의 댓글 알림을 받는 용도예요.',
+    en: '★ Favourites show up first on the home screen; subscriptions alert you to new meetups and to comments on ones you joined.',
   },
   loginPrompt: {
     ko: '카카오 로그인 후 즐겨찾기와 구독을 설정할 수 있어요.',
