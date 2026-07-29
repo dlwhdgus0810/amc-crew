@@ -15,7 +15,9 @@ import { useT } from './i18n';
 export interface CommentView {
   id: string;
   userId: string;
-  name: string;
+  /** 익명 댓글이면 null — 화면에서 "익명"으로 그린다 */
+  name: string | null;
+  anonymous: boolean;
   body: string;
   createdAt: string;
   parentId: string | null;
@@ -34,6 +36,12 @@ const T = {
   delConfirm: { ko: '댓글을 삭제할까요?', en: 'Delete this comment?' },
   loginToComment: { ko: '카카오 로그인 후 댓글을 남길 수 있어요.', en: 'Log in with Kakao to comment.' },
   likeA11y: { ko: '좋아요', en: 'Like' },
+  anonName: { ko: '익명', en: 'Anonymous' },
+  anonToggle: { ko: '익명으로', en: 'Anonymously' },
+  anonHint: {
+    ko: '다른 사람에게 닉네임이 안 보여요. (데이터베이스에는 기록이 남습니다)',
+    en: 'Others won’t see your nickname. (It is still recorded in the database.)',
+  },
   failed: { ko: '요청 실패', en: 'Something went wrong' },
   justNow: { ko: '방금', en: 'now' },
   minsAgo: { ko: '{n}분', en: '{n}m' },
@@ -68,6 +76,7 @@ export default function CommentThread({
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<CommentView | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
   // 하트는 응답을 기다리지 않고 먼저 칠한다 (실패하면 새로고침으로 되돌아온다)
   const [optimistic, setOptimistic] = useState<Record<string, { liked: boolean; likeCount: number }>>({});
 
@@ -95,7 +104,7 @@ export default function CommentThread({
       const res = await fetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body, ...(replyTo ? { parentId: replyTo.id } : {}) }),
+        body: JSON.stringify({ body, anonymous, ...(replyTo ? { parentId: replyTo.id } : {}) }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? t(T.failed));
       setText('');
@@ -153,7 +162,7 @@ export default function CommentThread({
         }
       >
         <div className="comment-head">
-          <span className="comment-author">{c.name}</span>
+          <span className={`comment-author${c.name === null ? ' anon' : ''}`}>{c.name ?? t(T.anonName)}</span>
           <span className="comment-time">{ago(c.createdAt)}</span>
           <button
             className={`heart ${like.liked ? 'on' : ''}`}
@@ -204,7 +213,7 @@ export default function CommentThread({
         <div className="comment-compose">
           {replyTo && (
             <div className="reply-chip">
-              <span>{t(T.replyPlaceholder, { name: replyTo.name })}</span>
+              <span>{t(T.replyPlaceholder, { name: replyTo.name ?? t(T.anonName) })}</span>
               <button className="link-btn" disabled={busy} onClick={() => setReplyTo(null)}>
                 {t(T.cancel)}
               </button>
@@ -213,7 +222,7 @@ export default function CommentThread({
           <div className="compose-row">
             <input
               type="text"
-              placeholder={replyTo ? t(T.replyPlaceholder, { name: replyTo.name }) : t(T.placeholder)}
+              placeholder={replyTo ? t(T.replyPlaceholder, { name: replyTo.name ?? t(T.anonName) }) : t(T.placeholder)}
               value={text}
               maxLength={300}
               onChange={(e) => setText(e.target.value)}
@@ -223,6 +232,10 @@ export default function CommentThread({
               {t(T.submit)}
             </button>
           </div>
+          <label className="comment-anon" title={t(T.anonHint)}>
+            <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+            <span>{t(T.anonToggle)}</span>
+          </label>
         </div>
       ) : (
         <div className="comment-empty">{t(T.loginToComment)}</div>

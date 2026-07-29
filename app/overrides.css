@@ -192,32 +192,28 @@ body[data-chrome='hidden'] nav.tabbar {
   min-width: 0;
 }
 
-/* 건의함 익명 체크 — 설명이 길어서 라벨 아래로 흘린다 */
-.anon-toggle {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 18px;
+/* 댓글 익명 체크 — 입력줄 바로 아래 작게 */
+.comment-anon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
   cursor: pointer;
+  user-select: none;
 }
-.anon-toggle input {
-  width: 18px;
-  height: 18px;
-  margin: 2px 0 0;
+.comment-anon input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
   flex: none;
   accent-color: var(--text);
 }
-.anon-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-}
-.anon-hint {
-  display: block;
-  margin-top: 3px;
-  font-size: 12.5px;
+/* 익명 댓글의 이름 — 실명과 구분되게 살짝 눌러 둔다 */
+.comment-author.anon {
   color: var(--text-dim);
-  line-height: 1.5;
+  font-weight: 600;
 }
 
 /* ── 홈의 "새 소식" 한 줄 + 소식 목록 ─────────────────────── */

@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS post_comments (
   user_id text NOT NULL REFERENCES users(id),
   parent_id uuid,
   body text NOT NULL,
+  anonymous boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS post_comments_post_idx ON post_comments (post_id, created_at);
@@ -120,7 +121,6 @@ CREATE TABLE IF NOT EXISTS tickets (
   title text NOT NULL,
   body text,
   status text NOT NULL DEFAULT 'open',
-  anonymous boolean NOT NULL DEFAULT false,
   admin_note text,
   created_at timestamptz NOT NULL DEFAULT now()
 );

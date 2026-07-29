@@ -38,12 +38,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   await ensureUser(user);
-  const commentId = await addComment(id, user.id, text, parentId);
+  const anonymous = Boolean(body?.anonymous);
+  const commentId = await addComment(id, user.id, text, parentId, anonymous);
 
   // 참가자(작성자 제외)에게 댓글 알림 — 실패해도 댓글 작성은 성공 처리
   try {
     const profile = (await getProfiles())[user.id];
-    await notifyComment(post, user.id, resolveDisplayName(profile, user.name), text, siteUrl(req.nextUrl.origin), parentAuthorId);
+    await notifyComment(
+      post,
+      user.id,
+      anonymous ? null : resolveDisplayName(profile, user.name),
+      text,
+      siteUrl(req.nextUrl.origin),
+      parentAuthorId
+    );
   } catch (e) {
     console.error('[comments] notify failed:', e);
   }

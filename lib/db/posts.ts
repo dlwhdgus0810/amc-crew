@@ -34,8 +34,12 @@ export interface PostView {
 
 export interface CommentView {
   id: string;
+  /** 익명 댓글이면 남의 화면에는 빈 문자열 — 누구인지 되짚을 실마리를 안 보낸다 */
   userId: string;
-  name: string;
+  /** 익명 댓글이면 null. 화면에서 "익명"으로 그린다 */
+  name: string | null;
+  /** 닉네임을 감추고 쓴 댓글인지 */
+  anonymous: boolean;
   body: string;
   createdAt: string;
   /** 답글이면 원 댓글 id */
@@ -146,10 +150,14 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const commentsByPost = new Map<string, PostView['comments']>();
   for (const c of commentRows) {
     if (!commentsByPost.has(c.postId)) commentsByPost.set(c.postId, []);
+    // 익명 댓글은 쓴 사람 본인에게만 이름이 보인다. 관리자에게도 감춘다 —
+    // 지우는 데 이름은 필요 없고, "다른 사람에게는 안 보인다"가 헐거워지면 안 된다.
+    const hide = c.anonymous && c.userId !== viewerId;
     commentsByPost.get(c.postId)!.push({
       id: c.id,
-      userId: c.userId,
-      name: displayNameOf(userById.get(c.userId), '알 수 없음'),
+      userId: hide ? '' : c.userId,
+      name: hide ? null : displayNameOf(userById.get(c.userId), '알 수 없음'),
+      anonymous: c.anonymous,
       body: c.body,
       createdAt: c.createdAt.toISOString(),
       parentId: c.parentId ?? null,
@@ -184,11 +192,12 @@ export async function addComment(
   postId: string,
   userId: string,
   body: string,
-  parentId?: string
+  parentId?: string,
+  anonymous = false
 ): Promise<string> {
   const db = await getDb();
   const id = crypto.randomUUID();
-  await db.insert(postComments).values({ id, postId, userId, body, parentId: parentId ?? null });
+  await db.insert(postComments).values({ id, postId, userId, body, parentId: parentId ?? null, anonymous });
   return id;
 }
 
@@ -222,7 +231,8 @@ export async function toggleCommentLike(
 export async function notifyComment(
   post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
   commenterId: string,
-  commenterName: string,
+  /** null이면 익명 댓글 — 알림에도 이름을 싣지 않는다 (여기서 새면 감춘 의미가 없다) */
+  commenterName: string | null,
   body: string,
   origin: string,
   /** 답글이면 원 댓글 작성자 — 참가자가 아니어도 알려준다 */
@@ -241,7 +251,7 @@ export async function notifyComment(
     (locale) =>
       `💬 ${pick(locale, N.commentLine, {
         text: describeForNotification(post.category, N.comment, post.date, post.startTime, post.location, post.title, locale),
-        name: commenterName,
+        name: commenterName ?? pick(locale, N.anonymous),
         body: snippet,
       })}`,
     N.btnComment
@@ -272,6 +282,7 @@ const N = {
   updated: { ko: '모임 변경', en: 'updated' },
   cancelled: { ko: '모임 취소', en: 'cancelled' },
   comment: { ko: '새 댓글', en: 'new comment' },
+  anonymous: { ko: '익명', en: 'Anonymous' },
   today: { ko: '오늘 모임', en: 'today' },
   byActor: { ko: '{text} — {name}', en: '{text} — {name}' },
   commentLine: { ko: '{text} — {name}: {body}', en: '{text} — {name}: {body}' },

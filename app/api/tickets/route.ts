@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
   const kind = typeof body?.kind === 'string' ? body.kind : '';
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
   const detail = typeof body?.body === 'string' ? body.body.trim() : '';
-  const anonymous = Boolean(body?.anonymous);
 
   if (!TICKET_KINDS.includes(kind as TicketKind)) {
     return await errJson(E.ticketKind, 400);
@@ -47,7 +46,6 @@ export async function POST(req: NextRequest) {
     userName: resolveDisplayName(profile, user.name),
     kind: kind as TicketKind,
     title,
-    anonymous,
     ...(detail ? { body: detail } : {}),
     origin: siteUrl(req.nextUrl.origin),
   });

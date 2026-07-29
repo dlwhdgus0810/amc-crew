@@ -19,9 +19,8 @@ interface CategoryRequest {
 interface Ticket {
   id: string;
   number: number;
-  userName: string | null;
+  userName: string;
   kind: 'feature' | 'improve' | 'bug' | 'other' | 'cheer';
-  anonymous?: boolean;
   title: string;
   body: string | null;
   status: 'open' | 'planned' | 'done' | 'declined';
@@ -80,7 +79,6 @@ const T = {
   onlineMins: { ko: '{n}분 전', en: '{n}m ago' },
   onlineRefresh: { ko: '15초마다 자동으로 갱신돼요.', en: 'Refreshes every 15 seconds.' },
   failed: { ko: '요청에 실패했어요.', en: 'Something went wrong.' },
-  anonymous: { ko: '익명', en: 'anonymous' },
   newsTitle: { ko: '새 소식 알리기', en: 'Announce what’s new' },
   newsDesc: {
     ko: '가장 최근 소식을 "새 소식 알림"을 켜 둔 회원에게 보냅니다. 배포만으로는 아무것도 나가지 않아요. 같은 소식을 이미 받은 사람은 건너뜁니다.',
@@ -430,7 +428,7 @@ export default function AdminPage() {
                   <span className={`ticket-status ${tk.status}`}>{t(TICKET_STATUS_LABEL[tk.status])}</span>
                 </div>
                 <p className="ticket-by">
-                  {t(TICKET_KIND_LABEL[tk.kind])} · {tk.userName ?? t(T.anonymous)}
+                  {t(TICKET_KIND_LABEL[tk.kind])} · {tk.userName}
                 </p>
                 {tk.body && <p className="ticket-body">{tk.body}</p>}
                 {tk.adminNote && <p className="ticket-note">{t(T.reply, { text: tk.adminNote })}</p>}

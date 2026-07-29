@@ -69,11 +69,6 @@ const T = {
   summaryCheer: { ko: '쪽지', en: 'Your note' },
   detail: { ko: '자세한 내용 (선택)', en: 'Details (optional)' },
   detailCheer: { ko: '더 하고 싶은 말 (선택)', en: 'More, if you like (optional)' },
-  anonymous: { ko: '익명으로 보내기', en: 'Send anonymously' },
-  anonymousHint: {
-    ko: '관리자 화면과 알림에 이름이 안 떠요. 처리 상태 알림은 그대로 받고, 내가 낸 목록에도 남아요. (데이터베이스에는 기록이 남습니다)',
-    en: 'Your name won’t appear on the admin screen or in its alerts. You still get status updates and still see it in your list. (It is still recorded in the database.)',
-  },
   detailPh: {
     ko: '어떤 상황에서 필요한지, 어떻게 동작하면 좋을지 적어주시면 그대로 만들어드릴게요.',
     en: 'When you’d use it and how it should behave — the more you write, the closer we build it.',
@@ -123,7 +118,6 @@ export default function TicketsPage() {
   const [kind, setKind] = useState<Ticket['kind']>('feature');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [anonymous, setAnonymous] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const t = useT();
@@ -150,7 +144,7 @@ export default function TicketsPage() {
       const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, title: title.trim(), body: body.trim(), anonymous }),
+        body: JSON.stringify({ kind, title: title.trim(), body: body.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.submitFailed));
@@ -219,14 +213,6 @@ export default function TicketsPage() {
             placeholder={isCheer ? t(T.detailCheerPh) : t(T.detailPh)}
             onChange={(e) => setBody(e.target.value)}
           />
-
-          <label className="anon-toggle">
-            <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
-            <span>
-              <span className="anon-label">{t(T.anonymous)}</span>
-              <span className="anon-hint">{t(T.anonymousHint)}</span>
-            </span>
-          </label>
 
           <div className="field-row" style={{ marginTop: 20 }}>
             <button className="big-cta" disabled={saving || !title.trim()} onClick={submit}>
