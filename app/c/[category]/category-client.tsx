@@ -95,8 +95,6 @@ const T = {
   loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
   loginToJoin: { ko: '카카오 로그인 후 참가할 수 있어요.', en: 'Log in with Kakao to join.' },
   proposedBy: { ko: '{name} 님이 제안한 카테고리예요.', en: 'Suggested by {name}.' },
-  rankTitle: { ko: '주최 랭킹', en: 'Top hosts' },
-  rankCount: { ko: '{n}회 주최', en: 'Hosted {n}' },
   createFailed: { ko: '모임 만들기 실패', en: 'Couldn’t create the meetup' },
   createdOnce: {
     ko: '모임을 만들었어요! 구독자들에게 알림이 갔어요.',
@@ -237,8 +235,6 @@ export default function CategoryClient({ slug }: { slug: string }) {
 
   // 지난 모임
   const [pastPosts, setPastPosts] = useState<PostView[] | null>(null);
-  // 주최 랭킹 — 카테고리를 가리지 않은 종합 (모든 카테고리 화면에서 같은 판이다)
-  const [hosts, setHosts] = useState<{ id: string; name: string; avatar: string | null; count: number }[]>([]);
   const [showPast, setShowPast] = useState(false);
   const [loadingPast, setLoadingPast] = useState(false);
 
@@ -279,14 +275,10 @@ export default function CategoryClient({ slug }: { slug: string }) {
       loadPosts(),
       // 탭 라벨에 개수를 바로 띄우려면 눌리기 전에 받아 둬야 한다 (최대 30개짜리 조회다)
       loadPast(),
-      fetch('/api/hosts')
-        .then((r) => (r.ok ? r.json() : { hosts: [] }))
-        .then((d) => setHosts(d.hosts ?? []))
-        .catch(() => {}),
       fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
     ])
-      .then(([, , , auth, sub]) => {
+      .then(([, , auth, sub]) => {
         setUser(auth.user ?? null);
         setIsAdmin(Boolean(auth.isAdmin));
         setSubscribed((sub.subscriptions ?? []).includes(slug));
@@ -561,28 +553,6 @@ export default function CategoryClient({ slug }: { slug: string }) {
           </span>
           <span className="cat-tool-desc">{t(category.tool.desc)}</span>
         </Link>
-      )}
-
-      {hosts.length > 0 && (
-        <div className="host-rank">
-          <span className="host-rank-title">{t(T.rankTitle)}</span>
-          <ol>
-            {hosts.map((h, i) => {
-              const tier = hostTier(h.count);
-              return (
-                <li key={h.id}>
-                  <span className="host-rank-no">{['🥇', '🥈', '🥉'][i] ?? `${i + 1}`}</span>
-                  <span className="ava">
-                    {h.avatar ? <img src={h.avatar} alt="" /> : h.name.slice(0, 1)}
-                    {tier && <span className="host-sticker">{tier.sticker}</span>}
-                  </span>
-                  <span className="host-rank-name">{h.name}</span>
-                  <span className="host-rank-count">{t(T.rankCount, { n: h.count })}</span>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
       )}
 
       {category?.proposedBy && (

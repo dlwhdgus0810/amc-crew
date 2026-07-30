@@ -7,6 +7,7 @@
    ============================================================ */
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { CATEGORIES } from '@/lib/categories';
 import { useT } from '../i18n';
 import CategoryCard from '../category-card';
@@ -15,6 +16,7 @@ import useNextMeetups from '../use-next-meetups';
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   title: { ko: '카테고리', en: 'Categories' },
+  leaderboard: { ko: '🏆 리더보드', en: '🏆 Leaderboard' },
   subtitle: {
     ko: '★ 즐겨찾기는 홈에 먼저 띄우는 용도이고, 구독은 새 모임과 내가 참가한 모임의 댓글 알림을 받는 용도예요.',
     en: '★ Favourites show up first on the home screen; subscriptions alert you to new meetups and to comments on ones you joined.',
@@ -86,7 +88,12 @@ export default function CategoriesPage() {
 
   return (
     <>
-      <h1>{t(T.title)}</h1>
+      <div className="page-head">
+        <h1>{t(T.title)}</h1>
+        <Link href="/leaderboard" className="leaderboard-link">
+          {t(T.leaderboard)}
+        </Link>
+      </div>
       <p className="subtitle">{t(T.subtitle)}</p>
 
       {!loggedIn && (

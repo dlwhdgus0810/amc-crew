@@ -497,6 +497,74 @@ body[data-chrome='hidden'] nav.tabbar {
   color: var(--text-dim);
 }
 
+/* 둘러보기 제목 줄 — 오른쪽 끝에 리더보드 진입 */
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.leaderboard-link {
+  flex: none;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .leaderboard-link:hover {
+    border-color: var(--text);
+  }
+}
+
+/* 리더보드 페이지 — 카드 판 + 등급표 */
+.host-rank.board {
+  margin-top: 4px;
+}
+.host-rank.board li {
+  padding: 4px 0;
+}
+.host-rank-tier {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.tier-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tier-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tier-sticker {
+  width: 24px;
+  flex: none;
+  text-align: center;
+  font-size: 16px;
+}
+.tier-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+}
+.tier-min {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 /* 카테고리를 제안한 사람 — 제목 아래 칩.
    흐린 회색 한 줄은 안 읽혔고, 글자만 카테고리 색으로 칠하면 밝은 색에서 오히려
    대비가 떨어진다(연두는 2.5:1). 카드와 똑같이 색을 채우고 그 카테고리가 이미

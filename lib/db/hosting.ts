@@ -30,7 +30,7 @@ export interface HostRank {
 }
 
 /** 종합 주최 랭킹 — 카테고리를 가리지 않고 연 공개 모임 전부를 센다 */
-export async function hostRanking(limit = 5): Promise<HostRank[]> {
+export async function hostRanking(limit = 50): Promise<HostRank[]> {
   const db = await getDb();
   const rows = await db
     .select({ authorId: posts.authorId, n: sql<number>`count(*)::int` })
