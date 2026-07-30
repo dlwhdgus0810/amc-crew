@@ -274,6 +274,7 @@ export default function PostClient({ id }: { id: string }) {
         postId={post.id}
         participants={post.participants.map((p) => ({ id: p.id, name: p.name }))}
         {...(user ? { currentUserId: user.id } : {})}
+        isAdmin={isAdmin}
         noteLabel={`${catLabel}${post.title ? ` 〈${post.title}〉` : ''} ${dateLabel(post.date)}`}
       />
 

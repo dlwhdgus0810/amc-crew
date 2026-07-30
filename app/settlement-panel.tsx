@@ -99,11 +99,14 @@ export default function SettlementPanel({
   postId,
   participants,
   currentUserId,
+  isAdmin,
   noteLabel,
 }: {
   postId: string;
   participants: { id: string; name: string }[];
   currentUserId?: string;
+  /** 관리자는 참가하지 않은 모임의 정산도 볼 수 있다 */
+  isAdmin?: boolean;
   /** Venmo 메모에 넣을 문구 (모임 이름) */
   noteLabel: string;
 }) {
@@ -223,12 +226,14 @@ export default function SettlementPanel({
     setBusy(false);
   }
 
+  const inMeetup = participants.some((p) => p.id === currentUserId);
+  // 참가하지 않았으면 정산이 있는지조차 보이지 않는다 (금액·받을 계좌가 담긴 화면이다)
+  if (!inMeetup && !isAdmin) return null;
   if (loading) return null;
 
   const mine = settlement?.shares.find((s) => s.userId === currentUserId);
   const isPayee = settlement?.payee.id === currentUserId;
   const canEdit = Boolean(currentUserId) && (!settlement || isPayee);
-  const inMeetup = participants.some((p) => p.id === currentUserId);
 
   return (
     <>

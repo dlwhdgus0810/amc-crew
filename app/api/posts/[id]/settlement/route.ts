@@ -19,13 +19,22 @@ export const dynamic = 'force-dynamic';
 /** 항목은 이 정도면 충분하다 — 더 늘면 화면에서 읽기 어렵고 실수로 넣은 것일 가능성이 높다 */
 const MAX_ITEMS = 10;
 
+/**
+ * 정산 조회 — 참가자와 관리자만.
+ *
+ * 누가 누구에게 얼마를 빚졌는지와 받을 계좌(Venmo·Zelle)가 담기므로 같이 낸 사람들 안에서만 돈다.
+ * 권한이 없으면 403이 아니라 404를 준다 — "정산이 있다"는 사실 자체가 알려질 이유가 없다.
+ */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const viewer = await getSessionUser();
-  // 비공개 모임을 정산으로 엿볼 수 없도록, 모임을 볼 수 있는지부터 확인한다
-  const post = await getPostView(id, viewer?.id);
+  if (!viewer) return await errJson(E.settleNotFound, 404);
+
+  const post = await getPostView(id, viewer.id);
   if (!post) return await errJson(E.postNotFound, 404);
-  if (post.visibility === 'link' && !viewer) return await errJson(E.loginRequired, 401);
+  const joined = post.participants.some((p) => p.id === viewer.id);
+  if (!joined && !isAdmin(viewer)) return await errJson(E.settleNotFound, 404);
+
   return NextResponse.json({ settlement: await getSettlement(id) });
 }
 

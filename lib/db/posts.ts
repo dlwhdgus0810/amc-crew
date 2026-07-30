@@ -7,6 +7,7 @@ import type { TitleMeta } from '../tmdb';
 import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
 import { isPastSlot, pastCutoff, todayLocal } from '../dates';
+import { adminIds } from '../auth';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
@@ -126,7 +127,17 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const userById = new Map(userRows.map((u) => [u.id, u]));
   const participantRows = await db.select().from(postParticipants).where(inArray(postParticipants.postId, postIds));
   const hostCounts = await hostCountsFor([...new Set(participantRows.map((p) => p.userId))]);
-  const settleByPost = await settlementSummaries(postIds, viewerId);
+  /*
+   * 정산은 같이 낸 사람들 사이의 일이다 — 참가자(와 관리자)에게만 요약을 붙인다.
+   * 그 밖에는 settle이 null이라, 정산이 있다는 사실조차 응답에 나가지 않는다.
+   */
+  const viewerIsAdmin = Boolean(viewerId && adminIds().includes(viewerId));
+  const myPostIds = viewerIsAdmin
+    ? postIds
+    : viewerId
+      ? [...new Set(participantRows.filter((p) => p.userId === viewerId).map((p) => p.postId))]
+      : [];
+  const settleByPost = await settlementSummaries(myPostIds, viewerId);
   const byPost = new Map<string, { id: string; name: string; avatar: string | null; hostCount: number }[]>();
   for (const p of participantRows) {
     if (!byPost.has(p.postId)) byPost.set(p.postId, []);
