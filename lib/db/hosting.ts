@@ -29,13 +29,13 @@ export interface HostRank {
   count: number;
 }
 
-/** 카테고리별 주최 랭킹 (동률이면 이름순으로 안정되게) */
-export async function hostRanking(category: string, limit = 5): Promise<HostRank[]> {
+/** 종합 주최 랭킹 — 카테고리를 가리지 않고 연 공개 모임 전부를 센다 */
+export async function hostRanking(limit = 5): Promise<HostRank[]> {
   const db = await getDb();
   const rows = await db
     .select({ authorId: posts.authorId, n: sql<number>`count(*)::int` })
     .from(posts)
-    .where(and(eq(posts.category, category), eq(posts.visibility, 'public')))
+    .where(eq(posts.visibility, 'public'))
     .groupBy(posts.authorId)
     .orderBy(desc(sql`count(*)`))
     .limit(limit);

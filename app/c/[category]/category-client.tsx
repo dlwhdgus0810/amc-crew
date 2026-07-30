@@ -237,7 +237,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
 
   // 지난 모임
   const [pastPosts, setPastPosts] = useState<PostView[] | null>(null);
-  // 주최 랭킹 — 이 카테고리에서 공개 모임을 많이 연 사람
+  // 주최 랭킹 — 카테고리를 가리지 않은 종합 (모든 카테고리 화면에서 같은 판이다)
   const [hosts, setHosts] = useState<{ id: string; name: string; avatar: string | null; count: number }[]>([]);
   const [showPast, setShowPast] = useState(false);
   const [loadingPast, setLoadingPast] = useState(false);
@@ -279,7 +279,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
       loadPosts(),
       // 탭 라벨에 개수를 바로 띄우려면 눌리기 전에 받아 둬야 한다 (최대 30개짜리 조회다)
       loadPast(),
-      fetch(`/api/hosts?category=${slug}`)
+      fetch('/api/hosts')
         .then((r) => (r.ok ? r.json() : { hosts: [] }))
         .then((d) => setHosts(d.hosts ?? []))
         .catch(() => {}),
