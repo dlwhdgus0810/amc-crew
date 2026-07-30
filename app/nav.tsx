@@ -95,6 +95,24 @@ function useSession() {
       .catch(() => {});
   }, [pathname]);
 
+  /*
+   * 홈 화면 아이콘의 숫자 뱃지.
+   *
+   * 앱이 닫혀 있는 동안에는 서비스 워커가 푸시를 받으며 올려 준다(public/sw.js).
+   * 여기서는 앱을 열었을 때 실제 안 읽은 수로 다시 맞춘다 — 다른 기기에서 읽었거나
+   * 알림 탭에 들어가 읽음 처리된 경우를 워커는 알 수 없다.
+   */
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('setAppBadge' in navigator)) return;
+    const nav = navigator as Navigator & {
+      setAppBadge?: (n?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    // 실패는 삼킨다 — 설치 전이거나 알림 권한이 없으면 거부되는데, 고칠 수 있는 문제가 아니다
+    const done = unread > 0 ? nav.setAppBadge?.(unread) : nav.clearAppBadge?.();
+    done?.catch(() => {});
+  }, [unread, loggedIn]);
+
   return { isAdmin, loggedIn, name, avatar, unread, pathname };
 }
 

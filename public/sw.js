@@ -76,16 +76,28 @@ self.addEventListener('push', (event) => {
     }
   }
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      // 같은 tag끼리는 덮어쓴다 — 한 모임의 댓글 알림이 줄줄이 쌓이지 않게
-      tag: data.tag || undefined,
-      data: { url: data.url || '/' },
-    })
+    Promise.all([
+      self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: '/icon-192.png',
+        // 여기 badge는 안드로이드 상태표시줄의 작은 아이콘이다 — 홈 화면 아이콘의 숫자와 다른 것
+        badge: '/icon-192.png',
+        // 같은 tag끼리는 덮어쓴다 — 한 모임의 댓글 알림이 줄줄이 쌓이지 않게
+        tag: data.tag || undefined,
+        data: { url: data.url || '/' },
+      }),
+      // 홈 화면 아이콘의 숫자 — 서버가 이 사람의 안 읽은 알림 수를 실어 보낸다
+      setAppBadge(data.unread),
+    ])
   );
 });
+
+/** 홈 화면 아이콘 숫자 뱃지. 설치 전이거나 미지원이면 조용히 넘어간다. */
+function setAppBadge(n) {
+  if (typeof n !== 'number' || !self.navigator || !self.navigator.setAppBadge) return Promise.resolve();
+  const set = n > 0 ? self.navigator.setAppBadge(n) : self.navigator.clearAppBadge();
+  return Promise.resolve(set).catch(() => {});
+}
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

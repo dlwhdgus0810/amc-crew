@@ -9,9 +9,9 @@
 //  - VAPID_SUBJECT                — mailto:주소 (푸시 서비스가 문제 시 연락할 곳)
 
 import webpush from 'web-push';
-import { eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 import { getDb } from './db/index';
-import { pushSubscriptions } from './db/schema';
+import { notifications, pushSubscriptions } from './db/schema';
 
 /** 알림에 담아 보내는 내용 — 서비스 워커(public/sw.js)가 그대로 읽는다 */
 export interface PushPayload {
@@ -24,6 +24,11 @@ export interface PushPayload {
    * 한 모임에서 댓글이 연달아 달릴 때 알림이 쌓이지 않게 하려고 쓴다.
    */
   tag?: string;
+  /**
+   * 홈 화면 아이콘에 찍을 숫자 = 받는 사람의 안 읽은 알림 수.
+   * 사람마다 다르므로 호출부가 넣지 않는다 — sendPush가 각자 값을 채워 보낸다.
+   */
+  unread?: number;
 }
 
 function publicKey(): string | undefined {
@@ -83,6 +88,23 @@ export async function subscriptionCount(userId: string): Promise<number> {
 }
 
 /**
+ * 안 읽은 알림 수를 사람별로 센다 (홈 화면 아이콘 숫자용).
+ * 알림 행은 이 함수가 불리기 전에 이미 저장돼 있으므로 방금 것도 포함된다.
+ */
+async function unreadCounts(userIds: string[]): Promise<Map<string, number>> {
+  const out = new Map(userIds.map((id) => [id, 0]));
+  if (userIds.length === 0) return out;
+  const db = await getDb();
+  const rows = await db
+    .select({ userId: notifications.userId, n: count() })
+    .from(notifications)
+    .where(and(inArray(notifications.userId, userIds), eq(notifications.read, false)))
+    .groupBy(notifications.userId);
+  for (const r of rows) out.set(r.userId, Number(r.n));
+  return out;
+}
+
+/**
  * 여러 사람의 모든 기기로 발송.
  * 개별 실패는 로그만 남기고 넘어간다 — 인앱 알림은 이미 저장돼 있고,
  * 알림 하나 때문에 모임 생성이 실패하면 안 된다.
@@ -102,7 +124,11 @@ export async function sendPush(userIds: string[], payload: PushPayload): Promise
   const subs = await db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, userIds));
   if (subs.length === 0) return;
 
-  const body = JSON.stringify(payload);
+  // 아이콘 숫자는 사람마다 다르므로 본문도 사람마다 만든다
+  const unread = await unreadCounts([...new Set(subs.map((s) => s.userId))]);
+  const bodyFor = new Map(
+    [...unread].map(([userId, n]) => [userId, JSON.stringify({ ...payload, unread: n })])
+  );
   // 죽은 구독은 모아서 한 번에 지운다 (발송 도중에 지우면 같은 트랜잭션을 여러 번 건드린다)
   const dead: string[] = [];
 
@@ -111,7 +137,7 @@ export async function sendPush(userIds: string[], payload: PushPayload): Promise
       try {
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          body
+          bodyFor.get(s.userId) ?? JSON.stringify(payload)
         );
       } catch (e) {
         const status = (e as { statusCode?: number }).statusCode;
