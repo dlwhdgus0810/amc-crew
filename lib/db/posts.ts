@@ -36,12 +36,7 @@ export interface PostView {
 
 export interface CommentView {
   id: string;
-  /**
-   * 익명 댓글을 남이 볼 때는 null.
-   * 같은 응답에 participants[].id와 이름이 함께 들어 있어서, id를 그대로 내려주면
-   * 둘을 맞춰보는 것만으로 익명이 풀린다.
-   */
-  userId: string | null;
+  userId: string;
   /** 익명 댓글이면 null. 화면에서 "익명"으로 그린다 */
   name: string | null;
   /** 닉네임을 감추고 쓴 댓글인지 */
@@ -162,8 +157,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     const hideName = c.anonymous && c.userId !== viewerId;
     commentsByPost.get(c.postId)!.push({
       id: c.id,
-      // 이름과 함께 id도 가린다 — id만 남으면 참가자 목록과 대조해 누구인지 알아낼 수 있다
-      userId: hideName ? null : c.userId,
+      userId: c.userId,
       name: hideName ? null : displayNameOf(userById.get(c.userId), '알 수 없음'),
       anonymous: c.anonymous,
       body: c.body,

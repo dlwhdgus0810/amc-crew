@@ -113,8 +113,10 @@ export const postComments = pgTable(
     body: text('body').notNull(),
     /**
      * 닉네임을 감추고 남긴 댓글.
-     * userId는 남긴다 — 본인이 지울 수 있어야 하고, 도배를 막을 수단도 필요하다.
-     * 대신 남의 화면으로는 이름도 userId도 나가지 않는다 (lib/db/posts.ts).
+     * 가리는 것은 화면에 보이는 닉네임뿐이다 — userId는 응답에 그대로 나간다.
+     * 본인이 지울 수 있어야 하고, 도배를 막을 수단도 필요하기 때문.
+     * (그래서 참가자 목록의 id와 맞춰보면 누구인지 알 수 있다. 친구들끼리 쓰는 앱이라
+     *  "이름만 안 보이면 된다"로 충분하다고 보고 둔 선택이다.)
      */
     anonymous: boolean('anonymous').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
