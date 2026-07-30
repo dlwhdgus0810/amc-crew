@@ -41,6 +41,8 @@ const T = {
   runtimeRating: { ko: '{runtime}분 · {rating}', en: '{runtime} min · {rating}' },
   director: { ko: '감독 {name}', en: 'Dir. {name}' },
   cast: { ko: '출연 {names}', en: 'Cast {names}' },
+  zoomPoster: { ko: '{name} 포스터 크게 보기', en: 'View the {name} poster larger' },
+  closePoster: { ko: '닫기', en: 'Close' },
   pickedElsewhere: { ko: '다른 날짜 포함 {n}개 선택됨', en: '{n} picked across all dates' },
   loginToPick: { ko: '카카오 로그인 후 회차를 선택할 수 있어요.', en: 'Log in with Kakao to pick showtimes.' },
   saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
@@ -114,6 +116,8 @@ export default function PickPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [openTip, setOpenTip] = useState<string | null>(null);
+  // 크게 보고 있는 포스터 (null이면 닫힘)
+  const [zoomed, setZoomed] = useState<{ src: string; name: string } | null>(null);
 
   const [nickname, setNickname] = useState<string | null>(null);
   const [kakaoName, setKakaoName] = useState('');
@@ -123,6 +127,21 @@ export default function PickPage() {
   const t = useT();
   const locale = useLocale();
   const to12h = (time: string) => fmtTime(time, locale);
+
+  // 포스터를 크게 본 동안에는 Esc로 닫고, 뒤 화면이 따라 스크롤되지 않게 막는다
+  useEffect(() => {
+    if (!zoomed) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setZoomed(null);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [zoomed]);
 
   useEffect(() => {
     if (!openTip) return;
@@ -339,9 +358,18 @@ export default function PickPage() {
           <section key={movie.id} className="date-section">
             <div className="movie-head">
               {movie.posterUrl && (
-                // 16장 다 합쳐 300KB대라 lazy로 미룰 이득이 없다 (미루면 첫 화면이 빈 칸으로 뜬다)
-                // eslint-disable-next-line @next/next/no-img-element
-                <img className="movie-poster" src={movie.posterUrl} alt="" decoding="async" />
+                <button
+                  type="button"
+                  className="movie-poster-btn"
+                  onClick={() =>
+                    setZoomed({ src: movie.posterLargeUrl ?? movie.posterUrl!, name: movie.name })
+                  }
+                  aria-label={t(T.zoomPoster, { name: movie.name })}
+                >
+                  {/* 16장 다 합쳐 300KB대라 lazy로 미룰 이득이 없다 (미루면 첫 화면이 빈 칸으로 뜬다) */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="movie-poster" src={movie.posterUrl} alt="" decoding="async" />
+                </button>
               )}
               <div className="movie-title-block">
                 <span className="movie-name">{movie.name}</span>
@@ -435,6 +463,20 @@ export default function PickPage() {
           </a>
         )}
       </div>
+
+      {zoomed && (
+        // 배경 아무 데나 눌러도 닫힌다 — 폰에서는 닫기 버튼보다 이쪽이 편하다
+        <div className="poster-zoom" onClick={() => setZoomed(null)} role="presentation">
+          <div className="poster-zoom-inner" role="dialog" aria-modal="true" aria-label={zoomed.name}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={zoomed.src} alt={zoomed.name} />
+            <span className="poster-zoom-name">{zoomed.name}</span>
+          </div>
+          <button type="button" className="poster-zoom-close" aria-label={t(T.closePoster)}>
+            ✕
+          </button>
+        </div>
+      )}
     </>
   );
 }

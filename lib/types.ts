@@ -6,6 +6,8 @@ export interface Movie {
   runtime?: number; // 분
   rating?: string; // 'R', 'PG-13' 등 관람등급 (AMC)
   posterUrl?: string;
+  /** 눌러서 크게 볼 때 쓰는 같은 포스터의 큰 판 */
+  posterLargeUrl?: string;
   // ── 아래는 TMDB에서 붙인다. AMC는 평점·감독·출연을 주지 않는다 ──
   /** TMDB 평점 (10점 만점, 소수 1자리) — 위의 rating(관람등급)과 다른 값이다 */
   score?: number;

@@ -123,7 +123,10 @@ async function withTitleMeta(movies: DaySchedule['movies']): Promise<DaySchedule
         ...(meta.cast?.length ? { cast: meta.cast } : {}),
         // AMC 포스터가 없을 때만 TMDB 것으로 채운다 (AMC 쪽이 상영 중인 판본에 맞는다)
         ...(!m.movie.posterUrl && meta.posterPath
-          ? { posterUrl: `${TMDB_IMG}/w342${meta.posterPath}` }
+          ? {
+              posterUrl: `${TMDB_IMG}/w342${meta.posterPath}`,
+              posterLargeUrl: `${TMDB_IMG}/w780${meta.posterPath}`,
+            }
           : {}),
       },
     };

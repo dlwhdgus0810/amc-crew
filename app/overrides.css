@@ -781,3 +781,37 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* 포스터 눌러서 크게 보기 ------------------------------------------------ */
+/* 목록의 포스터는 버튼이지만 생김새는 그대로 이미지여야 한다 */
+.movie-poster-btn {
+  padding: 0; border: none; background: none; border-radius: 8px;
+  flex: none; cursor: zoom-in; line-height: 0;
+}
+.movie-poster-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+.poster-zoom {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(16, 16, 16, 0.82);
+  backdrop-filter: blur(6px);
+  cursor: zoom-out;
+}
+.poster-zoom-inner { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 100%; }
+.poster-zoom-inner img {
+  max-width: 100%;
+  /* 세로로 긴 포스터가 화면 밖으로 나가지 않게 — 닫기 버튼 자리까지 뺀다 */
+  max-height: calc(100vh - 120px);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.poster-zoom-name { color: #fff; font-size: 14px; font-weight: 600; text-align: center; }
+.poster-zoom-close {
+  position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px;
+  width: 40px; height: 40px; border-radius: 999px;
+  border: none; background: rgba(255, 255, 255, 0.16); color: #fff;
+  font-size: 16px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+@media (hover: hover) { .poster-zoom-close:hover { background: rgba(255, 255, 255, 0.28); color: #fff; } }

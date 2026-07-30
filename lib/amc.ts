@@ -81,24 +81,27 @@ function mapShowtime(s: AmcShowtime): Showtime | null {
  * (AMC 자신도 posterDynamic180X74 같은 키에서 이 방식을 쓴다)
  */
 const POSTER_TRANSFORM = 'w_240,q_auto,f_auto';
+/** 눌러서 크게 볼 때 쓰는 크기 — 폰 화면을 채우고도 남는다 */
+const POSTER_LARGE_TRANSFORM = 'w_600,q_auto,f_auto';
 
-function sizedPoster(url: string | undefined): string | undefined {
+function sizedPoster(url: string | undefined, transform: string): string | undefined {
   if (!url) return undefined;
   // 예상한 모양이 아니면 손대지 않는다 (건드려서 깨뜨리느니 원본이 낫다)
-  return url.replace(/^(https:\/\/[^/]*cloudinary\.com)\/(v\d+\/)/, `$1/${POSTER_TRANSFORM}/$2`);
+  return url.replace(/^(https:\/\/[^/]*cloudinary\.com)\/(v\d+\/)/, `$1/${transform}/$2`);
 }
 
 function mapMovie(s: AmcShowtime, showtime: Showtime): Movie {
   // 빈 문자열로 오는 키가 있어 ??가 아니라 falsy 폴백을 쓴다 (posterIMAXDynamic이 ''인 경우가 있다)
-  const poster = sizedPoster(
-    s.media?.posterDynamic || s.media?.posterAlternateDynamic || s.media?.posterIMAXDynamic
-  );
+  const raw = s.media?.posterDynamic || s.media?.posterAlternateDynamic || s.media?.posterIMAXDynamic;
+  const poster = sizedPoster(raw, POSTER_TRANSFORM);
+  const posterLarge = sizedPoster(raw, POSTER_LARGE_TRANSFORM);
   return {
     id: showtime.movieId,
     name: showtime.movieName,
     ...(s.runTime ? { runtime: s.runTime } : {}),
     ...(s.mpaaRating ? { rating: s.mpaaRating } : {}),
     ...(poster ? { posterUrl: poster } : {}),
+    ...(posterLarge ? { posterLargeUrl: posterLarge } : {}),
   };
 }
 
