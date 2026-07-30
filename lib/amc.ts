@@ -40,9 +40,13 @@ interface AmcShowtime {
   movieName?: string;
   attributes?: { code: string; name: string }[];
   isAlmostSoldOut?: boolean;
+  isSoldOut?: boolean;
+  isCanceled?: boolean;
   runTime?: number;
   mpaaRating?: string;
-  media?: { posterThumbnail?: string; poster?: string };
+  // 실제 응답의 포스터 키는 posterDynamic 계열이다 (posterThumbnail/poster는 없다).
+  // posterDynamic180X74는 가로로 긴 배너라 세로 포스터가 필요한 곳에는 맞지 않는다.
+  media?: { posterDynamic?: string; posterAlternateDynamic?: string; posterIMAXDynamic?: string };
 }
 
 function detectFormat(attrs: AmcShowtime['attributes']): Format {
@@ -66,12 +70,14 @@ function mapShowtime(s: AmcShowtime): Showtime | null {
     date,
     time: timeFull.slice(0, 5),
     format: detectFormat(s.attributes),
-    ...(s.isAlmostSoldOut ? { note: 'Almost Full' } : {}),
+    // 매진이 "거의 매진"보다 급한 정보라 먼저 본다
+    ...(s.isSoldOut ? { note: 'Sold Out' } : s.isAlmostSoldOut ? { note: 'Almost Full' } : {}),
   };
 }
 
 function mapMovie(s: AmcShowtime, showtime: Showtime): Movie {
-  const poster = s.media?.posterThumbnail ?? s.media?.poster;
+  // 빈 문자열로 오는 키가 있어 ??가 아니라 falsy 폴백을 쓴다 (posterIMAXDynamic이 ''인 경우가 있다)
+  const poster = s.media?.posterDynamic || s.media?.posterAlternateDynamic || s.media?.posterIMAXDynamic;
   return {
     id: showtime.movieId,
     name: showtime.movieName,
@@ -97,7 +103,8 @@ export function groupByMovie(showtimes: Showtime[], movies: Map<string, Movie>):
   return [...byMovie.entries()]
     .map(([movieId, list]) => ({
       movie: movies.get(movieId) ?? { id: movieId, name: list[0].movieName },
-      showtimes: list.sort((a, b) => a.time.localeCompare(b.time)),
+      // 날짜까지 넣어 정렬해야 심야 회차(다음 날 00:15)가 맨 앞이 아니라 맨 뒤로 간다
+      showtimes: list.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)),
     }))
     .sort((a, b) => a.movie.name.localeCompare(b.movie.name));
 }
@@ -122,8 +129,13 @@ export async function fetchAmcDay(date: string): Promise<DaySchedule> {
   const movies = new Map<string, Movie>();
   const seen = new Set<string>();
   for (const r of raw) {
+    // 취소된 회차로 모임을 잡으면 당일에 헛걸음한다
+    if (r.isCanceled) continue;
     const s = mapShowtime(r);
-    if (!s || s.date !== date || seen.has(s.id)) continue;
+    // 날짜로 거르지 않는다 — AMC는 목요일 심야(자정 넘은 00:15 등)를 목요일 영업일로 묶어 주고,
+    // 그것들은 다음 날 조회에는 나오지 않는다. 걸러내면 어느 날짜로도 볼 수 없게 된다.
+    // 회차 자체의 date는 실제 날짜(7/31)를 유지해야 모임도 그 날짜로 만들어진다.
+    if (!s || seen.has(s.id)) continue;
     seen.add(s.id);
     showtimes.push(s);
     if (!movies.has(s.movieId)) movies.set(s.movieId, mapMovie(r, s));
