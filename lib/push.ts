@@ -90,6 +90,14 @@ export async function subscriptionCount(userId: string): Promise<number> {
 export async function sendPush(userIds: string[], payload: PushPayload): Promise<void> {
   if (!configure() || userIds.length === 0) return;
 
+  // 개발 중에는 실제 기기로 보내지 않는다. 카톡 발송(lib/kakao.ts)과 같은 규칙인데,
+  // 여기에도 걸어두지 않으면 로컬에서 DATABASE_URL을 실제 DB로 두는 순간
+  // 테스트 한 번이 진짜 사람들의 잠금화면을 울린다.
+  if (process.env.NODE_ENV !== 'production' && process.env.PUSH_IN_DEV !== '1') {
+    console.info('[push] 개발 환경이라 발송을 건너뜁니다:', userIds.length + '명', '|', payload.body.slice(0, 60));
+    return;
+  }
+
   const db = await getDb();
   const subs = await db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, userIds));
   if (subs.length === 0) return;

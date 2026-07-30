@@ -141,6 +141,20 @@ const T = {
     en: 'Category requests and tickets, AMC showtimes refresh, and who’s been around.',
   },
   adminGo: { ko: '관리자 화면 열기 →', en: 'Open admin →' },
+  testNotify: { ko: '테스트 알림 보내기', en: 'Send a test alert' },
+  testSending: { ko: '보내는 중…', en: 'Sending…' },
+  testNotifyDesc: {
+    ko: '관리자에게만 갑니다. 인앱·카카오톡·앱 푸시를 한 번에 태워 어디가 막혔는지 확인하는 용도예요.',
+    en: 'Goes to admins only — fires the in-app, KakaoTalk and push channels at once so you can see which one arrives.',
+  },
+  testSent: {
+    ko: '보냈어요 ({time}) — 관리자 {admins}명 · 푸시 기기 {devices}대',
+    en: 'Sent ({time}) — {admins} admin(s), {devices} push device(s)',
+  },
+  testNoPush: {
+    ko: '보냈어요 ({time}) — 관리자 {admins}명. 푸시를 켠 기기가 없어 앱 알림은 가지 않았어요.',
+    en: 'Sent ({time}) — {admins} admin(s). No device has push on, so nothing went out that way.',
+  },
   tickets: { ko: '건의함', en: 'Suggestion box' },
   ticketsDesc: {
     ko: '사소한 기능 개선부터 원하시는 모든 기능을 넣어드려요. 티켓을 남기면 처리 상태를 알림으로 알려드려요.',
@@ -175,6 +189,7 @@ export default function ProfilePage() {
   const [favs, setFavs] = useState<string[]>([]);
   const [newsAlerts, setNewsAlerts] = useState(false);
   const [newsBusy, setNewsBusy] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
   const [favBusy, setFavBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -293,6 +308,27 @@ export default function ProfilePage() {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.saveFailed) });
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** 알림 경로 점검용 — 관리자에게만 간다 */
+  async function sendTestNotify() {
+    setTestBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/test-notify', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
+      // 푸시 기기가 0대면 "보냈다"만 띄우는 게 오히려 헷갈린다 — 안 갔다고 분명히 말한다
+      const template = data.pushDevices > 0 ? T.testSent : T.testNoPush;
+      setMsg({
+        type: 'ok',
+        text: t(template, { time: data.time, admins: data.admins, devices: data.pushDevices }),
+      });
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.saveFailed) });
+    } finally {
+      setTestBusy(false);
     }
   }
 
@@ -697,20 +733,6 @@ export default function ProfilePage() {
 
       <PushToggle />
 
-      {isAdmin && (
-        <>
-          <h2>{t(T.admin)}</h2>
-          <div className="card">
-            <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
-              {t(T.adminDesc)}
-            </p>
-            <Link className="link-btn strong" href="/admin">
-              {t(T.adminGo)}
-            </Link>
-          </div>
-        </>
-      )}
-
       <h2>{t(T.news)}</h2>
       <div className="card">
         <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
@@ -742,6 +764,29 @@ export default function ProfilePage() {
           {t(T.ticketsGo)}
         </Link>
       </div>
+
+      {/* 관리자 도구는 맨 아래 — 평소에 쓰는 것이 아니라 찾아서 쓰는 것이다 */}
+      {isAdmin && (
+        <>
+          <h2>{t(T.admin)}</h2>
+          <div className="card">
+            <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
+              {t(T.adminDesc)}
+            </p>
+            <div className="field-row" style={{ justifyContent: 'space-between' }}>
+              <Link className="link-btn strong" href="/admin">
+                {t(T.adminGo)}
+              </Link>
+              <button className="secondary" disabled={testBusy} onClick={sendTestNotify}>
+                {testBusy ? t(T.testSending) : t(T.testNotify)}
+              </button>
+            </div>
+            <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '12px 2px 0' }}>
+              {t(T.testNotifyDesc)}
+            </p>
+          </div>
+        </>
+      )}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
