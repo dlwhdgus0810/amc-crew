@@ -22,6 +22,7 @@ export async function GET() {
     nickname: row?.nickname ?? null,
     avatar: row?.avatar ?? null,
     venmo: row?.venmo ?? null,
+    zelle: row?.zelle ?? null,
     kakaoName: row?.kakaoName || user.name,
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,

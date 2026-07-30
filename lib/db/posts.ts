@@ -8,6 +8,7 @@ import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
 import { isPastSlot, pastCutoff, todayLocal } from '../dates';
 import { hostCountsFor } from './hosting';
+import { settlementSummaries, type SettlementSummary } from './settlements';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 import { dateLabelShort, timeLabel } from '../datefmt';
 
@@ -32,6 +33,8 @@ export interface PostView {
   /** avatar는 모임 카드에서 접힌 상태로 얼굴만 보여줄 때 쓴다 (없으면 이름 첫 글자) */
   /** hostCount는 공개 모임 주최 횟수 — 아바타 스티커(lib/hosting.ts) 용 */
   participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
+  /** 정산이 있으면 카드에 바로 보여줄 요약 (없으면 null) */
+  settle: SettlementSummary | null;
   comments: CommentView[];
 }
 
@@ -123,6 +126,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const userById = new Map(userRows.map((u) => [u.id, u]));
   const participantRows = await db.select().from(postParticipants).where(inArray(postParticipants.postId, postIds));
   const hostCounts = await hostCountsFor([...new Set(participantRows.map((p) => p.userId))]);
+  const settleByPost = await settlementSummaries(postIds, viewerId);
   const byPost = new Map<string, { id: string; name: string; avatar: string | null; hostCount: number }[]>();
   for (const p of participantRows) {
     if (!byPost.has(p.postId)) byPost.set(p.postId, []);
@@ -187,6 +191,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     isPast: isPastSlot(p.date, p.endTime),
     createdAt: p.createdAt.toISOString(),
     participants: byPost.get(p.id) ?? [],
+    settle: settleByPost.get(p.id) ?? null,
     comments: commentsByPost.get(p.id) ?? [],
   }));
 }

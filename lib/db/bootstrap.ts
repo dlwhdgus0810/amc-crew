@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   kakao_talk_message boolean,
   last_seen timestamptz,
   venmo text,
+  zelle text,
   news_alerts boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );

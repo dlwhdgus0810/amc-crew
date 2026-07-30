@@ -23,6 +23,11 @@ export const users = pgTable('users', {
   lastSeen: timestamp('last_seen', { withTimezone: true }),
   /** Venmo 아이디 — 정산에서 "보내기" 링크를 만들 때만 쓴다 (@ 없이 저장) */
   venmo: text('venmo'),
+  /**
+   * Zelle로 받을 전화번호나 이메일.
+   * Zelle은 공개 API도 딥링크도 없어서 링크를 만들 수 없다 — 화면에 띄우고 복사시키는 게 전부다.
+   */
+  zelle: text('zelle'),
   /** 새 소식(업데이트)을 카카오톡으로 받을지 — 기본은 꺼짐, 프로필에서 켠다 */
   newsAlerts: boolean('news_alerts').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

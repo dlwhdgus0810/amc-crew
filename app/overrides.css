@@ -859,3 +859,16 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
   color: var(--text-mid); font-size: 13px; font-weight: 500; cursor: pointer;
 }
 .settle-chip.on { background: var(--text); border-color: var(--text); color: #fff; font-weight: 600; }
+
+/* 프로필의 받을 계좌 (Venmo / Zelle) */
+.pay-label {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+  color: var(--text-dim); margin-bottom: 6px;
+}
+/* 정산 화면의 Zelle 줄 — 열어줄 링크가 없어 값과 복사 버튼만 둔다 */
+.pay-zelle { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.pay-zelle-label {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--text-dim);
+}
+/* min-width: 0 — 긴 이메일이 복사 버튼을 밀어내지 않게 */
+.pay-zelle-value { font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }

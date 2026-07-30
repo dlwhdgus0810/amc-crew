@@ -31,7 +31,7 @@ export interface SettlementItemInput {
 }
 
 export interface SettlementView {
-  payee: { id: string; name: string; venmo: string | null };
+  payee: { id: string; name: string; venmo: string | null; zelle: string | null };
   items: { id: string; label: string; amountCents: number; scope: ItemScope; memberIds: string[] }[];
   /** 사람별로 내야 할 금액 (0원인 사람은 빠진다). 받을 사람 본인도 자기 몫이 있으면 들어간다 */
   shares: { userId: string; name: string; avatar: string | null; cents: number }[];
@@ -142,6 +142,7 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
       id: row.payeeId,
       name: displayNameOf(payee, '알 수 없음'),
       venmo: payee?.venmo ?? null,
+      zelle: payee?.zelle ?? null,
     },
     items,
     shares,
@@ -254,4 +255,89 @@ export async function notifySettlement(postId: string, origin: string): Promise<
     await sendPush([userId], { title: 'Kansas Korean', body: message, url: linkUrl, tag: `settle:${postId}` });
   }
   return { sent: targets.length };
+}
+
+/** 목록 화면(카드)에서 쓰는 요약 */
+export interface SettlementSummary {
+  /** 이 모임에 정산이 있는지 */
+  exists: boolean;
+  /** 보는 사람이 내야 할 금액 (없거나 0이면 null) */
+  myCents: number | null;
+  /** 보는 사람이 받는 사람인지 */
+  iAmPayee: boolean;
+}
+
+/**
+ * 여러 모임의 정산 요약을 한 번에.
+ *
+ * 카드마다 따로 조회하면 목록 길이만큼 쿼리가 늘어난다 — 모임 수와 무관하게 네 번만 돈다.
+ */
+export async function settlementSummaries(
+  postIds: string[],
+  viewerId?: string
+): Promise<Map<string, SettlementSummary>> {
+  const out = new Map<string, SettlementSummary>();
+  if (postIds.length === 0) return out;
+
+  const db = await getDb();
+  const rows = await db.select().from(settlements).where(inArray(settlements.postId, postIds));
+  if (rows.length === 0) return out;
+
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const itemRows = await db
+    .select()
+    .from(settlementItems)
+    .where(
+      inArray(
+        settlementItems.settlementId,
+        rows.map((r) => r.id)
+      )
+    );
+  const memberRows = itemRows.length
+    ? await db
+        .select()
+        .from(settlementItemMembers)
+        .where(
+          inArray(
+            settlementItemMembers.itemId,
+            itemRows.map((i) => i.id)
+          )
+        )
+    : [];
+  const partRows = await db
+    .select()
+    .from(postParticipants)
+    .where(inArray(postParticipants.postId, postIds));
+
+  const membersByItem = new Map<string, string[]>();
+  for (const m of memberRows) {
+    if (!membersByItem.has(m.itemId)) membersByItem.set(m.itemId, []);
+    membersByItem.get(m.itemId)!.push(m.userId);
+  }
+  const participantsByPost = new Map<string, string[]>();
+  for (const p of partRows) {
+    if (!participantsByPost.has(p.postId)) participantsByPost.set(p.postId, []);
+    participantsByPost.get(p.postId)!.push(p.userId);
+  }
+  const itemsBySettlement = new Map<string, typeof itemRows>();
+  for (const i of itemRows) {
+    if (!itemsBySettlement.has(i.settlementId)) itemsBySettlement.set(i.settlementId, []);
+    itemsBySettlement.get(i.settlementId)!.push(i);
+  }
+
+  for (const [settlementId, row] of byId) {
+    const items = (itemsBySettlement.get(settlementId) ?? []).map((i) => ({
+      amountCents: i.amountCents,
+      scope: (i.scope === 'some' ? 'some' : 'all') as ItemScope,
+      memberIds: membersByItem.get(i.id) ?? [],
+    }));
+    const shares = computeShares(items, participantsByPost.get(row.postId) ?? []);
+    const cents = viewerId ? (shares.get(viewerId) ?? 0) : 0;
+    out.set(row.postId, {
+      exists: true,
+      myCents: cents > 0 ? cents : null,
+      iAmPayee: viewerId === row.payeeId,
+    });
+  }
+  return out;
 }

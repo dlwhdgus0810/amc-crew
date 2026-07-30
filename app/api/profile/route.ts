@@ -25,7 +25,7 @@ export async function PUT(req: NextRequest) {
     return await errJson(E.badRequest, 400);
   }
 
-  const patch: { nickname?: string | null; birthday?: string; gender?: string; locale?: Locale; avatar?: string | null; venmo?: string | null } = {};
+  const patch: { nickname?: string | null; birthday?: string; gender?: string; locale?: Locale; avatar?: string | null; venmo?: string | null; zelle?: string | null } = {};
 
   if (body.venmo !== undefined) {
     const venmo = typeof body.venmo === 'string' ? body.venmo.trim().replace(/^@/, '') : '';
@@ -34,6 +34,15 @@ export async function PUT(req: NextRequest) {
       return await errJson(E.venmoId, 400);
     }
     patch.venmo = venmo || null;
+  }
+
+  if (body.zelle !== undefined) {
+    const zelle = typeof body.zelle === 'string' ? body.zelle.trim() : '';
+    // 전화번호나 이메일 — 화면에 띄워 복사시키는 값이라 형식만 느슨하게 본다
+    if (zelle && (zelle.length > 60 || !/^[\w.@+\-() ]+$/.test(zelle))) {
+      return await errJson(E.zelleId, 400);
+    }
+    patch.zelle = zelle || null;
   }
 
   if (body.nickname !== undefined) {
@@ -106,6 +115,7 @@ export async function PUT(req: NextRequest) {
     locale: row?.locale ?? null,
     avatar: row?.avatar ?? null,
     venmo: row?.venmo ?? null,
+    zelle: row?.zelle ?? null,
   });
   // 서버 렌더가 첫 화면부터 맞는 언어로 그려지도록 쿠키에도 반영
   if (patch.locale) {

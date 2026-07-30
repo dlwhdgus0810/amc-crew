@@ -42,8 +42,15 @@ const T = {
     en: '{name} hasn’t added a Venmo username yet.',
   },
   venmoMine: {
-    ko: '프로필에 Venmo 아이디를 넣어두면 다른 사람이 바로 보낼 수 있어요.',
-    en: 'Add your Venmo username in Profile so people can pay you in one tap.',
+    ko: '프로필 → 받을 계좌에 Venmo나 Zelle을 넣어두면 다른 사람이 바로 보낼 수 있어요.',
+    en: 'Add Venmo or Zelle under Profile → How you get paid so people can send it.',
+  },
+  zelleLabel: { ko: 'Zelle', en: 'Zelle' },
+  copy: { ko: '복사', en: 'Copy' },
+  copied: { ko: '복사했어요', en: 'Copied' },
+  noPayInfo: {
+    ko: '{name}님이 아직 받을 계좌를 등록하지 않았어요. 직접 물어봐주세요.',
+    en: '{name} hasn’t added a payment method yet — ask them directly.',
   },
 };
 
@@ -61,7 +68,7 @@ interface Item {
   memberIds: string[];
 }
 export interface Settlement {
-  payee: { id: string; name: string; venmo: string | null };
+  payee: { id: string; name: string; venmo: string | null; zelle: string | null };
   items: Item[];
   shares: Share[];
   totalCents: number;
@@ -107,6 +114,17 @@ export default function SettlementPanel({
   const [drafts, setDrafts] = useState<Draft[]>([{ ...EMPTY }]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function copyZelle(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* 클립보드를 막아둔 브라우저 — 값은 화면에 그대로 보이므로 손으로 옮기면 된다 */
+    }
+  }
 
   async function load() {
     const res = await fetch(`/api/posts/${postId}/settlement`);
@@ -117,6 +135,23 @@ export default function SettlementPanel({
     load().finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
+
+  /*
+   * 카드에서 /p/<id>#settle 로 들어오면 이 자리로 내려준다.
+   *
+   * 브라우저에 맡길 수 없다 — 이 영역은 정산을 받아온 뒤에야 그려져서, 해시가 처리되는
+   * 시점에는 DOM에 없다. 그리기가 끝난(loading=false) 다음에 직접 옮기고, 라우터가
+   * 이동 직후 맨 위로 되돌리는 것에 덮이지 않도록 한 박자 미룬다.
+   */
+  useEffect(() => {
+    if (loading || window.location.hash !== '#settle') return;
+    // smooth로 하면 애니메이션 도중 다른 스크롤에 끊겨 제자리로 돌아온다 — 즉시 옮긴다
+    const timer = setTimeout(
+      () => document.getElementById('settle')?.scrollIntoView({ block: 'start' }),
+      300
+    );
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   function startEditing() {
     setDrafts(
@@ -197,7 +232,8 @@ export default function SettlementPanel({
 
   return (
     <>
-      <h2>{t(T.title)}</h2>
+      {/* 카드의 "정산" 버튼이 /p/<id>#settle 로 보내므로 앵커가 필요하다 */}
+      <h2 id="settle" style={{ scrollMarginTop: 72 }}>{t(T.title)}</h2>
       <div className="card">
         {!settlement && !editing && (
           <>
@@ -222,19 +258,30 @@ export default function SettlementPanel({
                 <div style={{ color: 'var(--text-dim)', fontSize: 13.5, marginTop: 2 }}>
                   {t(T.payTo, { name: settlement.payee.name })}
                 </div>
-                {settlement.payee.venmo ? (
+                {settlement.payee.venmo && (
                   <a
                     className="link-btn strong"
-                    style={{ marginTop: 10 }}
+                    style={{ marginTop: 10, display: 'inline-block' }}
                     href={venmoLink(settlement.payee.venmo, mine.cents, noteLabel)}
                     target="_blank"
                     rel="noreferrer"
                   >
                     {t(T.venmoGo)}
                   </a>
-                ) : (
+                )}
+                {/* Zelle은 열어줄 링크가 없어서 값을 보여주고 복사시킨다 */}
+                {settlement.payee.zelle && (
+                  <div className="pay-zelle">
+                    <span className="pay-zelle-label">{t(T.zelleLabel)}</span>
+                    <span className="pay-zelle-value">{settlement.payee.zelle}</span>
+                    <button className="link-btn" onClick={() => copyZelle(settlement.payee.zelle!)}>
+                      {copied ? t(T.copied) : t(T.copy)}
+                    </button>
+                  </div>
+                )}
+                {!settlement.payee.venmo && !settlement.payee.zelle && (
                   <p style={{ color: 'var(--text-dim)', fontSize: 12.5, margin: '10px 0 0' }}>
-                    {t(T.venmoMissing, { name: settlement.payee.name })}
+                    {t(T.noPayInfo, { name: settlement.payee.name })}
                   </p>
                 )}
               </div>
@@ -273,7 +320,7 @@ export default function SettlementPanel({
               ))}
             </ul>
 
-            {isPayee && !settlement.payee.venmo && (
+            {isPayee && !settlement.payee.venmo && !settlement.payee.zelle && (
               <p style={{ color: 'var(--text-dim)', fontSize: 12.5, margin: '12px 2px 0' }}>{t(T.venmoMine)}</p>
             )}
 

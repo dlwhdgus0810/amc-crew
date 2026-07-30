@@ -23,6 +23,7 @@ import type {TitleMeta, TitleSearchResult} from '@/lib/tmdb';
 import {TMDB_IMG} from '@/lib/tmdb';
 import CommentThread, {CommentView} from '../../comment-thread';
 import {siteUrl} from '@/lib/site';
+import {formatCents} from '@/lib/money';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -65,6 +66,9 @@ const T = {
     ko: '— 링크를 받은 사람만 볼 수 있어요. 목록·구독 알림에 나오지 않아요',
     en: '— only people with the link can see it. It stays out of the feed and subscriber alerts',
   },
+  settleOwe: { ko: '정산 {amount}', en: 'Settle {amount}' },
+  settleSee: { ko: '정산 보기', en: 'Settle-up' },
+  settleStart: { ko: '정산하기', en: 'Settle up' },
   privateBadge: { ko: '비공개', en: 'Private' },
   notifyHintPrivate: {
     ko: '알림 없이 만들어져요 — 링크를 직접 보내주세요',
@@ -157,6 +161,8 @@ interface PostView {
   capacity: number | null;
   visibility: 'public' | 'link';
   participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
+  /** 정산 요약 — 없으면 null (서버 PostView와 같은 모양) */
+  settle: { exists: boolean; myCents: number | null; iAmPayee: boolean } | null;
   comments: CommentView[];
 }
 
@@ -910,6 +916,16 @@ export default function CategoryClient({ slug }: { slug: string }) {
               {commentsOpen ? '▴' : '▾'}
             </span>
           </button>
+          {/* 참가한 사람에게만 — 정산은 같이 낸 사람들 사이의 일이다 */}
+          {joined && (
+            <Link className={`link-btn ${post.settle?.myCents ? 'strong' : ''}`} href={`/p/${post.id}#settle`}>
+              {post.settle?.myCents
+                ? t(T.settleOwe, { amount: formatCents(post.settle.myCents) })
+                : post.settle
+                  ? t(T.settleSee)
+                  : t(T.settleStart)}
+            </Link>
+          )}
           {!past && (
             <button className="link-btn" disabled={busy} onClick={() => share(post)}>
               {t(T.share)}

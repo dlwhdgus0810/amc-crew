@@ -51,6 +51,18 @@ const T = {
   venmoPh: { ko: '@ 없이 입력', en: 'without the @' },
   venmoNone: { ko: '등록 안 함', en: 'Not set' },
   venmoSaved: { ko: 'Venmo 아이디를 저장했어요.', en: 'Venmo username saved.' },
+  pay: { ko: '받을 계좌', en: 'How you get paid' },
+  payDesc: {
+    ko: '모임 정산에서 다른 사람이 나에게 보낼 때 씁니다. 돈은 앱을 거치지 않고 Venmo·Zelle에서 직접 오가요.',
+    en: 'Used when a meetup is settled. Money never passes through this app — it moves in Venmo or Zelle.',
+  },
+  zelle: { ko: 'Zelle', en: 'Zelle' },
+  zellePh: { ko: '전화번호 또는 이메일', en: 'Phone number or email' },
+  zelleSaved: { ko: 'Zelle 정보를 저장했어요.', en: 'Zelle details saved.' },
+  zelleHint: {
+    ko: 'Zelle은 앱에서 바로 보내는 링크를 만들 수 없어서, 상대에게 이 값을 복사해 보여줍니다.',
+    en: 'Zelle has no link to open, so this is shown for people to copy into their bank app.',
+  },
   basicInfo: { ko: '기본 정보', en: 'Basic info' },
   basicInfoSaved: { ko: '기본 정보를 저장했어요.', en: 'Basic info saved.' },
   birthday: { ko: '생년월일', en: 'Date of birth' },
@@ -200,6 +212,8 @@ export default function ProfilePage() {
   const [testBusy, setTestBusy] = useState(false);
   const [venmo, setVenmo] = useState('');
   const [editingVenmo, setEditingVenmo] = useState(false);
+  const [zelle, setZelle] = useState('');
+  const [editingZelle, setEditingZelle] = useState(false);
   const [favBusy, setFavBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -238,6 +252,7 @@ export default function ProfilePage() {
         setFavs(fav.favorites ?? []);
         setNewsAlerts(Boolean(news.newsAlerts));
         setVenmo(auth.venmo ?? '');
+        setZelle(auth.zelle ?? '');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -309,7 +324,9 @@ export default function ProfilePage() {
       setNickname(data.nickname ?? null);
       if (data.avatar !== undefined) setAvatar(data.avatar);
       if (data.venmo !== undefined) setVenmo(data.venmo ?? '');
+      if (data.zelle !== undefined) setZelle(data.zelle ?? '');
       setEditingVenmo(false);
+      setEditingZelle(false);
       setKakaoName(data.kakaoName ?? '');
       setBirthday(data.birthday ?? '');
       setGender(data.gender ?? '');
@@ -575,9 +592,10 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <h2>{t(T.venmo)}</h2>
+      <h2>{t(T.pay)}</h2>
       <div className="card">
-        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>{t(T.venmoDesc)}</p>
+        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>{t(T.payDesc)}</p>
+        <div className="pay-label">{t(T.venmo)}</div>
         {editingVenmo ? (
           <div className="field-row">
             <input
@@ -606,6 +624,39 @@ export default function ProfilePage() {
             </button>
           </div>
         )}
+
+        <div className="pay-label" style={{ marginTop: 20 }}>{t(T.zelle)}</div>
+        {editingZelle ? (
+          <div className="field-row">
+            <input
+              type="text"
+              placeholder={t(T.zellePh)}
+              value={zelle}
+              maxLength={60}
+              onChange={(e) => setZelle(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !saving && saveProfile({ zelle }, t(T.zelleSaved))}
+              autoFocus
+            />
+            <button className="secondary" disabled={saving} onClick={() => saveProfile({ zelle }, t(T.zelleSaved))}>
+              {saving ? t(T.saving) : t(T.save)}
+            </button>
+            <button className="secondary" disabled={saving} onClick={() => setEditingZelle(false)}>
+              {t(T.cancel)}
+            </button>
+          </div>
+        ) : (
+          <div className="field-row" style={{ justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 500, color: zelle ? undefined : 'var(--text-dim)' }}>
+              {zelle || t(T.venmoNone)}
+            </span>
+            <button className="secondary" onClick={() => setEditingZelle(true)}>
+              {t(T.edit)}
+            </button>
+          </div>
+        )}
+        <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '12px 2px 0' }}>
+          {t(T.zelleHint)}
+        </p>
       </div>
 
       <h2>{t(T.basicInfo)}</h2>
