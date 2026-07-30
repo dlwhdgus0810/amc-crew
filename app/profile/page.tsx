@@ -7,6 +7,7 @@ import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../i18n';
 import { PROFILE_UPDATED } from '../nav';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
+import PushToggle from '../push-toggle';
 
 /** 저장할 사진 한 변의 길이 (px) */
 const AVATAR_PX = 256;
@@ -692,6 +693,8 @@ export default function ProfilePage() {
           </p>
         )}
       </div>
+
+      <PushToggle />
 
       {isAdmin && (
         <>

@@ -242,3 +242,26 @@ export const presenceSessions = pgTable(
   // 조회는 늘 "이 사람의 최근 구간" 또는 "최근 N일" 이라 (user, ended) 순서가 맞다
   (t) => [index('presence_sessions_user_ended_idx').on(t.userId, t.endedAt)]
 );
+
+/**
+ * 웹 푸시 구독 — 기기 하나가 한 줄이다 (폰과 태블릿은 따로 잡힌다).
+ *
+ * endpoint가 곧 그 기기의 주소이자 고유값이다. 브라우저가 구독을 갱신하면 새 endpoint가
+ * 나오므로 옛 줄은 발송이 404/410으로 실패할 때 지운다 (lib/push.ts).
+ * 사용자를 지우면 구독도 같이 지운다 — 남겨두면 주인 없는 주소로 계속 쏘게 된다.
+ */
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    endpoint: text('endpoint').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // 브라우저가 준 암호화 키 — 이게 있어야 알림 내용을 그 기기만 읽을 수 있게 봉인한다
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  // 발송은 늘 "이 사람들의 구독 전부"라 user_id로 찾는다
+  (t) => [index('push_subscriptions_user_idx').on(t.userId)]
+);

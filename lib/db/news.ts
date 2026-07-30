@@ -2,6 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { getDb } from './index';
 import { notifications, users } from './schema';
 import { sendKakaoMemos } from '../kakao';
+import { sendPush } from '../push';
 import { Locale, Msg, pick, toLocale } from '../i18n';
 
 /**
@@ -74,6 +75,7 @@ export async function sendNews(title: Msg, linkUrl: string): Promise<NewsSendRes
       targets.map((userId) => ({ id: crypto.randomUUID(), userId, postId: null, message }))
     );
     await sendKakaoMemos(targets, message, linkUrl, pick(locale, T.button));
+    await sendPush(targets, { title: 'Kansas Korean', body: message, url: linkUrl, tag: 'whats-new' });
     sent += targets.length;
   }
   return { sent, skipped };

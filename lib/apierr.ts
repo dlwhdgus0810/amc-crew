@@ -85,6 +85,10 @@ export const E = {
     ko: 'KAKAO_REST_API_KEY 환경변수가 설정되지 않았어요.',
     en: 'KAKAO_REST_API_KEY is not configured.',
   },
+  pushNotConfigured: {
+    ko: '푸시 알림이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.',
+    en: 'Push notifications are not configured yet. Please try again later.',
+  },
   amcNotConfigured: {
     ko: 'AMC API가 설정되지 않았습니다. AMC_VENDOR_KEY와 AMC_THEATRE_ID 환경변수를 설정하세요.',
     en: 'The AMC API is not configured. Set AMC_VENDOR_KEY and AMC_THEATRE_ID.',

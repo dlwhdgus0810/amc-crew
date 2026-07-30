@@ -2,6 +2,7 @@ import { inArray } from 'drizzle-orm';
 import { getDb } from './index';
 import { notifications, users } from './schema';
 import { sendKakaoMemos } from '../kakao';
+import { sendPush } from '../push';
 import { adminIds } from '../auth';
 import { Locale, toLocale } from '../i18n';
 
@@ -33,6 +34,7 @@ export async function notifyAdmins(opts: {
       const message = opts.message(locale);
       await db.insert(notifications).values({ id: crypto.randomUUID(), userId: r.id, postId: null, message });
       await sendKakaoMemos([r.id], message, opts.linkUrl, opts.button(locale));
+      await sendPush([r.id], { title: 'Kansas Korean', body: message, url: opts.linkUrl });
     }
   } catch (e) {
     console.error(`[${opts.tag}] admin notify failed:`, e);

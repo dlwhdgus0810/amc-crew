@@ -6,7 +6,7 @@
 //  · 해시가 붙어 내용이 바뀌지 않는 /_next/static/ 산출물만 캐시한다
 // 정책을 바꿀 때는 CACHE_VERSION을 올려 옛 캐시를 정리할 것.
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `kk-static-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -60,4 +60,45 @@ self.addEventListener('fetch', (event) => {
     );
   }
   // 그 밖의 요청(아이콘 등)은 기본 동작에 맡긴다
+});
+
+// ── 푸시 알림 ────────────────────────────────────────────────────────
+// 서버(lib/push.ts)가 보낸 내용을 그대로 띄운다.
+
+self.addEventListener('push', (event) => {
+  // 내용 없이 오는 푸시도 규격상 가능하므로 빈 알림 대신 기본 문구를 쓴다
+  let data = { title: 'Kansas Korean', body: '새 소식이 있어요.', url: '/' };
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch {
+      data.body = event.data.text();
+    }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      // 같은 tag끼리는 덮어쓴다 — 한 모임의 댓글 알림이 줄줄이 쌓이지 않게
+      tag: data.tag || undefined,
+      data: { url: data.url || '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // 이미 앱이 떠 있으면 새 창을 만들지 않고 그 창을 가져와 이동시킨다
+      for (const client of clients) {
+        if (new URL(client.url).origin === target.origin && 'focus' in client) {
+          return client.focus().then((c) => (c.navigate ? c.navigate(target.href) : c));
+        }
+      }
+      return self.clients.openWindow(target.href);
+    })
+  );
 });

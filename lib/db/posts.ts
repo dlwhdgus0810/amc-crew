@@ -5,6 +5,7 @@ import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendKakaoMemos } from '../kakao';
+import { sendPush } from '../push';
 import { isPastSlot, pastCutoff, todayLocal } from '../dates';
 import { hostCountsFor } from './hosting';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
@@ -360,10 +361,32 @@ async function buildNotice(
   return { rows: groups.flatMap((g) => g.userIds.map((userId) => ({ userId, message: g.message }))), groups };
 }
 
-/** 언어 그룹별로 카톡 메모 발송 */
+/**
+ * 언어 그룹별로 카톡 메모 + 앱 푸시 발송.
+ * 두 경로는 서로 독립이다 — 카톡을 거부한 사람은 푸시로, 푸시를 안 켠 사람은 카톡으로 받는다.
+ */
 async function sendNotice(notice: Notice, linkUrl: string): Promise<void> {
   for (const g of notice.groups) {
     await sendKakaoMemos(g.userIds, g.message, linkUrl, g.button);
+    await sendPush(g.userIds, {
+      title: APP_NAME,
+      body: g.message,
+      url: linkUrl,
+      // 같은 모임의 알림끼리는 덮어쓴다 — 댓글이 연달아 달려도 알림함이 밀리지 않게
+      tag: noticeTag(linkUrl),
+    });
+  }
+}
+
+/** 알림 제목 — 어느 앱에서 온 알림인지가 먼저 보여야 한다 */
+const APP_NAME = 'Kansas Korean';
+
+/** 링크의 경로를 묶음 키로 쓴다 (예: /p/<id>) */
+function noticeTag(linkUrl: string): string | undefined {
+  try {
+    return new URL(linkUrl).pathname;
+  } catch {
+    return undefined;
   }
 }
 
