@@ -26,6 +26,20 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-30T10:58',
+    title: { ko: '앱 아이콘에 안 읽은 알림 수', en: 'Unread count on the app icon' },
+    items: [
+      {
+        ko: '안 읽은 알림이 있으면 홈 화면 아이콘에 숫자가 붙어요. 알림 탭에서 읽으면 사라져요.',
+        en: 'The home-screen icon shows how many alerts you haven’t read. It clears once you open the alerts tab.',
+      },
+      {
+        ko: '앱 푸시 알림을 켠 분에게만 보여요. 홈 화면에 추가한 앱에서만 나타나거든요.',
+        en: 'Only if you turned on app push notifications — the badge lives on the home-screen icon.',
+      },
+    ],
+  },
+  {
     at: '2026-07-30T10:47',
     title: { ko: '카테고리마다 이모지', en: 'An emoji for every category' },
     items: [
