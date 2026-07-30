@@ -39,6 +39,8 @@ const T = {
     en: '⚠️ These showtimes are samples. They switch to the real AMC listings once our API key goes live on Thursday.',
   },
   runtimeRating: { ko: '{runtime}분 · {rating}', en: '{runtime} min · {rating}' },
+  director: { ko: '감독 {name}', en: 'Dir. {name}' },
+  cast: { ko: '출연 {names}', en: 'Cast {names}' },
   pickedElsewhere: { ko: '다른 날짜 포함 {n}개 선택됨', en: '{n} picked across all dates' },
   loginToPick: { ko: '카카오 로그인 후 회차를 선택할 수 있어요.', en: 'Log in with Kakao to pick showtimes.' },
   saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
@@ -336,14 +338,36 @@ export default function PickPage() {
         movies.map(({ movie, showtimes }) => (
           <section key={movie.id} className="date-section">
             <div className="movie-head">
-              <span className="movie-name">{movie.name}</span>
-              {(movie.runtime || movie.rating) && (
-                <span className="movie-meta">
-                  {[movie.runtime ? t(T.runtimeRating, { runtime: movie.runtime, rating: movie.rating ?? '' }) : movie.rating]
-                    .filter(Boolean)
-                    .join('')}
-                </span>
+              {movie.posterUrl && (
+                // 16장 다 합쳐 300KB대라 lazy로 미룰 이득이 없다 (미루면 첫 화면이 빈 칸으로 뜬다)
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="movie-poster" src={movie.posterUrl} alt="" decoding="async" />
               )}
+              <div className="movie-title-block">
+                <span className="movie-name">{movie.name}</span>
+                {(movie.runtime || movie.rating || movie.score) && (
+                  <span className="movie-meta">
+                    {[
+                      movie.score ? `★ ${movie.score.toFixed(1)}` : null,
+                      movie.runtime
+                        ? t(T.runtimeRating, { runtime: movie.runtime, rating: movie.rating ?? '' })
+                        : movie.rating,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                )}
+                {(movie.director || movie.cast?.length) && (
+                  <span className="movie-credits">
+                    {[
+                      movie.director ? t(T.director, { name: movie.director }) : null,
+                      movie.cast?.length ? t(T.cast, { names: movie.cast.join(', ') }) : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                )}
+              </div>
             </div>
             {FORMAT_ORDER.map((fmt) => {
               const times = showtimes.filter((s) => s.format === fmt);

@@ -4,8 +4,13 @@ export interface Movie {
   id: string; // AMC movie id (문자열로 통일)
   name: string;
   runtime?: number; // 분
-  rating?: string; // 'R', 'PG-13' 등
+  rating?: string; // 'R', 'PG-13' 등 관람등급 (AMC)
   posterUrl?: string;
+  // ── 아래는 TMDB에서 붙인다. AMC는 평점·감독·출연을 주지 않는다 ──
+  /** TMDB 평점 (10점 만점, 소수 1자리) — 위의 rating(관람등급)과 다른 값이다 */
+  score?: number;
+  director?: string;
+  cast?: string[];
 }
 
 export interface Showtime {

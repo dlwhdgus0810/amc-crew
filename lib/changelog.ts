@@ -27,11 +27,12 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     at: '2026-07-30T09:02',
-    title: { ko: '영화 포스터와 심야 상영', en: 'Movie posters, and late-night showtimes' },
+    notable: true,
+    title: { ko: '상영표에 포스터와 평점', en: 'Posters and ratings on the showtimes list' },
     items: [
       {
-        ko: '상영표에 영화 포스터가 보여요.',
-        en: 'The showtimes list now shows movie posters.',
+        ko: '상영표에 포스터가 뜨고, 평점·감독·주연 배우도 같이 보여요. 뭘 볼지 고르기 편해졌어요.',
+        en: 'Showtimes now come with a poster, a rating, the director, and the top cast — easier to pick what to watch.',
       },
       {
         ko: '자정 넘은 심야 상영도 고를 수 있어요. 그날 밤 목록 맨 뒤에 붙어요.',

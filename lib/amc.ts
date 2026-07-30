@@ -75,9 +75,24 @@ function mapShowtime(s: AmcShowtime): Showtime | null {
   };
 }
 
+/**
+ * AMC 포스터 주소는 Cloudinary 원본을 그대로 가리킨다 — 한 장에 15MB짜리도 있다.
+ * 도메인 뒤에 변환 파라미터를 끼워 넣으면 같은 그림이 5KB로 온다.
+ * (AMC 자신도 posterDynamic180X74 같은 키에서 이 방식을 쓴다)
+ */
+const POSTER_TRANSFORM = 'w_240,q_auto,f_auto';
+
+function sizedPoster(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  // 예상한 모양이 아니면 손대지 않는다 (건드려서 깨뜨리느니 원본이 낫다)
+  return url.replace(/^(https:\/\/[^/]*cloudinary\.com)\/(v\d+\/)/, `$1/${POSTER_TRANSFORM}/$2`);
+}
+
 function mapMovie(s: AmcShowtime, showtime: Showtime): Movie {
   // 빈 문자열로 오는 키가 있어 ??가 아니라 falsy 폴백을 쓴다 (posterIMAXDynamic이 ''인 경우가 있다)
-  const poster = s.media?.posterDynamic || s.media?.posterAlternateDynamic || s.media?.posterIMAXDynamic;
+  const poster = sizedPoster(
+    s.media?.posterDynamic || s.media?.posterAlternateDynamic || s.media?.posterIMAXDynamic
+  );
   return {
     id: showtime.movieId,
     name: showtime.movieName,

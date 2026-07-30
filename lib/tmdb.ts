@@ -103,3 +103,81 @@ export function sanitizeTitleMeta(raw: unknown): TitleMeta | null {
     ...(cast && cast.length > 0 ? { cast } : {}),
   };
 }
+
+/**
+ * AMC 상영표 제목에 붙는 행사·포맷 꼬리표.
+ * "Spider-Man: Brand New Day Dolby Opening Night Fan Event"처럼 TMDB에 없는 이름이 오면
+ * 이 말들을 뒤에서부터 떼고 다시 찾는다.
+ */
+const EVENT_SUFFIXES = [
+  'fan event',
+  'opening night',
+  'early access',
+  'special engagement',
+  'double feature',
+  'sing-along',
+  'sing along',
+  'marathon',
+  'encore',
+  'premiere',
+  'preview',
+  'screening',
+  'experience',
+  'at amc',
+  'dolby cinema',
+  'dolby',
+  'imax with laser',
+  'imax',
+  'reald 3d',
+  'real d 3d',
+  '3d',
+  'prime',
+];
+
+/** 꼬리표를 뗀 제목 (뗄 게 없으면 원래 제목 그대로) */
+export function baseTitle(name: string): string {
+  let out = name.trim();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const lower = out.toLowerCase();
+    for (const suffix of EVENT_SUFFIXES) {
+      if (lower.endsWith(' ' + suffix)) {
+        out = out.slice(0, out.length - suffix.length - 1).trim();
+        changed = true;
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/*
+ * 첫 번째 결과를 그대로 쓴다.
+ *
+ * "제목이 정확히 같은 것"을 먼저 고르게 해봤더니 오히려 틀렸다. 조회를 ko-KR로 하기 때문에
+ * 제목이 한국어로 오고("오디세이"), 영어 제목과 글자까지 같은 항목은 한국어 번역이 없는
+ * 옛날·무명 작품뿐이다. 그래서 The Odyssey가 평점 5.5짜리 동명 영화로, Moana가 2009년
+ * 작품으로 잡혔다. 상영 중인 16편 전부 TMDB 기본 정렬의 첫 결과가 맞았다.
+ */
+
+/**
+ * 상영표의 영화 이름으로 TMDB 정보를 찾는다 (평점·감독·출연).
+ * 못 찾으면 null — 상영표 자체는 그대로 보여야 하므로 실패가 흐름을 막지 않는다.
+ */
+export async function findMovieMeta(name: string): Promise<TitleMeta | null> {
+  if (!tmdbEnabled()) return null;
+  for (const query of [name.trim(), baseTitle(name)]) {
+    if (!query) continue;
+    try {
+      const data = await tmdbFetch('/search/movie', { query, include_adult: 'false' });
+      const hit = (data.results ?? [])[0] as { id?: number } | undefined;
+      if (hit?.id) return await getTitleMeta('movie', hit.id);
+    } catch (e) {
+      console.error('[tmdb] 영화 조회 실패:', query, e instanceof Error ? e.message : e);
+      return null;
+    }
+    if (baseTitle(name) === name.trim()) break; // 뗄 꼬리표가 없으면 재시도해도 같은 질의다
+  }
+  return null;
+}
