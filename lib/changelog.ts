@@ -26,6 +26,21 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-30T01:24',
+    notable: true,
+    title: { ko: '리더보드와 호스트 스티커', en: 'A leaderboard, and host stickers' },
+    items: [
+      {
+        ko: '모임을 열면 프로필 사진에 스티커가 붙어요. 1회 🌱, 3회 ⭐, 5회 🔥, 10회 👑!',
+        en: 'Hosting meetups earns a sticker on your photo — 🌱 at 1, ⭐ at 3, 🔥 at 5, 👑 at 10!',
+      },
+      {
+        ko: '둘러보기의 🏆 리더보드에서 누가 모임을 많이 열었는지 볼 수 있어요.',
+        en: 'The 🏆 Leaderboard in Browse shows who hosts the most.',
+      },
+    ],
+  },
+  {
     at: '2026-07-29T13:48',
     notable: true,
     title: { ko: '익명 댓글과 쪽지', en: 'Anonymous comments, and 쪽지' },
