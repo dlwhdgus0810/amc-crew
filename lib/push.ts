@@ -9,7 +9,7 @@
 //  - VAPID_SUBJECT                — mailto:주소 (푸시 서비스가 문제 시 연락할 곳)
 
 import webpush from 'web-push';
-import { and, count, eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from './db/index';
 import { notifications, pushSubscriptions } from './db/schema';
 
@@ -98,7 +98,13 @@ async function unreadCounts(userIds: string[]): Promise<Map<string, number>> {
   const rows = await db
     .select({ userId: notifications.userId, n: count() })
     .from(notifications)
-    .where(and(inArray(notifications.userId, userIds), eq(notifications.read, false)))
+    .where(
+      and(
+        inArray(notifications.userId, userIds),
+        eq(notifications.read, false),
+        isNull(notifications.deletedAt)
+      )
+    )
     .groupBy(notifications.userId);
   for (const r of rows) out.set(r.userId, Number(r.n));
   return out;

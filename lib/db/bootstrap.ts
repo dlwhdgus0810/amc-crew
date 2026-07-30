@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   post_id uuid REFERENCES posts(id) ON DELETE CASCADE,
   message text NOT NULL,
   read boolean NOT NULL DEFAULT false,
+  deleted_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS notifications_user_read_idx ON notifications (user_id, read);

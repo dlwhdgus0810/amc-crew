@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, like, lt, lte, ne, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { commentLikes, favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
@@ -831,7 +831,7 @@ export async function listNotifications(userId: string) {
     })
     .from(notifications)
     .leftJoin(posts, eq(notifications.postId, posts.id))
-    .where(eq(notifications.userId, userId))
+    .where(and(eq(notifications.userId, userId), isNull(notifications.deletedAt)))
     .orderBy(desc(notifications.createdAt))
     .limit(50);
   return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
@@ -842,7 +842,9 @@ export async function unreadCount(userId: string): Promise<number> {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(notifications)
-    .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+    .where(
+      and(eq(notifications.userId, userId), eq(notifications.read, false), isNull(notifications.deletedAt))
+    );
   return row?.count ?? 0;
 }
 
@@ -856,4 +858,45 @@ export async function markNotificationsRead(userId: string, ids?: string[]): Pro
   } else {
     await db.update(notifications).set({ read: true }).where(eq(notifications.userId, userId));
   }
+}
+
+/**
+ * 알림 지우기 — 실제로 지우지 않고 표시만 한다 (관리자 화면에서 남은 것을 본다).
+ * 남의 알림을 지울 수 없도록 소유자까지 조건에 넣는다.
+ */
+export async function softDeleteNotification(id: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  const rows = await db
+    .update(notifications)
+    .set({ deletedAt: new Date() })
+    .where(and(eq(notifications.id, id), eq(notifications.userId, userId), isNull(notifications.deletedAt)))
+    .returning();
+  return rows.length > 0;
+}
+
+/** 관리자 화면용 — 지워진 알림 목록 (누가 무엇을 지웠는지) */
+export async function listDeletedNotifications(limit = 100) {
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: notifications.id,
+      message: notifications.message,
+      createdAt: notifications.createdAt,
+      deletedAt: notifications.deletedAt,
+      userId: notifications.userId,
+      kakaoName: users.kakaoName,
+      nickname: users.nickname,
+    })
+    .from(notifications)
+    .innerJoin(users, eq(notifications.userId, users.id))
+    .where(isNotNull(notifications.deletedAt))
+    .orderBy(desc(notifications.deletedAt))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: r.id,
+    message: r.message,
+    name: displayNameOf({ kakaoName: r.kakaoName, nickname: r.nickname }, '알 수 없음'),
+    createdAt: r.createdAt.toISOString(),
+    deletedAt: r.deletedAt!.toISOString(),
+  }));
 }

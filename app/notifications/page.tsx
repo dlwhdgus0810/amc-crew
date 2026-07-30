@@ -21,6 +21,8 @@ const T = {
   minutesAgo: { ko: '{n}분 전', en: '{n}m ago' },
   hoursAgo: { ko: '{n}시간 전', en: '{n}h ago' },
   daysAgo: { ko: '{n}일 전', en: '{n}d ago' },
+  del: { ko: '지우기', en: 'Delete' },
+  delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t delete that.' },
 };
 
 interface Notification {
@@ -46,6 +48,8 @@ export default function NotificationsPage() {
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [needLogin, setNeedLogin] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const t = useT();
   const locale = useLocale();
 
@@ -70,6 +74,20 @@ export default function NotificationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  /** 지우면 화면에서 먼저 없앤다 — 실패하면 문구를 띄우고 되돌린다 */
+  async function remove(id: string) {
+    const before = items;
+    setBusy(id);
+    setError(null);
+    setItems((list) => list.filter((n) => n.id !== id));
+    const res = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      setItems(before);
+      setError(t(T.delFailed));
+    }
+    setBusy(null);
+  }
+
   if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   if (needLogin) {
@@ -92,6 +110,8 @@ export default function NotificationsPage() {
         </div>
       )}
 
+      {error && <div className="msg err">{error}</div>}
+
       {items.map((n) => {
         const inner = (
           <div className={`notif-item ${n.read ? '' : 'unread'}`}>
@@ -99,12 +119,24 @@ export default function NotificationsPage() {
             <span className="notif-time">{timeAgo(n.createdAt, locale)}</span>
           </div>
         );
-        return n.category ? (
-          <Link key={n.id} href={`/c/${n.category}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-            {inner}
-          </Link>
-        ) : (
-          <div key={n.id}>{inner}</div>
+        return (
+          <div key={n.id} className="notif-row">
+            {n.category ? (
+              <Link href={`/c/${n.category}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}>
+                {inner}
+              </Link>
+            ) : (
+              <div style={{ flex: 1, minWidth: 0 }}>{inner}</div>
+            )}
+            <button
+              className="notif-del"
+              aria-label={t(T.del)}
+              disabled={busy === n.id}
+              onClick={() => remove(n.id)}
+            >
+              ✕
+            </button>
+          </div>
         );
       })}
     </>

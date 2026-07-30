@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useT } from '../i18n';
+import { useLocale, useT } from '../i18n';
 import type { Msg } from '@/lib/i18n';
 import { TEST_USERS } from '@/lib/test-users';
 
@@ -102,6 +102,15 @@ const T = {
   statsVisits: { ko: '접속', en: 'Visits' },
   statsVisitsUnit: { ko: '{n}회', en: '{n}' },
   statsNever: { ko: '기록 없음', en: 'never' },
+  deletedTitle: { ko: '지운 알림', en: 'Deleted alerts' },
+  deletedDesc: {
+    ko: '사용자가 알림 탭에서 지운 것들이에요. 실제로는 지워지지 않고 여기 남습니다.',
+    en: 'Alerts people removed from their alerts tab. Nothing is actually deleted — it lands here.',
+  },
+  deletedNone: { ko: '지워진 알림이 없어요.', en: 'Nothing has been deleted.' },
+  deletedWho: { ko: '누가', en: 'Who' },
+  deletedMsg: { ko: '알림', en: 'Alert' },
+  deletedWhen: { ko: '지운 때', en: 'Deleted' },
   statsEmpty: { ko: '아직 쌓인 기록이 없어요.', en: 'Nothing recorded yet.' },
   viewAsTitle: { ko: '테스트 계정으로 보기', en: 'View as a test account' },
   viewAsDesc: {
@@ -161,6 +170,9 @@ export default function AdminPage() {
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [isKakaoAdmin, setIsKakaoAdmin] = useState(false);
+  const [deleted, setDeleted] = useState<
+    { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
+  >(null);
   const [presence, setPresence] = useState<{
     online: { id: string; name: string; avatar: string | null; secondsAgo: number }[];
     total: number;
@@ -179,6 +191,7 @@ export default function AdminPage() {
   const [statsOpen, setStatsOpen] = useState(false);
   const [newsBusy, setNewsBusy] = useState(false);
   const t = useT();
+  const locale = useLocale();
 
   /** 최신 소식을 알림 켠 회원에게 발송 — 되돌릴 수 없어서 한 번 묻는다 */
   async function sendNews() {
@@ -213,6 +226,10 @@ export default function AdminPage() {
         if (auth.isAdmin) {
           loadRequests();
           loadTickets();
+          fetch('/api/admin/deleted-notifications')
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => d && setDeleted(d.notifications ?? []))
+            .catch(() => {});
         }
       });
   }, []);
@@ -523,6 +540,37 @@ export default function AdminPage() {
             <button className="secondary" disabled={newsBusy} onClick={sendNews}>
               {newsBusy ? t(T.newsSending) : t(T.newsSend)}
             </button>
+          </div>
+
+          <h1 style={{ marginTop: 80 }}>{t(T.deletedTitle)}</h1>
+          <p className="subtitle">{t(T.deletedDesc)}</p>
+          <div className="card">
+            {deleted === null ? (
+              <p className="hint">{t(T.loading)}</p>
+            ) : deleted.length === 0 ? (
+              <p className="hint">{t(T.deletedNone)}</p>
+            ) : (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{t(T.deletedWho)}</th>
+                      <th>{t(T.deletedMsg)}</th>
+                      <th>{t(T.deletedWhen)}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deleted.map((n) => (
+                      <tr key={n.id}>
+                        <td>{n.name}</td>
+                        <td>{n.message}</td>
+                        <td>{new Date(n.deletedAt).toLocaleString(locale === 'ko' ? 'ko-KR' : 'en-US')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <h1 style={{ marginTop: 80 }}>{t(T.onlineTitle)}</h1>

@@ -217,6 +217,11 @@ export const notifications = pgTable(
     postId: uuid('post_id').references(() => posts.id, { onDelete: 'cascade' }),
     message: text('message').notNull(),
     read: boolean('read').notNull().default(false),
+    /**
+     * 사용자가 지운 시각. 실제로 지우지 않고 표시만 한다 —
+     * 본인 화면과 뱃지 숫자에서는 빠지고, 관리자 화면에서만 보인다.
+     */
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('notifications_user_read_idx').on(t.userId, t.read)]

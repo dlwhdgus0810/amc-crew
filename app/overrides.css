@@ -815,3 +815,16 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
   display: flex; align-items: center; justify-content: center;
 }
 @media (hover: hover) { .poster-zoom-close:hover { background: rgba(255, 255, 255, 0.28); color: #fff; } }
+
+/* ── 알림 지우기 ────────────────────────────────────────────── */
+.notif-row { display: flex; align-items: stretch; gap: 6px; }
+/* min-width: 0 — 긴 알림 문구가 ✕ 버튼을 화면 밖으로 밀어내지 않게 */
+.notif-row > :first-child { min-width: 0; }
+.notif-del {
+  flex: none; align-self: center;
+  width: 32px; height: 32px; padding: 0; border-radius: 999px;
+  border: none; background: transparent; color: var(--text-dim);
+  font-size: 13px; line-height: 1; cursor: pointer;
+}
+@media (hover: hover) { .notif-del:hover { background: var(--surface-2); color: var(--text); } }
+.notif-del:disabled { opacity: 0.4; }

@@ -8,6 +8,7 @@ import { getLocale } from './locale';
 export const E = {
   loginRequired: { ko: '카카오 로그인이 필요해요.', en: 'Please log in with Kakao.' },
   postNotFound: { ko: '포스트를 찾을 수 없어요.', en: 'Meetup not found.' },
+  notifNotFound: { ko: '알림을 찾을 수 없어요.', en: 'Alert not found.' },
   badCategory: { ko: '올바르지 않은 카테고리입니다.', en: 'Unknown category.' },
   badRequest: { ko: '요청 형식이 올바르지 않습니다.', en: 'Malformed request.' },
   badDateTime: { ko: '날짜와 시간을 올바르게 입력해주세요.', en: 'Enter a valid date and time.' },
