@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-30T15:52',
+    title: { ko: '정산이 조금 더 똑똑해졌어요', en: 'Settle-ups got a bit smarter' },
+    items: [
+      {
+        ko: '앱에 없는 사람도 인원수로 더할 수 있어요. 친구 두 명이 더 있었다면 2를 넣으면 그만큼 나눠서 계산돼요.',
+        en: 'You can add people who aren’t in the app — put 2 if two extra friends chipped in, and the split accounts for them.',
+      },
+      {
+        ko: '알림에 보내기 링크가 같이 와요. 카톡에서 바로 눌러 Venmo를 열 수 있어요.',
+        en: 'The alert now carries a pay link, so you can open Venmo straight from KakaoTalk.',
+      },
+      {
+        ko: '금액 칸에는 나눈 값이 아니라 총 금액을 넣어주세요. 인원수대로 알아서 나눠요.',
+        en: 'Put the total in the amount box, not each person’s share — it divides by the head count for you.',
+      },
+    ],
+  },
+  {
     at: '2026-07-30T14:47',
     notable: true,
     title: { ko: '모임 끝나고 정산하기', en: 'Settle up after a meetup' },
