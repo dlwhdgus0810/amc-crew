@@ -26,6 +26,16 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-30T10:47',
+    title: { ko: '카테고리마다 이모지', en: 'An emoji for every category' },
+    items: [
+      {
+        ko: '카테고리 이름 옆에 이모지가 붙었어요. 축구 ⚽ 테니스 🎾 무비나잇 🍿 처럼요.',
+        en: 'Category names now carry an emoji — ⚽ Soccer, 🎾 Tennis, 🍿 Movie Night, and so on.',
+      },
+    ],
+  },
+  {
     at: '2026-07-30T10:20',
     notable: true,
     title: { ko: '앱으로 바로 오는 알림', en: 'Alerts straight from the app' },
