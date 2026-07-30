@@ -65,8 +65,12 @@ const N = {
     en: '💰 {cat} settle-up sent — {amount} requested from {n} people · {when} · {place}',
   },
   savedCopy: {
-    ko: '💰 {cat} 정산을 저장했어요 — 보낼 사람은 없어요 (총 {amount}) · {when} · {place}',
-    en: '💰 {cat} settle-up saved — nobody to bill ({amount} total) · {when} · {place}',
+    ko: '💰 {cat} 정산을 저장했어요 — 앱에 없는 분들에게 받으시면 돼요 (총 {amount}) · {when} · {place}',
+    en: '💰 {cat} settle-up saved — collect from the people outside the app ({amount} total) · {when} · {place}',
+  },
+  outsiderShare: {
+    ko: '모임 밖 인원 1인당 {amount} — 아래를 그분들께 전달하세요',
+    en: 'Each person outside the meetup owes {amount} — forward the details below',
   },
 };
 
@@ -106,6 +110,17 @@ function computeShares(
     }
   }
   return total;
+}
+
+/**
+ * 모임 밖 인원 한 명이 내야 할 금액.
+ * 외부 인원이 걸린 항목만 더한다 — 항목마다 외부 인원을 다르게 넣었다면 그 항목들만 해당된다.
+ */
+function outsiderPerHead(items: { amountCents: number; extraPeople: number; heads: number }[]): number {
+  return items.reduce(
+    (sum, i) => (i.extraPeople > 0 && i.heads > 0 ? sum + Math.floor(i.amountCents / i.heads) : sum),
+    0
+  );
 }
 
 /** 이 항목을 나눠 내는 머릿수 — 화면에 "6명이 나눠요"로 보여준다 */
@@ -332,8 +347,26 @@ export async function notifySettlement(postId: string, origin: string): Promise<
             when,
             place: post.location,
           });
-    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, message: copy });
-    messages.set(view.payee.id, { message: copy, locale });
+    /*
+     * 모임 밖 인원이 있으면 받을 수단을 함께 싣는다.
+     * 남에게 청구하는 알림과 달리 이건 "전달용"이다 — 앱에 없는 사람에게는 알림을 보낼 방법이
+     * 없으니, 받을 사람이 이 링크를 그대로 넘겨주면 된다.
+     */
+    const perOutsider = outsiderPerHead(view.items);
+    const ways =
+      perOutsider > 0
+        ? [
+            pick(locale, N.outsiderShare, { amount: formatCents(perOutsider) }),
+            view.payee.venmo
+              ? pick(locale, N.viaVenmo, { url: venmoLink(view.payee.venmo, perOutsider, note) })
+              : null,
+            view.payee.zelle ? pick(locale, N.viaZelle, { handle: view.payee.zelle }) : null,
+          ].filter(Boolean)
+        : [];
+
+    const full = `${copy}${ways.length ? `\n${ways.join('\n')}` : ''}`;
+    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, message: full });
+    messages.set(view.payee.id, { message: full, locale });
   }
 
   if (rows.length > 0) await db.insert(notifications).values(rows);
