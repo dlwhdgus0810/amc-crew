@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-30T09:02',
+    title: { ko: '영화 포스터와 심야 상영', en: 'Movie posters, and late-night showtimes' },
+    items: [
+      {
+        ko: '상영표에 영화 포스터가 보여요.',
+        en: 'The showtimes list now shows movie posters.',
+      },
+      {
+        ko: '자정 넘은 심야 상영도 고를 수 있어요. 그날 밤 목록 맨 뒤에 붙어요.',
+        en: 'After-midnight showtimes are pickable now — they sit at the end of that night’s list.',
+      },
+      {
+        ko: '매진된 회차는 매진이라고 알려주고, 취소된 회차는 아예 안 보여요.',
+        en: 'Sold-out showtimes say so, and canceled ones no longer appear at all.',
+      },
+    ],
+  },
+  {
     at: '2026-07-30T01:24',
     notable: true,
     title: { ko: '리더보드와 호스트 스티커', en: 'A leaderboard, and host stickers' },
