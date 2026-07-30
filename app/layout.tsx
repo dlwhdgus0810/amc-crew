@@ -33,6 +33,18 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: pick(locale, META.title),
     description: pick(locale, META.description),
+    /*
+     * 아이콘은 public/ 에 두고 여기서 가리킨다.
+     * app/icon.svg 같은 파일 규약을 쓰면 Next가 그쪽을 먼저 잡아 public/ 파일이 무시된다.
+     * iOS 홈 화면 아이콘은 매니페스트를 보지 않으므로 apple-touch-icon을 따로 준다.
+     */
+    icons: {
+      icon: [
+        { url: '/icon.svg', type: 'image/svg+xml' },
+        { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+      ],
+      apple: '/apple-touch-icon.png',
+    },
     // 홈 화면에 추가했을 때 주소창 없이 열리게 (구형 iOS는 매니페스트만으로는 부족하다)
     appleWebApp: {
       capable: true,

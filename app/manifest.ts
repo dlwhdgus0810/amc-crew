@@ -23,9 +23,11 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     lang: locale,
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff', // 스플래시 배경 — 앱 배경(--bg)과 맞춘다
-    theme_color: '#ffffff', // 상단 바 색 — 앱 배경과 맞춘다
+    background_color: '#F6F4EE', // 스플래시 배경 — 아이콘 종이색과 같은 값
+    theme_color: '#F7F6F2', // 상단 바 색 — 앱 배경(--bg)과 같아야 화면과 이어져 보인다
     icons: [
+      // SVG를 먼저 둔다 — 지원하는 브라우저는 벡터를 골라 어느 크기에서도 또렷하다
+      { src: '/icon.svg', type: 'image/svg+xml', sizes: 'any' },
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
       // Android 적응형 아이콘은 가장자리를 잘라내므로 안전 영역에 맞춘 별도 이미지를 쓴다
