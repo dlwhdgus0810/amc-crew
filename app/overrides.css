@@ -882,3 +882,17 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
 .settle-pay-ask strong { display: block; font-size: 14.5px; margin-bottom: 4px; }
 .settle-pay-ask p { color: var(--text-dim); font-size: 12.5px; margin: 0 0 10px; }
 .settle-pay-ask input + input { margin-top: 8px; }
+
+/* 정산: 실시간 1인당 금액 + 보내기 전 확인 */
+.settle-live {
+  margin-top: 10px; padding: 8px 12px; border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text-mid);
+  font-size: 13px; font-weight: 600;
+}
+.settle-confirm {
+  margin-top: 16px; padding: 14px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--text);
+}
+.settle-confirm > strong { display: block; font-size: 14.5px; margin-bottom: 8px; }
+.settle-confirm-total { font-size: 16px; font-weight: 700; margin: 12px 0 2px; }
+.settle-confirm-note { color: var(--text-dim); font-size: 12.5px; margin: 0; }

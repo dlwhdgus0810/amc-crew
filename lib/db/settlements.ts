@@ -13,6 +13,7 @@ import {
 } from './schema';
 import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
+import { adminIds } from '../auth';
 import { formatCents, splitWithExtras, venmoLink } from '../money';
 import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
@@ -59,6 +60,10 @@ const N = {
   btn: { ko: '정산 보기', en: 'See the split' },
   viaVenmo: { ko: 'Venmo로 보내기: {url}', en: 'Pay with Venmo: {url}' },
   viaZelle: { ko: 'Zelle: {handle}', en: 'Zelle: {handle}' },
+  sentCopy: {
+    ko: '💰 {cat} 정산을 보냈어요 — {n}명에게 총 {amount} · {when} · {place}',
+    en: '💰 {cat} settle-up sent — {amount} requested from {n} people · {when} · {place}',
+  },
 };
 
 function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined, fallback: string): string {
@@ -290,6 +295,27 @@ export async function notifySettlement(postId: string, origin: string): Promise<
     })}${ways.length ? `\n${ways.join('\n')}` : ''}`.trim();
     rows.push({ id: crypto.randomUUID(), userId: target.userId, postId, message });
     messages.set(target.userId, { message, locale });
+  }
+
+  /*
+   * 받을 사람이 관리자면 본인에게도 사본을 보낸다.
+   * 다만 "나에게 보내주세요"를 스스로 받으면 말이 안 되므로, 내용은 요청 내역 요약이다.
+   * 알림 경로가 살아 있는지 실제 기기에서 확인하는 용도이기도 하다.
+   */
+  if (adminIds().includes(view.payee.id)) {
+    const locale = toLocale(
+      (await db.select({ locale: users.locale }).from(users).where(eq(users.id, view.payee.id)))[0]?.locale
+    );
+    const asked = targets.reduce((n, t) => n + t.cents, 0);
+    const copy = pick(locale, N.sentCopy, {
+      cat: catName(post.category, locale),
+      n: String(targets.length),
+      amount: formatCents(asked),
+      when: `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`,
+      place: post.location,
+    });
+    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, message: copy });
+    messages.set(view.payee.id, { message: copy, locale });
   }
 
   await db.insert(notifications).values(rows);

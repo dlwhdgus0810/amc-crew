@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useT } from './i18n';
-import { formatCents, venmoLink } from '@/lib/money';
+import { formatCents, parseAmountCents, splitWithExtras, venmoLink } from '@/lib/money';
 
 const T = {
   title: { ko: '정산', en: 'Settle up' },
@@ -44,6 +44,21 @@ const T = {
   zellePh: { ko: 'Zelle 전화번호 또는 이메일', en: 'Zelle phone or email' },
   savePayAndSend: { ko: '저장하고 알림 보내기', en: 'Save and notify' },
   skipPay: { ko: '나중에 넣고 그냥 보내기', en: 'Skip and notify anyway' },
+  livePerHead: { ko: '{heads}명이 나눠 · 1인당 {each}', en: 'Split {heads} ways · {each} each' },
+  liveNeedAmount: { ko: '총 금액을 넣으면 1인당 얼마인지 보여드려요.', en: 'Enter the total to see each share.' },
+  confirmTitle: { ko: '이렇게 보낼게요', en: 'Here’s what goes out' },
+  confirmTotal: { ko: '총 {amount}', en: '{amount} total' },
+  confirmOutside: {
+    ko: '이 중 참가자 몫은 {mine}이고, 나머지 {out}은 모임에 없는 사람 몫이라 직접 받으셔야 해요.',
+    en: 'Members cover {mine}; the remaining {out} is the outsiders’ share, which you collect yourself.',
+  },
+  confirmNotify: { ko: '{n}명에게 알림이 갑니다', en: '{n} people get an alert' },
+  confirmNobody: { ko: '보낼 사람이 없어요. 저장만 됩니다.', en: 'Nobody to notify — this only saves.' },
+  confirmMine: { ko: '{name} (나) — 받는 사람', en: '{name} (you) — collecting' },
+  confirmSend: { ko: '확인하고 보내기', en: 'Confirm and send' },
+  confirmBack: { ko: '다시 고치기', en: 'Back to editing' },
+  badAmount: { ko: '금액을 올바르게 넣어주세요 (예: 12.50).', en: 'Enter a valid amount (e.g. 12.50).' },
+  badMembers: { ko: '나눠 낼 사람을 골라주세요.', en: 'Pick who splits it.' },
   addItem: { ko: '+ 항목 추가', en: '+ Add an item' },
   dropItem: { ko: '이 항목 빼기', en: 'Remove this item' },
   whoPays: { ko: '누가 나눠 내나요', en: 'Who splits it' },
@@ -109,6 +124,32 @@ interface Draft {
 
 const EMPTY: Draft = { label: '', amount: '', scope: 'all', memberIds: [], extra: '' };
 
+/** 한 항목을 몇 명이 나누는지 (참가자 + 외부 인원) */
+function headsOf(draft: Draft, participantIds: string[]): number {
+  const members = draft.scope === 'all' ? participantIds : draft.memberIds;
+  return members.length + Number(draft.extra || 0);
+}
+
+/**
+ * 보내기 전에 보여줄 계산 결과. 서버(lib/db/settlements.ts)와 같은 규칙으로 나눈다 —
+ * 화면에서 본 숫자와 실제로 나가는 숫자가 다르면 안 된다.
+ */
+function preview(drafts: Draft[], participantIds: string[]) {
+  const perUser = new Map<string, number>();
+  let total = 0;
+  for (const d of drafts) {
+    const cents = parseAmountCents(d.amount);
+    if (cents === null) return null;
+    const members = d.scope === 'all' ? participantIds : d.memberIds;
+    if (members.length === 0) return null;
+    for (const [id, c] of splitWithExtras(cents, members, Number(d.extra || 0))) {
+      perUser.set(id, (perUser.get(id) ?? 0) + c);
+    }
+    total += cents;
+  }
+  return { perUser, total };
+}
+
 export default function SettlementPanel({
   postId,
   participants,
@@ -139,6 +180,8 @@ export default function SettlementPanel({
   const [copied, setCopied] = useState(false);
   // 받을 계좌가 비어 있을 때 저장 직전에 한 번 물어보는 화면
   const [askPay, setAskPay] = useState(false);
+  // 저장 직전 확인 화면 (계산 결과를 보여주고 한 번 물어본다)
+  const [confirming, setConfirming] = useState(false);
   const [venmoInput, setVenmoInput] = useState('');
   const [zelleInput, setZelleInput] = useState('');
 
@@ -214,15 +257,39 @@ export default function SettlementPanel({
     );
   }
 
-  /** 계좌를 넣지 않았으면 저장 전에 한 번 묻는다 — 링크 없는 알림은 반쪽짜리다 */
+  /**
+   * 바로 보내지 않고 계산 결과를 먼저 보여준다.
+   * 금액과 인원이 맞는지는 숫자를 눈으로 봐야 알 수 있고, 알림은 되돌릴 수 없다.
+   */
   function requestSave() {
-    if (!myVenmo && !myZelle && !askPay) {
+    setMsg(null);
+    for (const d of drafts) {
+      if (parseAmountCents(d.amount) === null) {
+        setMsg({ type: 'err', text: t(T.badAmount) });
+        return;
+      }
+      if (d.scope === 'some' && d.memberIds.length === 0) {
+        setMsg({ type: 'err', text: t(T.badMembers) });
+        return;
+      }
+    }
+    // 계좌가 없으면 확인 화면에서 같이 받는다 (창을 두 번 띄우지 않는다)
+    if (!myVenmo && !myZelle) {
       setVenmoInput('');
       setZelleInput('');
       setAskPay(true);
+    }
+    setConfirming(true);
+  }
+
+  /** 확인 화면에서 "보내기" — 계좌를 넣었으면 그것부터 저장한다 */
+  async function confirmAndSend() {
+    if (askPay && (venmoInput.trim() || zelleInput.trim())) {
+      await savePayThenSend();
       return;
     }
-    save();
+    setAskPay(false);
+    await save();
   }
 
   /** 계좌를 먼저 저장한 뒤 정산을 보낸다 */
@@ -264,6 +331,7 @@ export default function SettlementPanel({
       setSettlement(data.settlement ?? null);
       setEditing(false);
       setAskPay(false);
+      setConfirming(false);
       setMsg({
         type: 'ok',
         text: data.notified > 0 ? t(T.saved, { n: data.notified }) : t(T.savedNobody),
@@ -477,6 +545,19 @@ export default function SettlementPanel({
                 </div>
                 <p className="settle-hint">{t(T.extraHint)}</p>
 
+                {/* 총 금액과 인원이 채워지는 대로 1인당 얼마인지 바로 보여준다 */}
+                <div className="settle-live">
+                  {(() => {
+                    const cents = parseAmountCents(d.amount);
+                    const heads = headsOf(d, participants.map((p) => p.id));
+                    if (cents === null || heads === 0) return t(T.liveNeedAmount);
+                    return t(T.livePerHead, {
+                      heads: String(heads),
+                      each: formatCents(Math.floor(cents / heads)),
+                    });
+                  })()}
+                </div>
+
                 {drafts.length > 1 && (
                   <button
                     className="link-btn danger-text"
@@ -497,7 +578,67 @@ export default function SettlementPanel({
               )}
             </div>
 
-            {askPay && (
+            {confirming && (
+              <div className="settle-confirm">
+                <strong>{t(T.confirmTitle)}</strong>
+                {(() => {
+                  const p = preview(drafts, participants.map((x) => x.id));
+                  if (!p) return null;
+                  const rows = [...p.perUser].filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]);
+                  const others = rows.filter(([id]) => id !== currentUserId);
+                  return (
+                    <>
+                      <ul className="settle-shares">
+                        {rows.map(([id, cents]) => {
+                          const name = participants.find((x) => x.id === id)?.name ?? '?';
+                          return (
+                            <li key={id}>
+                              <span>{id === currentUserId ? t(T.confirmMine, { name }) : name}</span>
+                              <span>{formatCents(cents)}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <p className="settle-confirm-total">{t(T.confirmTotal, { amount: formatCents(p.total) })}</p>
+                      {/* 외부 인원이 있으면 줄 합계와 총액이 다르다 — 그 차이를 밝혀둔다 */}
+                      {(() => {
+                        const mine = rows.reduce((n, [, c]) => n + c, 0);
+                        if (mine >= p.total) return null;
+                        return (
+                          <p className="settle-confirm-note">
+                            {t(T.confirmOutside, {
+                              mine: formatCents(mine),
+                              out: formatCents(p.total - mine),
+                            })}
+                          </p>
+                        );
+                      })()}
+                      <p className="settle-confirm-note">
+                        {others.length > 0 ? t(T.confirmNotify, { n: others.length }) : t(T.confirmNobody)}
+                      </p>
+                    </>
+                  );
+                })()}
+
+                <div className="field-row" style={{ marginTop: 14 }}>
+                  <button disabled={busy} onClick={confirmAndSend}>
+                    {busy ? t(T.saving) : t(T.confirmSend)}
+                  </button>
+                  <button
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      setConfirming(false);
+                      setAskPay(false);
+                    }}
+                  >
+                    {t(T.confirmBack)}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {askPay && confirming && (
               <div className="settle-pay-ask">
                 <strong>{t(T.payNeeded)}</strong>
                 <p>{t(T.payNeededDesc)}</p>
@@ -515,29 +656,21 @@ export default function SettlementPanel({
                   maxLength={60}
                   onChange={(e) => setZelleInput(e.target.value)}
                 />
-                <div className="field-row" style={{ marginTop: 10 }}>
-                  <button
-                    disabled={busy || (!venmoInput.trim() && !zelleInput.trim())}
-                    onClick={savePayThenSend}
-                  >
-                    {busy ? t(T.saving) : t(T.savePayAndSend)}
-                  </button>
-                  {/* 현금으로 받을 수도 있으니 막지는 않는다 */}
-                  <button className="secondary" disabled={busy} onClick={() => { setAskPay(false); save(); }}>
-                    {t(T.skipPay)}
-                  </button>
-                </div>
+                {/* 넣지 않아도 위의 "확인하고 보내기"로 그냥 보낼 수 있다 (현금으로 받는 경우) */}
               </div>
             )}
 
-            <div className="field-row" style={{ marginTop: 16 }}>
-              <button disabled={busy} onClick={requestSave}>
-                {busy ? t(T.saving) : t(T.save)}
-              </button>
-              <button className="secondary" disabled={busy} onClick={() => setEditing(false)}>
-                {t(T.cancel)}
-              </button>
-            </div>
+            {/* 확인 화면이 떠 있는 동안에는 감춘다 — 보내기 버튼이 둘로 보이면 헷갈린다 */}
+            {!confirming && (
+              <div className="field-row" style={{ marginTop: 16 }}>
+                <button disabled={busy} onClick={requestSave}>
+                  {busy ? t(T.saving) : t(T.save)}
+                </button>
+                <button className="secondary" disabled={busy} onClick={() => setEditing(false)}>
+                  {t(T.cancel)}
+                </button>
+              </div>
+            )}
           </>
         )}
 
