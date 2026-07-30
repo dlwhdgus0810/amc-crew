@@ -64,6 +64,10 @@ const N = {
     ko: '💰 {cat} 정산을 보냈어요 — {n}명에게 총 {amount} · {when} · {place}',
     en: '💰 {cat} settle-up sent — {amount} requested from {n} people · {when} · {place}',
   },
+  savedCopy: {
+    ko: '💰 {cat} 정산을 저장했어요 — 보낼 사람은 없어요 (총 {amount}) · {when} · {place}',
+    en: '💰 {cat} settle-up saved — nobody to bill ({amount} total) · {when} · {place}',
+  },
 };
 
 function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined, fallback: string): string {
@@ -252,17 +256,21 @@ export async function notifySettlement(postId: string, origin: string): Promise<
   if (!post) return { sent: 0 };
 
   const targets = view.shares.filter((s) => s.userId !== view.payee.id);
-  if (targets.length === 0) return { sent: 0 };
+  // 알릴 사람이 없어도 여기서 멈추지 않는다 — 관리자 사본은 그때도 나가야 한다
+  const payeeIsAdmin = adminIds().includes(view.payee.id);
+  if (targets.length === 0 && !payeeIsAdmin) return { sent: 0 };
 
-  const localeRows = await db
-    .select({ id: users.id, locale: users.locale })
-    .from(users)
-    .where(
-      inArray(
-        users.id,
-        targets.map((t) => t.userId)
-      )
-    );
+  const localeRows = targets.length
+    ? await db
+        .select({ id: users.id, locale: users.locale })
+        .from(users)
+        .where(
+          inArray(
+            users.id,
+            targets.map((t) => t.userId)
+          )
+        )
+    : [];
   const localeById = new Map(localeRows.map((r) => [r.id, toLocale(r.locale)]));
 
   const cat = getCategory(post.category);
@@ -302,23 +310,33 @@ export async function notifySettlement(postId: string, origin: string): Promise<
    * 다만 "나에게 보내주세요"를 스스로 받으면 말이 안 되므로, 내용은 요청 내역 요약이다.
    * 알림 경로가 살아 있는지 실제 기기에서 확인하는 용도이기도 하다.
    */
-  if (adminIds().includes(view.payee.id)) {
+  if (payeeIsAdmin) {
     const locale = toLocale(
       (await db.select({ locale: users.locale }).from(users).where(eq(users.id, view.payee.id)))[0]?.locale
     );
     const asked = targets.reduce((n, t) => n + t.cents, 0);
-    const copy = pick(locale, N.sentCopy, {
-      cat: catName(post.category, locale),
-      n: String(targets.length),
-      amount: formatCents(asked),
-      when: `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`,
-      place: post.location,
-    });
+    const when = `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`;
+    // 아무에게도 청구하지 않는 정산(혼자 + 외부 인원)은 "보냈다"고 하면 거짓말이 된다
+    const copy =
+      targets.length > 0
+        ? pick(locale, N.sentCopy, {
+            cat: catName(post.category, locale),
+            n: String(targets.length),
+            amount: formatCents(asked),
+            when,
+            place: post.location,
+          })
+        : pick(locale, N.savedCopy, {
+            cat: catName(post.category, locale),
+            amount: formatCents(view.totalCents),
+            when,
+            place: post.location,
+          });
     rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, message: copy });
     messages.set(view.payee.id, { message: copy, locale });
   }
 
-  await db.insert(notifications).values(rows);
+  if (rows.length > 0) await db.insert(notifications).values(rows);
   for (const [userId, { message, locale }] of messages) {
     await sendKakaoMemos([userId], message, linkUrl, pick(locale, N.btn));
     await sendPush([userId], { title: 'Kansas Korean', body: message, url: linkUrl, tag: `settle:${postId}` });
