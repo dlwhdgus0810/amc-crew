@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-30T14:47',
+    notable: true,
+    title: { ko: '모임 끝나고 정산하기', en: 'Settle up after a meetup' },
+    items: [
+      {
+        ko: '돈을 낸 사람이 모임에서 정산을 만들면, 각자에게 얼마 보내면 되는지 알림이 가요.',
+        en: 'Whoever paid can start a settle-up, and everyone gets an alert with their own share.',
+      },
+      {
+        ko: '항목마다 전원이 나눌지, 고른 사람만 낼지 정할 수 있어요. 내기에서 진 사람들만 내는 것도 돼요.',
+        en: 'Each line can be split by everyone or just the people you pick — handy when only the losers of a bet pay.',
+      },
+      {
+        ko: '프로필 → 받을 계좌에 Venmo나 Zelle을 넣어두세요. 넣어두면 상대가 한 번에 보낼 수 있어요.',
+        en: 'Add your Venmo or Zelle under Profile → How you get paid, so people can send it in one tap.',
+      },
+      {
+        ko: '정산 내용은 그 모임에 참가한 사람만 볼 수 있어요.',
+        en: 'Only people who joined that meetup can see the split.',
+      },
+    ],
+  },
+  {
     at: '2026-07-30T10:58',
     title: { ko: '앱 아이콘에 안 읽은 알림 수', en: 'Unread count on the app icon' },
     items: [
