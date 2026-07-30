@@ -15,6 +15,7 @@ import {useEffect, useRef, useState} from 'react';
 import Link from 'next/link';
 import {DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, getCategory} from '@/lib/categories';
 import PlaceLink from '@/app/place-link';
+import { hostTier } from '@/lib/hosting';
 import {useLocale, useT} from '../../i18n';
 import {dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday} from '@/lib/datefmt';
 import {addDays, todayLocal} from '@/lib/dates';
@@ -94,6 +95,8 @@ const T = {
   loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
   loginToJoin: { ko: '카카오 로그인 후 참가할 수 있어요.', en: 'Log in with Kakao to join.' },
   proposedBy: { ko: '{name} 님이 제안한 카테고리예요.', en: 'Suggested by {name}.' },
+  rankTitle: { ko: '주최 랭킹', en: 'Top hosts' },
+  rankCount: { ko: '{n}회 주최', en: 'Hosted {n}' },
   createFailed: { ko: '모임 만들기 실패', en: 'Couldn’t create the meetup' },
   createdOnce: {
     ko: '모임을 만들었어요! 구독자들에게 알림이 갔어요.',
@@ -155,7 +158,7 @@ interface PostView {
   description: string | null;
   capacity: number | null;
   visibility: 'public' | 'link';
-  participants: { id: string; name: string; avatar: string | null }[];
+  participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
   comments: CommentView[];
 }
 
@@ -234,6 +237,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
 
   // 지난 모임
   const [pastPosts, setPastPosts] = useState<PostView[] | null>(null);
+  // 주최 랭킹 — 이 카테고리에서 공개 모임을 많이 연 사람
+  const [hosts, setHosts] = useState<{ id: string; name: string; avatar: string | null; count: number }[]>([]);
   const [showPast, setShowPast] = useState(false);
   const [loadingPast, setLoadingPast] = useState(false);
 
@@ -274,10 +279,14 @@ export default function CategoryClient({ slug }: { slug: string }) {
       loadPosts(),
       // 탭 라벨에 개수를 바로 띄우려면 눌리기 전에 받아 둬야 한다 (최대 30개짜리 조회다)
       loadPast(),
+      fetch(`/api/hosts?category=${slug}`)
+        .then((r) => (r.ok ? r.json() : { hosts: [] }))
+        .then((d) => setHosts(d.hosts ?? []))
+        .catch(() => {}),
       fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
     ])
-      .then(([, , auth, sub]) => {
+      .then(([, , , auth, sub]) => {
         setUser(auth.user ?? null);
         setIsAdmin(Boolean(auth.isAdmin));
         setSubscribed((sub.subscriptions ?? []).includes(slug));
@@ -552,6 +561,28 @@ export default function CategoryClient({ slug }: { slug: string }) {
           </span>
           <span className="cat-tool-desc">{t(category.tool.desc)}</span>
         </Link>
+      )}
+
+      {hosts.length > 0 && (
+        <div className="host-rank">
+          <span className="host-rank-title">{t(T.rankTitle)}</span>
+          <ol>
+            {hosts.map((h, i) => {
+              const tier = hostTier(h.count);
+              return (
+                <li key={h.id}>
+                  <span className="host-rank-no">{['🥇', '🥈', '🥉'][i] ?? `${i + 1}`}</span>
+                  <span className="ava">
+                    {h.avatar ? <img src={h.avatar} alt="" /> : h.name.slice(0, 1)}
+                    {tier && <span className="host-sticker">{tier.sticker}</span>}
+                  </span>
+                  <span className="host-rank-name">{h.name}</span>
+                  <span className="host-rank-count">{t(T.rankCount, { n: h.count })}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       )}
 
       {category?.proposedBy && (
@@ -865,6 +896,11 @@ export default function CategoryClient({ slug }: { slug: string }) {
             {shown.map((p) => (
               <span className={`ava ${user && p.id === user.id ? 'me' : ''}`} key={p.id} title={p.name}>
                 {p.avatar ? <img src={p.avatar} alt="" /> : p.name.slice(0, 1)}
+                {hostTier(p.hostCount) && (
+                  <span className="host-sticker" title={t(hostTier(p.hostCount)!.label)}>
+                    {hostTier(p.hostCount)!.sticker}
+                  </span>
+                )}
               </span>
             ))}
             {post.participants.length > shown.length && (

@@ -6,6 +6,7 @@ import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendKakaoMemos } from '../kakao';
 import { isPastSlot, pastCutoff, todayLocal } from '../dates';
+import { hostCountsFor } from './hosting';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 import { dateLabelShort, timeLabel } from '../datefmt';
 
@@ -28,7 +29,8 @@ export interface PostView {
   isPast: boolean; // 종료 후 유예가 지났는지 (앱 시간대 기준, 서버가 판정)
   createdAt: string;
   /** avatar는 모임 카드에서 접힌 상태로 얼굴만 보여줄 때 쓴다 (없으면 이름 첫 글자) */
-  participants: { id: string; name: string; avatar: string | null }[];
+  /** hostCount는 공개 모임 주최 횟수 — 아바타 스티커(lib/hosting.ts) 용 */
+  participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
   comments: CommentView[];
 }
 
@@ -119,13 +121,15 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const userRows = await db.select().from(users);
   const userById = new Map(userRows.map((u) => [u.id, u]));
   const participantRows = await db.select().from(postParticipants).where(inArray(postParticipants.postId, postIds));
-  const byPost = new Map<string, { id: string; name: string; avatar: string | null }[]>();
+  const hostCounts = await hostCountsFor([...new Set(participantRows.map((p) => p.userId))]);
+  const byPost = new Map<string, { id: string; name: string; avatar: string | null; hostCount: number }[]>();
   for (const p of participantRows) {
     if (!byPost.has(p.postId)) byPost.set(p.postId, []);
     byPost.get(p.postId)!.push({
       id: p.userId,
       name: displayNameOf(userById.get(p.userId), '알 수 없음'),
       avatar: userById.get(p.userId)?.avatar ?? null,
+      hostCount: hostCounts.get(p.userId) ?? 0,
     });
   }
 
