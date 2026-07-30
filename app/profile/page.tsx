@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CATEGORIES, getCategory } from '@/lib/categories';
+import { CATEGORIES, catDisplayName, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../i18n';
 import { PROFILE_UPDATED } from '../nav';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
@@ -653,7 +653,7 @@ export default function ProfilePage() {
               return (
                 <li key={slug}>
                   <span className="fav-dot" style={{ background: cat?.color ?? 'var(--text-dim)' }} aria-hidden />
-                  <span className="fav-name">{cat ? t(cat.name) : slug}</span>
+                  <span className="fav-name">{cat ? t(catDisplayName(cat.slug)) : slug}</span>
                   <button
                     className="fav-move"
                     aria-label={t(T.moveUp)}

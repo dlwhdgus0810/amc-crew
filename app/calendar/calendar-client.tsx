@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { getCategory } from '@/lib/categories';
+import { catDisplayName, getCategory } from '@/lib/categories';
 import { addDays, weekdayOf } from '@/lib/dates';
 import { dateLabel, timeLabel } from '@/lib/datefmt';
 import { useLocale, useT } from '../i18n';
@@ -297,7 +297,7 @@ function MeetupList({
             <span className="cal-body">
               <span className="cal-when">
                 {timeLabel(m.startTime, locale)}
-                <span className="cal-cat">{cat ? t(cat.name) : m.category}</span>
+                <span className="cal-cat">{cat ? t(catDisplayName(cat.slug)) : m.category}</span>
                 {m.private && <span className="cal-tag">{t(T.privateTag)}</span>}
                 {m.joined && <span className="cal-tag on">{t(T.joined)}</span>}
                 {m.isPast && <span className="cal-tag">{t(T.past)}</span>}

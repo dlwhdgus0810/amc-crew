@@ -54,7 +54,7 @@ export const CATEGORIES: Category[] = [
     // 밝은 연두라 흰 글씨는 대비가 2.4:1밖에 안 나온다 — AMC 노랑처럼 검은 글씨를 쓴다
     fg: '#101010',
     kind: 'posts',
-    name: { ko: '테니스 🎾', en: 'Tennis' },
+    name: { ko: '테니스', en: 'Tennis' },
     description: { ko: '같이 해뇨', en: 'Find players' },
     locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts' },
     proposedBy: 'sarah 예지 park',
@@ -160,10 +160,24 @@ export function getCategory(slug: string): Category | undefined {
   return CATEGORIES.find((c) => c.slug === slug);
 }
 
-/** 알림·메타데이터처럼 문자열이 바로 필요한 곳에서 쓰는 카테고리 이름 */
+/** 알림·메타데이터처럼 문자열이 바로 필요한 곳에서 쓰는 카테고리 이름 (이모지 없음) */
 export function catName(slug: string, locale: Locale): string {
   const cat = getCategory(slug);
   return cat ? pick(locale, cat.name) : slug;
+}
+
+/*
+ * 이모지는 name에 넣지 않고 emoji 필드 하나로만 둔다.
+ * 이름 문자열에 섞어 넣으면 알림 문구(`${emoji} ${catName}`)에서 두 번 찍힌다 —
+ * 실제로 테니스가 "🎾 테니스 🎾 새 모임"으로 나가고 있었다.
+ */
+const DISPLAY_NAMES = new Map<string, Msg>(
+  CATEGORIES.map((c) => [c.slug, { ko: `${c.name.ko} ${c.emoji}`, en: `${c.name.en} ${c.emoji}` }])
+);
+
+/** 화면에 띄우는 이름 — 이모지가 뒤에 붙는다. 알림·캘린더 제목에는 쓰지 말 것 (catName을 쓴다) */
+export function catDisplayName(slug: string): Msg {
+  return DISPLAY_NAMES.get(slug) ?? { ko: slug, en: slug };
 }
 
 /** 이미 있는 카테고리 이름인지 (제안 중복 검사 — 두 언어 모두 본다) */

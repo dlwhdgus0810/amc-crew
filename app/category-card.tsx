@@ -9,7 +9,7 @@
    ============================================================ */
 
 import Link from 'next/link';
-import { Category } from '@/lib/categories';
+import { Category, catDisplayName } from '@/lib/categories';
 import { useT } from './i18n';
 
 const T = {
@@ -118,7 +118,7 @@ export default function CategoryCard({
         )}
       </div>
       <div>
-        <div className="car-name">{t(category.name)}</div>
+        <div className="car-name">{t(catDisplayName(category.slug))}</div>
         <div className="car-desc">{t(category.description)}</div>
       </div>
       {summary && (

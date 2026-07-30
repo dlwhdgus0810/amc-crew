@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import PlaceLink from '@/app/place-link';
 import { useEffect, useState } from 'react';
-import { getCategory } from '@/lib/categories';
+import { catDisplayName, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../../i18n';
 import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
 
@@ -155,7 +155,9 @@ export default function PostClient({ id }: { id: string }) {
   const loginNext = `/api/auth/login?next=${encodeURIComponent(`/p/${id}`)}`;
 
   // Google 캘린더 추가 링크 (ctz로 모임 시간대 고정)
+  // 캘린더 제목에는 이모지 없는 이름을 쓴다 (.ics 쪽이 이모지를 앞에 따로 붙인다)
   const catLabel = cat ? t(cat.name) : post.category;
+  const catHeading = cat ? t(catDisplayName(cat.slug)) : post.category;
   const gcalTitle = t(T.meetupSuffix, { cat: catLabel, title: post.title ? ` 〈${post.title}〉` : '' });
   const gcalDates = `${post.date.replace(/-/g, '')}T${post.startTime.replace(':', '')}00/${post.date.replace(/-/g, '')}T${post.endTime.replace(':', '')}00`;
   const gcalUrl =
@@ -171,7 +173,7 @@ export default function PostClient({ id }: { id: string }) {
     <>
       <div className="feed-head">
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-          <h1 style={{ margin: 0 }}>{catLabel}</h1>
+          <h1 style={{ margin: 0 }}>{catHeading}</h1>
           <span className="feed-dot" style={{ background: color }} />
         </div>
         <div className="feed-actions">

@@ -13,7 +13,7 @@
 
 import {useEffect, useRef, useState} from 'react';
 import Link from 'next/link';
-import {DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, getCategory} from '@/lib/categories';
+import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCategory } from '@/lib/categories';
 import PlaceLink from '@/app/place-link';
 import { hostTier } from '@/lib/hosting';
 import {useLocale, useT} from '../../i18n';
@@ -182,7 +182,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const t = useT();
   const locale = useLocale();
   const category = getCategory(slug);
-  const name = category ? t(category.name) : slug;
+  const name = category ? t(catDisplayName(category.slug)) : slug;
   const color = category?.color ?? '#101010';
   const titleLabel = category?.titleLabel ? t(category.titleLabel) : undefined;
   const useTitleSearch = category?.titleSearch === 'tmdb'; // 자동완성은 영화/드라마만
