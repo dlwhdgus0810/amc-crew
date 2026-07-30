@@ -14,7 +14,8 @@ import { useT } from './i18n';
 
 export interface CommentView {
   id: string;
-  userId: string;
+  /** 남의 익명 댓글이면 null (서버가 가린다) — 그래서 mine 판정이 자연스럽게 false가 된다 */
+  userId: string | null;
   /** 익명 댓글이면 null — 화면에서 "익명"으로 그린다 */
   name: string | null;
   anonymous: boolean;
