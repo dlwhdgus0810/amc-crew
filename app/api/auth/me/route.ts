@@ -21,6 +21,7 @@ export async function GET() {
     user: { id: user.id, name: resolveDisplayName(profile, user.name) },
     nickname: row?.nickname ?? null,
     avatar: row?.avatar ?? null,
+    venmo: row?.venmo ?? null,
     kakaoName: row?.kakaoName || user.name,
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,

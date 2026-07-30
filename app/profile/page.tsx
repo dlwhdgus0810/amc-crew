@@ -43,6 +43,14 @@ const T = {
     en: 'Leave it empty to use your Kakao nickname ({name}).',
   },
   kakaoNamePrefix: { ko: '카카오: {name}', en: 'Kakao: {name}' },
+  venmo: { ko: 'Venmo 아이디', en: 'Venmo username' },
+  venmoDesc: {
+    ko: '모임 정산에서 다른 사람이 바로 보낼 수 있게 해줘요. 돈은 앱을 거치지 않고 Venmo에서 직접 오갑니다.',
+    en: 'Lets people pay you in one tap when a meetup is settled. Money never passes through this app.',
+  },
+  venmoPh: { ko: '@ 없이 입력', en: 'without the @' },
+  venmoNone: { ko: '등록 안 함', en: 'Not set' },
+  venmoSaved: { ko: 'Venmo 아이디를 저장했어요.', en: 'Venmo username saved.' },
   basicInfo: { ko: '기본 정보', en: 'Basic info' },
   basicInfoSaved: { ko: '기본 정보를 저장했어요.', en: 'Basic info saved.' },
   birthday: { ko: '생년월일', en: 'Date of birth' },
@@ -190,6 +198,8 @@ export default function ProfilePage() {
   const [newsAlerts, setNewsAlerts] = useState(false);
   const [newsBusy, setNewsBusy] = useState(false);
   const [testBusy, setTestBusy] = useState(false);
+  const [venmo, setVenmo] = useState('');
+  const [editingVenmo, setEditingVenmo] = useState(false);
   const [favBusy, setFavBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -227,6 +237,7 @@ export default function ProfilePage() {
         setSubs(new Set(sub.subscriptions ?? []));
         setFavs(fav.favorites ?? []);
         setNewsAlerts(Boolean(news.newsAlerts));
+        setVenmo(auth.venmo ?? '');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -297,6 +308,8 @@ export default function ProfilePage() {
       setUser((u) => (u ? { ...u, name: data.name } : u));
       setNickname(data.nickname ?? null);
       if (data.avatar !== undefined) setAvatar(data.avatar);
+      if (data.venmo !== undefined) setVenmo(data.venmo ?? '');
+      setEditingVenmo(false);
       setKakaoName(data.kakaoName ?? '');
       setBirthday(data.birthday ?? '');
       setGender(data.gender ?? '');
@@ -556,6 +569,39 @@ export default function ProfilePage() {
                 setEditingName(true);
               }}
             >
+              {t(T.edit)}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <h2>{t(T.venmo)}</h2>
+      <div className="card">
+        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>{t(T.venmoDesc)}</p>
+        {editingVenmo ? (
+          <div className="field-row">
+            <input
+              type="text"
+              placeholder={t(T.venmoPh)}
+              value={venmo}
+              maxLength={30}
+              onChange={(e) => setVenmo(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !saving && saveProfile({ venmo }, t(T.venmoSaved))}
+              autoFocus
+            />
+            <button className="secondary" disabled={saving} onClick={() => saveProfile({ venmo }, t(T.venmoSaved))}>
+              {saving ? t(T.saving) : t(T.save)}
+            </button>
+            <button className="secondary" disabled={saving} onClick={() => setEditingVenmo(false)}>
+              {t(T.cancel)}
+            </button>
+          </div>
+        ) : (
+          <div className="field-row" style={{ justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 500, color: venmo ? undefined : 'var(--text-dim)' }}>
+              {venmo ? `@${venmo}` : t(T.venmoNone)}
+            </span>
+            <button className="secondary" onClick={() => setEditingVenmo(true)}>
               {t(T.edit)}
             </button>
           </div>

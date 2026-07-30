@@ -61,6 +61,26 @@ export const E = {
   badStatus: { ko: '상태 값이 올바르지 않습니다.', en: 'Invalid status.' },
   avatarType: { ko: '이미지 파일만 올릴 수 있어요.', en: 'Only image files can be uploaded.' },
   avatarSize: { ko: '사진 용량이 너무 커요. 다른 사진을 골라주세요.', en: 'That photo is too large. Please pick another.' },
+  settleNotFound: { ko: '정산을 찾을 수 없어요.', en: 'No settle-up found.' },
+  settleParticipantOnly: {
+    ko: '모임에 참가한 사람만 정산을 만들 수 있어요.',
+    en: 'Only someone in the meetup can start a settle-up.',
+  },
+  settleOwnerOnly: {
+    ko: '정산을 만든 사람만 고칠 수 있어요.',
+    en: 'Only whoever started the settle-up can change it.',
+  },
+  settleItems: { ko: '정산 항목을 1~10개로 입력해주세요.', en: 'Add between 1 and 10 items.' },
+  settleLabel: { ko: '항목 이름을 1~40자로 입력해주세요.', en: 'Each item needs a name of 1–40 characters.' },
+  settleAmount: {
+    ko: '금액을 올바르게 입력해주세요 (예: 12.50).',
+    en: 'Enter a valid amount (e.g. 12.50).',
+  },
+  settleMembers: { ko: '나눠 낼 사람을 한 명 이상 골라주세요.', en: 'Pick at least one person to split with.' },
+  venmoId: {
+    ko: 'Venmo 아이디는 영문·숫자·밑줄·하이픈 1~30자예요.',
+    en: 'A Venmo username is 1–30 characters of letters, numbers, underscores or hyphens.',
+  },
   ticketNotFound: { ko: '건의를 찾을 수 없어요.', en: 'Ticket not found.' },
   ticketTitle: { ko: '한 줄 요약을 1~80자로 입력해주세요.', en: 'The summary must be 1–80 characters.' },
   ticketBody: { ko: '자세한 내용은 2000자 이하로 입력해주세요.', en: 'Details must be 2000 characters or fewer.' },

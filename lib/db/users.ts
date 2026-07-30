@@ -31,7 +31,7 @@ export async function dbGetUser(userId: string) {
  */
 export async function dbUpdateProfile(
   userId: string,
-  patch: { kakaoName?: string; nickname?: string | null; birthday?: string; gender?: string; locale?: string; avatar?: string | null }
+  patch: { kakaoName?: string; nickname?: string | null; birthday?: string; gender?: string; locale?: string; avatar?: string | null; venmo?: string | null }
 ): Promise<UserProfile> {
   const db = await getDb();
   const existing = (await db.select().from(users).where(eq(users.id, userId)))[0];
@@ -43,6 +43,8 @@ export async function dbUpdateProfile(
   const gender = patch.gender ?? existing?.gender ?? null;
   const locale = patch.locale ?? existing?.locale ?? null;
   const avatar = patch.avatar === undefined ? (existing?.avatar ?? null) : patch.avatar;
+  // 준 것만 바꾼다 — 아래 upsert가 필드를 통째로 덮어쓰므로 안 주면 기존 값을 다시 넣어야 한다
+  const venmo = patch.venmo === undefined ? (existing?.venmo ?? null) : patch.venmo;
 
   if (patch.kakaoName !== undefined) {
     kakaoName = patch.kakaoName;
@@ -61,10 +63,10 @@ export async function dbUpdateProfile(
 
   await db
     .insert(users)
-    .values({ id: userId, kakaoName, nickname, kakaoNameHistory: history, birthday, gender, locale, avatar })
+    .values({ id: userId, kakaoName, nickname, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo })
     .onConflictDoUpdate({
       target: users.id,
-      set: { kakaoName, nickname, kakaoNameHistory: history, birthday, gender, locale, avatar },
+      set: { kakaoName, nickname, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo },
     });
 
   return { kakaoName, ...(nickname ? { nickname } : {}), kakaoNameHistory: history };

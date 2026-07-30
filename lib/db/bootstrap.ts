@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   kakao_refresh_token text,
   kakao_talk_message boolean,
   last_seen timestamptz,
+  venmo text,
   news_alerts boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -153,4 +154,27 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS push_subscriptions_user_idx ON push_subscriptions (user_id);
+
+CREATE TABLE IF NOT EXISTS settlements (
+  id uuid PRIMARY KEY,
+  post_id uuid NOT NULL UNIQUE REFERENCES posts(id) ON DELETE CASCADE,
+  payee_id text NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS settlement_items (
+  id uuid PRIMARY KEY,
+  settlement_id uuid NOT NULL REFERENCES settlements(id) ON DELETE CASCADE,
+  label text NOT NULL,
+  amount_cents integer NOT NULL,
+  scope text NOT NULL DEFAULT 'all',
+  sort integer NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS settlement_items_settlement_idx ON settlement_items (settlement_id, sort);
+
+CREATE TABLE IF NOT EXISTS settlement_item_members (
+  item_id uuid NOT NULL REFERENCES settlement_items(id) ON DELETE CASCADE,
+  user_id text NOT NULL REFERENCES users(id),
+  PRIMARY KEY (item_id, user_id)
+);
 `;

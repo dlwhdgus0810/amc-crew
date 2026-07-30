@@ -47,6 +47,7 @@ const T = {
 import type { PostView } from '@/lib/db/posts';
 import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread from '../../comment-thread';
+import SettlementPanel from '../../settlement-panel';
 import { siteUrl } from '@/lib/site';
 
 interface SessionUser {
@@ -268,6 +269,13 @@ export default function PostClient({ id }: { id: string }) {
       </div>
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
+
+      <SettlementPanel
+        postId={post.id}
+        participants={post.participants.map((p) => ({ id: p.id, name: p.name }))}
+        {...(user ? { currentUserId: user.id } : {})}
+        noteLabel={`${catLabel}${post.title ? ` 〈${post.title}〉` : ''} ${dateLabel(post.date)}`}
+      />
 
       <h2>{t(T.comments)} {post.comments.length > 0 ? post.comments.length : ''}</h2>
       <CommentThread

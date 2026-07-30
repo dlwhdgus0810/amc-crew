@@ -25,7 +25,16 @@ export async function PUT(req: NextRequest) {
     return await errJson(E.badRequest, 400);
   }
 
-  const patch: { nickname?: string | null; birthday?: string; gender?: string; locale?: Locale; avatar?: string | null } = {};
+  const patch: { nickname?: string | null; birthday?: string; gender?: string; locale?: Locale; avatar?: string | null; venmo?: string | null } = {};
+
+  if (body.venmo !== undefined) {
+    const venmo = typeof body.venmo === 'string' ? body.venmo.trim().replace(/^@/, '') : '';
+    // 딥링크 주소에 그대로 들어가는 값이라 문자 종류를 좁게 잡는다
+    if (venmo && !/^[A-Za-z0-9_-]{1,30}$/.test(venmo)) {
+      return await errJson(E.venmoId, 400);
+    }
+    patch.venmo = venmo || null;
+  }
 
   if (body.nickname !== undefined) {
     if (typeof body.nickname !== 'string') {
@@ -96,6 +105,7 @@ export async function PUT(req: NextRequest) {
     gender: row?.gender ?? null,
     locale: row?.locale ?? null,
     avatar: row?.avatar ?? null,
+    venmo: row?.venmo ?? null,
   });
   // 서버 렌더가 첫 화면부터 맞는 언어로 그려지도록 쿠키에도 반영
   if (patch.locale) {

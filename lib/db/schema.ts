@@ -21,6 +21,8 @@ export const users = pgTable('users', {
    * 일부러 최신 시각 하나만 덮어쓴다. 이력을 쌓으면 "누가 언제 들어왔나" 기록이 되어버린다.
    */
   lastSeen: timestamp('last_seen', { withTimezone: true }),
+  /** Venmo 아이디 — 정산에서 "보내기" 링크를 만들 때만 쓴다 (@ 없이 저장) */
+  venmo: text('venmo'),
   /** 새 소식(업데이트)을 카카오톡으로 받을지 — 기본은 꺼짐, 프로필에서 켠다 */
   newsAlerts: boolean('news_alerts').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -269,4 +271,56 @@ export const pushSubscriptions = pgTable(
   },
   // 발송은 늘 "이 사람들의 구독 전부"라 user_id로 찾는다
   (t) => [index('push_subscriptions_user_idx').on(t.userId)]
+);
+
+/**
+ * 모임 정산 — 한 모임에 하나. 돈을 받을 사람(payee)이 만든다.
+ *
+ * 금액은 센트 정수로 둔다. 달러를 소수로 저장하면 3명이 10달러를 나눌 때
+ * 반올림이 어긋나 합계가 원금과 안 맞는다.
+ */
+export const settlements = pgTable('settlements', {
+  id: uuid('id').primaryKey(),
+  postId: uuid('post_id')
+    .notNull()
+    .unique()
+    .references(() => posts.id, { onDelete: 'cascade' }),
+  payeeId: text('payee_id')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * 정산 항목. 하나의 정산에 여러 개가 붙는다.
+ * scope='all'이면 참가자 전원이 나눠 내고, 'some'이면 settlement_item_members에 적힌 사람만 낸다
+ * (내기에서 진 사람들만 내는 경우).
+ */
+export const settlementItems = pgTable(
+  'settlement_items',
+  {
+    id: uuid('id').primaryKey(),
+    settlementId: uuid('settlement_id')
+      .notNull()
+      .references(() => settlements.id, { onDelete: 'cascade' }),
+    label: text('label').notNull(), // 예: 레인비, 내기
+    amountCents: integer('amount_cents').notNull(),
+    scope: text('scope').notNull().default('all'), // all | some
+    sort: integer('sort').notNull().default(0),
+  },
+  (t) => [index('settlement_items_settlement_idx').on(t.settlementId, t.sort)]
+);
+
+/** scope='some' 항목을 나눠 낼 사람들 */
+export const settlementItemMembers = pgTable(
+  'settlement_item_members',
+  {
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => settlementItems.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+  },
+  (t) => [primaryKey({ columns: [t.itemId, t.userId] })]
 );
