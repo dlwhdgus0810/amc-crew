@@ -77,6 +77,10 @@ export const E = {
     en: 'Enter a valid amount (e.g. 12.50).',
   },
   settleMembers: { ko: '나눠 낼 사람을 한 명 이상 골라주세요.', en: 'Pick at least one person to split with.' },
+  settleExtra: {
+    ko: '추가 인원은 0~50명 사이 숫자로 입력해주세요.',
+    en: 'Extra people must be a whole number between 0 and 50.',
+  },
   venmoId: {
     ko: 'Venmo 아이디는 영문·숫자·밑줄·하이픈 1~30자예요.',
     en: 'A Venmo username is 1–30 characters of letters, numbers, underscores or hyphens.',

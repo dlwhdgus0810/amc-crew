@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useT } from './i18n';
-import { formatCents } from '@/lib/money';
+import { formatCents, venmoLink } from '@/lib/money';
 
 const T = {
   title: { ko: '정산', en: 'Settle up' },
@@ -23,7 +23,27 @@ const T = {
 
   itemName: { ko: '항목', en: 'Item' },
   itemNamePh: { ko: '예: 레인비', en: 'e.g. Lane fee' },
-  amount: { ko: '금액', en: 'Amount' },
+  amount: { ko: '총 금액', en: 'Total amount' },
+  amountHint: {
+    ko: '나눈 금액이 아니라 **총 금액**을 넣어주세요. 인원수대로 나눠서 계산해요.',
+    en: 'Enter the **total**, not each person’s share — it gets divided by the number of people.',
+  },
+  extra: { ko: '이 모임에 없는 사람', en: 'People not in this meetup' },
+  extraHint: {
+    ko: '앱에 없는 사람도 같이 냈다면 인원수만 더해주세요. 머릿수에 들어가 1인당 금액이 줄어요.',
+    en: 'Add how many people outside the app chipped in — they count as heads, so each share gets smaller.',
+  },
+  perHead: { ko: '{heads}명이 나눠 · 1인당 {each}', en: 'Split {heads} ways · {each} each' },
+  headsWithExtra: { ko: '{n}명 + 외부 {x}명', en: '{n} here + {x} outside' },
+  payNeeded: { ko: '받을 계좌를 먼저 넣어주세요', en: 'Add a payment method first' },
+  payNeededDesc: {
+    ko: 'Venmo나 Zelle을 넣어두면 알림에 보내기 링크가 같이 나가요. 프로필에도 저장됩니다.',
+    en: 'With Venmo or Zelle on file, the alert carries a link to pay you. It’s saved to your profile too.',
+  },
+  venmoPh: { ko: 'Venmo 아이디 (@ 없이)', en: 'Venmo username (no @)' },
+  zellePh: { ko: 'Zelle 전화번호 또는 이메일', en: 'Zelle phone or email' },
+  savePayAndSend: { ko: '저장하고 알림 보내기', en: 'Save and notify' },
+  skipPay: { ko: '나중에 넣고 그냥 보내기', en: 'Skip and notify anyway' },
   addItem: { ko: '+ 항목 추가', en: '+ Add an item' },
   dropItem: { ko: '이 항목 빼기', en: 'Remove this item' },
   whoPays: { ko: '누가 나눠 내나요', en: 'Who splits it' },
@@ -66,6 +86,8 @@ interface Item {
   amountCents: number;
   scope: 'all' | 'some';
   memberIds: string[];
+  extraPeople: number;
+  heads: number;
 }
 export interface Settlement {
   payee: { id: string; name: string; venmo: string | null; zelle: string | null };
@@ -81,25 +103,19 @@ interface Draft {
   amount: string;
   scope: 'all' | 'some';
   memberIds: string[];
+  /** 이 앱에 없는 사람 수 — 사용자가 치는 그대로 두고 저장할 때 서버가 본다 */
+  extra: string;
 }
 
-const EMPTY: Draft = { label: '', amount: '', scope: 'all', memberIds: [] };
-
-/**
- * Venmo 딥링크. 앱이 받는 사람·금액·메모를 채운 채로 열리고, 확인은 Venmo 안에서 누른다.
- * 공식 문서에 있는 규격은 아니지만 오래 쓰여 온 형태다.
- */
-function venmoLink(username: string, cents: number, note: string): string {
-  const amount = (cents / 100).toFixed(2);
-  const params = new URLSearchParams({ txn: 'pay', amount, note });
-  return `https://venmo.com/${encodeURIComponent(username)}?${params}`;
-}
+const EMPTY: Draft = { label: '', amount: '', scope: 'all', memberIds: [], extra: '' };
 
 export default function SettlementPanel({
   postId,
   participants,
   currentUserId,
   isAdmin,
+  myVenmo,
+  myZelle,
   noteLabel,
 }: {
   postId: string;
@@ -107,6 +123,9 @@ export default function SettlementPanel({
   currentUserId?: string;
   /** 관리자는 참가하지 않은 모임의 정산도 볼 수 있다 */
   isAdmin?: boolean;
+  /** 보는 사람의 받을 계좌 — 정산을 만들 때 비어 있으면 먼저 채우게 한다 */
+  myVenmo?: string | null;
+  myZelle?: string | null;
   /** Venmo 메모에 넣을 문구 (모임 이름) */
   noteLabel: string;
 }) {
@@ -118,6 +137,10 @@ export default function SettlementPanel({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  // 받을 계좌가 비어 있을 때 저장 직전에 한 번 물어보는 화면
+  const [askPay, setAskPay] = useState(false);
+  const [venmoInput, setVenmoInput] = useState('');
+  const [zelleInput, setZelleInput] = useState('');
 
   async function copyZelle(value: string) {
     try {
@@ -164,6 +187,7 @@ export default function SettlementPanel({
             amount: (i.amountCents / 100).toFixed(2),
             scope: i.scope,
             memberIds: i.memberIds,
+            extra: i.extraPeople > 0 ? String(i.extraPeople) : '',
           }))
         : [{ ...EMPTY }]
     );
@@ -190,6 +214,40 @@ export default function SettlementPanel({
     );
   }
 
+  /** 계좌를 넣지 않았으면 저장 전에 한 번 묻는다 — 링크 없는 알림은 반쪽짜리다 */
+  function requestSave() {
+    if (!myVenmo && !myZelle && !askPay) {
+      setVenmoInput('');
+      setZelleInput('');
+      setAskPay(true);
+      return;
+    }
+    save();
+  }
+
+  /** 계좌를 먼저 저장한 뒤 정산을 보낸다 */
+  async function savePayThenSend() {
+    const venmo = venmoInput.trim();
+    const zelle = zelleInput.trim();
+    if (!venmo && !zelle) return;
+    setBusy(true);
+    setMsg(null);
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...(venmo ? { venmo } : {}), ...(zelle ? { zelle } : {}) }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMsg({ type: 'err', text: data.error ?? t(T.failed) });
+      setBusy(false);
+      return;
+    }
+    setBusy(false);
+    setAskPay(false);
+    await save();
+  }
+
   async function save() {
     setBusy(true);
     setMsg(null);
@@ -197,12 +255,15 @@ export default function SettlementPanel({
       const res = await fetch(`/api/posts/${postId}/settlement`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: drafts }),
+        body: JSON.stringify({
+          items: drafts.map((d) => ({ ...d, extraPeople: d.extra.trim() ? Number(d.extra) : 0 })),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t(T.failed));
       setSettlement(data.settlement ?? null);
       setEditing(false);
+      setAskPay(false);
       setMsg({
         type: 'ok',
         text: data.notified > 0 ? t(T.saved, { n: data.notified }) : t(T.savedNobody),
@@ -306,6 +367,16 @@ export default function SettlementPanel({
                           .join(', ')}
                       </span>
                     )}
+                    {/* 총 금액을 몇 명이 나누는지 — 외부 인원이 있으면 어디서 왔는지도 밝힌다 */}
+                    <span className="settle-item-who">
+                      {t(T.perHead, {
+                        heads:
+                          item.extraPeople > 0
+                            ? t(T.headsWithExtra, { n: item.heads - item.extraPeople, x: item.extraPeople })
+                            : String(item.heads),
+                        each: formatCents(Math.floor(item.amountCents / Math.max(1, item.heads))),
+                      })}
+                    </span>
                   </span>
                   <span className="settle-item-amount">{formatCents(item.amountCents)}</span>
                 </li>
@@ -364,6 +435,8 @@ export default function SettlementPanel({
                   />
                 </div>
 
+                <p className="settle-hint">{t(T.amountHint).replace(/\*\*/g, '')}</p>
+
                 <div className="segbar" style={{ marginTop: 8 }}>
                   <button className={d.scope === 'all' ? 'on' : ''} onClick={() => patch(i, { scope: 'all' })}>
                     {t(T.everyone)}
@@ -391,6 +464,19 @@ export default function SettlementPanel({
                   </>
                 )}
 
+                <div className="field-row" style={{ marginTop: 10, alignItems: 'center' }}>
+                  <span className="settle-extra-label">{t(T.extra)}</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={d.extra}
+                    onChange={(e) => patch(i, { extra: e.target.value.replace(/[^0-9]/g, '') })}
+                    style={{ maxWidth: 80 }}
+                  />
+                </div>
+                <p className="settle-hint">{t(T.extraHint)}</p>
+
                 {drafts.length > 1 && (
                   <button
                     className="link-btn danger-text"
@@ -411,8 +497,41 @@ export default function SettlementPanel({
               )}
             </div>
 
+            {askPay && (
+              <div className="settle-pay-ask">
+                <strong>{t(T.payNeeded)}</strong>
+                <p>{t(T.payNeededDesc)}</p>
+                <input
+                  type="text"
+                  placeholder={t(T.venmoPh)}
+                  value={venmoInput}
+                  maxLength={30}
+                  onChange={(e) => setVenmoInput(e.target.value)}
+                />
+                <input
+                  type="text"
+                  placeholder={t(T.zellePh)}
+                  value={zelleInput}
+                  maxLength={60}
+                  onChange={(e) => setZelleInput(e.target.value)}
+                />
+                <div className="field-row" style={{ marginTop: 10 }}>
+                  <button
+                    disabled={busy || (!venmoInput.trim() && !zelleInput.trim())}
+                    onClick={savePayThenSend}
+                  >
+                    {busy ? t(T.saving) : t(T.savePayAndSend)}
+                  </button>
+                  {/* 현금으로 받을 수도 있으니 막지는 않는다 */}
+                  <button className="secondary" disabled={busy} onClick={() => { setAskPay(false); save(); }}>
+                    {t(T.skipPay)}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="field-row" style={{ marginTop: 16 }}>
-              <button disabled={busy} onClick={save}>
+              <button disabled={busy} onClick={requestSave}>
                 {busy ? t(T.saving) : t(T.save)}
               </button>
               <button className="secondary" disabled={busy} onClick={() => setEditing(false)}>

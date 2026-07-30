@@ -33,3 +33,39 @@ export function splitCents(total: number, userIds: string[]): Map<string, number
   ordered.forEach((id, i) => out.set(id, base + (i < remainder ? 1 : 0)));
   return out;
 }
+
+/**
+ * 모임에 없는 사람까지 끼워 나눈다.
+ *
+ * 총 금액을 (참가자 수 + 외부 인원 수)로 나누고, 그중 참가자 몫만 돌려준다.
+ * 외부 인원 몫은 앱이 청구할 대상이 없으므로 받을 사람이 알아서 받는다 —
+ * 그래서 돌려주는 금액의 합은 총액보다 작다.
+ *
+ * 나머지 센트는 참가자에게 먼저 붙인다. 어차피 외부 인원에게는 1센트를 물릴 방법이 없다.
+ */
+export function splitWithExtras(
+  total: number,
+  userIds: string[],
+  extraHeads: number
+): Map<string, number> {
+  const heads = userIds.length + Math.max(0, extraHeads);
+  const out = new Map<string, number>();
+  if (heads === 0 || total <= 0) return out;
+  const base = Math.floor(total / heads);
+  let remainder = total - base * heads;
+  for (const id of [...userIds].sort()) {
+    const extra = remainder > 0 ? 1 : 0;
+    remainder -= extra;
+    out.set(id, base + extra);
+  }
+  return out;
+}
+
+/**
+ * Venmo 딥링크 — 받는 사람·금액·메모를 채운 채로 Venmo가 열린다.
+ * 확인은 Venmo 안에서 누른다. 문서로 보장된 규격은 아니라 바뀔 수 있다.
+ */
+export function venmoLink(username: string, cents: number, note: string): string {
+  const params = new URLSearchParams({ txn: 'pay', amount: (cents / 100).toFixed(2), note });
+  return `https://venmo.com/${encodeURIComponent(username)}?${params}`;
+}

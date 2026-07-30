@@ -872,3 +872,13 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
 }
 /* min-width: 0 — 긴 이메일이 복사 버튼을 밀어내지 않게 */
 .pay-zelle-value { font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+
+/* 정산: 외부 인원 칸과 받을 계좌 안내 */
+.settle-extra-label { font-size: 13.5px; color: var(--text-mid); flex: 1; min-width: 0; }
+.settle-pay-ask {
+  margin-top: 16px; padding: 14px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.settle-pay-ask strong { display: block; font-size: 14.5px; margin-bottom: 4px; }
+.settle-pay-ask p { color: var(--text-dim); font-size: 12.5px; margin: 0 0 10px; }
+.settle-pay-ask input + input { margin-top: 8px; }

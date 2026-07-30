@@ -309,8 +309,11 @@ export const settlementItems = pgTable(
       .notNull()
       .references(() => settlements.id, { onDelete: 'cascade' }),
     label: text('label').notNull(), // 예: 레인비, 내기
+    // 총 금액. 인원수로 나누는 것은 읽을 때 계산한다 (사람이 빠지면 몫도 따라 바뀐다)
     amountCents: integer('amount_cents').notNull(),
     scope: text('scope').notNull().default('all'), // all | some
+    /** 이 앱에 없는 사람 몇 명까지 같이 나눌지 — 머릿수만 늘리고 청구는 하지 않는다 */
+    extraPeople: integer('extra_people').notNull().default(0),
     sort: integer('sort').notNull().default(0),
   },
   (t) => [index('settlement_items_settlement_idx').on(t.settlementId, t.sort)]

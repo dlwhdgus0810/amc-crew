@@ -82,7 +82,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         : [];
     if (scope === 'some' && picked.length === 0) return await errJson(E.settleMembers, 400);
 
-    items.push({ label, amountCents, scope, memberIds: picked });
+    // 이 앱에 없는 사람 수 — 머릿수만 늘린다. 위로는 넉넉히 잡아 오타를 막는 정도만.
+    const extraRaw = Number(entry?.extraPeople ?? 0);
+    if (!Number.isInteger(extraRaw) || extraRaw < 0 || extraRaw > 50) {
+      return await errJson(E.settleExtra, 400);
+    }
+
+    items.push({ label, amountCents, scope, memberIds: picked, extraPeople: extraRaw });
   }
 
   await saveSettlement({ postId: id, payeeId: payee ?? user.id, items });

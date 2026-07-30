@@ -13,26 +13,38 @@ import {
 } from './schema';
 import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
-import { formatCents, splitCents } from '../money';
+import { formatCents, splitWithExtras, venmoLink } from '../money';
 import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
 import { dateLabelShort, timeLabel } from '../datefmt';
-import { Locale, Msg, pick, toLocale } from '../i18n';
+import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 
 /** 한 항목을 누가 나눠 내는지 */
 export type ItemScope = 'all' | 'some';
 
 export interface SettlementItemInput {
   label: string;
+  /** 총 금액 — 나누는 것은 읽을 때 한다 */
   amountCents: number;
   scope: ItemScope;
   /** scope='some'일 때만 쓴다 */
   memberIds: string[];
+  /** 이 앱에 없는 사람 몇 명까지 같이 나눌지 */
+  extraPeople: number;
 }
 
 export interface SettlementView {
   payee: { id: string; name: string; venmo: string | null; zelle: string | null };
-  items: { id: string; label: string; amountCents: number; scope: ItemScope; memberIds: string[] }[];
+  items: {
+    id: string;
+    label: string;
+    amountCents: number;
+    scope: ItemScope;
+    memberIds: string[];
+    extraPeople: number;
+    /** 이 항목을 나눠 내는 총 머릿수 (참가자 + 외부 인원) */
+    heads: number;
+  }[];
   /** 사람별로 내야 할 금액 (0원인 사람은 빠진다). 받을 사람 본인도 자기 몫이 있으면 들어간다 */
   shares: { userId: string; name: string; avatar: string | null; cents: number }[];
   totalCents: number;
@@ -45,6 +57,8 @@ const N = {
     en: '💰 {cat} settle-up — send {amount} to {payee} · {when} · {place}',
   },
   btn: { ko: '정산 보기', en: 'See the split' },
+  viaVenmo: { ko: 'Venmo로 보내기: {url}', en: 'Pay with Venmo: {url}' },
+  viaZelle: { ko: 'Zelle: {handle}', en: 'Zelle: {handle}' },
 };
 
 function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined, fallback: string): string {
@@ -71,18 +85,28 @@ async function participantIds(postId: string): Promise<string[]> {
  * 사람에게 금액이 잡혀 합계가 안 맞는 것처럼 보인다.
  */
 function computeShares(
-  items: { amountCents: number; scope: ItemScope; memberIds: string[] }[],
+  items: { amountCents: number; scope: ItemScope; memberIds: string[]; extraPeople: number }[],
   participants: string[]
 ): Map<string, number> {
   const inMeetup = new Set(participants);
   const total = new Map<string, number>();
   for (const item of items) {
     const members = item.scope === 'all' ? participants : item.memberIds.filter((id) => inMeetup.has(id));
-    for (const [userId, cents] of splitCents(item.amountCents, members)) {
+    for (const [userId, cents] of splitWithExtras(item.amountCents, members, item.extraPeople)) {
       total.set(userId, (total.get(userId) ?? 0) + cents);
     }
   }
   return total;
+}
+
+/** 이 항목을 나눠 내는 머릿수 — 화면에 "6명이 나눠요"로 보여준다 */
+function headsOf(
+  item: { scope: ItemScope; memberIds: string[]; extraPeople: number },
+  participants: string[]
+): number {
+  const inMeetup = new Set(participants);
+  const members = item.scope === 'all' ? participants : item.memberIds.filter((id) => inMeetup.has(id));
+  return members.length + Math.max(0, item.extraPeople);
 }
 
 /** 모임의 정산 (없으면 null) */
@@ -113,15 +137,19 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
     membersByItem.get(m.itemId)!.push(m.userId);
   }
 
-  const items = itemRows.map((i) => ({
-    id: i.id,
-    label: i.label,
-    amountCents: i.amountCents,
-    scope: (i.scope === 'some' ? 'some' : 'all') as ItemScope,
-    memberIds: membersByItem.get(i.id) ?? [],
-  }));
-
   const participants = await participantIds(postId);
+  const items = itemRows.map((i) => {
+    const base = {
+      id: i.id,
+      label: i.label,
+      amountCents: i.amountCents,
+      scope: (i.scope === 'some' ? 'some' : 'all') as ItemScope,
+      memberIds: membersByItem.get(i.id) ?? [],
+      extraPeople: i.extraPeople,
+    };
+    return { ...base, heads: headsOf(base, participants) };
+  });
+
   const shareMap = computeShares(items, participants);
   const userRows = await db.select().from(users);
   const userById = new Map(userRows.map((u) => [u.id, u]));
@@ -178,6 +206,7 @@ export async function saveSettlement(input: {
     label: item.label,
     amountCents: item.amountCents,
     scope: item.scope,
+    extraPeople: Math.max(0, item.extraPeople),
     sort: i,
   }));
   if (itemRows.length > 0) {
@@ -236,15 +265,29 @@ export async function notifySettlement(postId: string, origin: string): Promise<
   const rows: { id: string; userId: string; postId: string; message: string }[] = [];
   const messages = new Map<string, { message: string; locale: Locale }>();
 
+  const note = `${catName(post.category, DEFAULT_LOCALE)} ${dateLabelShort(post.date, DEFAULT_LOCALE)}`;
+
   for (const target of targets) {
     const locale = localeById.get(target.userId) ?? 'ko';
+    /*
+     * 보낼 수단을 문구에 같이 실어, 알림에서 바로 열 수 있게 한다.
+     * 카톡 버튼(link)이 아니라 본문에 넣는다 — 버튼 주소는 카카오에 등록된 도메인이어야 하고,
+     * 등록되지 않은 주소는 조용히 다른 도메인으로 바뀐다.
+     */
+    const ways = [
+      view.payee.venmo
+        ? pick(locale, N.viaVenmo, { url: venmoLink(view.payee.venmo, target.cents, note) })
+        : null,
+      view.payee.zelle ? pick(locale, N.viaZelle, { handle: view.payee.zelle }) : null,
+    ].filter(Boolean);
+
     const message = `${cat?.emoji ?? ''} ${pick(locale, N.ask as Msg, {
       cat: catName(post.category, locale),
       payee: view.payee.name,
       amount: formatCents(target.cents),
       when: `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`,
       place: post.location,
-    })}`.trim();
+    })}${ways.length ? `\n${ways.join('\n')}` : ''}`.trim();
     rows.push({ id: crypto.randomUUID(), userId: target.userId, postId, message });
     messages.set(target.userId, { message, locale });
   }
@@ -330,6 +373,7 @@ export async function settlementSummaries(
       amountCents: i.amountCents,
       scope: (i.scope === 'some' ? 'some' : 'all') as ItemScope,
       memberIds: membersByItem.get(i.id) ?? [],
+      extraPeople: i.extraPeople,
     }));
     const shares = computeShares(items, participantsByPost.get(row.postId) ?? []);
     const cents = viewerId ? (shares.get(viewerId) ?? 0) : 0;

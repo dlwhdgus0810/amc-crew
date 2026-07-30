@@ -70,6 +70,8 @@ export default function PostClient({ id }: { id: string }) {
   const [post, setPost] = useState<PostView | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [myVenmo, setMyVenmo] = useState<string | null>(null);
+  const [myZelle, setMyZelle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -97,6 +99,8 @@ export default function PostClient({ id }: { id: string }) {
       .then(([, auth]) => {
         setUser(auth.user ?? null);
         setIsAdmin(Boolean(auth.isAdmin));
+        setMyVenmo(auth.venmo ?? null);
+        setMyZelle(auth.zelle ?? null);
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -275,6 +279,8 @@ export default function PostClient({ id }: { id: string }) {
         participants={post.participants.map((p) => ({ id: p.id, name: p.name }))}
         {...(user ? { currentUserId: user.id } : {})}
         isAdmin={isAdmin}
+        myVenmo={myVenmo}
+        myZelle={myZelle}
         noteLabel={`${catLabel}${post.title ? ` 〈${post.title}〉` : ''} ${dateLabel(post.date)}`}
       />
 

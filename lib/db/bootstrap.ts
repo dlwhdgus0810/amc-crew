@@ -169,6 +169,7 @@ CREATE TABLE IF NOT EXISTS settlement_items (
   label text NOT NULL,
   amount_cents integer NOT NULL,
   scope text NOT NULL DEFAULT 'all',
+  extra_people integer NOT NULL DEFAULT 0,
   sort integer NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS settlement_items_settlement_idx ON settlement_items (settlement_id, sort);
