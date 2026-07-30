@@ -63,8 +63,9 @@ const T = {
     en: 'Everything that’s changed in the app.',
   },
   newsGo: { ko: '새 소식 보기 →', en: 'See what’s new →' },
-  newsAlertsOn: { ko: '카카오톡으로 받는 중', en: 'Getting them on KakaoTalk' },
-  newsAlertsOff: { ko: '카카오톡 알림 꺼짐', en: 'KakaoTalk alerts off' },
+  // 카톡·앱 푸시 어느 쪽으로 갈지는 각자 켜 둔 것에 달렸다 — 채널 이름을 넣지 않는다
+  newsAlertsOn: { ko: '새 소식 알림 받는 중', en: 'Getting update alerts' },
+  newsAlertsOff: { ko: '새 소식 알림 꺼짐', en: 'Update alerts off' },
   newsAlertsEnable: { ko: '알림 켜기', en: 'Turn on' },
   newsAlertsDisable: { ko: '알림 끄기', en: 'Turn off' },
   favOrder: { ko: '즐겨찾기 순서', en: 'Favourite order' },

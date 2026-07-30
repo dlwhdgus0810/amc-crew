@@ -26,6 +26,25 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-30T10:20',
+    notable: true,
+    title: { ko: '앱으로 바로 오는 알림', en: 'Alerts straight from the app' },
+    items: [
+      {
+        ko: '홈 화면에 추가한 앱으로 알림을 바로 받을 수 있어요. 프로필 → 앱 푸시 알림에서 켜세요. 카카오톡 알림과 함께 받아도 되고, 하나만 받아도 돼요.',
+        en: 'Get alerts straight from the app on your home screen — turn it on in Profile → App push notifications. Keep KakaoTalk alerts too, or just one of them.',
+      },
+      {
+        ko: '아이폰은 홈 화면에 추가해야 켤 수 있어요. 사파리 공유 버튼 → "홈 화면에 추가"를 먼저 해주세요.',
+        en: 'On iPhone it only works once the app is on your home screen — Share → “Add to Home Screen” first.',
+      },
+      {
+        ko: '상영표에서 포스터를 누르면 크게 볼 수 있어요.',
+        en: 'Tap a poster in the showtimes list to see it full size.',
+      },
+    ],
+  },
+  {
     at: '2026-07-30T09:02',
     notable: true,
     title: { ko: '상영표에 포스터와 평점', en: 'Posters and ratings on the showtimes list' },
