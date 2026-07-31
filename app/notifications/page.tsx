@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import { Locale, pick } from '@/lib/i18n';
+import { useIsPeek } from '../tab-peek-context';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -54,6 +55,8 @@ export default function NotificationsPage() {
   const [error, setError] = useState<string | null>(null);
   const t = useT();
   const locale = useLocale();
+  // 옆 탭에 미리 띄워둔 사본인지 — 그렇다면 목록만 받고 읽음 처리는 하지 않는다
+  const isPeek = useIsPeek();
 
   useEffect(() => {
     fetch('/api/notifications')
@@ -64,8 +67,12 @@ export default function NotificationsPage() {
         }
         const data = await r.json();
         setItems(data.notifications ?? []);
-        // 목록을 봤으면 전부 읽음 처리 (벨 배지 갱신은 다음 페이지 이동 시)
-        if ((data.unreadCount ?? 0) > 0) {
+        /*
+         * 목록을 봤으면 전부 읽음 처리 (벨 배지 갱신은 다음 페이지 이동 시).
+         * 미리보기에서는 하지 않는다 — 옆 탭으로 띄워만 뒀는데 읽음이 되면
+         * 넘기다 말아도 안 읽은 알림과 앱 아이콘 배지가 조용히 사라진다.
+         */
+        if (!isPeek && (data.unreadCount ?? 0) > 0) {
           await fetch('/api/notifications/read', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -74,7 +81,7 @@ export default function NotificationsPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isPeek]);
 
   /** 지우면 화면에서 먼저 없앤다 — 실패하면 문구를 띄우고 되돌린다 */
   async function remove(id: string) {

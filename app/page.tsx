@@ -9,6 +9,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useIsPeek } from './tab-peek-context';
 import {
   closestCenter,
   DndContext,
@@ -94,6 +95,8 @@ export default function HubPage() {
   const favs = useMemo(() => new Set(favList), [favList]);
   // 카드 하단 「다음 일정」 한 줄 — 늦게 도착해도 레이아웃이 흔들리지 않는다
   const summaryFor = useNextMeetups();
+  // 옆 탭에 미리 띄워둔 사본인지 — 그렇다면 스크롤 자리를 건드리지 않는다
+  const isPeek = useIsPeek();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -124,6 +127,11 @@ export default function HubPage() {
    */
   useEffect(() => {
     if (loading) return;
+    /*
+     * 미리보기는 화면 밖에 있다 — 여기서 window 스크롤을 듣고 저장하면
+     * 다른 탭에서 내린 자리가 홈의 위치로 기록되고, 복원은 남의 화면을 움직인다.
+     */
+    if (isPeek) return;
 
     /*
      * 브라우저가 히스토리 항목마다 기억해둔 스크롤을 되살리면서 우리가 맞춰놓은 자리를
@@ -200,7 +208,7 @@ export default function HubPage() {
       document.removeEventListener('click', save, true);
       window.removeEventListener('pagehide', save);
     };
-  }, [loading]);
+  }, [loading, isPeek]);
 
   async function toggleSub(category: string) {
     if (!user) {

@@ -15,6 +15,7 @@ import PresenceBeat from './presence-beat';
 import ViewingAs from './viewing-as';
 import { I18nProvider } from './i18n';
 import { getLocale } from '@/lib/locale';
+import { todayLocal } from '@/lib/dates';
 import { pick } from '@/lib/i18n';
 import './globals.css';
 // 시안 파일(globals.css)을 통째로 갈아끼워도 살아남아야 하는 보정 — 반드시 뒤에 온다
@@ -71,7 +72,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <I18nProvider locale={locale}>
           <ServiceWorkerRegistrar />
-          <TabSwipe />
+          {/* today는 미리 띄워두는 캘린더 탭이 쓴다 — 기기 시계는 시간대가 다를 수 있다 */}
+          <TabSwipe today={todayLocal()} />
           <ChromeAutoHide />
           <PresenceBeat />
           <ViewingAs />
