@@ -294,8 +294,9 @@ export async function notifySettlement(postId: string, origin: string): Promise<
   const localeById = new Map(localeRows.map((r) => [r.id, toLocale(r.locale)]));
 
   const cat = getCategory(post.category);
-  const linkUrl = `${origin}/p/${postId}`;
-  const rows: { id: string; userId: string; postId: string; message: string }[] = [];
+  // 정산 알림은 모임 화면의 정산 카드로 바로 보낸다 (app/settlement-panel.tsx의 #settle)
+  const linkUrl = `${origin}/p/${postId}#settle`;
+  const rows: { id: string; userId: string; postId: string; kind: string; message: string }[] = [];
   const messages = new Map<string, { message: string; locale: Locale }>();
 
   const note = `${catName(post.category, DEFAULT_LOCALE)} ${dateLabelShort(post.date, DEFAULT_LOCALE)}`;
@@ -319,7 +320,7 @@ export async function notifySettlement(postId: string, origin: string): Promise<
       when: `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`,
       place: post.location,
     })}${ways.length ? `\n${ways.join('\n')}` : ''}`.trim();
-    rows.push({ id: crypto.randomUUID(), userId: target.userId, postId, message });
+    rows.push({ id: crypto.randomUUID(), userId: target.userId, postId, kind: 'settle', message });
     messages.set(target.userId, { message, locale });
   }
 
@@ -368,7 +369,7 @@ export async function notifySettlement(postId: string, origin: string): Promise<
         : [];
 
     const full = `${copy}${ways.length ? `\n${ways.join('\n')}` : ''}`;
-    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, message: full });
+    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, kind: 'settle', message: full });
     messages.set(view.payee.id, { message: full, locale });
   }
 

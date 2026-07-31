@@ -222,6 +222,11 @@ export const notifications = pgTable(
       .notNull()
       .references(() => users.id),
     postId: uuid('post_id').references(() => posts.id, { onDelete: 'cascade' }),
+    /**
+     * 알림 종류 — 눌렀을 때 어디로 보낼지 정하는 데만 쓴다.
+     * 'settle'이면 모임 화면의 정산 카드로 바로 보낸다. null이면 예전처럼 카테고리 피드.
+     */
+    kind: text('kind'),
     message: text('message').notNull(),
     read: boolean('read').notNull().default(false),
     /**

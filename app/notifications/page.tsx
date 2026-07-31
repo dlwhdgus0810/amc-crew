@@ -28,6 +28,8 @@ const T = {
 interface Notification {
   id: string;
   postId: string | null;
+  /** 'settle'이면 모임 화면의 정산 카드로 바로 보낸다 */
+  kind: string | null;
   message: string;
   read: boolean;
   createdAt: string;
@@ -113,6 +115,16 @@ export default function NotificationsPage() {
       {error && <div className="msg err">{error}</div>}
 
       {items.map((n) => {
+        /*
+         * 정산 알림은 그 모임의 정산 카드로 바로 보낸다 (#settle).
+         * 나머지는 예전처럼 카테고리 피드 — 목록에서 앞뒤 맥락까지 같이 보는 게 낫다.
+         */
+        const href =
+          n.kind === 'settle' && n.postId
+            ? `/p/${n.postId}#settle`
+            : n.category
+              ? `/c/${n.category}`
+              : null;
         const inner = (
           <div className={`notif-item ${n.read ? '' : 'unread'}`}>
             <span className="notif-message">{n.message}</span>
@@ -121,8 +133,8 @@ export default function NotificationsPage() {
         );
         return (
           <div key={n.id} className="notif-row">
-            {n.category ? (
-              <Link href={`/c/${n.category}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}>
+            {href ? (
+              <Link href={href} style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}>
                 {inner}
               </Link>
             ) : (

@@ -856,6 +856,7 @@ export async function listNotifications(userId: string) {
     .select({
       id: notifications.id,
       postId: notifications.postId,
+      kind: notifications.kind,
       message: notifications.message,
       read: notifications.read,
       createdAt: notifications.createdAt,

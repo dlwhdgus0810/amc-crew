@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   id uuid PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id),
   post_id uuid REFERENCES posts(id) ON DELETE CASCADE,
+  kind text,
   message text NOT NULL,
   read boolean NOT NULL DEFAULT false,
   deleted_at timestamptz,
