@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { posts, users } from './schema';
 import { resolveDisplayName } from '../store';
@@ -37,7 +37,8 @@ export async function hostRanking(limit = 50): Promise<HostRank[]> {
     .from(posts)
     .where(eq(posts.visibility, 'public'))
     .groupBy(posts.authorId)
-    .orderBy(desc(sql`count(*)`))
+    // 동률일 때 순서가 흔들리면 새로고침마다 금·은메달이 서로 바뀐다 — id로 고정한다
+    .orderBy(desc(sql`count(*)`), asc(posts.authorId))
     .limit(limit);
   if (rows.length === 0) return [];
 
