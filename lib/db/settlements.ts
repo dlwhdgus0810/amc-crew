@@ -14,7 +14,7 @@ import {
 import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
 import { adminIds } from '../auth';
-import { formatCents, splitWithExtras, venmoLink } from '../money';
+import { formatCents, shortCode, splitWithExtras, venmoLink } from '../money';
 import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
 import { dateLabelShort, timeLabel } from '../datefmt';
@@ -49,6 +49,8 @@ export interface SettlementView {
   /** 사람별로 내야 할 금액 (0원인 사람은 빠진다). 받을 사람 본인도 자기 몫이 있으면 들어간다 */
   shares: { userId: string; name: string; avatar: string | null; cents: number }[];
   totalCents: number;
+  /** 앱 밖 사람에게 전달할 짧은 링크의 코드 (/v/<code>) */
+  shortCode: string | null;
   createdAt: string;
 }
 
@@ -204,6 +206,7 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
     items,
     shares,
     totalCents: items.reduce((n, i) => n + i.amountCents, 0),
+    shortCode: row.shortCode ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -224,9 +227,18 @@ export async function saveSettlement(input: {
   if (existing) {
     // 항목은 cascade로 함께 지워진다
     await db.delete(settlementItems).where(eq(settlementItems.settlementId, settlementId));
-    await db.update(settlements).set({ payeeId: input.payeeId }).where(eq(settlements.id, settlementId));
+    await db
+      .update(settlements)
+      // 예전에 만든 정산은 코드가 없다 — 저장할 때 채운다
+      .set({ payeeId: input.payeeId, ...(existing.shortCode ? {} : { shortCode: shortCode() }) })
+      .where(eq(settlements.id, settlementId));
   } else {
-    await db.insert(settlements).values({ id: settlementId, postId: input.postId, payeeId: input.payeeId });
+    await db.insert(settlements).values({
+      id: settlementId,
+      postId: input.postId,
+      payeeId: input.payeeId,
+      shortCode: shortCode(),
+    });
   }
 
   const itemRows = input.items.map((item, i) => ({
@@ -362,7 +374,12 @@ export async function notifySettlement(postId: string, origin: string): Promise<
         ? [
             pick(locale, N.outsiderShare, { amount: formatCents(perOutsider) }),
             view.payee.venmo
-              ? pick(locale, N.viaVenmoLink, { url: venmoLink(view.payee.venmo, perOutsider, note) })
+              ? pick(locale, N.viaVenmoLink, {
+                  // 코드가 없는 옛 정산은 원래의 긴 주소로 (링크가 없는 것보다 낫다)
+                  url: view.shortCode
+                    ? `${origin}/v/${view.shortCode}`
+                    : venmoLink(view.payee.venmo, perOutsider, note),
+                })
               : null,
             view.payee.zelle ? pick(locale, N.viaZelle, { handle: view.payee.zelle }) : null,
           ].filter(Boolean)

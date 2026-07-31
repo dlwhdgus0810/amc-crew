@@ -69,3 +69,13 @@ export function venmoLink(username: string, cents: number, note: string): string
   const params = new URLSearchParams({ txn: 'pay', amount: (cents / 100).toFixed(2), note });
   return `https://venmo.com/${encodeURIComponent(username)}?${params}`;
 }
+
+/**
+ * 짧은 링크 코드. 헷갈리는 글자(0/O, 1/l/I)를 뺀 32자에서 고른다 —
+ * 사람이 눈으로 옮겨 적을 수도 있는 주소다.
+ */
+export function shortCode(length = 6): string {
+  const alphabet = '23456789abcdefghjkmnpqrstuvwxyz';
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return [...bytes].map((b) => alphabet[b % alphabet.length]).join('');
+}

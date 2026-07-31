@@ -291,6 +291,12 @@ export const pushSubscriptions = pgTable(
  */
 export const settlements = pgTable('settlements', {
   id: uuid('id').primaryKey(),
+  /**
+   * 짧은 링크 주소 (/v/<code>) — 앱 밖의 사람에게 전달하는 Venmo 링크에 쓴다.
+   * 금액이 박힌 venmo.com 주소는 96자까지 늘어나 알림 본문에서 읽기 어렵다.
+   * 우리 도메인이라 카카오 메시지에서 주소가 바뀌지도 않는다.
+   */
+  shortCode: text('short_code').unique(),
   postId: uuid('post_id')
     .notNull()
     .unique()

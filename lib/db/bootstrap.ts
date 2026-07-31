@@ -159,6 +159,7 @@ CREATE INDEX IF NOT EXISTS push_subscriptions_user_idx ON push_subscriptions (us
 
 CREATE TABLE IF NOT EXISTS settlements (
   id uuid PRIMARY KEY,
+  short_code text UNIQUE,
   post_id uuid NOT NULL UNIQUE REFERENCES posts(id) ON DELETE CASCADE,
   payee_id text NOT NULL REFERENCES users(id),
   created_at timestamptz NOT NULL DEFAULT now()
