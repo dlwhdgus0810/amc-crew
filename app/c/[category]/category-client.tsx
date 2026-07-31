@@ -148,7 +148,7 @@ interface PostView {
   id: string;
   category: string;
   authorId: string;
-  authorName: string;
+  authorName: string | null;
   title: string | null;
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null;
@@ -161,6 +161,8 @@ interface PostView {
   capacity: number | null;
   visibility: 'public' | 'link';
   participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
+  participantCount: number;
+  commentCount: number;
   /** 정산 요약 — 없으면 null (서버 PostView와 같은 모양) */
   settle: { exists: boolean; myCents: number | null; iAmPayee: boolean } | null;
   comments: CommentView[];
@@ -818,13 +820,13 @@ export default function CategoryClient({ slug }: { slug: string }) {
   function renderPost(post: PostView, past: boolean) {
     const joined = user ? post.participants.some((p) => p.id === user.id) : false;
     const mine = user?.id === post.authorId;
-    const full = post.capacity != null && post.participants.length >= post.capacity;
+    const full = post.capacity != null && post.participantCount >= post.capacity;
     const commentsOpen = openComments.has(post.id);
     const peopleOpen = openPeople.has(post.id);
     const canJoin = !past && (!mine || post.recurringRuleId);
     // 이름 줄을 얼굴로 바꾼 만큼 자리가 넉넉해져 10명까지 보여준다 (겹쳐 놓아서 폭은 얼마 안 든다)
     const shown = post.participants.slice(0, 10);
-    const left = post.capacity != null ? post.capacity - post.participants.length : null;
+    const left = post.capacity != null ? post.capacity - post.participantCount : null;
     // 참여자 이름 요약 — 나는 "나"로 바꿔 한 줄에 더 들어가게 한다
     const namesLine = post.participants
       .map((p) => (user && p.id === user.id ? t(T.me) : p.name))
@@ -856,7 +858,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
           </div>
         )}
         <div className="post-meta">
-          <PlaceLink location={post.location} /> · {post.authorName}
+          <PlaceLink location={post.location} />
+          {post.authorName && <> · {post.authorName}</>}
         </div>
         {post.description && <div className="post-desc">“{post.description}”</div>}
 
@@ -879,14 +882,14 @@ export default function CategoryClient({ slug }: { slug: string }) {
                 )}
               </span>
             ))}
-            {post.participants.length > shown.length && (
-              <span className="ava more">+{post.participants.length - shown.length}</span>
+            {shown.length > 0 && post.participantCount > shown.length && (
+              <span className="ava more">+{post.participantCount - shown.length}</span>
             )}
           </span>
           <span className="people-count">
             {post.capacity != null
-              ? t(T.peopleCap, { n: post.participants.length, cap: post.capacity })
-              : t(T.people, { n: post.participants.length })}
+              ? t(T.peopleCap, { n: post.participantCount, cap: post.capacity })
+              : t(T.people, { n: post.participantCount })}
             <span className="caret" aria-hidden="true">
               {peopleOpen ? '▴' : '▾'}
             </span>
@@ -911,7 +914,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
             aria-expanded={commentsOpen}
           >
             {t(T.comments)}
-            {post.comments.length > 0 ? ` ${post.comments.length}` : ''}
+            {post.commentCount > 0 ? ` ${post.commentCount}` : ''}
             <span className="caret" aria-hidden="true">
               {commentsOpen ? '▴' : '▾'}
             </span>
@@ -964,6 +967,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           <CommentThread
             postId={post.id}
             comments={post.comments}
+            lockedCount={post.commentCount - post.comments.length}
             {...(user ? { currentUserId: user.id } : {})}
             isAdmin={isAdmin}
             onChanged={reloadAll}

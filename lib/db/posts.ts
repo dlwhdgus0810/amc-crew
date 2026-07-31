@@ -17,7 +17,8 @@ export interface PostView {
   id: string;
   category: string;
   authorId: string;
-  authorName: string;
+  /** 비로그인에게는 null — 누가 열었는지는 회원끼리만 본다 */
+  authorName: string | null;
   title: string | null;
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null; // 정기 모임 회차면 규칙 id
@@ -32,8 +33,15 @@ export interface PostView {
   isPast: boolean; // 종료 후 유예가 지났는지 (앱 시간대 기준, 서버가 판정)
   createdAt: string;
   /** avatar는 모임 카드에서 접힌 상태로 얼굴만 보여줄 때 쓴다 (없으면 이름 첫 글자) */
-  /** hostCount는 공개 모임 주최 횟수 — 아바타 스티커(lib/hosting.ts) 용 */
+  /**
+   * hostCount는 공개 모임 주최 횟수 — 아바타 스티커(lib/hosting.ts) 용.
+   * 비로그인에게는 빈 배열이 나간다. 인원수는 participantCount로 따로 준다.
+   */
   participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
+  /** 명단과 무관하게 늘 내려가는 참가 인원수 */
+  participantCount: number;
+  /** 댓글도 이름이 붙으므로 비로그인에게는 개수만 준다 */
+  commentCount: number;
   /** 정산이 있으면 카드에 바로 보여줄 요약 (없으면 null) */
   settle: SettlementSummary | null;
   comments: CommentView[];
@@ -184,11 +192,17 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     });
   }
 
+  /*
+   * 로그인하지 않은 사람에게는 사람에 관한 것을 내려보내지 않는다 —
+   * 시간·장소·인원수까지만. 화면에서 가리는 게 아니라 응답에서 뺀다.
+   */
+  const signedIn = Boolean(viewerId);
+
   return postRows.map((p) => ({
     id: p.id,
     category: p.category,
     authorId: p.authorId,
-    authorName: displayNameOf(userById.get(p.authorId), '알 수 없음'),
+    authorName: signedIn ? displayNameOf(userById.get(p.authorId), '알 수 없음') : null,
     title: p.title,
     titleMeta: p.titleMeta ?? null,
     recurringRuleId: p.recurringRuleId ?? null,
@@ -201,9 +215,11 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     visibility: p.visibility === 'link' ? 'link' : 'public',
     isPast: isPastSlot(p.date, p.endTime),
     createdAt: p.createdAt.toISOString(),
-    participants: byPost.get(p.id) ?? [],
+    participants: signedIn ? (byPost.get(p.id) ?? []) : [],
+    participantCount: (byPost.get(p.id) ?? []).length,
     settle: settleByPost.get(p.id) ?? null,
-    comments: commentsByPost.get(p.id) ?? [],
+    comments: signedIn ? (commentsByPost.get(p.id) ?? []) : [],
+    commentCount: (commentsByPost.get(p.id) ?? []).length,
   }));
 }
 

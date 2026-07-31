@@ -27,6 +27,7 @@ export interface CommentView {
 
 const T = {
   empty: { ko: '첫 댓글을 남겨보세요.', en: 'Be the first to comment.' },
+  locked: { ko: '댓글 {n}개 — 카카오 로그인 후 볼 수 있어요.', en: '{n} comments — log in with Kakao to read them.' },
   placeholder: { ko: '댓글 남기기', en: 'Write a comment' },
   replyPlaceholder: { ko: '{name}님에게 답글', en: 'Reply to {name}' },
   submit: { ko: '등록', en: 'Post' },
@@ -58,6 +59,7 @@ export default function CommentThread({
   comments,
   currentUserId,
   isAdmin,
+  lockedCount,
   onChanged,
   onError,
 }: {
@@ -65,6 +67,8 @@ export default function CommentThread({
   comments: CommentView[];
   currentUserId?: string;
   isAdmin?: boolean;
+  /** 비로그인이라 내려오지 않은 댓글 수 — 있으면 "로그인 후 볼 수 있어요"로 알려준다 */
+  lockedCount?: number;
   /** 서버 상태가 바뀌었으니 다시 불러오라는 신호 */
   onChanged: () => Promise<void> | void;
   onError?: (message: string) => void;
@@ -203,7 +207,11 @@ export default function CommentThread({
 
   return (
     <div className="comments">
-      {roots.length === 0 && <div className="comment-empty">{t(T.empty)}</div>}
+      {roots.length === 0 && (
+        <div className="comment-empty">
+          {lockedCount && lockedCount > 0 ? t(T.locked, { n: lockedCount }) : t(T.empty)}
+        </div>
+      )}
       {roots.map((c) => renderTree(c, 0))}
 
       {currentUserId ? (

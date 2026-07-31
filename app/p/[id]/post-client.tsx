@@ -154,7 +154,7 @@ export default function PostClient({ id }: { id: string }) {
   const color = cat?.color ?? '#101010';
   const joined = user ? post.participants.some((p) => p.id === user.id) : false;
   const mine = user?.id === post.authorId;
-  const full = post.capacity != null && post.participants.length >= post.capacity;
+  const full = post.capacity != null && post.participantCount >= post.capacity;
   // 브라우저 시간대가 아니라 서버(앱 시간대) 판정을 쓴다 — 다른 지역에서 열어도 같은 결과
   const past = post.isPast;
   const loginNext = `/api/auth/login?next=${encodeURIComponent(`/p/${id}`)}`;
@@ -226,15 +226,16 @@ export default function PostClient({ id }: { id: string }) {
           )}
         </div>
         <div style={{ marginTop: 8, fontSize: 15.5 }}>
-          <PlaceLink location={post.location} /> — {post.authorName}
+          <PlaceLink location={post.location} />
+          {post.authorName && <> — {post.authorName}</>}
         </div>
         {post.description && (
           <div style={{ marginTop: 8, color: 'var(--text-dim)' }}>“{post.description}”</div>
         )}
         <div style={{ marginTop: 14, fontWeight: 700, color }}>
           {post.capacity != null
-            ? t(T.peopleCap, { n: post.participants.length, cap: post.capacity })
-            : t(T.people, { n: post.participants.length })}
+            ? t(T.peopleCap, { n: post.participantCount, cap: post.capacity })
+            : t(T.people, { n: post.participantCount })}
           {past ? t(T.pastSuffix) : full ? t(T.fullSuffix) : ''}
         </div>
         {post.participants.length > 0 && (
@@ -284,10 +285,11 @@ export default function PostClient({ id }: { id: string }) {
         noteLabel={`${catLabel}${post.title ? ` 〈${post.title}〉` : ''} ${dateLabel(post.date)}`}
       />
 
-      <h2>{t(T.comments)} {post.comments.length > 0 ? post.comments.length : ''}</h2>
+      <h2>{t(T.comments)} {post.commentCount > 0 ? post.commentCount : ''}</h2>
       <CommentThread
         postId={post.id}
         comments={post.comments}
+        lockedCount={post.commentCount - post.comments.length}
         {...(user ? { currentUserId: user.id } : {})}
         isAdmin={isAdmin}
         onChanged={loadPost}

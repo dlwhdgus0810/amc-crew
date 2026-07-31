@@ -19,6 +19,10 @@ const T = {
   },
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   empty: { ko: '아직 아무도 모임을 열지 않았어요. 첫 주최자가 되어보세요!', en: 'Nobody has hosted yet — be the first!' },
+  loginNeeded: {
+    ko: '카카오 로그인 후 볼 수 있어요.',
+    en: 'Log in with Kakao to see the leaderboard.',
+  },
   count: { ko: '{n}회 주최', en: 'Hosted {n}' },
   tiersTitle: { ko: '호스트 등급', en: 'Host tiers' },
   tierFrom: { ko: '{n}회부터', en: 'From {n}' },
@@ -27,11 +31,18 @@ const T = {
 /** 종합 주최 랭킹 — 둘러보기에서 들어온다 */
 export default function LeaderboardPage() {
   const [hosts, setHosts] = useState<HostRank[] | null>(null);
+  const [needLogin, setNeedLogin] = useState(false);
   const t = useT();
 
   useEffect(() => {
     fetch('/api/hosts')
-      .then((r) => (r.ok ? r.json() : { hosts: [] }))
+      .then((r) => {
+        if (r.status === 401) {
+          setNeedLogin(true);
+          return { hosts: [] };
+        }
+        return r.ok ? r.json() : { hosts: [] };
+      })
       .then((d) => setHosts(d.hosts ?? []))
       .catch(() => setHosts([]));
   }, []);
@@ -43,6 +54,8 @@ export default function LeaderboardPage() {
 
       {hosts === null ? (
         <p className="hint">{t(T.loading)}</p>
+      ) : needLogin ? (
+        <p className="hint">{t(T.loginNeeded)}</p>
       ) : hosts.length === 0 ? (
         <p className="hint">{t(T.empty)}</p>
       ) : (

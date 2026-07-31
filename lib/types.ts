@@ -31,8 +31,6 @@ export interface DaySchedule {
   movies: { movie: Movie; showtimes: Showtime[] }[];
   /** 실제 AMC 상영표가 아니라 예시 데이터임 — 화면에 반드시 표시한다 */
   sample?: boolean;
-  /** AMC 사이트를 보고 손으로 옮겨 적은 상영표 — 실제 값이지만 갱신되지 않는다 */
-  manual?: boolean;
 }
 
 export interface UserSelection {

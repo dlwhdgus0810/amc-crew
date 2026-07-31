@@ -37,7 +37,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         .join(' · ')
     : '';
   const description = `${metaPart ? `${metaPart} · ` : ''}${post.location} · ${pick(locale, T.joined, {
-    n: post.participants.length,
+    // 명단은 로그인한 사람에게만 내려가므로 인원수는 participantCount를 쓴다
+    n: post.participantCount,
   })}${post.capacity != null ? pick(locale, T.capacity, { n: post.capacity }) : ''}${pick(locale, T.cta)}`;
   return {
     title: `${title} — Kansas Korean`,

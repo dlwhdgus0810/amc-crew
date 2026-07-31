@@ -30,13 +30,9 @@ const T = {
     ko: 'AMC 상영표를 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
     en: 'Couldn’t load showtimes from AMC. Please try again shortly.',
   },
-  manualNotice: {
-    ko: '이 날짜 상영표는 AMC 사이트를 보고 직접 옮겨 적은 거예요. 예매 전에 AMC에서 시간을 한 번 더 확인해주세요.',
-    en: 'These showtimes were copied by hand from the AMC site. Double-check the time on AMC before you buy.',
-  },
   sampleNotice: {
-    ko: '⚠️ 아래 상영표는 예시예요. AMC에서 발급한 키가 목요일에 활성화되면 실제 상영표로 바뀝니다.',
-    en: '⚠️ These showtimes are samples. They switch to the real AMC listings once our API key goes live on Thursday.',
+    ko: '⚠️ AMC 상영표를 불러오지 못해 예시를 띄우고 있어요. 잠시 후 새로고침해주세요.',
+    en: '⚠️ Couldn’t reach AMC, so these are sample showtimes. Try refreshing in a moment.',
   },
   runtimeRating: { ko: '{runtime}분 · {rating}', en: '{runtime} min · {rating}' },
   director: { ko: '감독 {name}', en: 'Dir. {name}' },
@@ -106,7 +102,6 @@ export default function PickPage() {
   const [dates, setDates] = useState<string[]>([]);
   const [amcError, setAmcError] = useState<string | null>(null);
   const [sample, setSample] = useState(false);
-  const [manual, setManual] = useState(false);
   const [loadingDay, setLoadingDay] = useState(false);
   const [selections, setSelections] = useState<Selections>({});
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -158,7 +153,6 @@ export default function PickPage() {
     setMovies(data.movies ?? []);
     setSelections(data.selections ?? {});
     setSample(Boolean(data.sample));
-    setManual(Boolean(data.manual));
     setAmcError(data.error ?? null);
   }
 
@@ -346,7 +340,6 @@ export default function PickPage() {
       </div>
 
       {sample && <div className="msg err">{t(T.sampleNotice)}</div>}
-      {manual && <div className="msg">{t(T.manualNotice)}</div>}
       {amcError && !sample && <div className="msg err">{t(T.amcDown)}</div>}
 
       {loadingDay ? (

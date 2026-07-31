@@ -1,7 +1,6 @@
 import {Redis} from '@upstash/redis';
 import {DaySchedule, Profiles, Selections, Showtime, UserProfile, UserSelection} from './types';
 import {seedDay} from './seed';
-import {manualDay} from './amc-manual';
 import {amcConfigured, fetchAmcDay, theatreId} from './amc';
 import {dbGetProfiles, dbUpdateProfile} from './db/users';
 import {findMovieMeta, TitleMeta, TMDB_IMG, tmdbEnabled} from './tmdb';
@@ -136,7 +135,7 @@ async function withTitleMeta(movies: DaySchedule['movies']): Promise<DaySchedule
 export async function getDaySchedule(date: string): Promise<DaySchedule> {
   // 키가 없거나 아직 활성화되지 않은 동안에는 예시 상영표로 화면을 볼 수 있게 한다.
   // 반드시 sample 플래그를 달아 화면에서 "예시"임을 밝힌다 (실제 상영표로 오해하면 안 된다).
-  if (!amcConfigured()) return manualDay(date) ?? { ...seedDay(date), sample: true };
+  if (!amcConfigured()) return { ...seedDay(date), sample: true };
 
   if (hasRedis()) {
     const cached = await redis().get<DaySchedule>(dayKey(date));
@@ -151,7 +150,7 @@ export async function getDaySchedule(date: string): Promise<DaySchedule> {
   } catch (e) {
     // 키가 아직 승인 전이면 403이 온다 — 그동안은 예시 상영표로 대체하고 화면에 밝힌다
     console.error('[amc] 상영표 조회 실패 — 대체 상영표로 표시:', e instanceof Error ? e.message : e);
-    return manualDay(date) ?? { ...seedDay(date), sample: true };
+    return { ...seedDay(date), sample: true };
   }
   // 평점·감독·출연 붙이기. 여기서 실패해도 상영표는 그대로 나가야 하므로 try 밖에서 한다
   day = { ...day, movies: await withTitleMeta(day.movies) };
