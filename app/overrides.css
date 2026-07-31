@@ -939,11 +939,12 @@ a.pay-zelle-value { text-decoration: underline; text-underline-offset: 3px; }
   :root[data-tab-slide]::view-transition-new(root) { animation: none; }
 }
 
-/* ── 옆 탭 미리보기 ─────────────────────────────────────────
-   미는 동안 들어오는 탭이 실제로 그려져 있어야 두 장이 이어져 보인다.
+/* ── 탭 화면 세워두기 ───────────────────────────────────────
+   탭 다섯 개는 app/tab-deck.tsx가 한 벌로 들고 있다. 지금 보는 탭만 흐름 안에 있고,
+   나머지는 화면 밖에 세워둔다 — 밀 때 같이 끌려오려면 실제로 그려져 있어야 한다.
    상단 바(z-index 20)와 탭바(30) 아래, 본문 위에 깔린다.
-   top은 app/tab-swipe.tsx가 손이 닿을 때 상단 바를 재서 다시 맞춘다. */
-.tab-peek {
+   top은 app/tab-deck.tsx가 손이 닿을 때 상단 바를 재서 다시 맞춘다. */
+.tab-parked {
   position: fixed;
   top: 58px;
   left: 0;
@@ -958,10 +959,11 @@ a.pay-zelle-value { text-decoration: underline; text-underline-offset: 3px; }
   contain: paint;
   padding-top: 8px;
   padding-bottom: var(--tabbar);
+  /* 화면 폭만큼만 — 좁은 폰에서 안쪽 여백은 .container가 맡는다 */
+  padding-left: 18px;
+  padding-right: 18px;
 }
-.tab-peek[data-side='prev'] { transform: translateX(-100%); }
-.tab-peek[data-side='next'] { transform: translateX(100%); }
-
-@media (prefers-reduced-motion: reduce) {
-  .tab-peek { display: none; }
-}
+.tab-parked[data-side='prev'] { transform: translateX(-100%); }
+.tab-parked[data-side='next'] { transform: translateX(100%); }
+/* 바로 옆이 아닌 탭은 그릴 이유가 없다 — 상태는 그대로 살아 있다 */
+.tab-parked[data-side='away'] { display: none; }

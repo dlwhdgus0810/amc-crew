@@ -1,9 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { slideTo, TABS } from './tab-transition';
-import TabPeek from './tab-peek';
+import { PeekProvider } from './tab-peek-context';
+import HomePage from './home-page';
+import CategoriesPage from './categories/categories-page';
+import CalendarClient from './calendar/calendar-client';
+import NotificationsPage from './notifications/notifications-page';
+import ProfilePage from './profile/profile-page';
 
 /** 이만큼은 밀어야 넘긴다 (px) — 짧게 스치는 손짓으로 화면이 바뀌면 성가시다 */
 const DISTANCE = 60;
@@ -16,11 +21,24 @@ const EDGE = 24;
 /** 손을 뗀 뒤 남은 거리를 마저 미는 시간 (ms) */
 const FINISH_MS = 220;
 /** 지금 탭이 자리를 잡고 이만큼 지나면 옆 탭을 올린다 (ms) */
-const PEEK_DELAY = 1000;
-/** 넘긴 뒤 새 화면이 이때까지도 안 오면 미리보기를 걷는다 — 굳은 화면보다는 낫다 (ms) */
-const HANDOVER_MAX = 1500;
+const NEIGHBOUR_DELAY = 1000;
 
 const EASE = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+/**
+ * 탭 첫 화면들.
+ *
+ * 라우트(app/page.tsx 등)는 주소만 맡고 아무것도 그리지 않는다. 화면은 전부 여기서 그린다 —
+ * 이 컴포넌트가 레이아웃에 있어 탭을 옮겨도 다시 마운트되지 않기 때문이다.
+ * 그래서 한 번 띄운 탭은 그대로 살아 있고, 되돌아와도 처음부터 불러오지 않는다.
+ */
+const PANELS: Record<string, React.ComponentType<{ today: string }>> = {
+  '/': HomePage,
+  '/categories': CategoriesPage,
+  '/calendar': CalendarClient,
+  '/notifications': NotificationsPage,
+  '/profile': ProfilePage,
+};
 
 /** 홈 화면에 설치해 주소창 없이 열린 상태인지 */
 function isStandalone(): boolean {
@@ -49,47 +67,54 @@ function startsOnSomethingElse(target: EventTarget | null): boolean {
 }
 
 /**
- * 탭 첫 화면끼리 좌우로 넘기기.
+ * 탭 다섯 개를 한 벌로 들고 있는 자리.
  *
- * 설치한 앱에서만 켠다 — 브라우저 탭에는 뒤로가기 스와이프가 이미 있어서 서로 싸운다.
- * 모임 상세나 카테고리 피드처럼 탭 첫 화면이 아닌 곳에서도 켜지 않는다.
+ * 지금 탭은 흐름 안에 그대로 그리고, 나머지는 화면 밖에 세워둔다.
+ * 좌우로 밀면 지금 탭과 옆 탭이 같은 거리만큼 함께 움직인다 — 두 장이 이어져 있는 것처럼.
+ * 넘어간 뒤에도 화면이 다시 마운트되지 않으므로 깜빡이지 않는다.
  *
- * 옆 탭을 실제로 띄워두고 본문과 함께 민다. 미리보기가 아직 안 올라왔으면
- * (막 착지했거나 아직 내려받는 중) 예전처럼 화면 전환 애니메이션으로 넘긴다.
+ * 미는 것은 설치한 앱에서만 켠다 — 브라우저 탭에는 뒤로가기 스와이프가 이미 있어서 서로 싸운다.
  */
-export default function TabSwipe({ today }: { today: string }) {
+export default function TabDeck({ today, children }: { today: string; children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const index = TABS.indexOf(pathname);
 
   const [standalone, setStandalone] = useState(false);
-  /** 옆 탭을 올려도 될 만큼 지금 탭이 자리를 잡았는지 */
-  const [peeksUp, setPeeksUp] = useState(false);
-  const prevRef = useRef<HTMLDivElement>(null);
-  const nextRef = useRef<HTMLDivElement>(null);
+  /** 지금까지 띄운 탭들 — 한 번 띄우면 내리지 않는다 */
+  const [live, setLive] = useState<string[]>(() => (index >= 0 ? [pathname] : []));
+  const panels = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    // 움직임을 줄여 달라고 한 사람에게는 옆 탭을 띄울 이유가 없다
-    if (!isStandalone() || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    setStandalone(true);
+    if (isStandalone()) setStandalone(true);
   }, []);
 
+  /* 지금 탭은 무조건, 옆 탭은 지금 탭이 자리를 잡은 뒤에 올린다 */
   useEffect(() => {
-    setPeeksUp(false);
-    if (!standalone || index < 0) return;
+    if (index < 0) return;
+    setLive((prev) => (prev.includes(pathname) ? prev : [...prev, pathname]));
+    if (!standalone) return;
     // 착지하자마자 옆 탭까지 불러오면 정작 보고 있는 화면이 늦게 찬다
-    const timer = window.setTimeout(() => setPeeksUp(true), PEEK_DELAY);
+    const timer = window.setTimeout(() => {
+      const neighbours = [TABS[index - 1], TABS[index + 1]].filter(Boolean);
+      setLive((prev) => [...prev, ...neighbours.filter((h) => !prev.includes(h))]);
+    }, NEIGHBOUR_DELAY);
     return () => window.clearTimeout(timer);
-  }, [standalone, index]);
+  }, [pathname, index, standalone]);
+
+  /*
+   * 탭이 바뀌면 맨 위에서 시작한다.
+   * 화면이 살아 있는 채로 자리만 바꾸는 것이라 Next가 스크롤을 맞춰주지 않는다 —
+   * 안 맞추면 이전 탭에서 내려둔 만큼 내려간 자리에서 새 탭이 열린다.
+   * (홈은 이 다음에 자기가 기억한 자리로 되돌린다)
+   */
+  useLayoutEffect(() => {
+    if (index >= 0) window.scrollTo(0, 0);
+  }, [index]);
 
   useEffect(() => {
-    if (index < 0 || typeof window === 'undefined' || !isStandalone()) return;
-
-    // 옆 탭을 미리 받아둔다 — 넘긴 뒤 빈 화면을 보는 시간을 줄인다
-    for (const next of [TABS[index - 1], TABS[index + 1]]) if (next) router.prefetch(next);
-
-    // 손가락을 따라 움직일 대상. 헤더와 탭바는 고정이라 본문만 민다.
-    const page = document.querySelector('main');
+    if (index < 0 || typeof window === 'undefined' || !standalone) return;
+    const page = panels.current[pathname];
     if (!page) return;
 
     let startX = 0;
@@ -98,23 +123,23 @@ export default function TabSwipe({ today }: { today: string }) {
     let armed = false;
     /** 가로 손짓이라고 판단해 화면을 붙잡고 있는 중인지 */
     let dragging = false;
-    /** 넘기기로 확정하고 새 화면을 기다리는 중 — 이때는 새 손짓을 받지 않는다 */
-    let handingOver = false;
-    let handoverTimer = 0;
 
-    const peekOf = (dx: number) => (dx < 0 ? nextRef.current : prevRef.current);
-    const peeks = () => [prevRef.current, nextRef.current].filter(Boolean) as HTMLDivElement[];
-
-    /** 미리보기를 화면 밖 제자리로 (움직임 없이) */
-    const parkPeeks = () => {
-      for (const el of peeks()) {
-        el.style.transition = '';
-        el.style.transform = '';
-      }
-    };
+    const sideward = (dx: number) => panels.current[TABS[index + (dx < 0 ? 1 : -1)]] ?? null;
+    const others = () =>
+      TABS.filter((h) => h !== pathname)
+        .map((h) => panels.current[h])
+        .filter(Boolean) as HTMLDivElement[];
 
     const setOffset = (px: number) => {
       page.style.transform = px === 0 ? '' : `translateX(${px}px)`;
+    };
+
+    /** 세워둔 탭들을 화면 밖 제자리로 */
+    const park = () => {
+      for (const el of others()) {
+        el.style.transition = '';
+        el.style.transform = '';
+      }
     };
 
     const release = (transition: boolean) => {
@@ -123,16 +148,16 @@ export default function TabSwipe({ today }: { today: string }) {
       setOffset(0);
       page.style.willChange = '';
       if (!transition) {
-        parkPeeks();
+        park();
       } else {
-        // 본문과 미리보기가 같은 속도로 함께 돌아와야 붙어 있는 것처럼 보인다
-        for (const el of peeks()) {
+        // 지금 탭과 옆 탭이 같은 속도로 함께 돌아와야 붙어 있는 것처럼 보인다
+        for (const el of others()) {
           el.style.transition = `transform 180ms ${EASE}`;
           el.style.transform = '';
         }
         window.setTimeout(() => {
           page.style.transition = '';
-          parkPeeks();
+          park();
         }, 200);
       }
       dragging = false;
@@ -140,7 +165,7 @@ export default function TabSwipe({ today }: { today: string }) {
 
     const onStart = (e: TouchEvent) => {
       // 손가락이 둘 이상이면 확대·축소다
-      if (e.touches.length !== 1 || handingOver) {
+      if (e.touches.length !== 1) {
         armed = false;
         return;
       }
@@ -156,7 +181,7 @@ export default function TabSwipe({ today }: { today: string }) {
       page.style.transition = '';
 
       /*
-       * 미리보기는 상단 바 아래에서 시작해야 한다. 바 높이는 관리자 배너("~로 보는 중")
+       * 세워둔 탭은 상단 바 아래에서 시작해야 한다. 바 높이는 관리자 배너("~로 보는 중")
        * 때문에 화면마다 다를 수 있어, 손이 닿을 때 실제로 재서 맞춘다.
        */
       const header = document.querySelector('.site-header');
@@ -169,7 +194,7 @@ export default function TabSwipe({ today }: { today: string }) {
          */
         top = document.body.dataset.chrome === 'hidden' ? rect.height : Math.max(0, rect.bottom);
       }
-      for (const el of peeks()) el.style.top = `${top}px`;
+      for (const el of others()) el.style.top = `${top}px`;
     };
 
     const onMove = (e: TouchEvent) => {
@@ -197,21 +222,20 @@ export default function TabSwipe({ today }: { today: string }) {
       }
 
       // 갈 곳이 없는 쪽으로는 뻑뻑하게 — 끝이라는 게 손에 느껴진다
-      const hasNeighbour = Boolean(TABS[index + (dx < 0 ? 1 : -1)]);
-      setOffset(hasNeighbour ? dx : dx / 4);
+      const coming = sideward(dx);
+      setOffset(coming ? dx : dx / 4);
 
       /*
-       * 들어오는 화면을 바로 옆에 붙여 같은 거리만큼 끌고 온다.
+       * 들어오는 탭을 바로 옆에 붙여 같은 거리만큼 끌고 온다.
        * 두 장이 이어져 있는 것처럼 보이는 건 전적으로 이 한 줄이다.
        */
-      const width = window.innerWidth;
-      const coming = hasNeighbour ? peekOf(dx) : null;
       if (coming) {
+        const width = window.innerWidth;
         coming.style.transition = '';
         coming.style.transform = `translateX(${(dx < 0 ? width : -width) + dx}px)`;
       }
       // 손이 방향을 바꾸면 반대쪽은 제자리로 (어중간하게 걸쳐 있으면 두 장이 겹쳐 보인다)
-      const other = hasNeighbour ? peekOf(-dx) : null;
+      const other = sideward(-dx);
       if (other) other.style.transform = '';
 
       // 여기서부터는 우리 손짓이다. 세로 스크롤이 함께 일어나지 않게 막는다
@@ -241,10 +265,10 @@ export default function TabSwipe({ today }: { today: string }) {
         return;
       }
 
-      const coming = peekOf(dx);
+      const coming = sideward(dx);
       if (!coming) {
         /*
-         * 옆 탭이 아직 안 올라왔다 (착지한 지 얼마 안 됐거나 내려받는 중).
+         * 옆 탭이 아직 안 올라왔다 (착지한 지 얼마 안 됐다).
          * 손가락이 놓인 자리를 넘겨 화면 전환 애니메이션으로 마무리한다.
          */
         document.documentElement.style.setProperty('--tab-drag', `${Math.round(dx)}px`);
@@ -254,11 +278,9 @@ export default function TabSwipe({ today }: { today: string }) {
       }
 
       /*
-       * 남은 거리를 마저 민다. 다 밀고 나면 미리보기가 화면을 덮고 있고,
-       * 그 자리로 진짜 화면이 도착하는 순간 이 층이 통째로 사라진다 —
-       * 눈에는 밀어 넣은 화면이 그대로 남아 있는 것처럼 보인다.
+       * 남은 거리를 마저 민 다음 주소만 바꾼다.
+       * 화면은 이미 제자리에 와 있고 다시 그려지지도 않는다 — 자리만 맞바꾸면 끝이다.
        */
-      handingOver = true;
       dragging = false;
       const width = window.innerWidth;
       page.style.transition = `transform ${FINISH_MS}ms ${EASE}`;
@@ -267,11 +289,6 @@ export default function TabSwipe({ today }: { today: string }) {
       coming.style.transform = 'translateX(0px)';
 
       window.setTimeout(() => router.push(target), FINISH_MS);
-      // 새 화면이 끝내 안 오면 되돌린다 (경로가 안 바뀌면 아래 정리도 돌지 않는다)
-      handoverTimer = window.setTimeout(() => {
-        handingOver = false;
-        release(false);
-      }, HANDOVER_MAX);
     };
 
     const onCancel = () => release(true);
@@ -286,37 +303,44 @@ export default function TabSwipe({ today }: { today: string }) {
       window.removeEventListener('touchmove', onMove);
       window.removeEventListener('touchend', onEnd);
       window.removeEventListener('touchcancel', onCancel);
-      window.clearTimeout(handoverTimer);
       /*
-       * 경로가 바뀌어 여기까지 왔다면 새 화면이 이미 자리에 있다.
-       * 밀어놨던 본문이 제자리로 돌아오는 것과 미리보기가 사라지는 것이 같은 순간에
-       * 일어나므로, 눈에는 그대로 이어진다.
+       * 탭이 바뀌어 여기까지 왔다면 자리 맞바꾸기는 이미 끝났다.
+       * 밀어놨던 자국만 지운다 — 같은 순간에 일어나므로 눈에는 이어진다.
        */
       release(false);
       page.style.transition = '';
     };
-  }, [pathname, router, index]);
+  }, [pathname, index, router, standalone, live]);
 
-  if (!standalone || index < 0 || !peeksUp) return null;
-
-  const prev = TABS[index - 1];
-  const next = TABS[index + 1];
   return (
     <>
-      {prev && (
-        <div className="tab-peek" data-side="prev" ref={prevRef} aria-hidden inert>
-          <div className="container">
-            <TabPeek href={prev} today={today} />
+      {children}
+      {TABS.filter((href) => live.includes(href)).map((href) => {
+        const Panel = PANELS[href];
+        /*
+         * 옆에 세워두는 건 밀 수 있을 때뿐이다. 브라우저에서는 미는 기능이 없으니
+         * 그릴 이유도 없다 — 화면 밖이라도 그리는 값은 든다.
+         */
+        const at = index < 0 || !standalone ? 99 : TABS.indexOf(href) - index;
+        const here = at === 0;
+        return (
+          <div
+            key={href}
+            ref={(el) => {
+              panels.current[href] = el;
+            }}
+            className={here ? 'tab-live' : 'tab-parked'}
+            data-side={at === -1 ? 'prev' : at === 1 ? 'next' : 'away'}
+            aria-hidden={here ? undefined : true}
+            inert={here ? undefined : true}
+          >
+            {/* 세워둔 탭은 사람이 보고 있는 화면이 아니다 — 읽음 처리·스크롤 저장을 막는다 */}
+            <PeekProvider value={!here}>
+              <Panel today={today} />
+            </PeekProvider>
           </div>
-        </div>
-      )}
-      {next && (
-        <div className="tab-peek" data-side="next" ref={nextRef} aria-hidden inert>
-          <div className="container">
-            <TabPeek href={next} today={today} />
-          </div>
-        </div>
-      )}
+        );
+      })}
     </>
   );
 }
