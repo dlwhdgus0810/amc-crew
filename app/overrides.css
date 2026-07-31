@@ -928,9 +928,9 @@ a.pay-zelle-value { text-decoration: underline; text-underline-offset: 3px; }
 :root[data-tab-slide='prev']::view-transition-old(root) { animation-name: tab-out-right; }
 :root[data-tab-slide='prev']::view-transition-new(root) { animation-name: tab-in-left; }
 
-@keyframes tab-out-left  { to   { transform: translateX(-28%); opacity: 0.6; } }
+@keyframes tab-out-left  { from { transform: translateX(var(--tab-drag, 0px)); } to { transform: translateX(-28%); opacity: 0.6; } }
 @keyframes tab-in-right  { from { transform: translateX(100%); } }
-@keyframes tab-out-right { to   { transform: translateX(28%); opacity: 0.6; } }
+@keyframes tab-out-right { from { transform: translateX(var(--tab-drag, 0px)); } to { transform: translateX(28%); opacity: 0.6; } }
 @keyframes tab-in-left   { from { transform: translateX(-100%); } }
 
 /* 움직임을 줄여 달라고 설정한 사람에게는 걸지 않는다 (스크립트에서도 한 번 더 막는다) */

@@ -63,6 +63,8 @@ export function slideTo(target: string, from: string, push: (href: string) => vo
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (!direction || reduced || typeof start !== 'function') {
+    // 스와이프가 남긴 시작점을 치운다 — 여기서 안 지우면 다음 전환까지 따라간다
+    document.documentElement.style.removeProperty('--tab-drag');
     push(target);
     return;
   }
@@ -73,7 +75,11 @@ export function slideTo(target: string, from: string, push: (href: string) => vo
     push(target);
     await waitForRender(target);
   });
-  const clear = () => delete document.documentElement.dataset.tabSlide;
+  const clear = () => {
+    delete document.documentElement.dataset.tabSlide;
+    // 다음 전환이 옛 손짓 위치에서 출발하지 않도록 치운다
+    document.documentElement.style.removeProperty('--tab-drag');
+  };
   // 전환이 중간에 건너뛰어지면 finished가 거부된다 — 표시는 어느 쪽이든 지워야 한다
   transition.finished.then(clear, clear);
 }

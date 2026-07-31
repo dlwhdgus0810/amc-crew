@@ -56,10 +56,29 @@ export default function TabSwipe() {
     // 옆 탭을 미리 받아둔다 — 넘긴 뒤 빈 화면을 보는 시간을 줄인다
     for (const next of [TABS[index - 1], TABS[index + 1]]) if (next) router.prefetch(next);
 
+    // 손가락을 따라 움직일 대상. 헤더와 탭바는 고정이라 본문만 민다.
+    const page = document.querySelector('main');
+    if (!page) return;
+
     let startX = 0;
     let startY = 0;
     let startedAt = 0;
     let armed = false;
+    /** 가로 손짓이라고 판단해 화면을 붙잡고 있는 중인지 */
+    let dragging = false;
+
+    const setOffset = (px: number) => {
+      page.style.transform = px === 0 ? '' : `translateX(${px}px)`;
+    };
+
+    const release = (transition: boolean) => {
+      document.documentElement.style.overflowX = '';
+      page.style.transition = transition ? 'transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1)' : '';
+      setOffset(0);
+      page.style.willChange = '';
+      if (transition) window.setTimeout(() => (page.style.transition = ''), 220);
+      dragging = false;
+    };
 
     const onStart = (e: TouchEvent) => {
       // 손가락이 둘 이상이면 확대·축소다
@@ -75,30 +94,85 @@ export default function TabSwipe() {
       startX = touch.clientX;
       startY = touch.clientY;
       startedAt = Date.now();
+      dragging = false;
+      page.style.transition = '';
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (!armed || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+
+      if (!dragging) {
+        // 세로가 이기면 스크롤이다 — 이번 손짓은 놓아준다
+        if (Math.abs(dy) > Math.abs(dx)) {
+          armed = false;
+          return;
+        }
+        // 가로 의도가 분명해질 때까지는 아무것도 하지 않는다 (탭·스크롤을 방해하지 않으려고)
+        if (Math.abs(dx) < 10) return;
+        dragging = true;
+        page.style.willChange = 'transform';
+        /*
+         * 오른쪽으로 밀면 본문이 문서 밖으로 나가 페이지가 옆으로 스크롤된다.
+         * 미는 동안만 잘라둔다 (clip은 hidden과 달리 스크롤 컨테이너를 만들지 않아
+         * 안쪽의 sticky·세로 스크롤이 그대로다).
+         */
+        document.documentElement.style.overflowX = 'clip';
+      }
+
+      // 갈 곳이 없는 쪽으로는 뻑뻑하게 — 끝이라는 게 손에 느껴진다
+      const hasNeighbour = Boolean(TABS[index + (dx < 0 ? 1 : -1)]);
+      setOffset(hasNeighbour ? dx : dx / 4);
+      // 여기서부터는 우리 손짓이다. 세로 스크롤이 함께 일어나지 않게 막는다
+      if (e.cancelable) e.preventDefault();
     };
 
     const onEnd = (e: TouchEvent) => {
       if (!armed) return;
       armed = false;
       const touch = e.changedTouches[0];
-      if (!touch) return;
+      if (!touch) {
+        release(true);
+        return;
+      }
 
       const dx = touch.clientX - startX;
       const dy = touch.clientY - startY;
-      if (Date.now() - startedAt > MAX_DURATION) return;
-      if (Math.abs(dx) < DISTANCE || Math.abs(dx) < Math.abs(dy) * HORIZONTAL_RATIO) return;
-
-      // 왼쪽으로 밀면 다음 탭. 양 끝에서는 더 가지 않는다 (돌아 나오면 어디 있는지 헷갈린다)
       const target = TABS[index + (dx < 0 ? 1 : -1)];
-      if (target) slideTo(target, pathname, (href) => router.push(href));
+      const enough =
+        Date.now() - startedAt <= MAX_DURATION &&
+        Math.abs(dx) >= DISTANCE &&
+        Math.abs(dx) >= Math.abs(dy) * HORIZONTAL_RATIO;
+
+      if (!enough || !target) {
+        // 모자라면 제자리로 — 튕겨 돌아오는 것으로 "안 넘어갔다"를 알린다
+        if (dragging) release(true);
+        return;
+      }
+
+      /*
+       * 손가락이 놓인 자리에서 이어서 밀려나가게 한다.
+       * 이 값을 CSS가 애니메이션 시작점으로 쓴다 — 안 넘기면 0에서 다시 출발해 툭 끊긴다.
+       */
+      document.documentElement.style.setProperty('--tab-drag', `${Math.round(dx)}px`);
+      release(false);
+      slideTo(target, pathname, (href) => router.push(href));
     };
 
-    // passive — 스크롤을 막지 않는다. 우리는 손짓이 끝난 뒤에만 판단한다
     window.addEventListener('touchstart', onStart, { passive: true });
+    // passive: false — 가로 손짓으로 판단한 뒤에만 preventDefault를 부른다
+    window.addEventListener('touchmove', onMove, { passive: false });
     window.addEventListener('touchend', onEnd, { passive: true });
+    const onCancel = () => release(true);
+    window.addEventListener('touchcancel', onCancel, { passive: true });
     return () => {
       window.removeEventListener('touchstart', onStart);
+      window.removeEventListener('touchmove', onMove);
       window.removeEventListener('touchend', onEnd);
+      window.removeEventListener('touchcancel', onCancel);
+      release(false);
     };
   }, [pathname, router]);
 
