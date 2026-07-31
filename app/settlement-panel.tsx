@@ -34,7 +34,12 @@ const T = {
     en: 'Add how many people outside the app chipped in — they count as heads, so each share gets smaller.',
   },
   perHead: { ko: '{heads}명이 나눠 · 1인당 {each}', en: 'Split {heads} ways · {each} each' },
-  headsWithExtra: { ko: '{n}명 + 외부 {x}명', en: '{n} here + {x} outside' },
+  // 외부 인원이 있으면 "3명 + 외부 1명"이 통째로 주어라, perHead의 '명이'를 다시 붙이면
+  // "1명명이 나눠"가 된다. 문장을 따로 둔다.
+  perHeadExtra: {
+    ko: '{n}명 + 외부 {x}명이 나눠 · 1인당 {each}',
+    en: 'Split among {n} here + {x} outside · {each} each',
+  },
   payNeeded: { ko: '받을 계좌를 먼저 넣어주세요', en: 'Add a payment method first' },
   payNeededDesc: {
     ko: 'Venmo나 Zelle을 넣어두면 알림에 보내기 링크가 같이 나가요. 프로필에도 저장됩니다.',
@@ -437,13 +442,16 @@ export default function SettlementPanel({
                     )}
                     {/* 총 금액을 몇 명이 나누는지 — 외부 인원이 있으면 어디서 왔는지도 밝힌다 */}
                     <span className="settle-item-who">
-                      {t(T.perHead, {
-                        heads:
-                          item.extraPeople > 0
-                            ? t(T.headsWithExtra, { n: item.heads - item.extraPeople, x: item.extraPeople })
-                            : String(item.heads),
-                        each: formatCents(Math.floor(item.amountCents / Math.max(1, item.heads))),
-                      })}
+                      {item.extraPeople > 0
+                        ? t(T.perHeadExtra, {
+                            n: item.heads - item.extraPeople,
+                            x: item.extraPeople,
+                            each: formatCents(Math.floor(item.amountCents / Math.max(1, item.heads))),
+                          })
+                        : t(T.perHead, {
+                            heads: String(item.heads),
+                            each: formatCents(Math.floor(item.amountCents / Math.max(1, item.heads))),
+                          })}
                     </span>
                   </span>
                   <span className="settle-item-amount">{formatCents(item.amountCents)}</span>
