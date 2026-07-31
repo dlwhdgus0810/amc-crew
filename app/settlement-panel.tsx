@@ -74,6 +74,13 @@ const T = {
   payTo: { ko: '{name}님에게 보내주세요', en: 'Send to {name}' },
   yourShare: { ko: '내가 보낼 금액', en: 'Your share' },
   payeeIsYou: { ko: '내가 받는 정산이에요.', en: 'You’re collecting this one.' },
+  myPayInfo: { ko: '내 받을 계좌', en: 'Where you get paid' },
+  forwardTitle: { ko: '모임 밖 인원 {n}명 · 1인당 {each}', en: '{n} outside the meetup · {each} each' },
+  forwardHint: {
+    ko: '앱에 없는 분들에게는 알림이 못 가요. 아래를 복사해 직접 보내주세요.',
+    en: 'People outside the app get no alert — copy this and send it to them.',
+  },
+  forwardLink: { ko: '보낼 링크', en: 'Link to send' },
   nothingToPay: { ko: '보낼 금액이 없어요.', en: 'You owe nothing here.' },
   total: { ko: '합계', en: 'Total' },
   venmoGo: { ko: 'Venmo로 보내기', en: 'Pay with Venmo' },
@@ -114,6 +121,8 @@ export interface Settlement {
   items: Item[];
   shares: Share[];
   totalCents: number;
+  /** 앱 밖 사람에게 전달할 짧은 링크의 코드 (/v/<code>) */
+  shortCode: string | null;
   createdAt: string;
 }
 
@@ -182,7 +191,8 @@ export default function SettlementPanel({
   const [drafts, setDrafts] = useState<Draft[]>([{ ...EMPTY }]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const [copied, setCopied] = useState(false);
+  // 복사한 값 자체를 담는다 — 복사 버튼이 여러 개라 boolean으로는 어느 것인지 구분이 안 된다
+  const [copied, setCopied] = useState<string | null>(null);
   // 받을 계좌가 비어 있을 때 저장 직전에 한 번 물어보는 화면
   const [askPay, setAskPay] = useState(false);
   // 저장 직전 확인 화면 (계산 결과를 보여주고 한 번 물어본다)
@@ -190,11 +200,11 @@ export default function SettlementPanel({
   const [venmoInput, setVenmoInput] = useState('');
   const [zelleInput, setZelleInput] = useState('');
 
-  async function copyZelle(value: string) {
+  async function copyText(value: string) {
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopied(value);
+      setTimeout(() => setCopied(null), 2000);
     } catch {
       /* 클립보드를 막아둔 브라우저 — 값은 화면에 그대로 보이므로 손으로 옮기면 된다 */
     }
@@ -360,6 +370,22 @@ export default function SettlementPanel({
     setBusy(false);
   }
 
+  /*
+   * 앱 밖 인원이 몇 명이고 1인당 얼마인지 — 받는 사람 화면의 전달용 안내에 쓴다.
+   * 서버(lib/db/settlements.ts의 outsiderPerHead)와 같은 규칙으로 센다.
+   */
+  const outsiders = (settlement?.items ?? []).reduce(
+    (acc, i) =>
+      i.extraPeople > 0 && i.heads > 0
+        ? { heads: Math.max(acc.heads, i.extraPeople), each: acc.each + Math.floor(i.amountCents / i.heads) }
+        : acc,
+    { heads: 0, each: 0 }
+  );
+  const shortUrl =
+    settlement?.shortCode && typeof window !== 'undefined'
+      ? `${window.location.origin}/v/${settlement.shortCode}`
+      : '';
+
   const inMeetup = participants.some((p) => p.id === currentUserId);
   // 참가하지 않았으면 정산이 있는지조차 보이지 않는다 (금액·받을 계좌가 담긴 화면이다)
   if (!inMeetup && !isAdmin) return null;
@@ -389,7 +415,51 @@ export default function SettlementPanel({
           <>
             {/* 내가 낼 금액을 맨 위에 — 대부분은 이것만 보러 들어온다 */}
             {isPayee ? (
-              <p style={{ fontWeight: 600, margin: '0 0 14px' }}>{t(T.payeeIsYou)}</p>
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ fontWeight: 600, margin: '0 0 10px' }}>{t(T.payeeIsYou)}</p>
+
+                {/* 본인 계좌를 여기서도 보여준다 — 밖에 있는 사람에게 옮겨 적을 일이 있다 */}
+                {(settlement.payee.venmo || settlement.payee.zelle) && (
+                  <>
+                    <div className="settle-eyebrow">{t(T.myPayInfo)}</div>
+                    {settlement.payee.venmo && (
+                      <div className="pay-zelle">
+                        <span className="pay-zelle-label">Venmo</span>
+                        <span className="pay-zelle-value">@{settlement.payee.venmo}</span>
+                        <button className="link-btn" onClick={() => copyText(settlement.payee.venmo!)}>
+                          {copied === settlement.payee.venmo ? t(T.copied) : t(T.copy)}
+                        </button>
+                      </div>
+                    )}
+                    {settlement.payee.zelle && (
+                      <div className="pay-zelle">
+                        <span className="pay-zelle-label">{t(T.zelleLabel)}</span>
+                        <span className="pay-zelle-value">{settlement.payee.zelle}</span>
+                        <button className="link-btn" onClick={() => copyText(settlement.payee.zelle!)}>
+                          {copied === settlement.payee.zelle ? t(T.copied) : t(T.copy)}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* 앱 밖 인원이 있으면 전달용 링크까지 — 알림을 뒤지지 않아도 되게 */}
+                {outsiders.heads > 0 && outsiders.each > 0 && (
+                  <div className="settle-forward">
+                    <strong>{t(T.forwardTitle, { n: String(outsiders.heads), each: formatCents(outsiders.each) })}</strong>
+                    <p>{t(T.forwardHint)}</p>
+                    {settlement.shortCode && (
+                      <div className="pay-zelle">
+                        <span className="pay-zelle-label">{t(T.forwardLink)}</span>
+                        <span className="pay-zelle-value">{shortUrl}</span>
+                        <button className="link-btn" onClick={() => copyText(shortUrl)}>
+                          {copied === shortUrl ? t(T.copied) : t(T.copy)}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ) : mine ? (
               <div style={{ marginBottom: 16 }}>
                 <div className="settle-eyebrow">{t(T.yourShare)}</div>
@@ -413,8 +483,8 @@ export default function SettlementPanel({
                   <div className="pay-zelle">
                     <span className="pay-zelle-label">{t(T.zelleLabel)}</span>
                     <span className="pay-zelle-value">{settlement.payee.zelle}</span>
-                    <button className="link-btn" onClick={() => copyZelle(settlement.payee.zelle!)}>
-                      {copied ? t(T.copied) : t(T.copy)}
+                    <button className="link-btn" onClick={() => copyText(settlement.payee.zelle!)}>
+                      {copied === settlement.payee.zelle ? t(T.copied) : t(T.copy)}
                     </button>
                   </div>
                 )}

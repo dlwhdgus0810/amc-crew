@@ -309,7 +309,8 @@ export async function notifySettlement(postId: string, origin: string): Promise<
   // 정산 알림은 모임 화면의 정산 카드로 바로 보낸다 (app/settlement-panel.tsx의 #settle)
   const linkUrl = `${origin}/p/${postId}#settle`;
   const rows: { id: string; userId: string; postId: string; kind: string; message: string }[] = [];
-  const messages = new Map<string, { message: string; locale: Locale }>();
+  // 인앱·푸시는 plain, 카톡만 kakao (받을 계좌가 붙은 판)
+  const messages = new Map<string, { plain: string; kakao: string; locale: Locale }>();
 
   const note = `${catName(post.category, DEFAULT_LOCALE)} ${dateLabelShort(post.date, DEFAULT_LOCALE)}`;
 
@@ -325,15 +326,24 @@ export async function notifySettlement(postId: string, origin: string): Promise<
       view.payee.zelle ? pick(locale, N.viaZelle, { handle: view.payee.zelle }) : null,
     ].filter(Boolean);
 
-    const message = `${cat?.emoji ?? ''} ${pick(locale, N.ask as Msg, {
+    const plain = `${cat?.emoji ?? ''} ${pick(locale, N.ask as Msg, {
       cat: catName(post.category, locale),
       payee: view.payee.name,
       amount: formatCents(target.cents),
       when: `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`,
       place: post.location,
-    })}${ways.length ? `\n${ways.join('\n')}` : ''}`.trim();
-    rows.push({ id: crypto.randomUUID(), userId: target.userId, postId, kind: 'settle', message });
-    messages.set(target.userId, { message, locale });
+    })}`.trim();
+    /*
+     * 받을 계좌는 카톡 본문에만 싣는다.
+     * 인앱 알림과 푸시는 눌러서 정산 카드로 가고 거기에 보내기 수단이 이미 있다 —
+     * 목록에 계좌가 늘어져 있으면 정작 읽어야 할 금액이 묻힌다.
+     */
+    rows.push({ id: crypto.randomUUID(), userId: target.userId, postId, kind: 'settle', message: plain });
+    messages.set(target.userId, {
+      plain,
+      kakao: ways.length ? `${plain}\n${ways.join('\n')}` : plain,
+      locale,
+    });
   }
 
   /*
@@ -385,15 +395,18 @@ export async function notifySettlement(postId: string, origin: string): Promise<
           ].filter(Boolean)
         : [];
 
-    const full = `${copy}${ways.length ? `\n${ways.join('\n')}` : ''}`;
-    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, kind: 'settle', message: full });
-    messages.set(view.payee.id, { message: full, locale });
+    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, kind: 'settle', message: copy });
+    messages.set(view.payee.id, {
+      plain: copy,
+      kakao: ways.length ? `${copy}\n${ways.join('\n')}` : copy,
+      locale,
+    });
   }
 
   if (rows.length > 0) await db.insert(notifications).values(rows);
-  for (const [userId, { message, locale }] of messages) {
-    await sendKakaoMemos([userId], message, linkUrl, pick(locale, N.btn));
-    await sendPush([userId], { title: 'Kansas Korean', body: message, url: linkUrl, tag: `settle:${postId}` });
+  for (const [userId, { plain, kakao, locale }] of messages) {
+    await sendKakaoMemos([userId], kakao, linkUrl, pick(locale, N.btn));
+    await sendPush([userId], { title: 'Kansas Korean', body: plain, url: linkUrl, tag: `settle:${postId}` });
   }
   return { sent: targets.length };
 }

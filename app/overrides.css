@@ -896,3 +896,11 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
 .settle-confirm > strong { display: block; font-size: 14.5px; margin-bottom: 8px; }
 .settle-confirm-total { font-size: 16px; font-weight: 700; margin: 12px 0 2px; }
 .settle-confirm-note { color: var(--text-dim); font-size: 12.5px; margin: 0; }
+
+/* 정산: 받는 사람에게 보여줄 전달용 안내 */
+.settle-forward {
+  margin-top: 14px; padding: 12px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.settle-forward strong { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.settle-forward p { color: var(--text-dim); font-size: 12.5px; margin: 0 0 8px; }
