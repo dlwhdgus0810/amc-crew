@@ -9,6 +9,7 @@ import Link from 'next/link';
 import NavLinks, { ContextTabs } from './nav';
 import ServiceWorkerRegistrar from './sw-register';
 import InstallPrompt from './install-prompt';
+import TabSwipe from './tab-swipe';
 import ChromeAutoHide from './chrome-autohide';
 import PresenceBeat from './presence-beat';
 import ViewingAs from './viewing-as';
@@ -70,6 +71,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <I18nProvider locale={locale}>
           <ServiceWorkerRegistrar />
+          <TabSwipe />
           <ChromeAutoHide />
           <PresenceBeat />
           <ViewingAs />
