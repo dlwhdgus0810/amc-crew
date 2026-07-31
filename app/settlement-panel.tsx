@@ -77,10 +77,10 @@ const T = {
   myPayInfo: { ko: '내 받을 계좌', en: 'Where you get paid' },
   forwardTitle: { ko: '모임 밖 인원 {n}명 · 1인당 {each}', en: '{n} outside the meetup · {each} each' },
   forwardHint: {
-    ko: '앱에 없는 분들에게는 알림이 못 가요. 아래를 복사해 직접 보내주세요.',
-    en: 'People outside the app get no alert — copy this and send it to them.',
+    ko: '앱에 없는 분들에게는 알림이 못 가요. 위 Venmo 옆 "링크 복사"로 직접 보내주세요.',
+    en: 'People outside the app get no alert — use “Copy link” next to Venmo above and send it yourself.',
   },
-  forwardLink: { ko: '보낼 링크', en: 'Link to send' },
+  copyLink: { ko: '링크 복사', en: 'Copy link' },
   nothingToPay: { ko: '보낼 금액이 없어요.', en: 'You owe nothing here.' },
   total: { ko: '합계', en: 'Total' },
   venmoGo: { ko: 'Venmo로 보내기', en: 'Pay with Venmo' },
@@ -381,8 +381,9 @@ export default function SettlementPanel({
         : acc,
     { heads: 0, each: 0 }
   );
-  const shortUrl =
-    settlement?.shortCode && typeof window !== 'undefined'
+  /* 앱 밖 인원이 있을 때만 전달할 링크가 의미가 있다 (없으면 $0짜리 결제창이 된다) */
+  const forwardUrl =
+    settlement?.shortCode && outsiders.each > 0 && typeof window !== 'undefined'
       ? `${window.location.origin}/v/${settlement.shortCode}`
       : '';
 
@@ -425,9 +426,26 @@ export default function SettlementPanel({
                     {settlement.payee.venmo && (
                       <div className="pay-zelle">
                         <span className="pay-zelle-label">Venmo</span>
-                        <span className="pay-zelle-value">@{settlement.payee.venmo}</span>
-                        <button className="link-btn" onClick={() => copyText(settlement.payee.venmo!)}>
-                          {copied === settlement.payee.venmo ? t(T.copied) : t(T.copy)}
+                        {/*
+                         * 전달할 링크가 있으면 아이디 자체를 링크로 건다 — 긴 주소를 한 줄
+                         * 따로 늘어놓지 않아도 눌러서 확인하고 복사 버튼으로 넘길 수 있다.
+                         */}
+                        {forwardUrl ? (
+                          <a className="pay-zelle-value" href={forwardUrl} target="_blank" rel="noreferrer">
+                            @{settlement.payee.venmo}
+                          </a>
+                        ) : (
+                          <span className="pay-zelle-value">@{settlement.payee.venmo}</span>
+                        )}
+                        <button
+                          className="link-btn"
+                          onClick={() => copyText(forwardUrl || settlement.payee.venmo!)}
+                        >
+                          {copied === (forwardUrl || settlement.payee.venmo)
+                            ? t(T.copied)
+                            : forwardUrl
+                              ? t(T.copyLink)
+                              : t(T.copy)}
                         </button>
                       </div>
                     )}
@@ -443,20 +461,11 @@ export default function SettlementPanel({
                   </>
                 )}
 
-                {/* 앱 밖 인원이 있으면 전달용 링크까지 — 알림을 뒤지지 않아도 되게 */}
+                {/* 앱 밖 인원이 있으면 얼마씩인지와, 알림이 못 간다는 사실만 알려준다 */}
                 {outsiders.heads > 0 && outsiders.each > 0 && (
                   <div className="settle-forward">
                     <strong>{t(T.forwardTitle, { n: String(outsiders.heads), each: formatCents(outsiders.each) })}</strong>
                     <p>{t(T.forwardHint)}</p>
-                    {settlement.shortCode && (
-                      <div className="pay-zelle">
-                        <span className="pay-zelle-label">{t(T.forwardLink)}</span>
-                        <span className="pay-zelle-value">{shortUrl}</span>
-                        <button className="link-btn" onClick={() => copyText(shortUrl)}>
-                          {copied === shortUrl ? t(T.copied) : t(T.copy)}
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

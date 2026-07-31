@@ -904,3 +904,6 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
 }
 .settle-forward strong { display: block; font-size: 13.5px; margin-bottom: 2px; }
 .settle-forward p { color: var(--text-dim); font-size: 12.5px; margin: 0 0 8px; }
+
+/* 정산: 받을 계좌 줄의 링크된 아이디 */
+a.pay-zelle-value { text-decoration: underline; text-underline-offset: 3px; }
