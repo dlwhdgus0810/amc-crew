@@ -2,14 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useT } from '../i18n';
+import { useLocale } from '../i18n';
+import { LOCALES, LOCALE_NAMES, Locale, Msg, pick } from '@/lib/i18n';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   welcome: { ko: '환영해요, {name}님! 👋', en: 'Welcome, {name}! 👋' },
   subtitle: {
-    ko: '시작하기 전에 생년월일과 성별을 알려주세요. 프로필에서 언제든 수정할 수 있어요.',
-    en: 'Before you start, tell us your date of birth and gender. You can change these anytime in your profile.',
+    ko: '시작하기 전에 몇 가지만 알려주세요. 프로필에서 언제든 수정할 수 있어요.',
+    en: 'Just a few things before you start. You can change any of these later in your profile.',
+  },
+  language: { ko: '언어', en: 'Language' },
+  nickname: { ko: '닉네임', en: 'Nickname' },
+  nicknameHint: {
+    ko: '비워두면 카카오톡 닉네임({name})을 그대로 써요.',
+    en: 'Leave it empty to use your Kakao nickname ({name}).',
   },
   birthday: { ko: '생년월일', en: 'Date of birth' },
   gender: { ko: '성별', en: 'Gender' },
@@ -29,13 +36,22 @@ function nextPath(): string {
 
 export default function WelcomePage() {
   const router = useRouter();
-  const [name, setName] = useState('');
+  const [kakaoName, setKakaoName] = useState('');
+  const [nickname, setNickname] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | ''>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const t = useT();
+
+  /*
+   * 언어는 저장하기 전에도 이 화면에 바로 반영한다.
+   * 고르자마자 서버에 넣고 새로고침하면 적어둔 생년월일이 날아가므로,
+   * 화면은 여기서 바꾸고 서버에는 「시작하기」에서 나머지와 함께 보낸다.
+   */
+  const initialLocale = useLocale();
+  const [locale, setLocale] = useState<Locale>(initialLocale);
+  const t = (msg: Msg, vars?: Record<string, string | number>) => pick(locale, msg, vars);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -45,9 +61,11 @@ export default function WelcomePage() {
           router.replace(nextPath());
           return;
         }
-        setName(auth.user.name);
+        setKakaoName(auth.kakaoName || auth.user.name);
+        setNickname(auth.nickname ?? '');
         setBirthday(auth.birthday ?? '');
         setGender(auth.gender ?? '');
+        if (auth.locale) setLocale(auth.locale);
         setLoading(false);
       });
   }, [router]);
@@ -59,11 +77,17 @@ export default function WelcomePage() {
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ birthday, gender }),
+        // 닉네임은 비워서 보내도 된다 — 서버가 빈 값을 「카카오톡 닉네임 쓰기」로 받는다
+        body: JSON.stringify({ birthday, gender, locale, nickname: nickname.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
-      router.replace(nextPath());
+      /*
+       * 언어를 바꿨으면 통째로 다시 연다. 상단 바와 제목은 서버가 쿠키를 보고 그리는데,
+       * 화면만 갈아끼우면 그것들이 이전 언어로 남는다.
+       */
+      if (locale !== initialLocale) window.location.replace(nextPath());
+      else router.replace(nextPath());
     } catch (e) {
       setErr(e instanceof Error ? e.message : t(T.saveFailed));
       setSaving(false);
@@ -74,10 +98,35 @@ export default function WelcomePage() {
 
   return (
     <>
-      <h1>{t(T.welcome, { name })}</h1>
+      <h1>{t(T.welcome, { name: nickname.trim() || kakaoName })}</h1>
       <p className="subtitle">{t(T.subtitle)}</p>
 
       <div className="card">
+        <div style={{ marginBottom: 18 }}>
+          <div className="field-label">{t(T.language)}</div>
+          <div className="seg-group">
+            {LOCALES.map((l) => (
+              <button key={l} className={`seg ${locale === l ? 'on' : ''}`} onClick={() => setLocale(l)}>
+                {LOCALE_NAMES[l]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <div className="field-label">{t(T.nickname)}</div>
+          <input
+            type="text"
+            value={nickname}
+            maxLength={20}
+            placeholder={kakaoName}
+            onChange={(e) => setNickname(e.target.value)}
+          />
+          <p className="subtitle" style={{ marginTop: 6, fontSize: 13 }}>
+            {t(T.nicknameHint, { name: kakaoName })}
+          </p>
+        </div>
+
         <div style={{ marginBottom: 18 }}>
           <div className="field-label">{t(T.birthday)}</div>
           <input
@@ -88,6 +137,7 @@ export default function WelcomePage() {
             style={{ maxWidth: 220 }}
           />
         </div>
+
         <div>
           <div className="field-label">{t(T.gender)}</div>
           <div className="seg-group">
