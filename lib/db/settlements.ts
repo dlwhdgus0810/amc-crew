@@ -58,7 +58,12 @@ const N = {
     en: '💰 {cat} settle-up — send {amount} to {payee} · {when} · {place}',
   },
   btn: { ko: '정산 보기', en: 'See the split' },
-  viaVenmo: { ko: 'Venmo로 보내기: {url}', en: 'Pay with Venmo: {url}' },
+  viaVenmo: { ko: 'Venmo: {handle}', en: 'Venmo: {handle}' },
+  /*
+   * 외부인 전달용에만 주소를 붙인다. 이 사람들은 앱에 없어서 모임 화면을 열 수 없고,
+   * 그래서 금액이 채워진 링크가 여기 말고는 갈 곳이 없다.
+   */
+  viaVenmoLink: { ko: 'Venmo로 보내기: {url}', en: 'Pay with Venmo: {url}' },
   viaZelle: { ko: 'Zelle: {handle}', en: 'Zelle: {handle}' },
   sentCopy: {
     ko: '💰 {cat} 정산을 보냈어요 — {n}명에게 총 {amount} · {when} · {place}',
@@ -298,14 +303,12 @@ export async function notifySettlement(postId: string, origin: string): Promise<
   for (const target of targets) {
     const locale = localeById.get(target.userId) ?? 'ko';
     /*
-     * 보낼 수단을 문구에 같이 실어, 알림에서 바로 열 수 있게 한다.
-     * 카톡 버튼(link)이 아니라 본문에 넣는다 — 버튼 주소는 카카오에 등록된 도메인이어야 하고,
-     * 등록되지 않은 주소는 조용히 다른 도메인으로 바뀐다.
+     * 보낼 수단은 아이디만 적는다.
+     * 알림을 눌러 모임에 들어가면 거기 금액이 채워진 Venmo 링크가 있으므로,
+     * 여기에 긴 주소를 또 붙이면 문구만 길어진다.
      */
     const ways = [
-      view.payee.venmo
-        ? pick(locale, N.viaVenmo, { url: venmoLink(view.payee.venmo, target.cents, note) })
-        : null,
+      view.payee.venmo ? pick(locale, N.viaVenmo, { handle: view.payee.venmo }) : null,
       view.payee.zelle ? pick(locale, N.viaZelle, { handle: view.payee.zelle }) : null,
     ].filter(Boolean);
 
@@ -358,7 +361,7 @@ export async function notifySettlement(postId: string, origin: string): Promise<
         ? [
             pick(locale, N.outsiderShare, { amount: formatCents(perOutsider) }),
             view.payee.venmo
-              ? pick(locale, N.viaVenmo, { url: venmoLink(view.payee.venmo, perOutsider, note) })
+              ? pick(locale, N.viaVenmoLink, { url: venmoLink(view.payee.venmo, perOutsider, note) })
               : null,
             view.payee.zelle ? pick(locale, N.viaZelle, { handle: view.payee.zelle }) : null,
           ].filter(Boolean)
