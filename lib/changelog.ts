@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-30T21:41',
+    notable: true,
+    title: { ko: '정산 알림과 비공개 범위', en: 'Settle-up alerts, and what guests can see' },
+    items: [
+      {
+        ko: '정산 알림을 누르면 바로 정산 카드로 가요. 모임을 찾아 들어갈 필요 없이 보낼 금액이 먼저 보여요.',
+        en: 'Tapping a settle-up alert now lands on the settlement card, so what you owe is the first thing you see.',
+      },
+      {
+        ko: '알림에는 Venmo 아이디만 적어요. 링크는 모임 화면에 금액까지 채워져 있으니 거기서 누르면 돼요.',
+        en: 'The alert just names the Venmo handle — the link with the amount filled in lives on the meetup screen.',
+      },
+      {
+        ko: '정산 항목을 여러 개 적어도 알림을 보내기 전에 1인당 얼마인지 미리 보여줘요.',
+        en: 'However many items you add, you see each person’s share before any alert goes out.',
+      },
+      {
+        ko: '로그인하지 않은 사람에게는 모임의 시간·장소·인원수만 보여요. 참가자 명단과 누가 열었는지는 회원끼리만 봐요.',
+        en: 'Signed-out visitors see only a meetup’s time, place and headcount — the guest list and host stay between members.',
+      },
+    ],
+  },
+  {
     at: '2026-07-30T15:52',
     title: { ko: '정산이 조금 더 똑똑해졌어요', en: 'Settle-ups got a bit smarter' },
     items: [
@@ -34,8 +57,8 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: 'You can add people who aren’t in the app — put 2 if two extra friends chipped in, and the split accounts for them.',
       },
       {
-        ko: '알림에 보내기 링크가 같이 와요. 카톡에서 바로 눌러 Venmo를 열 수 있어요.',
-        en: 'The alert now carries a pay link, so you can open Venmo straight from KakaoTalk.',
+        ko: '알림에 받는 사람의 Venmo·Zelle 아이디가 같이 와요.',
+        en: 'The alert names the payee’s Venmo and Zelle handles.',
       },
       {
         ko: '금액 칸에는 나눈 값이 아니라 총 금액을 넣어주세요. 인원수대로 알아서 나눠요.',
