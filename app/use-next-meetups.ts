@@ -8,7 +8,6 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from './i18n';
-import { useIsPeek } from './tab-peek-context';
 import { dateLabelShort, timeLabel, weekdayLabel } from '@/lib/datefmt';
 import { addDays } from '@/lib/dates';
 
@@ -43,8 +42,6 @@ export default function useNextMeetups(): (slug: string, kind?: 'movie' | 'posts
   const [data, setData] = useState<{ today: string; summaries: Record<string, NextMeetup> } | null>(null);
   const t = useT();
   const locale = useLocale();
-  // 탭을 떠났다 돌아오면 다시 받는다 — 이미 있는 줄은 그대로 두므로 깜빡이지 않는다
-  const isPeek = useIsPeek();
 
   useEffect(() => {
     let alive = true;
@@ -59,7 +56,7 @@ export default function useNextMeetups(): (slug: string, kind?: 'movie' | 'posts
     return () => {
       alive = false;
     };
-  }, [isPeek]);
+  }, []);
 
   return (slug: string, kind: 'movie' | 'posts' = 'posts') => {
     if (!data) return null;

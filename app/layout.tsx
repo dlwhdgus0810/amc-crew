@@ -9,13 +9,11 @@ import Link from 'next/link';
 import NavLinks, { ContextTabs } from './nav';
 import ServiceWorkerRegistrar from './sw-register';
 import InstallPrompt from './install-prompt';
-import TabDeck from './tab-deck';
 import ChromeAutoHide from './chrome-autohide';
 import PresenceBeat from './presence-beat';
 import ViewingAs from './viewing-as';
 import { I18nProvider } from './i18n';
 import { getLocale } from '@/lib/locale';
-import { todayLocal } from '@/lib/dates';
 import { pick } from '@/lib/i18n';
 import './globals.css';
 // 시안 파일(globals.css)을 통째로 갈아끼워도 살아남아야 하는 보정 — 반드시 뒤에 온다
@@ -85,12 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <main className="container">
             <ContextTabs />
             <InstallPrompt />
-            {/*
-              탭 첫 화면들은 여기서 한 번만 마운트되고 내려가지 않는다.
-              탭이 아닌 주소에서는 children이 그 화면을 그린다.
-              today는 캘린더 탭이 쓴다 — 기기 시계는 시간대가 다를 수 있다.
-            */}
-            <TabDeck today={todayLocal()}>{children}</TabDeck>
+            {children}
           </main>
           <NavLinks />
         </I18nProvider>

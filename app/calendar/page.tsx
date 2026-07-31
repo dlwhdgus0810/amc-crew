@@ -1,10 +1,13 @@
-/*
- * 이 탭의 화면은 app/tab-deck.tsx가 그린다 (app/calendar/calendar-client.tsx).
- *
- * 다섯 탭을 레이아웃 쪽에서 한 번만 마운트해두고 안 내리기 때문이다 —
- * 탭을 옮길 때마다 다시 마운트하면 데이터를 다시 불러오느라 한 번 깜빡인다.
- * 이 파일은 주소를 여는 자리만 맡는다.
+import { todayLocal } from '@/lib/dates';
+import CalendarClient from './calendar-client';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * "오늘"은 서버가 정해서 내려준다.
+ * 브라우저 시계는 다른 시간대일 수 있어서, 기기에 맡기면 캔자스 기준으로 하루 어긋난 칸에
+ * 동그라미가 그려진다.
  */
-export default function CalendarRoute() {
-  return null;
+export default function CalendarPage() {
+  return <CalendarClient today={todayLocal()} />;
 }

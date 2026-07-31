@@ -1,12 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { catDisplayName, getCategory } from '@/lib/categories';
 import { addDays, weekdayOf } from '@/lib/dates';
 import { dateLabel, timeLabel } from '@/lib/datefmt';
 import { useLocale, useT } from '../i18n';
-import { useIsPeek } from '../tab-peek-context';
 
 interface CalendarMeetup {
   id: string;
@@ -100,28 +99,23 @@ export default function CalendarClient({ today }: { today: string }) {
   const locale = useLocale();
 
   const { from, to } = useMemo(() => rangeOf(view, anchor), [view, anchor]);
-  // 탭을 떠났다 돌아오면 다시 받는다 (그새 모임이 생겼을 수 있다)
-  const isPeek = useIsPeek();
-  /* 이미 보여준 기간이면 로딩 표시를 다시 켜지 않는다 — 찼던 화면이 비었다 차면 그게 깜빡임이다 */
-  const shown = useRef('');
 
   useEffect(() => {
     let alive = true;
-    if (shown.current !== `${from}~${to}`) setLoading(true);
+    setLoading(true);
     fetch(`/api/calendar?from=${from}&to=${to}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
       .then((data) => {
         if (!alive) return;
         setMeetups(data.meetups ?? []);
         setError(false);
-        shown.current = `${from}~${to}`;
       })
       .catch(() => alive && setError(true))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [from, to, isPeek]);
+  }, [from, to]);
 
   const byDate = useMemo(() => {
     const map = new Map<string, CalendarMeetup[]>();
