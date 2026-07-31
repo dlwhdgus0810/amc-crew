@@ -2,9 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-
-/** 탭바 순서와 같아야 한다 (app/nav.tsx) — 좌우로 넘길 때 이 차례대로 간다 */
-const TABS = ['/', '/categories', '/calendar', '/notifications', '/profile'];
+import { slideTo, TABS } from './tab-transition';
 
 /** 이만큼은 밀어야 넘긴다 (px) — 짧게 스치는 손짓으로 화면이 바뀌면 성가시다 */
 const DISTANCE = 60;
@@ -92,7 +90,7 @@ export default function TabSwipe() {
 
       // 왼쪽으로 밀면 다음 탭. 양 끝에서는 더 가지 않는다 (돌아 나오면 어디 있는지 헷갈린다)
       const target = TABS[index + (dx < 0 ? 1 : -1)];
-      if (target) router.push(target);
+      if (target) slideTo(target, pathname, (href) => router.push(href));
     };
 
     // passive — 스크롤을 막지 않는다. 우리는 손짓이 끝난 뒤에만 판단한다

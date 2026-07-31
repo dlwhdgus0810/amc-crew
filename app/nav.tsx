@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useT } from './i18n';
+import { slideTo } from './tab-transition';
 
 /** 프로필이 바뀌었음을 탭바에 알리는 신호 */
 export const PROFILE_UPDATED = 'kk-profile-updated';
@@ -120,29 +121,41 @@ function useSession() {
 export default function NavLinks() {
   const { loggedIn, name, avatar, unread, pathname } = useSession();
   const t = useT();
+  const router = useRouter();
+
+  /*
+   * 탭바를 눌렀을 때도 스와이프와 같은 방향으로 미끄러지게 한다.
+   * 하나는 밀리고 하나는 툭 바뀌면 같은 앱처럼 느껴지지 않는다.
+   */
+  const go = (e: React.MouseEvent, href: string) => {
+    // 새 탭으로 열기 같은 조작은 브라우저에 맡긴다
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    slideTo(href, pathname, (to) => router.push(to));
+  };
 
   return (
     <nav className="tabbar">
       <span className="tabbar-links">
-        <Link href="/" className={pathname === '/' ? 'active' : ''}>
+        <Link href="/" onClick={(e) => go(e, "/")} className={pathname === '/' ? 'active' : ''}>
           <HomeIcon />
           <span>{t(T.home)}</span>
         </Link>
-        <Link href="/categories" className={pathname.startsWith('/categories') ? 'active' : ''}>
+        <Link href="/categories" onClick={(e) => go(e, "/categories")} className={pathname.startsWith('/categories') ? 'active' : ''}>
           <BrowseIcon />
           <span>{t(T.categories)}</span>
         </Link>
-        <Link href="/calendar" className={pathname.startsWith('/calendar') ? 'active' : ''}>
+        <Link href="/calendar" onClick={(e) => go(e, "/calendar")} className={pathname.startsWith('/calendar') ? 'active' : ''}>
           <CalendarIcon />
           <span>{t(T.calendar)}</span>
         </Link>
-        <Link href="/notifications" className={pathname === '/notifications' ? 'active' : ''}>
+        <Link href="/notifications" onClick={(e) => go(e, "/notifications")} className={pathname === '/notifications' ? 'active' : ''}>
           <BellIcon />
           <span>{t(T.notifications)}</span>
           {loggedIn && unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
         </Link>
         {loggedIn ? (
-          <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>
+          <Link href="/profile" onClick={(e) => go(e, "/profile")} className={pathname === '/profile' ? 'active' : ''}>
             <span className="t-ava">
               {avatar ? <img src={avatar} alt="" /> : name.slice(0, 1) || '·'}
             </span>
