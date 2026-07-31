@@ -926,16 +926,6 @@ export default function CategoryClient({ slug }: { slug: string }) {
               {commentsOpen ? '▴' : '▾'}
             </span>
           </button>
-          {/* 참가한 사람에게만 — 정산은 같이 낸 사람들 사이의 일이다 */}
-          {joined && (
-            <Link className={`link-btn ${post.settle?.myCents ? 'strong' : ''}`} href={`/p/${post.id}#settle`}>
-              {post.settle?.myCents
-                ? t(T.settleOwe, { amount: formatCents(post.settle.myCents) })
-                : post.settle
-                  ? t(T.settleSee)
-                  : t(T.settleStart)}
-            </Link>
-          )}
           {!past && (
             <button className="link-btn" disabled={busy} onClick={() => share(post)}>
               {t(T.share)}
@@ -945,6 +935,16 @@ export default function CategoryClient({ slug }: { slug: string }) {
             <button className="link-btn" disabled={busy} onClick={() => startEditPost(post)}>
               {t(T.edit)}
             </button>
+          )}
+          {/* 참가한 사람에게만 — 정산은 같이 낸 사람들 사이의 일이다 */}
+          {joined && (
+            <Link className={`link-btn ${post.settle?.myCents ? 'strong' : ''}`} href={`/p/${post.id}#settle`}>
+              {post.settle?.myCents
+                ? t(T.settleOwe, { amount: formatCents(post.settle.myCents) })
+                : post.settle
+                  ? t(T.settleSee)
+                  : t(T.settleStart)}
+            </Link>
           )}
           {canJoin && (
             <button
