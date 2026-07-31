@@ -17,7 +17,12 @@ import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCateg
 import PlaceLink from '@/app/place-link';
 import { hostTier } from '@/lib/hosting';
 import {useLocale, useT} from '../../i18n';
-import {dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday} from '@/lib/datefmt';
+import {
+  dateLabel as fmtDate,
+  dateLabelLong as fmtDateLong,
+  timeLabel as fmtTime,
+  weekdayLabel as fmtWeekday,
+} from '@/lib/datefmt';
 import {addDays, todayLocal} from '@/lib/dates';
 import type {TitleMeta, TitleSearchResult} from '@/lib/tmdb';
 import {TMDB_IMG} from '@/lib/tmdb';
@@ -199,6 +204,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
   )})`;
   // 날짜·시간은 현재 언어 포맷으로
   const dateLabel = (d: string) => fmtDate(d, locale);
+  /** 피드 날짜 헤더 — 「8월 2일 토요일」 */
+  const dateLabelLong = (d: string) => fmtDateLong(d, locale);
   const to12h = (time: string) => fmtTime(time, locale);
   const weekdayLabel = (d: string) => fmtWeekday(d, locale);
 
@@ -623,7 +630,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
       <section className="day-block" key={`${past ? 'past-' : ''}${group.date}`}>
         <div className="day-head">
           <h2 className="day-title">
-            {dateLabel(group.date)}
+            {dateLabelLong(group.date)}
             {hint && <span className="day-hint">{hint}</span>}
           </h2>
           {user && !past && (

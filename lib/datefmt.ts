@@ -8,6 +8,12 @@ const WEEKDAYS: Record<Locale, string[]> = {
   en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
 };
 
+/** 피드의 날짜 헤더처럼 한 줄을 온전히 쓰는 자리 — "토요일" */
+const WEEKDAYS_LONG: Record<Locale, string[]> = {
+  ko: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+  en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+};
+
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function parts(date: string) {
@@ -26,6 +32,18 @@ export function dateLabel(date: string, locale: Locale): string {
   return locale === 'en'
     ? `${WEEKDAYS.en[weekday]}, ${MONTHS_EN[m - 1]} ${d}`
     : `${m}/${d} (${WEEKDAYS.ko[weekday]})`;
+}
+
+/**
+ * 피드의 날짜 헤더 — ko: 8월 2일 토요일 · en: Saturday, Aug 2
+ * 괄호 안에 한 글자만 든 「8월 2일 (토)」가 만드는 빈 리듬을 없앤다.
+ * (알림·짧은 줄에는 위의 dateLabel / dateLabelShort를 그대로 쓴다)
+ */
+export function dateLabelLong(date: string, locale: Locale): string {
+  const { m, d, weekday } = parts(date);
+  return locale === 'en'
+    ? `${WEEKDAYS_LONG.en[weekday]}, ${MONTHS_EN[m - 1]} ${d}`
+    : `${m}월 ${d}일 ${WEEKDAYS_LONG.ko[weekday]}`;
 }
 
 /** ko: 7/25(토) · en: Sat Jul 25 — 알림 한 줄에 들어가는 짧은 형태 */

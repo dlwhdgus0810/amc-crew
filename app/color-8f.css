@@ -1,0 +1,83 @@
+/* ============================================================
+   app/color-8f.css — 새 파일. (시안 8f · 딥 포레스트 & 살몬)
+   layout.tsx에서 type-tune.css 다음, overrides.css 앞에 불러온다.
+
+   :root 변수와 primary/secondary가 쓰이는 몇 곳만 바꾼다.
+   구조·크기·자간·행간·서체는 건드리지 않는다 (type-tune.css 담당).
+   카테고리 8색(lib/categories.ts)도 그대로 둔다.
+   ============================================================ */
+
+:root {
+  /* 종이 대신 아주 옅은 초록 회색 — 카드(흰색)와의 차이를 조금만 둔다 */
+  --bg: #f4f6f2;
+  --surface: #ffffff;
+  --surface-2: #edf1eb;
+  --border: #e2e7df;
+  --border-soft: #edf1eb;
+
+  /* 순검정(#101010)을 쓰지 않는다 — 흰 카드 위 21:1 대비가 눈부심의 주된 원인.
+     초록이 살짝 섞인 짙은 먹색으로 낮춘다 (15.7:1, AA 여유롭게 통과) */
+  --text: #1e241f;
+  --text-mid: #5c635b; /* 6.4:1 */
+  --text-dim: #8d958c; /* 3.1:1 — 지금(#8e8b83)과 같은 수준. 없어도 되는 메타에만 */
+
+  /* primary — 거의 검정에 가까운 짙은 초록. 색으로 튀지 않고 무게로 선다 */
+  --accent: #1f3d31;
+  --accent-dark: #162b23;
+  --accent-soft: #eaf0eb;
+
+  --warn: #b07a24;
+  --danger: #a8342a;
+  --danger-border: #e0c2be;
+}
+
+/* ── secondary(살몬) ────────────────────────────────────────
+   온기를 담당한다. 다만 #C96F53은 흰 배경에서 3.6:1이라 13px 글자에는
+   모자라서, 글자로 쓸 때만 한 단 어두운 값(4.9:1)을 쓴다. */
+:root {
+  --secondary: #c96f53; /* 면(뱃지 배경)으로 쓸 때 */
+  --secondary-text: #a0522d; /* 글자로 쓸 때 — AA 통과 */
+}
+
+/* 알림 뱃지는 면이라 살몬 그대로. 초록 primary와 겹치지 않아 눈에 잘 들어온다 */
+.bell-badge {
+  background: var(--secondary);
+}
+
+/* 정산 — 모임 카드 액션 중 유일한 <a>다 (나머지는 <button>) */
+.post-actions a.link-btn {
+  color: var(--secondary-text);
+}
+
+/* 좋아요 */
+.heart.on {
+  color: var(--secondary-text);
+}
+
+/* ── primary가 쓰이는 곳 ───────────────────────────────────
+   globals.css가 --text로 칠해둔 두 곳만 primary로 돌린다.
+   (참가하기·big-cta·구독중은 이미 --accent를 쓰므로 위 변수로 끝난다) */
+.tab-fab {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.tabbar a.active .t-ava {
+  background: var(--accent);
+}
+
+/* 참여자 아바타 중 "나" — 짙은 초록으로 (globals.css는 --text) */
+.ava.me {
+  background: var(--accent);
+}
+
+/* 날짜 헤더 오른쪽의 「＋ 모임」 — 회색 대신 primary로 눌러야 할 곳임을 알린다 */
+.day-head .link-btn {
+  color: var(--accent);
+}
+
+/* 댓글 「등록」 */
+.compose-row .link-btn.strong {
+  color: var(--accent);
+}
+
+/* 카카오 노란 버튼은 브랜드 색이라 그대로 둔다 */

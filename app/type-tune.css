@@ -1,0 +1,234 @@
+/* ============================================================
+   app/type-tune.css — 새 파일.
+   layout.tsx에서 globals.css 다음, overrides.css 앞에 불러온다.
+
+   시안에서 정리한 "값만 바꾸는" 여섯 가지 보정.
+   구조·레이아웃·색·서체는 하나도 건드리지 않는다 (Pretendard 그대로).
+
+   1) 본문 굵기 500 → 450
+   2) 행간 1.5 고정 → 큰 글자 1.1–1.3 / 본문 1.6–1.62
+   3) 자간을 크기에 따라 (제목 −0.032 ~ −0.04em → 본문 0)
+   4) 모노 라벨의 대문자 + 0.12em 자간 제거 (모노는 숫자에만)
+   5) 「매주 토」 배지: 테두리 알약 → 회색 텍스트
+   6) 날짜 헤더 「8월 2일 (토)」 → 「8월 2일 토요일」  ← lib/datefmt.ts 참고
+   ============================================================ */
+
+/* ── 1·2. 본문 굵기와 행간 ─────────────────────────────────
+   Pretendard는 가변 폰트라 450이 그대로 그려진다. 500과 400 사이의
+   이 한 단계가 화면 전체의 인상을 좌우한다. */
+body {
+  font-weight: 450;
+  line-height: 1.62;
+}
+
+/* 굵기 500으로 박아둔 곳들을 본문 굵기로 되돌린다 —
+   "약간 굵은 본문"은 위계를 만들지 못하고 화면만 무겁게 한다 */
+.subtitle,
+.post-meta,
+.notif-item,
+.member-chip,
+.person-chip,
+.ticket-note,
+.msg,
+.install-body span,
+.date-heading .weekday,
+.car-card .car-desc {
+  font-weight: 450;
+}
+
+/* 큰 글자는 좁게 — 지금은 전부 1.5라 제목의 줄이 벌어져 헐렁하다 */
+h1,
+.statement {
+  line-height: 1.16;
+  letter-spacing: -0.032em;
+}
+.post-when {
+  line-height: 1.3;
+  letter-spacing: -0.024em;
+}
+.car-card .car-name {
+  line-height: 1.12;
+  letter-spacing: -0.036em;
+}
+.settle-mine {
+  line-height: 1.12;
+  letter-spacing: -0.036em;
+}
+.day-title,
+.date-heading,
+.movie-name,
+.group-title,
+.ticket-title,
+.create-title,
+.news-title,
+.cat-tool-label {
+  line-height: 1.32;
+  letter-spacing: -0.022em;
+}
+
+/* 본문·메타는 넓게. 자간은 0 — 작은 글자를 조이면 한글이 뭉친다 */
+.post-meta,
+.post-desc,
+.comment-body,
+.subtitle,
+.ticket-body,
+.news-items li,
+.install-body span,
+.cat-tool-desc {
+  line-height: 1.62;
+  letter-spacing: 0;
+}
+
+/* 한 줄로 끝나는 것들은 행간이 필요 없다 (버튼 높이만 늘린다) */
+button,
+.link-btn,
+.join-text,
+.sub-text,
+.seg,
+.tabbar a,
+.people-count,
+.notif-time,
+.comment-time {
+  line-height: 1.2;
+}
+
+/* ── 3. 자간: 크기가 커질수록 조인다 ──────────────────────── */
+.logo {
+  letter-spacing: -0.015em;
+}
+.join-text,
+.link-btn.strong {
+  letter-spacing: -0.005em;
+}
+
+/* ── 4. 모노 라벨의 대문자·넓은 자간 제거 ──────────────────
+   딱딱함의 가장 큰 원인. 모노는 3/8명·15:00 같은 수치에만 남긴다. */
+h2,
+.day-title,
+.eyebrow,
+.field-label,
+.day-hint,
+.format-label,
+.stack-label,
+.create-cat,
+.settle-eyebrow,
+.pay-label,
+.pay-zelle-label,
+.host-rank-title,
+th {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Malgun Gothic', sans-serif;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-weight: 500;
+}
+h2,
+.eyebrow,
+.field-label,
+.settle-eyebrow,
+.pay-label,
+.host-rank-title {
+  font-size: 11.5px;
+}
+.day-hint,
+.format-label,
+.create-cat,
+.pay-zelle-label {
+  font-size: 11.5px;
+}
+.stack-label {
+  font-size: 10.5px;
+}
+th {
+  font-size: 11.5px;
+}
+/* .day-title은 이 앱에서 h2 태그를 쓰지만 실제로는 날짜 제목이다 */
+.day-title {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+.day-hint {
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+/* 숫자는 모노 + tabular-nums — 자리수가 바뀌어도 폭이 흔들리지 않는다 */
+.people-count,
+.post-count,
+.notif-time,
+.comment-time,
+.heart-count,
+.ticket-no,
+.group-sub,
+.host-rank-no,
+.host-rank-count,
+.online-ago,
+.settle-item-amount,
+.news-date,
+.movie-meta,
+.bell-badge {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.settle-mine,
+.settle-total span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 5. 「매주 토」 배지: 알약 → 회색 텍스트 ────────────────
+   시간 옆의 작은 테두리 알약이 눈을 잡아채던 것을 없앤다.
+   비공개 배지는 알림 성격이라 액센트 색만 유지한다. */
+.repeat-badge {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin-left: 9px;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-dim);
+}
+.repeat-badge.private {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* 상태 배지(건의함)는 테두리를 유지하되 대문자만 푼다 — 상태는 도장처럼 읽혀야 한다 */
+.ticket-status,
+.req-status {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* 카테고리 카드 상단의 영문 코드(SOCCER 등)는 라벨이 아니라 장식이라 그대로 둔다.
+   다만 자간만 살짝 줄여 덜 벌어지게 한다. */
+.car-card .car-idx {
+  letter-spacing: 0.08em;
+}
+.car-foot-when {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 입력·버튼: 굵기만 정리 ───────────────────────────────── */
+input[type='text'],
+input[type='password'],
+input[type='number'],
+select,
+textarea {
+  font-weight: 450;
+  line-height: 1.5;
+}
+.link-btn {
+  font-weight: 500;
+}
+.link-btn.strong,
+.join-text,
+.sub-text {
+  font-weight: 600;
+}

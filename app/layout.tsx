@@ -16,6 +16,10 @@ import { I18nProvider } from './i18n';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
 import './globals.css';
+// 타입 보정 — 굵기·행간·자간·라벨 표기만 (구조·서체는 그대로)
+import './type-tune.css';
+// 색 — :root 변수와 primary/secondary가 쓰이는 몇 곳
+import './color-8f.css';
 // 시안 파일(globals.css)을 통째로 갈아끼워도 살아남아야 하는 보정 — 반드시 뒤에 온다
 import './overrides.css';
 import './calendar.css';
