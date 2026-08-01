@@ -10,7 +10,6 @@
 
 import webpush from 'web-push';
 import { and, count, eq, inArray, isNull } from 'drizzle-orm';
-import { unbannedIds } from './db/bans';
 import { getDb } from './db/index';
 import { notifications, pushSubscriptions } from './db/schema';
 
@@ -127,12 +126,8 @@ export async function sendPush(userIds: string[], payload: PushPayload): Promise
     return;
   }
 
-  // 정지된 사람은 받는 명단에서 뺀다 — 눌러도 정지 화면만 나오는 알림을 보낼 이유가 없다
-  const targets = await unbannedIds(userIds);
-  if (targets.length === 0) return;
-
   const db = await getDb();
-  const subs = await db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, targets));
+  const subs = await db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, userIds));
   if (subs.length === 0) return;
 
   // 아이콘 숫자는 사람마다 다르므로 본문도 사람마다 만든다
