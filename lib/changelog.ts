@@ -31,6 +31,24 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-01T16:50',
+    title: { ko: '접속 중인 걸 누구에게 보여줄지 고를 수 있어요', en: 'Choose who sees you online' },
+    items: [
+      {
+        ko: '친구 화면의 내 친구 목록에서 사람마다 「내 접속 보임」을 눌러 끌 수 있어요. 지금까지처럼 모두에게 보이는 게 기본이에요.',
+        en: 'In your friends list, tap “They see you” on anyone to turn it off. It stays on by default, as before.',
+      },
+      {
+        ko: '감춘 친구에게는 그냥 접속 중이 아닌 것으로 보여요. 감췄다는 건 알려지지 않아요.',
+        en: 'To them you simply look offline — they’re never told you hid it.',
+      },
+      {
+        ko: '한쪽 방향만 바뀌어요. 내가 감춰도 그 친구가 접속 중인 건 그대로 보여요.',
+        en: 'It only works one way — you still see them when they’re online.',
+      },
+    ],
+  },
+  {
     at: '2026-08-01T02:31',
     title: { ko: '종료 시간은 안 적어도 돼요', en: 'The end time is optional now' },
     items: [
