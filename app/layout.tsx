@@ -9,6 +9,7 @@ import Link from 'next/link';
 import NavLinks, { ContextTabs } from './nav';
 import ServiceWorkerRegistrar from './sw-register';
 import InstallPrompt from './install-prompt';
+import PushNudge from './push-nudge';
 import ChromeAutoHide from './chrome-autohide';
 import PresenceBeat from './presence-beat';
 import ViewingAs from './viewing-as';
@@ -23,6 +24,7 @@ import './color-8f.css';
 // 시안 파일(globals.css)을 통째로 갈아끼워도 살아남아야 하는 보정 — 반드시 뒤에 온다
 import './overrides.css';
 import './calendar.css';
+import './font-plex.css';
 
 const META = {
   title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?' },
@@ -90,6 +92,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
           </main>
           <NavLinks />
+          <PushNudge />
         </I18nProvider>
       </body>
     </html>
