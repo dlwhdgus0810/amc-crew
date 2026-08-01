@@ -277,7 +277,9 @@ export async function notifyComment(
   body: string,
   origin: string,
   /** 답글이면 원 댓글 작성자 — 참가자가 아니어도 알려준다 */
-  parentAuthorId?: string
+  parentAuthorId?: string,
+  /** 익명 댓글이면 이름 자리에 "익명"이 들어간다 */
+  anonymous = false
 ): Promise<void> {
   const db = await getDb();
   /*
@@ -301,7 +303,12 @@ export async function notifyComment(
     (locale) =>
       `💬 ${pick(locale, N.commentLine, {
         text: describeForNotification(post.category, N.comment, post.date, post.startTime, post.location, post.title, locale),
-        name: commenterName,
+        /*
+         * 익명으로 단 댓글은 알림에서도 익명이어야 한다.
+         * 이 문자열 하나가 인앱·카톡·푸시로 그대로 나가므로(sendNotice), 여기서 막으면 세 곳이 함께 막힌다.
+         * 화면에서는 가려지는데 알림에는 이름이 찍히면, 익명으로 적은 사람은 가려진 줄 알고 적는다.
+         */
+        name: anonymous ? pick(locale, N.anon) : commenterName,
         body: snippet,
       })}`,
     N.btnComment
@@ -332,6 +339,8 @@ const N = {
   updated: { ko: '모임 변경', en: 'updated' },
   cancelled: { ko: '모임 취소', en: 'cancelled' },
   comment: { ko: '새 댓글', en: 'new comment' },
+  /** 익명 댓글의 이름 자리 (app/comment-thread.tsx의 표기와 같아야 한다) */
+  anon: { ko: '익명', en: 'Anonymous' },
   today: { ko: '오늘 모임', en: 'today' },
   byActor: { ko: '{text} — {name}', en: '{text} — {name}' },
   commentLine: { ko: '{text} — {name}: {body}', en: '{text} — {name}: {body}' },
