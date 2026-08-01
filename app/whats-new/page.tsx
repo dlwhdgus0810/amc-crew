@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { CHANGELOG, latestNotable } from '@/lib/changelog';
+import { CHANGELOG, latestAt } from '@/lib/changelog';
 import { entryLabel } from '@/lib/datefmt';
 import { useLocale, useT } from '../i18n';
 import { WHATS_NEW_SEEN } from '../whats-new-card';
@@ -25,10 +25,11 @@ export default function WhatsNewPage() {
   const locale = useLocale();
 
   useEffect(() => {
-    const latest = latestNotable();
+    // 여기까지 왔으면 전부 본 것으로 친다 (홈 카드와 같은 기준이어야 한다)
+    const latest = latestAt();
     if (latest) {
       try {
-        localStorage.setItem(WHATS_NEW_SEEN, latest.at);
+        localStorage.setItem(WHATS_NEW_SEEN, latest);
       } catch {
         // 사파리 사생활 보호 모드 등 — 카드가 한 번 더 보이는 것뿐이라 넘어간다
       }

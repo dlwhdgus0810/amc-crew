@@ -3,7 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { getNewsAlerts, sendNews, setNewsAlerts } from '@/lib/db/news';
-import { CHANGELOG } from '@/lib/changelog';
+import { newestEntry } from '@/lib/changelog';
 import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
   if (!isAdmin(user)) {
     return await errJson(E.adminOnly, 403);
   }
-  const latest = CHANGELOG[0];
+  // 고정된 항목이 아니라 이번에 새로 올라온 소식을 보낸다
+  const latest = newestEntry();
   if (!latest) {
     return await errJson(E.badRequest, 400);
   }

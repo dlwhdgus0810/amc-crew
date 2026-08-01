@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { latestNotable } from '@/lib/changelog';
+import { latestAt, latestNotable } from '@/lib/changelog';
 import { useT } from './i18n';
 
 /** 마지막으로 확인한 소식의 날짜 (YYYY-MM-DD) */
@@ -25,27 +25,33 @@ const T = {
  */
 export default function WhatsNewCard() {
   const [show, setShow] = useState(false);
+  /*
+   * 보여주는 항목과 "새 것인지" 재는 기준은 서로 다르다.
+   * 카드에는 고정된 소식(제일 중요한 기능)을 띄우고, 새로 뜰지 말지는 소식 전체의
+   * 최신 시각으로 잰다 — 고정된 항목의 시각으로 재면 그 뒤에 뭐가 올라와도 다시 뜨지 않는다.
+   */
   const entry = latestNotable();
+  const at = latestAt();
   const t = useT();
 
   useEffect(() => {
-    if (!entry) return;
+    if (!entry || !at) return;
     let seen: string | null = null;
     try {
       seen = localStorage.getItem(WHATS_NEW_SEEN);
     } catch {
       // 저장소를 못 읽으면 그냥 보여준다 (안 보이는 것보다 낫다)
     }
-    // YYYY-MM-DD는 사전순 비교가 곧 날짜순 비교다
-    setShow(!seen || seen < entry.at);
-  }, [entry]);
+    // ISO 문자열은 사전순 비교가 곧 시간순 비교다
+    setShow(!seen || seen < at);
+  }, [entry, at]);
 
   if (!entry || !show) return null;
 
   function dismiss() {
     setShow(false);
     try {
-      if (entry) localStorage.setItem(WHATS_NEW_SEEN, entry.at);
+      if (at) localStorage.setItem(WHATS_NEW_SEEN, at);
     } catch {
       // 못 적으면 다음에 또 뜬다 — 그뿐이다
     }

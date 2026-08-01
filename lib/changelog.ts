@@ -21,10 +21,15 @@ export interface ChangelogEntry {
   items: Msg[];
   /** 홈에 "새 소식" 카드를 띄울 만한 묶음인지 */
   notable?: boolean;
+  /**
+   * 시간과 무관하게 목록 맨 위에 두고, 홈 카드에도 계속 이 항목을 띄운다.
+   * 뒤에 소식이 더 쌓여도 묻히면 안 되는 큰 기능에만 쓴다 — 하나만 붙일 것.
+   */
+  pin?: boolean;
 }
 
-/** 최신이 맨 위 */
-export const CHANGELOG: ChangelogEntry[] = [
+/** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
+const ENTRIES: ChangelogEntry[] = [
   {
     at: '2026-08-01T02:31',
     title: { ko: '종료 시간은 안 적어도 돼요', en: 'The end time is optional now' },
@@ -61,6 +66,8 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     at: '2026-07-31T19:59',
     notable: true,
+    // 이 앱에서 제일 큰 변화라 뒤에 소식이 쌓여도 맨 위에 둔다
+    pin: true,
     title: { ko: '친구가 생겼어요', en: 'Friends' },
     items: [
       {
@@ -297,7 +304,27 @@ export const CHANGELOG: ChangelogEntry[] = [
   },
 ];
 
-/** 홈 카드를 띄울 기준이 되는 가장 최근 소식 (없으면 null) */
+/** 화면에 뿌리는 순서 — 고정한 항목이 먼저, 나머지는 최신순 */
+export const CHANGELOG: ChangelogEntry[] = [...ENTRIES].sort(
+  (a, b) => Number(Boolean(b.pin)) - Number(Boolean(a.pin)) || b.at.localeCompare(a.at)
+);
+
+/** 홈 카드에 띄울 소식 — 고정한 게 있으면 그것부터 (없으면 가장 최근 notable) */
 export function latestNotable(): ChangelogEntry | null {
   return CHANGELOG.find((e) => e.notable) ?? null;
+}
+
+/** 시간상 가장 최근 소식 — 고정과 무관하다 (카톡 발송처럼 "이번에 새로 올라온 것"이 필요한 곳) */
+export function newestEntry(): ChangelogEntry | null {
+  return [...ENTRIES].sort((a, b) => b.at.localeCompare(a.at))[0] ?? null;
+}
+
+/**
+ * 소식 전체에서 가장 최근 시각.
+ *
+ * 홈 카드를 "새 것이 있을 때만" 띄우는 기준은 이쪽이다. 카드에 보이는 항목(고정된 것)의
+ * 시각으로 재면, 그 뒤에 새 소식이 아무리 쌓여도 이미 닫은 사람에게는 다시 뜨지 않는다.
+ */
+export function latestAt(): string | null {
+  return newestEntry()?.at ?? null;
 }
