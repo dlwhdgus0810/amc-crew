@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { ensureUser } from '@/lib/db/users';
 import { createPost, listPosts } from '@/lib/db/posts';
+import { friendIds } from '@/lib/db/friends';
 import { createRecurringRule } from '@/lib/db/recurring';
 import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
@@ -100,6 +101,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, postId, ruleId, repeatWeekly: true });
   }
 
-  const postId = await createPost({ ...common, date });
+  /*
+   * 비공개 모임에 부를 친구들. 화면에서 이미 내 친구만 고르게 되어 있지만,
+   * 서버에서 다시 교집합을 잡는다 — 오래 열어 둔 화면이 예전 목록을 들고 있을 수 있다.
+   */
+  const invited =
+    body?.visibility === 'link' && Array.isArray(body?.inviteFriendIds)
+      ? await (async () => {
+          const asked = new Set(body.inviteFriendIds.filter((v: unknown) => typeof v === 'string').slice(0, 50));
+          return (await friendIds(user.id)).filter((id) => asked.has(id));
+        })()
+      : [];
+
+  const postId = await createPost({ ...common, date, ...(invited.length > 0 ? { inviteFriendIds: invited } : {}) });
   return NextResponse.json({ ok: true, postId });
 }

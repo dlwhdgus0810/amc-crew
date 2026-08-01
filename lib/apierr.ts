@@ -61,6 +61,20 @@ export const E = {
   badStatus: { ko: '상태 값이 올바르지 않습니다.', en: 'Invalid status.' },
   avatarType: { ko: '이미지 파일만 올릴 수 있어요.', en: 'Only image files can be uploaded.' },
   avatarSize: { ko: '사진 용량이 너무 커요. 다른 사진을 골라주세요.', en: 'That photo is too large. Please pick another.' },
+  friendSelf: { ko: '자기 자신에게는 친구 요청을 보낼 수 없어요.', en: 'You can’t send yourself a friend request.' },
+  friendNoShared: {
+    ko: '같은 모임에서 만난 사람에게만 친구 요청을 보낼 수 있어요.',
+    en: 'You can only add someone you’ve shared a meetup with.',
+  },
+  friendExists: { ko: '이미 친구이거나 보낸 요청이 있어요.', en: 'You’re already friends, or a request is pending.' },
+  friendNotFound: { ko: '친구 요청을 찾을 수 없어요.', en: 'Friend request not found.' },
+  friendNotFriend: { ko: '친구만 모임에 넣을 수 있어요.', en: 'You can only add a friend to a meetup.' },
+  friendAddOnly: {
+    ko: '이 모임에 참가한 사람만 친구를 넣을 수 있어요.',
+    en: 'Only someone in the meetup can add a friend to it.',
+  },
+  friendAlreadyIn: { ko: '이미 이 모임에 참가하고 있어요.', en: 'They’re already in this meetup.' },
+  friendAddPast: { ko: '지난 모임에는 넣을 수 없어요.', en: 'You can’t add anyone to a past meetup.' },
   settleNotFound: { ko: '정산을 찾을 수 없어요.', en: 'No settle-up found.' },
   settleParticipantOnly: {
     ko: '모임에 참가한 사람만 정산을 만들 수 있어요.',

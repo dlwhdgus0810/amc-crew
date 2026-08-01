@@ -172,6 +172,36 @@ export const favorites = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.category] })]
 );
 
+/**
+ * 친구 — 한 쌍에 한 줄. 늘 user_a < user_b 순으로 넣어서 (A→B)와 (B→A)가 같은 줄이 된다.
+ *
+ * 방향을 그대로 저장하면 두 사람이 같은 순간에 서로를 추가할 때 줄이 둘로 갈라진다.
+ * 순서를 고정해 두면 그 경우 기본키가 부딪히고, 부딪힌 자리에서 바로 수락으로 바뀐다.
+ * 순서는 lib/db/friends.ts의 pair() 한 곳에서만 정한다.
+ *
+ * 거절·취소·친구 끊기는 셋 다 줄을 지운다 — 남겨 둘 이유가 있는 상태가 아니다.
+ */
+export const friendships = pgTable(
+  'friendships',
+  {
+    userA: text('user_a')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    userB: text('user_b')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** 누가 먼저 걸었는지 — 수락할 수 있는 사람(반대편)을 가리는 데 쓴다 */
+    requestedBy: text('requested_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('pending'), // pending | accepted
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+  },
+  // 기본키가 user_a 쪽 조회를 덮으므로 반대쪽만 따로 깐다 ("내 친구"는 양쪽을 다 본다)
+  (t) => [primaryKey({ columns: [t.userA, t.userB] }), index('friendships_b_idx').on(t.userB, t.status)]
+);
+
 /** 사용자가 제안한 새 카테고리. 관리자가 검토 후 lib/categories.ts에 반영한다. */
 export const categoryRequests = pgTable(
   'category_requests',
@@ -223,8 +253,9 @@ export const notifications = pgTable(
       .references(() => users.id),
     postId: uuid('post_id').references(() => posts.id, { onDelete: 'cascade' }),
     /**
-     * 알림 종류 — 눌렀을 때 어디로 보낼지 정하는 데만 쓴다.
-     * 'settle'이면 모임 화면의 정산 카드로 바로 보낸다. null이면 예전처럼 카테고리 피드.
+     * 알림 종류 — 눌렀을 때 어디로 보낼지 정하는 데만 쓴다. 값은 lib/notif-kinds.ts에 모아 둔다.
+     * 'settle'은 정산 카드로, 'friend_join'·'added'·'invite'는 모임 화면으로,
+     * 'friend_req'·'friend_ok'는 친구 화면으로. null이면 예전처럼 카테고리 피드.
      */
     kind: text('kind'),
     message: text('message').notNull(),

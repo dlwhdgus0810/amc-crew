@@ -4,8 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import { Locale, pick } from '@/lib/i18n';
+import { FRIEND_KINDS, NOTIF, POST_KINDS } from '@/lib/notif-kinds';
 
 const T = {
+  friends: { ko: '친구', en: 'Friends' },
+  friendsHint: { ko: '접속 중인 친구와 받은 요청', en: 'Who’s online, and your requests' },
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   title: { ko: '알림', en: 'Alerts' },
   loginPrompt: { ko: '카카오 로그인 후 알림을 볼 수 있어요.', en: 'Log in with Kakao to see your alerts.' },
@@ -28,7 +31,7 @@ const T = {
 interface Notification {
   id: string;
   postId: string | null;
-  /** 'settle'이면 모임 화면의 정산 카드로 바로 보낸다 */
+  /** 어디로 보낼지 — 값은 lib/notif-kinds.ts에 모아 둔다 */
   kind: string | null;
   message: string;
   read: boolean;
@@ -52,6 +55,7 @@ export default function NotificationsPage() {
   const [needLogin, setNeedLogin] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingFriends, setPendingFriends] = useState(0);
   const t = useT();
   const locale = useLocale();
 
@@ -64,6 +68,7 @@ export default function NotificationsPage() {
         }
         const data = await r.json();
         setItems(data.notifications ?? []);
+        setPendingFriends(data.pendingFriends ?? 0);
         // 목록을 봤으면 전부 읽음 처리 (벨 배지 갱신은 다음 페이지 이동 시)
         if ((data.unreadCount ?? 0) > 0) {
           await fetch('/api/notifications/read', {
@@ -106,6 +111,17 @@ export default function NotificationsPage() {
       <h1>{t(T.title)}</h1>
       <p className="subtitle">{t(T.subtitle)}</p>
 
+      <Link href="/friends" className="card friend-entry">
+        <span className="friend-entry-text">
+          <span className="friend-entry-title">🤝 {t(T.friends)}</span>
+          <span className="friend-entry-hint">{t(T.friendsHint)}</span>
+        </span>
+        {pendingFriends > 0 && <span className="friend-count">{pendingFriends}</span>}
+        <span className="friend-chev" aria-hidden="true">
+          ›
+        </span>
+      </Link>
+
       {items.length === 0 && (
         <div className="card" style={{ color: 'var(--text-dim)' }}>
           {t(T.empty)}
@@ -117,14 +133,20 @@ export default function NotificationsPage() {
       {items.map((n) => {
         /*
          * 정산 알림은 그 모임의 정산 카드로 바로 보낸다 (#settle).
+         * 친구·초대 알림은 그 모임 하나로 — 비공개 모임은 카테고리 피드에 아예 없어서
+         * 피드로 보내면 찾을 수 없는 곳에 떨어진다.
          * 나머지는 예전처럼 카테고리 피드 — 목록에서 앞뒤 맥락까지 같이 보는 게 낫다.
          */
         const href =
-          n.kind === 'settle' && n.postId
+          n.kind === NOTIF.settle && n.postId
             ? `/p/${n.postId}#settle`
-            : n.category
-              ? `/c/${n.category}`
-              : null;
+            : n.postId && POST_KINDS.includes(n.kind ?? '')
+              ? `/p/${n.postId}`
+              : FRIEND_KINDS.includes(n.kind ?? '')
+                ? '/friends'
+                : n.category
+                  ? `/c/${n.category}`
+                  : null;
         const inner = (
           <div className={`notif-item ${n.read ? '' : 'unread'}`}>
             <span className="notif-message">{n.message}</span>

@@ -102,6 +102,17 @@ CREATE TABLE IF NOT EXISTS favorites (
   PRIMARY KEY (user_id, category)
 );
 
+CREATE TABLE IF NOT EXISTS friendships (
+  user_a text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_b text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  requested_by text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'pending',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  accepted_at timestamptz,
+  PRIMARY KEY (user_a, user_b)
+);
+CREATE INDEX IF NOT EXISTS friendships_b_idx ON friendships (user_b, status);
+
 CREATE TABLE IF NOT EXISTS category_requests (
   id uuid PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id),

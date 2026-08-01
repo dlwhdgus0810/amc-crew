@@ -27,6 +27,7 @@ import {addDays, todayLocal} from '@/lib/dates';
 import type {TitleMeta, TitleSearchResult} from '@/lib/tmdb';
 import {TMDB_IMG} from '@/lib/tmdb';
 import CommentThread, {CommentView} from '../../comment-thread';
+import {AddFriendSheet, FriendRequestSheet, Person, Tie} from '../../friend-sheet';
 import {siteUrl} from '@/lib/site';
 import {formatCents} from '@/lib/money';
 
@@ -56,6 +57,7 @@ const T = {
   people: { ko: '{n}명', en: '{n}' },
   peopleCap: { ko: '{n}/{cap}명', en: '{n}/{cap}' },
   me: { ko: '나', en: 'You' },
+  friendChip: { ko: '친구', en: 'Friend' },
   tabUpcoming: { ko: '예정 {n}', en: 'Upcoming {n}' },
   tabPast: { ko: '지난 모임 {n}', en: 'Past {n}' },
   tabPastPlain: { ko: '지난 모임', en: 'Past' },
@@ -79,6 +81,14 @@ const T = {
     ko: '알림 없이 만들어져요 — 링크를 직접 보내주세요',
     en: 'Created quietly — send the link yourself',
   },
+  notifyHintInvite: {
+    ko: '고른 친구 {n}명에게만 알림이 가요',
+    en: 'Only the {n} friends you picked get an alert',
+  },
+  inviteLabel: { ko: '알릴 친구', en: 'Tell which friends' },
+  inviteNone: { ko: '아직 친구가 없어요. 링크를 직접 보내주세요.', en: 'No friends yet — send the link yourself.' },
+  inviteAll: { ko: '전체 선택', en: 'Select all' },
+  inviteNoneAll: { ko: '전체 해제', en: 'Clear all' },
   emptyUpcoming: {
     ko: '아직 예정된 모임이 없어요. 첫 모임을 만들어보세요.',
     en: 'No upcoming meetups yet. Create the first one.',
@@ -108,6 +118,15 @@ const T = {
   createdOnce: {
     ko: '모임을 만들었어요! 구독자들에게 알림이 갔어요.',
     en: 'Meetup created — subscribers have been notified.',
+  },
+  // 비공개 모임은 구독자에게 알리지 않는다 — 갔다고 적으면 거짓말이 된다
+  createdPrivate: {
+    ko: '비공개 모임을 만들었어요! 링크를 아는 사람만 볼 수 있어요.',
+    en: 'Private meetup created — only people with the link can see it.',
+  },
+  createdInvite: {
+    ko: '비공개 모임을 만들고 친구 {n}명에게 알렸어요.',
+    en: 'Private meetup created, and {n} friends were told.',
   },
   createdWeekly: {
     ko: '매주 {day}요일 모임으로 만들었어요! 다음 회차는 한 주 전에 자동으로 열려요.',
@@ -233,6 +252,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const [fCapacity, setFCapacity] = useState('');
   const [fRepeat, setFRepeat] = useState(false); // 매주 반복 (새 모임 만들 때만)
   const [fPrivate, setFPrivate] = useState(false); // 비공개 — 링크를 아는 사람만
+  /** 비공개 모임을 알릴 친구 — 처음엔 전원이 켜져 있고, 뺄 사람만 뺀다 */
+  const [fInvite, setFInvite] = useState<Set<string>>(new Set());
 
   function resetForm() {
     setFTitle('');
@@ -246,6 +267,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setFCapacity('');
     setFRepeat(false);
     setFPrivate(false);
+    setFInvite(new Set());
   }
 
   // 지난 모임
@@ -256,6 +278,12 @@ export default function CategoryClient({ slug }: { slug: string }) {
   // 펼침 상태 — 댓글, 참여자 명단
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [openPeople, setOpenPeople] = useState<Set<string>>(new Set());
+  /** 친구 관계 — 참가자를 눌렀을 때 무엇을 보여줄지 정한다 */
+  const [friends, setFriends] = useState<{ friends: Person[]; ties: Record<string, Tie> }>({ friends: [], ties: {} });
+  /** 눌린 참가자 (친구 창) */
+  const [tapped, setTapped] = useState<Person | null>(null);
+  /** 친구를 넣을 모임 (＋친구 창) */
+  const [addTo, setAddTo] = useState<PostView | null>(null);
 
   async function loadPosts() {
     const data = await fetch(`/api/posts?category=${slug}`).then((r) => r.json());
@@ -278,6 +306,18 @@ export default function CategoryClient({ slug }: { slug: string }) {
     if (pastPosts !== null) await loadPast();
   }
 
+  /** 친구 목록과 요청 상태를 한 번에 — 참가자 칩이 무엇을 보여줄지 여기서 갈린다 */
+  async function loadFriends() {
+    const res = await fetch('/api/friends');
+    if (!res.ok) return; // 비로그인이면 그냥 비워 둔다
+    const d = await res.json();
+    const ties: Record<string, Tie> = {};
+    for (const f of d.friends ?? []) ties[f.id] = 'friends';
+    for (const f of d.incoming ?? []) ties[f.id] = 'incoming';
+    for (const f of d.outgoing ?? []) ties[f.id] = 'outgoing';
+    setFriends({ friends: d.friends ?? [], ties });
+  }
+
   function toggleIn(set: Set<string>, id: string) {
     const s = new Set(set);
     if (s.has(id)) s.delete(id);
@@ -292,6 +332,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
       loadPast(),
       fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
+      loadFriends(),
     ])
       .then(([, , auth, sub]) => {
         setUser(auth.user ?? null);
@@ -333,6 +374,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setEditId(null);
     resetForm();
     if (date) setFDate(date);
+    // 비공개로 바꾸면 바로 쓸 수 있도록 친구를 미리 전부 골라 둔다
+    setFInvite(new Set(friends.friends.map((f) => f.id)));
     setShowForm(true);
   }
 
@@ -355,13 +398,20 @@ export default function CategoryClient({ slug }: { slug: string }) {
           capacity: fCapacity || undefined,
           repeatWeekly: fRepeat,
           visibility: fPrivate ? 'link' : 'public',
+          ...(fPrivate && !fRepeat ? { inviteFriendIds: [...fInvite] } : {}),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.createFailed));
       setMsg({
         type: 'ok',
-        text: data.repeatWeekly ? t(T.createdWeekly, { day: weekdayLabel(fDate) }) : t(T.createdOnce),
+        text: data.repeatWeekly
+          ? t(T.createdWeekly, { day: weekdayLabel(fDate) })
+          : !fPrivate
+            ? t(T.createdOnce)
+            : fInvite.size > 0
+              ? t(T.createdInvite, { n: fInvite.size })
+              : t(T.createdPrivate),
       });
       setShowForm(false);
       resetForm();
@@ -621,6 +671,25 @@ export default function CategoryClient({ slug }: { slug: string }) {
         ))}
 
       {panelOpen && renderCreatePanel()}
+
+      {tapped && (
+        <FriendRequestSheet
+          person={tapped}
+          tie={user && tapped.id === user.id ? 'me' : (friends.ties[tapped.id] ?? 'none')}
+          signedIn={Boolean(user)}
+          onClose={() => setTapped(null)}
+          onDone={loadFriends}
+        />
+      )}
+
+      {addTo && (
+        <AddFriendSheet
+          postId={addTo.id}
+          candidates={friends.friends.filter((f) => !addTo.participants.some((p) => p.id === f.id))}
+          onClose={() => setAddTo(null)}
+          onDone={reloadAll}
+        />
+      )}
     </>
   );
 
@@ -809,6 +878,46 @@ export default function CategoryClient({ slug }: { slug: string }) {
                 <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}> {t(T.privateHint)}</span>
               </span>
             </label>
+
+            {/*
+             * 비공개 모임은 구독자에게 알리지 않으니, 아무에게도 안 알리면 아무도 모른다.
+             * 그래서 친구를 전부 고른 상태로 띄우고, 뺄 사람만 빼게 한다.
+             * 매주 반복은 첫 회차만 초대가 나가 헷갈리므로 그때는 아예 숨긴다.
+             */}
+            {isCreate && fPrivate && !fRepeat && (
+              <div className="invite-pick">
+                <div className="field-label">{t(T.inviteLabel)}</div>
+                {friends.friends.length === 0 ? (
+                  <p className="hint">{t(T.inviteNone)}</p>
+                ) : (
+                  <>
+                    <div className="people-list">
+                      {friends.friends.map((f) => (
+                        <button
+                          key={f.id}
+                          className={`person-chip pick ${fInvite.has(f.id) ? 'on' : ''}`}
+                          onClick={() => setFInvite((s) => toggleIn(s, f.id))}
+                          aria-pressed={fInvite.has(f.id)}
+                        >
+                          {fInvite.has(f.id) ? '✓ ' : ''}
+                          {f.name}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      className="link-btn"
+                      onClick={() =>
+                        setFInvite(
+                          fInvite.size === friends.friends.length ? new Set() : new Set(friends.friends.map((f) => f.id))
+                        )
+                      }
+                    >
+                      {fInvite.size === friends.friends.length ? t(T.inviteNoneAll) : t(T.inviteAll)}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -817,7 +926,13 @@ export default function CategoryClient({ slug }: { slug: string }) {
             {busy ? t(T.saving) : isCreate ? t(T.create) : t(T.save)}
           </button>
           {isCreate && (
-            <div className="create-hint">{fPrivate ? t(T.notifyHintPrivate) : t(T.notifyHint)}</div>
+            <div className="create-hint">
+              {fPrivate
+                ? fInvite.size > 0 && !fRepeat
+                  ? t(T.notifyHintInvite, { n: fInvite.size })
+                  : t(T.notifyHintPrivate)
+                : t(T.notifyHint)}
+            </div>
           )}
         </div>
       </div>
@@ -904,12 +1019,35 @@ export default function CategoryClient({ slug }: { slug: string }) {
         </button>
         {peopleOpen && (
           <div className="people-list">
-            {post.participants.map((p) => (
-              <span className="person-chip" key={p.id}>
-                {p.name}
-                {user && p.id === user.id ? ` (${t(T.me)})` : ''}
-              </span>
-            ))}
+            {post.participants.map((p) => {
+              const isMe = Boolean(user && p.id === user.id);
+              // 로그인한 사람에게만 눌리는 칩 — 비로그인은 애초에 명단을 못 본다
+              if (!user || isMe) {
+                return (
+                  <span className="person-chip" key={p.id}>
+                    {p.name}
+                    {isMe ? ` (${t(T.me)})` : ''}
+                  </span>
+                );
+              }
+              const tie = friends.ties[p.id];
+              return (
+                <button
+                  className={`person-chip friend ${tie ?? ''}`}
+                  key={p.id}
+                  onClick={() => setTapped({ id: p.id, name: p.name, avatar: p.avatar })}
+                >
+                  {tie === 'friends' ? '🤝 ' : tie === 'incoming' ? '● ' : ''}
+                  {p.name}
+                </button>
+              );
+            })}
+            {/* 대신 넣기 — 명단에 없는 친구를 부르는 입구라 참가자 칩과는 따로 둔다 */}
+            {user && !past && !full && (
+              <button className="person-chip add" onClick={() => setAddTo(post)}>
+                ＋ {t(T.friendChip)}
+              </button>
+            )}
             {left != null && left > 0 && <span className="person-chip open-seat">{t(T.seats, { n: left })}</span>}
           </div>
         )}

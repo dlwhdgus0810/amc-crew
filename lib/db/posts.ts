@@ -11,6 +11,7 @@ import { adminIds } from '../auth';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
+import { NOTIF } from '../notif-kinds';
 import { dateLabelShort, timeLabel } from '../datefmt';
 
 export interface PostView {
@@ -331,6 +332,11 @@ const N = {
   btnPost: { ko: '모임 보기', en: 'View meetup' },
   btnComment: { ko: '댓글 보기', en: 'View comments' },
   btnOther: { ko: '다른 모임 보기', en: 'See other meetups' },
+  // 친구 알림 — 주어가 모임이 아니라 사람이라 이름이 앞에 온다
+  meetup: { ko: '모임', en: 'meetup' },
+  friendJoinLine: { ko: '{name}님이 참가했어요 · {text}', en: '{name} joined · {text}' },
+  addedLine: { ko: '{name}님이 이 모임에 넣었어요 · {text}', en: '{name} added you · {text}' },
+  inviteLine: { ko: '{name}님이 초대했어요 · {text}', en: '{name} invited you · {text}' },
 };
 
 /** 알림 메시지용 모임 설명: "🥒 피클볼 새 모임 · 8/1(토) 오후 6:00 · OP코트" (제목이 있으면 〈제목〉 삽입) */
@@ -410,6 +416,87 @@ async function sendNotice(notice: Notice, linkUrl: string): Promise<void> {
   }
 }
 
+/**
+ * 인앱 알림만 남긴다 — 카톡도 푸시도 보내지 않는다.
+ *
+ * 친구 소식은 알림함에서 확인하면 되는 것이지 폰이 울릴 일이 아니다. 친구가 열 명이면
+ * 각자 모임에 들어갈 때마다 진동이 오게 되고, 그러면 사람들이 알림부터 꺼 버린다.
+ * 이 경로에는 sendNotice가 아예 없어서 "조용한 알림"이 구조로 지켜진다.
+ */
+export async function insertInAppNotice(
+  recipients: string[],
+  postId: string | null,
+  kind: string,
+  render: (locale: Locale) => string
+): Promise<void> {
+  const notice = await buildNotice(recipients, render); // 언어별 문구 만들기는 그대로 재사용
+  if (notice.rows.length === 0) return;
+  const db = await getDb();
+  await db
+    .insert(notifications)
+    .values(notice.rows.map((r) => ({ id: crypto.randomUUID(), userId: r.userId, postId, kind, message: r.message })));
+}
+
+/**
+ * 친구가 모임에 참가했음을 그 사람의 친구들에게 알린다.
+ *
+ * 비공개(link) 모임은 알리지 않는다 — 링크를 받은 사람만 알아야 하는 모임인데,
+ * 참가 알림이 나가면 "누가 어떤 모임에 갔다"는 사실이 링크 없는 사람에게 새어 나간다.
+ */
+export async function notifyFriendJoin(
+  post: {
+    id: string;
+    category: string;
+    date: string;
+    startTime: string;
+    location: string;
+    title?: string | null;
+    visibility?: string | null;
+  },
+  joinerName: string,
+  recipientIds: string[]
+): Promise<void> {
+  if (post.visibility === 'link' || recipientIds.length === 0) return;
+  await insertInAppNotice(
+    recipientIds,
+    post.id,
+    NOTIF.friendJoin,
+    (locale) =>
+      `🤝 ${pick(locale, N.friendJoinLine, {
+        name: joinerName,
+        text: describeForNotification(post.category, N.meetup, post.date, post.startTime, post.location, post.title, locale),
+      })}`
+  );
+}
+
+/** 남이 나를 모임에 넣었을 때 — 넣긴 사람에게 한 줄 */
+export async function notifyAddedToPost(
+  post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
+  actorName: string,
+  addedUserId: string
+): Promise<void> {
+  await insertInAppNotice(
+    [addedUserId],
+    post.id,
+    NOTIF.added,
+    (locale) =>
+      `🤝 ${pick(locale, N.addedLine, {
+        name: actorName,
+        text: describeForNotification(post.category, N.meetup, post.date, post.startTime, post.location, post.title, locale),
+      })}`
+  );
+}
+
+/** 이미 이 모임의 참가자인지 — 대신 추가에서 중복 알림을 막는 데 쓴다 */
+export async function isParticipant(postId: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  const rows = await db
+    .select({ userId: postParticipants.userId })
+    .from(postParticipants)
+    .where(and(eq(postParticipants.postId, postId), eq(postParticipants.userId, userId)));
+  return rows.length > 0;
+}
+
 /** 알림 제목 — 어느 앱에서 온 알림인지가 먼저 보여야 한다 */
 const APP_NAME = 'Kansas Korean';
 
@@ -441,6 +528,8 @@ export async function createPost(input: {
   recurringRuleId?: string; // 정기 모임 규칙에서 생성된 회차면 규칙 id
   amcShowtimeId?: string; // AMC 회차에서 만든 모임이면 그 회차 id
   visibility?: 'public' | 'link'; // 'link'면 구독자 알림을 보내지 않는다
+  /** 비공개 모임을 알릴 친구들 — 라우트에서 이미 "내 친구"로 걸러 온다 */
+  inviteFriendIds?: string[];
   label?: Msg; // 알림 문구 (기본 '새 모임', 정기 모임은 '이번 주 모임')
   origin?: string; // 카톡 알림의 "모임 보기" 링크 base URL (요청 origin)
 }): Promise<string> {
@@ -499,6 +588,36 @@ export async function createPost(input: {
     message: r.message,
   }));
 
+  /*
+   * 비공개 모임에 부른 친구들. 구독자 알림과 섞지 않는다 — 저쪽은 카톡·푸시까지 나가는
+   * 묶음이고, 이쪽은 인앱 한 줄이다. 모임을 만드는 같은 트랜잭션에 넣어 두면
+   * 모임만 생기고 초대는 안 가는 어중간한 상태가 생기지 않는다.
+   */
+  const inviteNotice =
+    input.visibility === 'link' && (input.inviteFriendIds?.length ?? 0) > 0
+      ? await buildNotice(input.inviteFriendIds!, (locale) =>
+          `🤝 ${pick(locale, N.inviteLine, {
+            name: input.authorName,
+            text: describeForNotification(
+              input.category,
+              N.meetup,
+              input.date,
+              input.startTime,
+              input.location,
+              input.title,
+              locale
+            ),
+          })}`
+        )
+      : null;
+  const inviteValues = (inviteNotice?.rows ?? []).map((r) => ({
+    id: crypto.randomUUID(),
+    userId: r.userId,
+    postId,
+    kind: NOTIF.invite,
+    message: r.message,
+  }));
+
   const anyDb = db as any;
   if (typeof anyDb.batch === 'function') {
     // neon-http: batch = 단일 트랜잭션
@@ -507,6 +626,7 @@ export async function createPost(input: {
       db.insert(postParticipants).values({ postId, userId: input.authorId }),
     ];
     if (notificationValues.length > 0) statements.push(db.insert(notifications).values(notificationValues));
+    if (inviteValues.length > 0) statements.push(db.insert(notifications).values(inviteValues));
     await anyDb.batch(statements);
   } else {
     // PGlite(로컬 폴백): 인터랙티브 트랜잭션 사용
@@ -514,6 +634,7 @@ export async function createPost(input: {
       await tx.insert(posts).values(postValues);
       await tx.insert(postParticipants).values({ postId, userId: input.authorId });
       if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
+      if (inviteValues.length > 0) await tx.insert(notifications).values(inviteValues);
     });
   }
 

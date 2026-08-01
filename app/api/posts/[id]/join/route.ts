@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
-import { getPost, joinPost, leavePost } from '@/lib/db/posts';
+import { getPost, isParticipant, joinPost, leavePost, notifyFriendJoin } from '@/lib/db/posts';
+import { friendIds } from '@/lib/db/friends';
+import { getProfiles, resolveDisplayName } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +19,23 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return await errJson(E.postNotFound, 404);
   }
   await ensureUser(user);
+  // joinPost는 이미 참가 중이어도 true를 준다 — 알림은 처음 들어올 때만 나가야 한다
+  const wasIn = await isParticipant(id, user.id);
   const joined = await joinPost(id, user.id, post.capacity);
   if (!joined) {
     return await errJson(E.postFull, 409);
   }
+
+  // 친구들에게 조용히 알린다 (인앱만). 실패해도 참가는 성공 처리
+  if (!wasIn) {
+    try {
+      const myName = resolveDisplayName((await getProfiles())[user.id], user.name);
+      await notifyFriendJoin(post, myName, await friendIds(user.id));
+    } catch (e) {
+      console.error('[join] notify failed:', e);
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }
 

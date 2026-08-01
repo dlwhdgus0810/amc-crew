@@ -26,6 +26,37 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-07-31T19:59',
+    notable: true,
+    title: { ko: '친구가 생겼어요', en: 'Friends' },
+    items: [
+      {
+        ko: '같은 모임에서 만난 사람에게 친구 요청을 보낼 수 있어요. 모임 카드의 참가자 수를 눌러 이름을 펼치고, 그 이름을 한 번 더 누르면 돼요.',
+        en: 'You can add anyone you’ve shared a meetup with — tap the headcount on a meetup card to open the names, then tap a name.',
+      },
+      {
+        ko: '친구가 어떤 모임에 들어가면 알림 탭에 알려드려요. 카톡이나 폰 알림으로는 울리지 않아요.',
+        en: 'When a friend joins a meetup it shows up in your alerts tab — it won’t buzz your phone or KakaoTalk.',
+      },
+      {
+        ko: '같이 가기로 한 친구를 대신 넣어줄 수 있어요. 참가자 명단의 ＋친구를 누르세요.',
+        en: 'You can put a friend into a meetup yourself — tap ＋친구 in the participant list.',
+      },
+      {
+        ko: '지금 앱을 보고 있는 친구가 누구인지 볼 수 있어요. 친구끼리만 보여요.',
+        en: 'See which of your friends are in the app right now — friends only.',
+      },
+      {
+        ko: '비공개 모임을 만들 때 어떤 친구에게 알릴지 고를 수 있어요. 고른 친구에게만 링크가 담긴 알림이 가요.',
+        en: 'When you make a private meetup you pick which friends hear about it — only they get the link.',
+      },
+      {
+        ko: '친구는 알림 탭 맨 위의 "친구"에서 볼 수 있어요.',
+        en: 'Everything friend-related lives under “Friends” at the top of the alerts tab.',
+      },
+    ],
+  },
+  {
     at: '2026-07-30T21:41',
     notable: true,
     title: { ko: '정산 알림과 비공개 범위', en: 'Settle-up alerts, and what guests can see' },
