@@ -19,7 +19,7 @@ export interface BanState {
 }
 
 /** 관리자가 고를 수 있는 기간 (분) — 화면 버튼과 서버 검증이 같은 목록을 쓴다 */
-export const BAN_DURATIONS = [60, 60 * 6, 60 * 24, 60 * 24 * 3, 60 * 24 * 7, 60 * 24 * 30] as const;
+export const BAN_DURATIONS = [5, 60, 60 * 6, 60 * 24, 60 * 24 * 3, 60 * 24 * 7, 60 * 24 * 30] as const;
 
 /** 정지 중이면 남은 기간, 아니면 null */
 export async function banStateOf(userId: string): Promise<BanState | null> {

@@ -272,6 +272,7 @@ export default function AdminPage() {
 
   /** 기간 버튼의 라벨 — 분 단위 값을 사람이 읽는 말로 */
   function durLabel(minutes: number): string {
+    if (minutes < 60) return t(T.banM, { n: minutes });
     return minutes < 60 * 24 ? t(T.banH, { n: minutes / 60 }) : t(T.banD, { n: minutes / (60 * 24) });
   }
 
