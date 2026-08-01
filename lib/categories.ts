@@ -157,6 +157,21 @@ export const CATEGORIES: Category[] = [
     description: { ko: '같이 칠 사람 모집', en: 'Find bowlers' },
   },
   {
+    slug: 'birthday',
+    emoji: '🎂',
+    en: 'BIRTHDAY',
+    // 보라(볼링)와 자홍(밥친구) 사이 — 색상환 순서를 그대로 잇는다
+    color: '#B02A9B',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '생일파티', en: 'Birthday Party' },
+    description: { ko: '같이 축하해줄 사람 모집', en: 'Find people to celebrate with' },
+    // 생일 모임에서 제일 먼저 알아야 할 건 누구 생일인가다
+    titleLabel: { ko: '누구 생일', en: 'Whose birthday' },
+    locationHint: { ko: '예: 우리집 / 대장금 Overland Park', en: 'e.g. my place / Dae Jang Geum, Overland Park' },
+    proposedBy: '박진욱',
+  },
+  {
     slug: 'meal',
     emoji: '🍚',
     en: 'MEAL',

@@ -216,6 +216,9 @@ export default function AdminPage() {
   // 지운 알림도 접어 둔다 — 무슨 일이 있을 때 찾아보는 것이지 늘 보는 표가 아니다
   const [deletedOpen, setDeletedOpen] = useState(false);
   const [banOpen, setBanOpen] = useState(false);
+  // 관리자 화면의 긴 목록들은 다 접어 둔다 — 볼 일이 있을 때 열어 보는 것들이다
+  const [reqOpen, setReqOpen] = useState(false);
+  const [ticketOpen, setTicketOpen] = useState(false);
   const [banBusy, setBanBusy] = useState<string | null>(null);
   const [banReason, setBanReason] = useState('');
   const [members, setMembers] = useState<
@@ -462,7 +465,17 @@ export default function AdminPage() {
     <>
       {isKakaoAdmin && (
         <>
-          <h1>{t(T.reqTitle)}</h1>
+          <h1>
+            <button className="collapse-h1" aria-expanded={reqOpen} onClick={() => setReqOpen((v) => !v)}>
+              {t(T.reqTitle)}
+              {requests.length > 0 ? ` ${requests.length}` : ''}
+              <span className="collapse-caret" aria-hidden>
+                {reqOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {reqOpen && (
+            <>
           <p className="subtitle">
             {t(T.reqDesc)}
             <code> lib/categories.ts</code>
@@ -516,6 +529,9 @@ export default function AdminPage() {
 
       {isKakaoAdmin && (
         <>
+            </>
+          )}
+
           <h1 style={{ marginTop: 80 }}>{t(T.viewAsTitle)}</h1>
           <p className="subtitle">{t(T.viewAsDesc)}</p>
           <div className="card">
@@ -529,7 +545,17 @@ export default function AdminPage() {
             <p className="hint" style={{ marginTop: 12 }}>{t(T.viewAsWarn)}</p>
           </div>
 
-          <h1 style={{ marginTop: 80 }}>{t(T.ticketTitle)}</h1>
+          <h1 style={{ marginTop: 80 }}>
+            <button className="collapse-h1" aria-expanded={ticketOpen} onClick={() => setTicketOpen((v) => !v)}>
+              {t(T.ticketTitle)}
+              {tickets.length > 0 ? ` ${tickets.length}` : ''}
+              <span className="collapse-caret" aria-hidden>
+                {ticketOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {ticketOpen && (
+            <>
           <p className="subtitle">{t(T.ticketDesc)}</p>
           {tickets.length === 0 ? (
             <p className="subtitle">{t(T.ticketEmpty)}</p>
@@ -638,6 +664,9 @@ export default function AdminPage() {
               {newsBusy ? t(T.newsSending) : t(T.newsSend)}
             </button>
           </div>
+
+            </>
+          )}
 
           <h1 style={{ marginTop: 80 }}>
             <button className="collapse-h1" aria-expanded={banOpen} onClick={() => setBanOpen((v) => !v)}>

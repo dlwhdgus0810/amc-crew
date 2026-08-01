@@ -31,6 +31,20 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-01T18:37',
+    title: { ko: '생일파티 카테고리', en: 'A Birthday Party category' },
+    items: [
+      {
+        ko: '생일파티 🎂 카테고리가 생겼어요. 박진욱 님이 제안해주셨어요.',
+        en: 'A Birthday Party 🎂 category — 박진욱’s idea.',
+      },
+      {
+        ko: '모임을 만들 때 누구 생일인지 적어두면 카드에 같이 보여요.',
+        en: 'Note whose birthday it is when you create one, and it shows on the card.',
+      },
+    ],
+  },
+  {
     at: '2026-08-01T16:50',
     title: { ko: '접속 중인 걸 누구에게 보여줄지 고를 수 있어요', en: 'Choose who sees you online' },
     items: [
