@@ -105,6 +105,8 @@ const T = {
   memoPh: { ko: '메모 (선택) — 준비물, 실력대, 주차 안내 등', en: 'Note (optional) — what to bring, skill level, parking' },
   titleSearchPh: { ko: '{label} 제목 검색 (예: 듄: 파트2)', en: 'Search {label} (e.g. Dune: Part Two)' },
   titleFreePh: { ko: '{label} (선택)', en: '{label} (optional)' },
+  // 위에 보기가 떠 있으면 "직접 적어도 된다"는 걸 칸이 스스로 말해줘야 한다
+  titleOtherPh: { ko: '{label} — 직접 입력', en: '{label} — type your own' },
   clearPick: { ko: '선택 해제', en: 'Clear' },
   tv: { ko: '드라마', en: 'TV' },
   movie: { ko: '영화', en: 'Movie' },
@@ -218,6 +220,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const color = category?.color ?? '#101010';
   const titleLabel = category?.titleLabel ? t(category.titleLabel) : undefined;
   const useTitleSearch = category?.titleSearch === 'tmdb'; // 자동완성은 영화/드라마만
+  const titleOptions = category?.titleOptions ?? [];
   const locationPlaceholder = `${t(category?.locationLabel ?? DEFAULT_LOCATION_LABEL)} (${t(
     category?.locationHint ?? DEFAULT_LOCATION_HINT
   )})`;
@@ -740,13 +743,34 @@ export default function CategoryClient({ slug }: { slug: string }) {
           {titleLabel && (
             <div className="form-section">
               <div className="field-label">{t(T.secTitle)}</div>
+              {/* 자주 나오는 답은 눌러서 채우고, 없는 건 아래 칸에 그냥 적는다 */}
+              {titleOptions.length > 0 && (
+                <div className="people-list" style={{ paddingTop: 0 }}>
+                  {titleOptions.map((opt) => {
+                    const label = t(opt);
+                    return (
+                      <button
+                        key={label}
+                        className={`person-chip pick ${fTitle === label ? 'on' : ''}`}
+                        aria-pressed={fTitle === label}
+                        onClick={() => setFTitle(fTitle === label ? '' : label)}
+                      >
+                        {fTitle === label ? '✓ ' : ''}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="search-wrap">
                 <input
                   type="text"
                   placeholder={
                     useTitleSearch
                       ? t(T.titleSearchPh, { label: titleLabel ?? '' })
-                      : t(T.titleFreePh, { label: titleLabel ?? '' })
+                      : titleOptions.length > 0
+                        ? t(T.titleOtherPh, { label: titleLabel ?? '' })
+                        : t(T.titleFreePh, { label: titleLabel ?? '' })
                   }
                   value={fTitle}
                   maxLength={100}

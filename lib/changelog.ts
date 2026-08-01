@@ -26,6 +26,25 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-08-01T01:49',
+    notable: true,
+    title: { ko: '러닝 크루와 게임', en: 'Running Crew and Game' },
+    items: [
+      {
+        ko: '러닝 크루 🏃 카테고리가 생겼어요. 지유 님이 제안해주셨어요.',
+        en: 'A Running Crew 🏃 category — 지유’s idea.',
+      },
+      {
+        ko: '게임 🎮 카테고리가 생겼어요. 라민 야말 님이 제안해주셨어요.',
+        en: 'A Game 🎮 category — 라민 야말’s idea.',
+      },
+      {
+        ko: '게임 모임을 만들 때 리그 오브 레전드·오버워치를 눌러서 고를 수 있어요. 다른 게임은 그 아래 칸에 직접 적으면 돼요.',
+        en: 'Making a game meetup, tap League of Legends or Overwatch — or type any other game in the box below.',
+      },
+    ],
+  },
+  {
     at: '2026-07-31T19:59',
     notable: true,
     title: { ko: '친구가 생겼어요', en: 'Friends' },

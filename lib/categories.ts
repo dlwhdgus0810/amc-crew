@@ -13,6 +13,11 @@ export interface Category {
   titleLabel?: Msg;
   /** titleLabel 입력에 TMDB 자동완성을 붙인다 (영화/드라마 전용) */
   titleSearch?: 'tmdb';
+  /**
+   * titleLabel 입력 위에 띄우는 보기 — 누르면 채워지고, 직접 입력도 그대로 된다.
+   * 자주 나오는 답을 한 번에 고르게 하는 것뿐이라 여기 없는 걸 적어도 아무 문제 없다.
+   */
+  titleOptions?: Msg[];
   /** 장소 입력의 이름 (미지정이면 '장소') — 예: 식당, 카페 */
   locationLabel?: Msg;
   /** 장소 입력 placeholder에 붙는 예시 문구 */
@@ -95,6 +100,19 @@ export const CATEGORIES: Category[] = [
     locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio' },
   },
   {
+    slug: 'running',
+    emoji: '🏃',
+    en: 'RUNNING',
+    color: '#93E3FD',
+    // 아주 밝은 하늘색이라 크림색 글씨는 1.3:1밖에 안 나온다 — 테니스처럼 검은 글씨를 쓴다
+    fg: '#101010',
+    kind: 'posts',
+    name: { ko: '러닝 크루', en: 'Running Crew' },
+    description: { ko: '러닝 같이 가요', en: 'Run together' },
+    locationHint: { ko: '예: Indian Creek Trail', en: 'e.g. Indian Creek Trail' },
+    proposedBy: '지유',
+  },
+  {
     slug: 'pickleball',
     emoji: '🥒',
     en: 'PICKLEBALL',
@@ -103,6 +121,30 @@ export const CATEGORIES: Category[] = [
     kind: 'posts',
     name: { ko: '피클볼', en: 'Pickleball' },
     description: { ko: '같이 칠 사람 모집', en: 'Find players' },
+  },
+  {
+    slug: 'game',
+    emoji: '🎮',
+    en: 'GAME',
+    /*
+     * 제안서에는 #002FA7이 적혀 있었는데 그건 피클볼이 쓰고 있는 색이다.
+     * 카드 색이 곧 카테고리의 표식이라 둘이 같으면 홈에서 구분이 안 된다.
+     * 색상환에서 바로 옆(파랑과 보라 사이)의 남색으로 옮겼다.
+     */
+    color: '#3B2FD9',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '게임', en: 'Game' },
+    description: { ko: '같이 협곡에 놀 사람', en: 'Find people to play with' },
+    titleLabel: { ko: '게임', en: 'Game' },
+    titleOptions: [
+      { ko: '리그 오브 레전드', en: 'League of Legends' },
+      { ko: '오버워치', en: 'Overwatch' },
+    ],
+    // 온라인으로 모이는 일이 많아 "장소"가 꼭 물리적인 곳은 아니다
+    locationLabel: { ko: '어디서', en: 'Where' },
+    locationHint: { ko: '예: 디스코드 / 우리집', en: 'e.g. Discord / my place' },
+    proposedBy: '라민 야말',
   },
   {
     slug: 'bowling',
