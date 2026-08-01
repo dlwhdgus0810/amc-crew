@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView } from '@/lib/db/posts';
 import {
@@ -42,6 +43,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
   if (!user) return await errJson(E.loginRequired, 401);
+  const banned = await banGuard(user);
+  if (banned) return banned;
 
   const { id } = await params;
   const post = await getPostView(id, user.id);
@@ -99,6 +102,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
   if (!user) return await errJson(E.loginRequired, 401);
+  const banned = await banGuard(user);
+  if (banned) return banned;
 
   const { id } = await params;
   const payee = await settlementPayee(id);

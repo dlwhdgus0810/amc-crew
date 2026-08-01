@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { setUserSelection, removeUser, validPicks } from '@/lib/store';
 import { getSessionUser } from '@/lib/auth';
 import { Showtime } from '@/lib/types';
@@ -36,6 +37,8 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
 
   const body = await req.json().catch(() => null);
   const raw = Array.isArray(body?.picks) ? body.picks : null;
@@ -59,6 +62,8 @@ export async function DELETE() {
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   await removeUser(user.id);
   return NextResponse.json({ ok: true });
 }

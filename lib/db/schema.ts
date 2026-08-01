@@ -30,6 +30,13 @@ export const users = pgTable('users', {
   zelle: text('zelle'),
   /** 새 소식(업데이트)을 카카오톡으로 받을지 — 기본은 꺼짐, 프로필에서 켠다 */
   newsAlerts: boolean('news_alerts').notNull().default(false),
+  /**
+   * 이 시각까지 앱을 쓸 수 없다 (관리자가 정한 정지 기간).
+   * 지나간 시각이면 정지가 아니다 — 풀어줄 때 따로 지우지 않아도 저절로 풀린다.
+   */
+  bannedUntil: timestamp('banned_until', { withTimezone: true }),
+  /** 정지 사유 — 본인 화면에 그대로 보여준다 (왜 막혔는지 모르면 같은 일이 반복된다) */
+  banReason: text('ban_reason'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

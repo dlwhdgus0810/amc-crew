@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { acceptFriend, notifyFriendAccepted } from '@/lib/db/friends';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
@@ -17,6 +18,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const { id } = await params;
   if (!(await acceptFriend(user.id, id))) {
     return await errJson(E.friendNotFound, 404);

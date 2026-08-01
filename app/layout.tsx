@@ -10,6 +10,7 @@ import NavLinks, { ContextTabs } from './nav';
 import ServiceWorkerRegistrar from './sw-register';
 import InstallPrompt from './install-prompt';
 import PushNudge from './push-nudge';
+import BanGate from './ban-screen';
 import ChromeAutoHide from './chrome-autohide';
 import PresenceBeat from './presence-beat';
 import ViewingAs from './viewing-as';
@@ -93,6 +94,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </main>
           <NavLinks />
           <PushNudge />
+          {/* 정지된 회원에게는 이 화면이 전부를 덮는다 (실제 차단은 서버에서) */}
+          <BanGate />
         </I18nProvider>
       </body>
     </html>

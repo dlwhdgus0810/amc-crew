@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
@@ -14,6 +15,8 @@ export async function GET(req: NextRequest) {
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const mineOnly = req.nextUrl.searchParams.get('mine') === '1' || !isAdmin(user);
   return NextResponse.json({ tickets: await listTickets(mineOnly ? user.id : undefined) });
 }
@@ -23,6 +26,8 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
 
   const body = await req.json().catch(() => null);
   const kind = typeof body?.kind === 'string' ? body.kind : '';

@@ -92,6 +92,23 @@ const T = {
     en: 'Send the latest entry to members with alerts on? It also goes out on KakaoTalk.',
   },
   newsSent: { ko: '{n}명에게 보냈어요. ({skipped}명은 이미 받아서 건너뛰었어요)', en: 'Sent to {n}. ({skipped} already had it)' },
+  banTitle: { ko: '이용 정지', en: 'Suspensions' },
+  banDesc: {
+    ko: '정한 시간 동안 앱을 못 쓰게 막아요. 시간이 지나면 저절로 풀리고, 그 사람이 만든 모임과 댓글은 그대로 남아요.',
+    en: 'Blocks someone from using the app for a set time. It lifts on its own, and their meetups and comments stay.',
+  },
+  banReasonPh: { ko: '사유 (선택) — 본인에게 그대로 보여요', en: 'Reason (optional) — they see this' },
+  banPick: { ko: '기간을 고르면 바로 정지돼요', en: 'Picking a length suspends them right away' },
+  banLift: { ko: '정지 풀기', en: 'Lift' },
+  banActive: { ko: '{left} 남음', en: '{left} left' },
+  banConfirm: { ko: '{name}님을 {dur} 동안 정지할까요?', en: 'Suspend {name} for {dur}?' },
+  banLiftConfirm: { ko: '{name}님의 정지를 풀까요?', en: 'Lift the suspension on {name}?' },
+  banDone: { ko: '{name}님을 정지했어요.', en: '{name} is suspended.' },
+  banLifted: { ko: '{name}님의 정지를 풀었어요.', en: '{name} can use the app again.' },
+  banNobody: { ko: '정지할 수 있는 회원이 없어요.', en: 'No members to suspend.' },
+  banH: { ko: '{n}시간', en: '{n}h' },
+  banD: { ko: '{n}일', en: '{n}d' },
+  banM: { ko: '{n}분', en: '{n} min' },
   statsTitle: { ko: '회원별 접속 기록', en: 'Time in the app' },
   statsDesc: {
     ko: '신호가 이어지는 동안을 한 번의 접속으로 묶어 잰 시간이에요. 최근 7일치만 봅니다.',
@@ -198,6 +215,13 @@ export default function AdminPage() {
   const [statsOpen, setStatsOpen] = useState(false);
   // 지운 알림도 접어 둔다 — 무슨 일이 있을 때 찾아보는 것이지 늘 보는 표가 아니다
   const [deletedOpen, setDeletedOpen] = useState(false);
+  const [banOpen, setBanOpen] = useState(false);
+  const [banBusy, setBanBusy] = useState<string | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [members, setMembers] = useState<
+    { id: string; name: string; avatar: string | null; until?: string; secondsLeft?: number; reason?: string | null }[] | null
+  >(null);
+  const [durations, setDurations] = useState<number[]>([]);
   const [newsBusy, setNewsBusy] = useState(false);
   const t = useT();
   const locale = useLocale();
@@ -238,6 +262,50 @@ export default function AdminPage() {
     return u.lastSeenAt.slice(0, 10);
   }
 
+  async function loadMembers() {
+    const res = await fetch('/api/admin/ban', { cache: 'no-store' });
+    if (!res.ok) return;
+    const d = await res.json();
+    setMembers(d.members ?? []);
+    setDurations(d.durations ?? []);
+  }
+
+  /** 기간 버튼의 라벨 — 분 단위 값을 사람이 읽는 말로 */
+  function durLabel(minutes: number): string {
+    return minutes < 60 * 24 ? t(T.banH, { n: minutes / 60 }) : t(T.banD, { n: minutes / (60 * 24) });
+  }
+
+  /** 남은 기간 — 서버가 준 초를 굵직하게 (관리자 화면은 초까지 셀 자리가 아니다) */
+  function leftLabel(seconds: number): string {
+    const m = Math.ceil(seconds / 60);
+    if (m < 60) return t(T.banM, { n: m });
+    const h = Math.floor(m / 60);
+    return h < 24 ? t(T.banH, { n: h }) : t(T.banD, { n: Math.floor(h / 24) });
+  }
+
+  async function ban(id: string, name: string, minutes: number) {
+    const ask = minutes === 0 ? t(T.banLiftConfirm, { name }) : t(T.banConfirm, { name, dur: durLabel(minutes) });
+    if (!confirm(ask)) return;
+    setBanBusy(id);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/ban', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id, minutes, reason: banReason }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? t(T.failed));
+      setMsg({ type: 'ok', text: minutes === 0 ? t(T.banLifted, { name }) : t(T.banDone, { name }) });
+      setBanReason('');
+      await loadMembers();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setBanBusy(null);
+    }
+  }
+
   function dur(seconds: number): string {
     if (seconds <= 0) return '–';
     const m = Math.round(seconds / 60);
@@ -257,6 +325,7 @@ export default function AdminPage() {
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => d && setDeleted(d.notifications ?? []))
             .catch(() => {});
+          loadMembers();
         }
       });
   }, []);
@@ -568,6 +637,77 @@ export default function AdminPage() {
               {newsBusy ? t(T.newsSending) : t(T.newsSend)}
             </button>
           </div>
+
+          <h1 style={{ marginTop: 80 }}>
+            <button className="collapse-h1" aria-expanded={banOpen} onClick={() => setBanOpen((v) => !v)}>
+              {t(T.banTitle)}
+              {(members ?? []).some((m) => m.until) ? ` ${(members ?? []).filter((m) => m.until).length}` : ''}
+              <span className="collapse-caret" aria-hidden>
+                {banOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {banOpen && (
+            <>
+              <p className="subtitle">{t(T.banDesc)}</p>
+              <div className="card">
+                {members === null ? (
+                  <p className="hint">{t(T.loading)}</p>
+                ) : members.length === 0 ? (
+                  <p className="hint">{t(T.banNobody)}</p>
+                ) : (
+                  <>
+                    {/* 사유는 한 번 적어 두고 아래에서 기간만 고른다 */}
+                    <input
+                      type="text"
+                      placeholder={t(T.banReasonPh)}
+                      value={banReason}
+                      maxLength={200}
+                      onChange={(e) => setBanReason(e.target.value)}
+                    />
+                    <p className="hint" style={{ marginTop: 6 }}>
+                      {t(T.banPick)}
+                    </p>
+                    <ul className="online-list ban-list">
+                      {members.map((m) => (
+                        <li key={m.id}>
+                          <span className="avatar-sm">
+                            {m.avatar ? <img src={m.avatar} alt="" /> : m.name.slice(0, 1)}
+                          </span>
+                          <span className="online-name">{m.name}</span>
+                          {m.until ? (
+                            <span className="friend-actions">
+                              <span className="ban-left">{t(T.banActive, { left: leftLabel(m.secondsLeft ?? 0) })}</span>
+                              <button
+                                className="link-btn strong"
+                                disabled={banBusy === m.id}
+                                onClick={() => ban(m.id, m.name, 0)}
+                              >
+                                {t(T.banLift)}
+                              </button>
+                            </span>
+                          ) : (
+                            <span className="ban-durs">
+                              {durations.map((d) => (
+                                <button
+                                  key={d}
+                                  className="person-chip pick"
+                                  disabled={banBusy === m.id}
+                                  onClick={() => ban(m.id, m.name, d)}
+                                >
+                                  {durLabel(d)}
+                                </button>
+                              ))}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
           <h1 style={{ marginTop: 80 }}>
             <button className="collapse-h1" aria-expanded={deletedOpen} onClick={() => setDeletedOpen((v) => !v)}>

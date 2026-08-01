@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getSessionUser, IMPERSONATOR_COOKIE, isAdmin, verifySessionToken } from '@/lib/auth';
 import { resolveDisplayName } from '@/lib/store';
 import { dbGetUser } from '@/lib/db/users';
+import { toState } from '@/lib/db/bans';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,11 @@ export async function GET() {
     kakaoTalkMessage: row?.kakaoTalkMessage ?? null,
     locale: row?.locale ?? null,
     isAdmin: isAdmin(user),
+    /*
+     * 정지 중이면 남은 기간. 화면을 덮는 안내(app/ban-screen.tsx)가 이 값으로 타이머를 돌린다.
+     * 로그아웃 처리하지 않는 이유 — "로그인하세요"만 뜨면 왜 막혔는지 알 길이 없다.
+     */
+    ban: toState(row?.bannedUntil ?? null, row?.banReason ?? null),
     ...(realUser ? { viewingAs: { backTo: realUser.name } } : {}),
   });
 }

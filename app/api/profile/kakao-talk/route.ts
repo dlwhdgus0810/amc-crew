@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { revokeTalkMessageConsent, verifyTalkMessageConsent } from '@/lib/kakao';
@@ -13,6 +14,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) return await errJson(E.loginRequired, 401);
+  const banned = await banGuard(user);
+  if (banned) return banned;
 
   await ensureUser(user);
 
@@ -34,6 +37,8 @@ export async function GET(req: NextRequest) {
 export async function DELETE() {
   const user = await getSessionUser();
   if (!user) return await errJson(E.loginRequired, 401);
+  const banned = await banGuard(user);
+  if (banned) return banned;
 
   await ensureUser(user);
   const { ok, reason } = await revokeTalkMessageConsent(user.id);

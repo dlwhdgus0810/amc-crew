@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import {
@@ -23,6 +24,8 @@ export async function GET() {
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const all = await listFriendships(user.id);
   return NextResponse.json({
     friends: friendsOf(all),
@@ -38,6 +41,8 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const body = await req.json().catch(() => null);
   const targetId = typeof body?.userId === 'string' ? body.userId : '';
   if (!targetId) {

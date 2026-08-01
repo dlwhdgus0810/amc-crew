@@ -12,7 +12,7 @@ const BEAT_MS = 60_000;
  * 탭이 숨으면 멈춘다 — 브라우저가 백그라운드 타이머를 크게 늦추기도 하고, 무엇보다
  * 안 보고 있는 사람을 접속 중으로 세면 화면이 거짓말이 된다.
  *
- * 비로그인이면 첫 응답(401)을 보고 아예 그만둔다.
+ * 비로그인(401)이나 이용 정지(403)면 첫 응답을 보고 아예 그만둔다.
  */
 export default function PresenceBeat() {
   useEffect(() => {
@@ -24,7 +24,8 @@ export default function PresenceBeat() {
       try {
         const res = await fetch('/api/presence', { method: 'POST' });
         // 로그인하지 않은 사람에게 60초마다 요청을 보낼 이유가 없다
-        if (res.status === 401) stop();
+        // 401 비로그인 · 403 이용 정지 — 어느 쪽이든 계속 두드릴 이유가 없다
+        if (res.status === 401 || res.status === 403) stop();
       } catch {
         // 네트워크가 끊긴 것뿐이라 다음 차례에 다시 시도한다
       }

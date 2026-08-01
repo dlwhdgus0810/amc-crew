@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { getPost, isParticipant, joinPost, notifyAddedToPost, notifyFriendJoin } from '@/lib/db/posts';
@@ -23,6 +24,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const { id } = await params;
   const post = await getPost(id);
   if (!post) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, updatePost } from '@/lib/db/posts';
@@ -32,6 +33,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const { id } = await params;
   const post = await getPost(id);
   if (!post) {
@@ -117,6 +120,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const { id } = await params;
   const post = await getPost(id);
   if (!post) {

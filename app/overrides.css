@@ -1091,3 +1091,70 @@ button.person-chip.pick.on {
   flex-wrap: wrap;
   row-gap: 6px;
 }
+
+/* ── 이용 정지 안내 (app/ban-screen.tsx) ────────────────────
+   푸시 안내(z-index 60)보다도 위에 둔다 — 막힌 사람에게 알림을 켜라고 권할 자리가 아니다. */
+.ban-back {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--bg);
+}
+.ban-card {
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+.ban-emoji { font-size: 44px; line-height: 1; }
+.ban-title {
+  margin: 14px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+.ban-desc {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-mid);
+  text-wrap: pretty;
+}
+.ban-left-label {
+  margin-top: 26px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.ban-clock {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.ban-days { font-size: 22px; }
+.ban-reason {
+  margin-top: 22px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  text-align: left;
+}
+.ban-reason strong { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 3px; }
+.ban-reason span { font-size: 14px; line-height: 1.5; }
+.ban-out { margin-top: 24px; }
+
+/* 관리자: 이용 정지 목록 — 이름 아래로 기간 버튼이 줄바꿈된다 */
+.ban-list li { flex-wrap: wrap; }
+.ban-durs { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.ban-durs .person-chip { min-height: 28px; padding: 0 9px; font-size: 11.5px; }
+.ban-left { font-size: 12px; font-weight: 600; color: var(--danger); }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { listOnline, listPresenceStats, ONLINE_WINDOW_MINUTES, totalUsers, touchPresence } from '@/lib/db/presence';
 
@@ -12,6 +13,9 @@ export async function POST() {
     // 비로그인은 조용히 401 — 클라이언트가 이걸 보고 신호를 아예 멈춘다
     return await errJson(E.loginRequired, 401);
   }
+  // 정지된 사람은 "지금 접속 중"에도 뜨지 않는다 — 쓰지 못하는 사람이 쓰고 있는 것처럼 보이면 안 된다
+  const banned = await banGuard(user);
+  if (banned) return banned;
   await touchPresence(user.id);
   return NextResponse.json({ ok: true });
 }

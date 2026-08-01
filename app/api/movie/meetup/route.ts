@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { getProfiles, getSelections, resolveDisplayName } from '@/lib/store';
@@ -34,6 +35,8 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
 
   const body = await req.json().catch(() => null);
   const showtimeId = typeof body?.showtimeId === 'string' ? body.showtimeId : '';

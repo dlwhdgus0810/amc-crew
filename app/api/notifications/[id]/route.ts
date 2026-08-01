@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { softDeleteNotification } from '@/lib/db/posts';
 
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic';
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
   if (!user) return await errJson(E.loginRequired, 401);
+  const banned = await banGuard(user);
+  if (banned) return banned;
 
   const { id } = await params;
   // 남의 알림이거나 이미 지운 것이면 false — 어느 쪽인지는 알려주지 않는다

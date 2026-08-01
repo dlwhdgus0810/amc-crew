@@ -61,6 +61,12 @@ export const E = {
   badStatus: { ko: '상태 값이 올바르지 않습니다.', en: 'Invalid status.' },
   avatarType: { ko: '이미지 파일만 올릴 수 있어요.', en: 'Only image files can be uploaded.' },
   avatarSize: { ko: '사진 용량이 너무 커요. 다른 사진을 골라주세요.', en: 'That photo is too large. Please pick another.' },
+  banned: {
+    ko: '지금은 앱을 쓸 수 없어요. {left} 뒤에 다시 쓸 수 있어요.',
+    en: 'You can’t use the app right now — it opens back up in {left}.',
+  },
+  banAdmin: { ko: '관리자는 정지할 수 없어요.', en: 'Admins can’t be suspended.' },
+  banMinutes: { ko: '정지 기간이 올바르지 않아요.', en: 'That isn’t a valid duration.' },
   friendSelf: { ko: '자기 자신에게는 친구 요청을 보낼 수 없어요.', en: 'You can’t send yourself a friend request.' },
   friendNoShared: {
     ko: '같은 모임에서 만난 사람에게만 친구 요청을 보낼 수 있어요.',

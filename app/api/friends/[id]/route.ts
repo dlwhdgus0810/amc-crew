@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { removeFriendship, setPresenceVisible } from '@/lib/db/friends';
 
@@ -14,6 +15,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const { id } = await params;
   const was = await removeFriendship(user.id, id);
   if (!was) {
@@ -33,6 +36,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const { id } = await params;
   const body = await req.json().catch(() => null);
   if (typeof body?.showPresence !== 'boolean') {

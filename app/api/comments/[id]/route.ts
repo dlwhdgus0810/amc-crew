@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { deleteComment, getComment } from '@/lib/db/posts';
 
@@ -10,6 +11,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
+  const banned = await banGuard(user);
+  if (banned) return banned;
   const { id } = await params;
   const comment = await getComment(id);
   if (!comment) {
