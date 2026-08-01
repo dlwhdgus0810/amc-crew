@@ -436,6 +436,13 @@ body[data-chrome='hidden'] nav.tabbar {
   position: absolute;
   right: -4px;
   bottom: -4px;
+  /*
+   * 아바타는 -7px씩 겹쳐 쌓이고 뒤 순서가 위에 그려진다. 스티커는 오른쪽 아래에 있어서
+   * 그대로 두면 다음 아바타에 절반쯤 덮인다(마지막 사람만 온전히 보였다).
+   * .ava는 position: relative에 z-index가 auto라 쌓임 맥락을 만들지 않으므로,
+   * 스티커에 z-index를 주면 뒤따르는 아바타들 위로 올라온다.
+   */
+  z-index: 2;
   font-size: 10px;
   line-height: 1;
   /* 이모지가 배경에 묻히지 않게 흰 테두리 원 위에 얹는다 */
