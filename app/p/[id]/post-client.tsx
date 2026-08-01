@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { catDisplayName, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../../i18n';
 import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
+import { effectiveEnd } from '@/lib/dates';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -164,7 +165,9 @@ export default function PostClient({ id }: { id: string }) {
   const catLabel = cat ? t(cat.name) : post.category;
   const catHeading = cat ? t(catDisplayName(cat.slug)) : post.category;
   const gcalTitle = t(T.meetupSuffix, { cat: catLabel, title: post.title ? ` 〈${post.title}〉` : '' });
-  const gcalDates = `${post.date.replace(/-/g, '')}T${post.startTime.replace(':', '')}00/${post.date.replace(/-/g, '')}T${post.endTime.replace(':', '')}00`;
+  // 구글 캘린더도 끝 시각을 요구한다 — 안 적은 모임은 짐작한 길이로 채운다
+  const gcalEnd = effectiveEnd(post.startTime, post.endTime);
+  const gcalDates = `${post.date.replace(/-/g, '')}T${post.startTime.replace(':', '')}00/${post.date.replace(/-/g, '')}T${gcalEnd.replace(':', '')}00`;
   const gcalUrl =
     `https://calendar.google.com/calendar/render?action=TEMPLATE` +
     `&text=${encodeURIComponent(gcalTitle)}` +
@@ -220,7 +223,8 @@ export default function PostClient({ id }: { id: string }) {
           post.title && <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>〈{post.title}〉</div>
         )}
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.4px' }}>
-          {dateLabel(post.date)} {to12h(post.startTime)} ~ {to12h(post.endTime)}
+          {dateLabel(post.date)} {to12h(post.startTime)}
+          {post.endTime ? ` ~ ${to12h(post.endTime)}` : ''}
           {post.recurringRuleId && (
             <span className="repeat-badge">{t(T.repeatBadge, { day: fmtWeekday(post.date, locale) })}</span>
           )}

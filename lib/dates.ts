@@ -31,10 +31,55 @@ export function pastCutoff(): { date: string; time: string } {
   };
 }
 
-/** (날짜, 종료시각)이 이미 "지난 모임" 기준을 넘겼는지 — 목록 분류와 생성 검증이 같은 기준을 쓴다 */
-export function isPastSlot(date: string, endTime: string): boolean {
+/**
+ * 종료 시각을 안 적은 모임을 이만큼 뒤에 끝난 것으로 친다 (분).
+ *
+ * 시작 시각을 그대로 끝으로 보면 6시 저녁 모임이 7시에 지난 모임으로 내려간다 — 밥 먹는 중에.
+ * 반대로 너무 길게 잡으면 끝난 모임이 며칠씩 예정 칸에 남는다. 세 시간이면 이 앱에서
+ * 열리는 모임 대부분을 덮는다.
+ */
+export const OPEN_END_MINUTES = 180;
+
+/**
+ * 이 모임이 사실상 끝나는 시각.
+ *
+ * 종료 시각은 안 적어도 된다. 안 적었으면 시작 후 OPEN_END_MINUTES 뒤로 보되 23:59에서 묶는다 —
+ * 시각을 문자열로 비교하기 때문에 자정을 넘겨 '00:30'이 되면 그날 가장 이른 시각이 되어
+ * 만들자마자 지난 모임이 되어버린다.
+ */
+export function effectiveEnd(startTime: string, endTime?: string | null): string {
+  if (endTime) return endTime;
+  const mins = toMinutes(startTime) + OPEN_END_MINUTES;
+  return mins >= 24 * 60 - 1 ? '23:59' : fromMinutes(mins);
+}
+
+/** 'HH:mm' ↔ 자정부터의 분 */
+function toMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+function fromMinutes(mins: number): string {
+  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+}
+
+/**
+ * 종료 시각을 안 적은 모임이 "지난 모임"으로 넘어가는 시작 시각의 상한 (같은 날 안에서).
+ * 시작 시각이 이 값 이하면 이미 끝난 것으로 본다. null이면 오늘 아직 아무것도 넘어가지 않았다.
+ *
+ * 행마다 끝 시각을 계산하는 대신 기준 시각을 당겨 두면, DB 질의도 문자열 비교 하나로 끝난다.
+ */
+export function openEndCutoffTime(): string | null {
+  const cut = toMinutes(pastCutoff().time) - OPEN_END_MINUTES;
+  return cut < 0 ? null : fromMinutes(cut);
+}
+
+/** (날짜, 시각)이 이미 "지난 모임" 기준을 넘겼는지 — 목록 분류와 생성 검증이 같은 기준을 쓴다 */
+export function isPastSlot(date: string, startTime: string, endTime?: string | null): boolean {
   const { date: cutDate, time: cutTime } = pastCutoff();
-  return date < cutDate || (date === cutDate && endTime <= cutTime);
+  if (date !== cutDate) return date < cutDate;
+  if (endTime) return endTime <= cutTime;
+  const openCut = openEndCutoffTime();
+  return openCut !== null && startTime <= openCut;
 }
 
 // YYYY-MM-DD 문자열 연산은 UTC 기준으로 처리한다 (로컬 시간대가 끼면 날짜가 하루씩 밀린다)

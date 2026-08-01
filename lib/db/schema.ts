@@ -47,7 +47,7 @@ export const recurringRules = pgTable(
     title: text('title'),
     titleMeta: jsonb('title_meta').$type<TitleMeta>(),
     startTime: text('start_time').notNull(), // HH:mm
-    endTime: text('end_time').notNull(), // HH:mm
+    endTime: text('end_time'), // HH:mm — 안 적어도 된다 (lib/dates.ts의 effectiveEnd 참고)
     location: text('location').notNull(),
     description: text('description'),
     capacity: integer('capacity'),
@@ -82,7 +82,7 @@ export const posts = pgTable(
 
     date: text('date').notNull(), // YYYY-MM-DD (사전순 = 시간순)
     startTime: text('start_time').notNull(), // HH:mm
-    endTime: text('end_time').notNull(), // HH:mm
+    endTime: text('end_time'), // HH:mm — 안 적어도 된다 (lib/dates.ts의 effectiveEnd 참고)
     location: text('location').notNull(),
     description: text('description'),
     capacity: integer('capacity'), // 정원. null이면 무제한

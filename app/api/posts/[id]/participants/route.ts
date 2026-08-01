@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!friendId) {
     return await errJson(E.badRequest, 400);
   }
-  if (isPastSlot(post.date, post.endTime)) {
+  if (isPastSlot(post.date, post.startTime, post.endTime)) {
     return await errJson(E.friendAddPast, 400);
   }
   // 이 모임에 있는 사람만 남을 부를 수 있다 — 지나가던 사람이 남의 모임 명단을 채우면 안 된다

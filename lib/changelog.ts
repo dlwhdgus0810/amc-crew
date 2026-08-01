@@ -26,6 +26,20 @@ export interface ChangelogEntry {
 /** 최신이 맨 위 */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    at: '2026-08-01T02:31',
+    title: { ko: '종료 시간은 안 적어도 돼요', en: 'The end time is optional now' },
+    items: [
+      {
+        ko: '모임을 만들 때 종료 시간을 비워둘 수 있어요. 언제 끝날지 모르는 모임도 그냥 올리세요.',
+        en: 'You can leave the end time blank — post it even when you don’t know how long it’ll run.',
+      },
+      {
+        ko: '비워두면 카드에 시작 시간만 보이고, 시작 3시간 뒤에 지난 모임으로 넘어가요.',
+        en: 'The card then shows just the start time, and it moves to Past three hours after it starts.',
+      },
+    ],
+  },
+  {
     at: '2026-08-01T01:49',
     notable: true,
     title: { ko: '러닝 크루와 게임', en: 'Running Crew and Game' },

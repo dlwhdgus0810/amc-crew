@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
   const date = typeof body?.date === 'string' ? body.date : '';
   const startTime = typeof body?.startTime === 'string' ? body.startTime : '';
-  const endTime = typeof body?.endTime === 'string' ? body.endTime : '';
+  // 종료 시각은 안 적어도 된다 — 빈 값이면 null로 저장하고, 언제 끝난 걸로 볼지는 lib/dates.ts가 정한다
+  const endTime = typeof body?.endTime === 'string' && body.endTime ? body.endTime : null;
   const location = typeof body?.location === 'string' ? body.location.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
   const rawCapacity = body?.capacity;
@@ -43,15 +44,18 @@ export async function POST(req: NextRequest) {
   if (!POST_CATEGORY_SLUGS.includes(category)) {
     return await errJson(E.badCategory, 400);
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime)) {
     return await errJson(E.badDateTime, 400);
   }
-  if (startTime >= endTime) {
+  if (endTime !== null && !/^\d{2}:\d{2}$/.test(endTime)) {
+    return await errJson(E.badDateTime, 400);
+  }
+  if (endTime !== null && startTime >= endTime) {
     return await errJson(E.endBeforeStart, 400);
   }
   // 날짜·시간 오타 방어 — 만들자마자 "지난 모임"으로 들어가는 걸 막는다
   // (목록 분류와 같은 기준이라 종료 후 유예 시간까지는 허용된다)
-  if (isPastSlot(date, endTime)) {
+  if (isPastSlot(date, startTime, endTime)) {
     return await errJson(E.pastSlot, 400);
   }
   if (!location || location.length > 100) {

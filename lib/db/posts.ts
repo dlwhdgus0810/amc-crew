@@ -6,7 +6,7 @@ import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
-import { isPastSlot, pastCutoff, todayLocal } from '../dates';
+import { isPastSlot, openEndCutoffTime, pastCutoff, todayLocal } from '../dates';
 import { adminIds } from '../auth';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
@@ -25,7 +25,8 @@ export interface PostView {
   recurringRuleId: string | null; // 정기 모임 회차면 규칙 id
   date: string;
   startTime: string;
-  endTime: string;
+  /** 안 적었으면 null — 화면에서 시작 시각만 보여준다 */
+  endTime: string | null;
   location: string;
   description: string | null;
   capacity: number | null;
@@ -94,15 +95,20 @@ export async function listPosts(category: string, past = false, viewerId?: strin
         )
       )
     : eq(posts.visibility, 'public');
-  // 끝난 모임: 날짜가 지났거나, 같은 날인데 종료 시각이 기준 시각을 넘겼을 때
-  const ended = or(
-    lt(posts.date, cutDate),
-    and(eq(posts.date, cutDate), lte(posts.endTime, cutTime))
-  );
-  const upcoming = or(
-    gt(posts.date, cutDate),
-    and(eq(posts.date, cutDate), gt(posts.endTime, cutTime))
-  );
+  /*
+   * 끝난 모임: 날짜가 지났거나, 같은 날인데 종료 시각이 기준 시각을 넘겼을 때.
+   * 종료 시각을 안 적은 모임은 시작 시각을 당겨 둔 기준(openCut)과 견준다 —
+   * openCut이 null이면 오늘은 아직 아무것도 안 넘어갔다는 뜻이다.
+   */
+  const openCut = openEndCutoffTime();
+  const endedToday = openCut
+    ? or(lte(posts.endTime, cutTime), and(isNull(posts.endTime), lte(posts.startTime, openCut)))
+    : lte(posts.endTime, cutTime);
+  const upcomingToday = openCut
+    ? or(gt(posts.endTime, cutTime), and(isNull(posts.endTime), gt(posts.startTime, openCut)))
+    : or(gt(posts.endTime, cutTime), isNull(posts.endTime));
+  const ended = or(lt(posts.date, cutDate), and(eq(posts.date, cutDate), endedToday));
+  const upcoming = or(gt(posts.date, cutDate), and(eq(posts.date, cutDate), upcomingToday));
   const postRows = past
     ? await db
         .select()
@@ -214,7 +220,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     description: p.description,
     capacity: p.capacity,
     visibility: p.visibility === 'link' ? 'link' : 'public',
-    isPast: isPastSlot(p.date, p.endTime),
+    isPast: isPastSlot(p.date, p.startTime, p.endTime),
     createdAt: p.createdAt.toISOString(),
     participants: signedIn ? (byPost.get(p.id) ?? []) : [],
     participantCount: (byPost.get(p.id) ?? []).length,
@@ -521,7 +527,7 @@ export async function createPost(input: {
   titleMeta?: TitleMeta;
   date: string;
   startTime: string;
-  endTime: string;
+  endTime: string | null;
   location: string;
   description?: string;
   capacity?: number;
@@ -721,7 +727,7 @@ export async function updatePost(input: {
   titleMeta: TitleMeta | null;
   date: string;
   startTime: string;
-  endTime: string;
+  endTime: string | null;
   location: string;
   description: string | null;
   capacity: number | null;

@@ -19,7 +19,7 @@ export interface RuleInput {
   authorName: string;
   startDate: string; // 첫 회차 날짜 — 이 날짜의 요일이 반복 요일이 된다
   startTime: string;
-  endTime: string;
+  endTime: string | null;
   location: string;
   description?: string;
   capacity?: number;

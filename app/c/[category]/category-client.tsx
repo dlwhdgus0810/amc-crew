@@ -100,7 +100,7 @@ const T = {
   secTitle: { ko: '무엇을', en: 'What' },
   fieldDate: { ko: '날짜', en: 'Date' },
   fieldStart: { ko: '시작', en: 'Starts' },
-  fieldEnd: { ko: '종료', en: 'Ends' },
+  fieldEnd: { ko: '종료 (선택)', en: 'Ends (optional)' },
   capacityPh: { ko: '정원 (선택)', en: 'Capacity (optional)' },
   memoPh: { ko: '메모 (선택) — 준비물, 실력대, 주차 안내 등', en: 'Note (optional) — what to bring, skill level, parking' },
   titleSearchPh: { ko: '{label} 제목 검색 (예: 듄: 파트2)', en: 'Search {label} (e.g. Dune: Part Two)' },
@@ -181,7 +181,8 @@ interface PostView {
   isPast: boolean;
   date: string;
   startTime: string;
-  endTime: string;
+  /** 안 적었으면 null — 카드에는 시작 시각만 보여준다 */
+  endTime: string | null;
   location: string;
   description: string | null;
   capacity: number | null;
@@ -395,7 +396,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           titleMeta: fTitleMeta ?? undefined,
           date: fDate,
           startTime: fStart,
-          endTime: fEnd,
+          endTime: fEnd || null,
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
@@ -435,7 +436,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setTitleResults([]);
     setFDate(post.date);
     setFStart(post.startTime);
-    setFEnd(post.endTime);
+    setFEnd(post.endTime ?? '');
     setFLocation(post.location);
     setFMemo(post.description ?? '');
     setFCapacity(post.capacity != null ? String(post.capacity) : '');
@@ -455,7 +456,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           titleMeta: fTitleMeta ?? undefined,
           date: fDate,
           startTime: fStart,
-          endTime: fEnd,
+          endTime: fEnd || null,
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
@@ -725,7 +726,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
       setEditId(null);
       resetForm();
     };
-    const canSave = Boolean(fDate && fStart && fEnd && fLocation.trim());
+    // 종료 시각은 안 적어도 만들 수 있다
+    const canSave = Boolean(fDate && fStart && fLocation.trim());
     return (
       <div className="create-panel" role="dialog" aria-modal="true">
         <div className="create-head">
@@ -981,7 +983,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
     return (
       <article key={post.id} className={`post-card ${past ? 'past' : ''}`}>
         <div className="post-when">
-          {to12h(post.startTime)} – {to12h(post.endTime)}
+          {to12h(post.startTime)}
+          {post.endTime ? ` – ${to12h(post.endTime)}` : ''}
           {post.visibility === 'link' && <span className="repeat-badge private">{t(T.privateBadge)}</span>}
           {post.recurringRuleId && (
             <span className="repeat-badge">{t(T.repeatBadge, { day: weekdayLabel(post.date) })}</span>

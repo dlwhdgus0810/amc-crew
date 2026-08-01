@@ -4,10 +4,10 @@
    쿼리 2번(예정 모임 + 참가자)으로 전체 카테고리를 한꺼번에 처리합니다.
    ============================================================ */
 
-import { and, asc, eq, gt, inArray, or } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNull, or } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, posts } from './schema';
-import { pastCutoff } from '../dates';
+import { openEndCutoffTime, pastCutoff } from '../dates';
 
 export interface NextMeetup {
   postId: string;
@@ -34,7 +34,12 @@ export async function nextMeetupByCategory(
   if (categories.length === 0) return {};
   const db = await getDb();
   const { date: cutDate, time: cutTime } = pastCutoff();
-  const upcoming = or(gt(posts.date, cutDate), and(eq(posts.date, cutDate), gt(posts.endTime, cutTime)));
+  // 종료 시각이 없는 모임은 시작 시각을 당겨 둔 기준과 견준다 (lib/dates.ts 참고)
+  const openCut = openEndCutoffTime();
+  const upcomingToday = openCut
+    ? or(gt(posts.endTime, cutTime), and(isNull(posts.endTime), gt(posts.startTime, openCut)))
+    : or(gt(posts.endTime, cutTime), isNull(posts.endTime));
+  const upcoming = or(gt(posts.date, cutDate), and(eq(posts.date, cutDate), upcomingToday));
 
   const rows = await db
     .select({

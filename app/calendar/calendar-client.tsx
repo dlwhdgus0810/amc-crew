@@ -13,7 +13,7 @@ interface CalendarMeetup {
   title: string | null;
   date: string;
   startTime: string;
-  endTime: string;
+  endTime: string | null;
   location: string;
   capacity: number | null;
   count: number;

@@ -14,7 +14,7 @@ export interface CalendarMeetup {
   title: string | null;
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
-  endTime: string;
+  endTime: string | null;
   location: string;
   capacity: number | null;
   count: number;
@@ -95,7 +95,7 @@ export async function listMeetupsBetween(from: string, to: string, viewerId?: st
     capacity: r.capacity,
     count: count.get(r.id) ?? 0,
     joined: joined.has(r.id),
-    isPast: isPastSlot(r.date, r.endTime),
+    isPast: isPastSlot(r.date, r.startTime, r.endTime),
     private: r.visibility === 'link',
   }));
 }

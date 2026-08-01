@@ -4,6 +4,7 @@ import { catName, getCategory } from '@/lib/categories';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
 import { siteUrl } from '@/lib/site';
+import { effectiveEnd } from '@/lib/dates';
 
 const T = {
   notFound: { ko: '포스트를 찾을 수 없어요.', en: 'Meetup not found.' },
@@ -51,7 +52,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     `UID:${post.id}@odyssey-crew`,
     `DTSTAMP:${stamp}`,
     `DTSTART:${compact(post.date, post.startTime)}`,
-    `DTEND:${compact(post.date, post.endTime)}`,
+    // 종료 시각을 안 적었어도 캘린더 일정에는 끝이 있어야 한다 — 짐작한 길이(effectiveEnd)로 채운다
+    `DTEND:${compact(post.date, effectiveEnd(post.startTime, post.endTime))}`,
     `SUMMARY:${icsEscape(summary)}`,
     `LOCATION:${icsEscape(post.location)}`,
     `DESCRIPTION:${icsEscape(description)}`,
