@@ -10,6 +10,28 @@ export function todayLocal(): string {
 
 export const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
+/**
+ * 시각 하나를 앱 시간대의 'YYYY-MM-DDTHH:mm'으로 (datefmt의 entryLabel이 받는 모양).
+ *
+ * 시간대 변환은 서버에서 한 번만 한다 — 브라우저에 UTC를 그대로 넘기면
+ * 다른 시간대에서 열었을 때 화면에 뜨는 시각이 사람마다 달라진다.
+ */
+export function localStamp(at: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(at);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+  // en-CA + hour12:false는 자정을 '24'로 주는 환경이 있다
+  const hour = get('hour') === '24' ? '00' : get('hour');
+  return `${get('year')}-${get('month')}-${get('day')}T${hour}:${get('minute')}`;
+}
+
 /** 모임이 끝난 뒤 "지난 모임"으로 내려가기까지의 유예 (분) — 끝나자마자 접히면 후기 댓글을 달기 번거롭다 */
 export const PAST_GRACE_MINUTES = 60;
 

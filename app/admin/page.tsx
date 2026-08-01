@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import type { Msg } from '@/lib/i18n';
 import { TEST_USERS } from '@/lib/test-users';
+import { entryLabel } from '@/lib/datefmt';
 
 interface CategoryRequest {
   id: string;
@@ -100,6 +101,11 @@ const T = {
   statsDay: { ko: '24시간', en: '24h' },
   statsWeek: { ko: '7일', en: '7d' },
   statsVisits: { ko: '접속', en: 'Visits' },
+  statsLast: { ko: '마지막', en: 'Last seen' },
+  statsLastJustNow: { ko: '방금', en: 'just now' },
+  statsLastMins: { ko: '{n}분 전', en: '{n}m ago' },
+  statsLastHours: { ko: '{n}시간 전', en: '{n}h ago' },
+  statsLastDays: { ko: '{n}일 전', en: '{n}d ago' },
   statsVisitsUnit: { ko: '{n}회', en: '{n}' },
   statsNever: { ko: '기록 없음', en: 'never' },
   deletedTitle: { ko: '지운 알림', en: 'Deleted alerts' },
@@ -185,6 +191,7 @@ export default function AdminPage() {
       weekSeconds: number;
       visits: number;
       lastSeenSecondsAgo: number | null;
+      lastSeenAt: string | null;
     }[];
   } | null>(null);
   // 기본은 접어 둔다 — 관리자 화면에 들를 때마다 볼 표는 아니다
@@ -211,6 +218,24 @@ export default function AdminPage() {
   }
 
   /** 초 → "2시간 13분" / "13분" / "-" */
+  /**
+   * 마지막 접속 — 하루 안쪽은 "몇 분/시간 전"이 읽기 쉽고,
+   * 그보다 오래되면 며칠 전인지 세는 것보다 날짜를 바로 보는 편이 빠르다.
+   */
+  function lastSeen(u: { lastSeenSecondsAgo: number | null; lastSeenAt: string | null }): string {
+    if (u.lastSeenSecondsAgo === null || !u.lastSeenAt) return t(T.statsNever);
+    const s = u.lastSeenSecondsAgo;
+    if (s < 60) return t(T.statsLastJustNow);
+    if (s < 3600) return t(T.statsLastMins, { n: Math.floor(s / 60) });
+    if (s < 86400) return t(T.statsLastHours, { n: Math.floor(s / 3600) });
+    if (s < 30 * 86400) return t(T.statsLastDays, { n: Math.floor(s / 86400) });
+    /*
+     * 한 달이 넘으면 날짜만. "2025. 10/5 (일) 오전 9:03" 같은 표기를 쓰면 이 칸 하나가
+     * 표 전체를 옆으로 밀어낸다. 정확한 시각은 어차피 title에 붙어 있다.
+     */
+    return u.lastSeenAt.slice(0, 10);
+  }
+
   function dur(seconds: number): string {
     if (seconds <= 0) return '–';
     const m = Math.round(seconds / 60);
@@ -624,6 +649,7 @@ export default function AdminPage() {
                   <thead>
                     <tr>
                       <th>{t(T.statsUser)}</th>
+                      <th>{t(T.statsLast)}</th>
                       <th>{t(T.statsDay)}</th>
                       <th>{t(T.statsWeek)}</th>
                       <th>{t(T.statsVisits)}</th>
@@ -640,6 +666,8 @@ export default function AdminPage() {
                             {u.name}
                           </span>
                         </td>
+                        {/* 정확한 시각은 언제든 필요하므로 title로 항상 달아 둔다 */}
+                        <td title={u.lastSeenAt ? entryLabel(u.lastSeenAt, locale) : undefined}>{lastSeen(u)}</td>
                         <td>{dur(u.daySeconds)}</td>
                         <td>{u.weekSeconds > 0 ? dur(u.weekSeconds) : t(T.statsNever)}</td>
                         <td>{t(T.statsVisitsUnit, { n: u.visits })}</td>

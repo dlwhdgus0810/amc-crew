@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { users } from './schema';
 import { resolveDisplayName } from '../store';
+import { localStamp } from '../dates';
 
 /**
  * 접속 현황 — 서버리스라 연결을 붙들고 있을 수 없어서, 앱을 보고 있는 사람이
@@ -79,6 +80,8 @@ export interface PresenceStat {
   visits: number;
   /** 마지막 신호로부터 지난 초 (한 번도 없었으면 null) */
   lastSeenSecondsAgo: number | null;
+  /** 마지막 접속 시각, 앱 시간대의 'YYYY-MM-DDTHH:mm' (한 번도 없었으면 null) */
+  lastSeenAt: string | null;
 }
 
 /**
@@ -137,6 +140,7 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
     lastSeenSecondsAgo: r.last_seen
       ? Math.max(0, Math.round((now - new Date(r.last_seen as string).getTime()) / 1000))
       : null,
+    lastSeenAt: r.last_seen ? localStamp(new Date(r.last_seen as string)) : null,
   }));
 }
 
