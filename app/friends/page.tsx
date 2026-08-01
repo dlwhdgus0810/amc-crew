@@ -33,6 +33,13 @@ const T = {
     en: 'No friends yet — send a request to someone you’ve met at a meetup!',
   },
 
+  listHint: {
+    ko: '친구마다 내 접속 상태를 보여줄지 정할 수 있어요. 감춰도 상대에게는 알리지 않아요.',
+    en: 'Choose who can see when you’re online. They aren’t told if you hide it.',
+  },
+  presenceOn: { ko: '내 접속 보임', en: 'They see you' },
+  presenceOff: { ko: '내 접속 숨김', en: 'Hidden from them' },
+
   accept: { ko: '수락', en: 'Accept' },
   decline: { ko: '거절', en: 'Decline' },
   cancel: { ko: '요청 취소', en: 'Cancel' },
@@ -46,6 +53,8 @@ interface Friend {
   name: string;
   avatar: string | null;
   status: 'friends' | 'incoming' | 'outgoing';
+  /** 내 접속 상태를 이 친구에게 보여주는지 */
+  showsPresence: boolean;
   online: boolean;
   secondsAgo: number | null;
 }
@@ -93,6 +102,21 @@ export default function FriendsPage() {
   }
 
   const accept = (f: Friend) => act(f.id, 'POST', `/api/friends/${f.id}/accept`);
+
+  /** 이 친구에게 내 접속을 보여줄지 뒤집는다 */
+  async function togglePresence(f: Friend) {
+    setBusy(f.id);
+    setError(null);
+    const res = await fetch(`/api/friends/${f.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ showPresence: !f.showsPresence }),
+    });
+    if (!res.ok) setError(t(T.failed));
+    await load();
+    setBusy(null);
+  }
+
   const drop = (f: Friend) => act(f.id, 'DELETE', `/api/friends/${f.id}`);
   function unfriend(f: Friend) {
     if (!confirm(t(T.unfriendAsk, { name: f.name }))) return;
@@ -181,6 +205,11 @@ export default function FriendsPage() {
         {t(T.list)} {data.friends.length > 0 ? data.friends.length : ''}
       </h2>
       <div className="card">
+        {data.friends.length > 0 && (
+          <p className="hint" style={{ marginBottom: 12 }}>
+            {t(T.listHint)}
+          </p>
+        )}
         {data.friends.length === 0 ? (
           <p className="hint">{t(T.none)}</p>
         ) : (
@@ -188,9 +217,19 @@ export default function FriendsPage() {
             {data.friends.map((f) =>
               row(
                 f,
-                <button className="link-btn danger-text" disabled={busy === f.id} onClick={() => unfriend(f)}>
-                  {t(T.unfriend)}
-                </button>
+                <>
+                  <button
+                    className={`link-btn ${f.showsPresence ? '' : 'muted-text'}`}
+                    disabled={busy === f.id}
+                    aria-pressed={f.showsPresence}
+                    onClick={() => togglePresence(f)}
+                  >
+                    {f.showsPresence ? t(T.presenceOn) : t(T.presenceOff)}
+                  </button>
+                  <button className="link-btn danger-text" disabled={busy === f.id} onClick={() => unfriend(f)}>
+                    {t(T.unfriend)}
+                  </button>
+                </>
               )
             )}
           </ul>

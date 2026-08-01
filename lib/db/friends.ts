@@ -29,6 +29,11 @@ export interface FriendView {
   avatar: string | null;
   /** friends = 맺어짐 · incoming = 내가 수락할 차례 · outgoing = 상대가 수락할 차례 */
   status: 'friends' | 'incoming' | 'outgoing';
+  /**
+   * 이 친구가 나를 접속 중으로 볼 수 있는지 — 내가 정한다.
+   * 상대가 나를 숨겼는지는 내보내지 않는다. 그걸 알려주면 숨기는 의미가 없다.
+   */
+  showsPresence: boolean;
   online: boolean;
   /** 접속 중이 아니면 null — 마지막 접속 시각 자체는 내보내지 않는다 */
   secondsAgo: number | null;
@@ -112,6 +117,23 @@ export async function removeFriendship(
   return row.requestedBy === me ? 'outgoing' : 'incoming';
 }
 
+/**
+ * 내 접속 상태를 이 친구에게 보여줄지 정한다.
+ *
+ * 내 쪽 칸만 건드린다 — 쌍마다 줄이 하나라서, 어느 칸이 내 것인지는 pair() 순서가 정한다.
+ * 맺어진 친구에게만 의미가 있으므로 그 줄에만 쓴다.
+ */
+export async function setPresenceVisible(me: string, other: string, visible: boolean): Promise<boolean> {
+  const db = await getDb();
+  const [lo, hi] = pair(me, other);
+  const rows = await db
+    .update(friendships)
+    .set(me === lo ? { aShowsPresence: visible } : { bShowsPresence: visible })
+    .where(and(eq(friendships.userA, lo), eq(friendships.userB, hi), eq(friendships.status, 'accepted')))
+    .returning();
+  return rows.length > 0;
+}
+
 /** 맺어진 친구인지 (요청 중은 아무 권한도 주지 않는다) */
 export async function areFriends(a: string, b: string): Promise<boolean> {
   const db = await getDb();
@@ -142,6 +164,8 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
       b: friendships.userB,
       status: friendships.status,
       requestedBy: friendships.requestedBy,
+      aShows: friendships.aShowsPresence,
+      bShows: friendships.bShowsPresence,
     })
     .from(friendships)
     .where(or(eq(friendships.userA, me), eq(friendships.userB, me)));
@@ -168,7 +192,10 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
     const p = byId.get(otherId);
     if (!p) return []; // users 행이 없으면 보여줄 것이 없다
     const seen = p.lastSeen ? new Date(p.lastSeen).getTime() : 0;
-    const online = seen >= onlineFrom;
+    // 상대가 나에게 접속을 감췄으면 그냥 접속 중이 아닌 것으로 보인다 (감췄다는 사실도 표시하지 않는다)
+    const meIsA = l.a === me;
+    const otherShowsMe = meIsA ? l.bShows : l.aShows;
+    const online = otherShowsMe && seen >= onlineFrom;
     return [
       {
         id: p.id,
@@ -179,6 +206,7 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
         avatar: p.avatar,
         status:
           l.status === 'accepted' ? ('friends' as const) : l.requestedBy === me ? ('outgoing' as const) : ('incoming' as const),
+        showsPresence: meIsA ? l.aShows : l.bShows,
         online,
         secondsAgo: online ? Math.max(0, Math.round((now - seen) / 1000)) : null,
       },

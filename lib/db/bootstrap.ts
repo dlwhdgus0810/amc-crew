@@ -107,6 +107,8 @@ CREATE TABLE IF NOT EXISTS friendships (
   user_b text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   requested_by text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status text NOT NULL DEFAULT 'pending',
+  a_shows_presence boolean NOT NULL DEFAULT true,
+  b_shows_presence boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
   accepted_at timestamptz,
   PRIMARY KEY (user_a, user_b)

@@ -195,6 +195,12 @@ export const friendships = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     status: text('status').notNull().default('pending'), // pending | accepted
+    /*
+     * 내 접속 상태를 이 친구에게 보여줄지. 한 쌍에 줄이 하나뿐이라 방향마다 칸을 따로 둔다 —
+     * 내가 숨긴다고 상대까지 안 보이게 되면 안 된다. 기본은 서로 보임.
+     */
+    aShowsPresence: boolean('a_shows_presence').notNull().default(true),
+    bShowsPresence: boolean('b_shows_presence').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     acceptedAt: timestamp('accepted_at', { withTimezone: true }),
   },

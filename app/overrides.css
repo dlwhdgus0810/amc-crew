@@ -1080,3 +1080,14 @@ button.person-chip.pick.on {
   color: var(--text);
   font-weight: 600;
 }
+
+/* ── 친구 줄: 접속 표시 켜고 끄기 ───────────────────────────
+   내 접속을 보여주지 않는 친구는 버튼을 흐리게 — 켠 상태가 기본이라 눈에 띌 필요가 없다. */
+.friend-actions .link-btn.muted-text { color: var(--text-dim); }
+
+/* 버튼이 둘이라 좁은 화면에서는 이름과 맞붙는다. 모자라면 아랫줄로 내린다
+   (이름은 이미 말줄임 처리되어 있어 먼저 줄어든다) */
+.friend-row {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
