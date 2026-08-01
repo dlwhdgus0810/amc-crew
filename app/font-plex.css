@@ -1,0 +1,76 @@
+/* ============================================================
+   app/font-plex.css — 새 파일.
+   layout.tsx에서 **가장 마지막에** 불러온다 (overrides.css / calendar.css 뒤).
+   globals.css·type-tune.css는 한 줄도 건드리지 않는다.
+
+   하는 일
+   1) IBM Plex Sans KR 로드 + 본문 서체 교체 (Pretendard 자리)
+   2) 굵기 450 → 400 (Plex Sans KR은 가변 폰트가 아니라 450이 500으로 올라붙는다)
+   3) type-tune.css가 Pretendard로 못 박아둔 라벨들을 --sans로 되돌린다
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+
+:root {
+  --sans: 'IBM Plex Sans KR', -apple-system, 'Malgun Gothic', sans-serif;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--sans);
+}
+
+/* ── 굵기 재조정 ──────────────────────────────────────────
+   Plex Sans KR은 400/500/600/700만 있는 정적 폰트다. 450을 주면
+   CSS 매칭 규칙상 500이 선택돼 화면 전체가 무거워진다. 400으로 내린다. */
+body,
+.subtitle,
+.post-meta,
+.notif-item,
+.member-chip,
+.person-chip,
+.ticket-note,
+.msg,
+.install-body span,
+.date-heading .weekday,
+.car-card .car-desc,
+input[type='text'],
+input[type='password'],
+input[type='number'],
+select,
+textarea {
+  font-weight: 400;
+}
+
+/* ── Pretendard로 고정돼 있던 라벨·배지 ──────────────────── */
+h2,
+.day-title,
+.eyebrow,
+.field-label,
+.day-hint,
+.format-label,
+.stack-label,
+.create-cat,
+.settle-eyebrow,
+.pay-label,
+.pay-zelle-label,
+.host-rank-title,
+th,
+.repeat-badge,
+.ticket-status,
+.req-status {
+  font-family: var(--sans);
+}
+
+/* Plex Sans KR은 Pretendard보다 자체 자간이 넓다 — 제목의 조임을 한 단계 더 준다 */
+h1,
+.statement {
+  letter-spacing: -0.04em;
+}
+.car-card .car-name,
+.settle-mine {
+  letter-spacing: -0.042em;
+}
