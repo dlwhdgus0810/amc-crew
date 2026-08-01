@@ -4,7 +4,8 @@ import { E, errJson } from '@/lib/apierr';
 import { adminIds, getSessionUser, isAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
-import { BAN_DURATIONS, setBan, toState, type BannedUser } from '@/lib/db/bans';
+import { BAN_DURATIONS, notifyBan, setBan, toState, type BannedUser } from '@/lib/db/bans';
+import { siteUrl } from '@/lib/site';
 import { resolveDisplayName } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -51,6 +52,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const state = await setBan(userId, minutes, reason);
+    // 본인에게 알린다 — 앱을 닫아 둔 사람은 이게 없으면 다음에 열어 보고서야 안다.
+    // 알림이 실패해도 정지 자체는 성공 처리 (막는 일이 먼저다)
+    try {
+      await notifyBan(userId, minutes, reason, siteUrl(req.nextUrl.origin));
+    } catch (e) {
+      console.error('[ban] notify failed:', e);
+    }
     return NextResponse.json({ ok: true, ban: state });
   } catch {
     // setBan은 관리자를 정지하려 할 때만 던진다

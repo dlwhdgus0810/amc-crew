@@ -20,6 +20,8 @@ export const NOTIF = {
   added: 'added',
   /** 비공개 모임에 초대받았다 */
   invite: 'invite',
+  /** 이용 정지가 걸렸거나 풀렸다 */
+  ban: 'ban',
 } as const;
 
 /** 모임 화면(/p/<id>)으로 보내는 종류 */

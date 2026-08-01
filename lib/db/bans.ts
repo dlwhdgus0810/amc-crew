@@ -2,6 +2,11 @@ import { eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { users } from './schema';
 import { adminIds } from '../auth';
+import { dbGetUser } from './users';
+import { insertInAppNotice } from './posts';
+import { sendPush } from '../push';
+import { NOTIF } from '../notif-kinds';
+import { Locale, pick, toLocale } from '../i18n';
 
 /**
  * 이용 정지.
@@ -57,6 +62,52 @@ export async function setBan(userId: string, minutes: number, reason: string): P
     .set({ bannedUntil: until, banReason: reason.trim() || null })
     .where(eq(users.id, userId));
   return toState(until, reason.trim() || null);
+}
+
+const N = {
+  banned: { ko: '⛔ {dur} 동안 앱을 쓸 수 없어요', en: '⛔ You can’t use the app for {dur}' },
+  withReason: { ko: '⛔ {dur} 동안 앱을 쓸 수 없어요 — {reason}', en: '⛔ You can’t use the app for {dur} — {reason}' },
+  lifted: { ko: '✅ 정지가 풀렸어요. 다시 쓸 수 있어요!', en: '✅ Your suspension is over — welcome back!' },
+  min: { ko: '{n}분', en: '{n} minutes' },
+  hour: { ko: '{n}시간', en: '{n} hours' },
+  day: { ko: '{n}일', en: '{n} days' },
+  // 영어만 단수형이 따로 필요하다 ("for 1 hours"는 눈에 걸린다)
+  hourOne: { ko: '{n}시간', en: 'an hour' },
+  dayOne: { ko: '{n}일', en: 'a day' },
+};
+
+function durLabel(minutes: number, locale: Locale): string {
+  if (minutes < 60) return pick(locale, N.min, { n: minutes });
+  if (minutes < 60 * 24) {
+    const h = minutes / 60;
+    return pick(locale, h === 1 ? N.hourOne : N.hour, { n: h });
+  }
+  const d = minutes / (60 * 24);
+  return pick(locale, d === 1 ? N.dayOne : N.day, { n: d });
+}
+
+/**
+ * 정지됐다(또는 풀렸다)고 본인에게 알린다 — 인앱 한 줄 + 폰 푸시.
+ *
+ * 앱을 열어 두고 있었다면 화면이 곧 정지 안내로 바뀌지만, 대개는 앱을 닫아 둔 상태다.
+ * 그때 아무 소식이 없으면 다음에 열어 보고서야 알게 되고, 그사이 모임 약속이 어그러진다.
+ *
+ * 카톡으로는 보내지 않는다. "나와의 채팅"에 남는 기록이라 지워지지 않는데,
+ * 몇 분짜리 정지까지 그렇게 남길 일은 아니다.
+ */
+export async function notifyBan(userId: string, minutes: number, reason: string, origin: string): Promise<void> {
+  const row = await dbGetUser(userId);
+  const locale = toLocale(row?.locale ?? null);
+  const text =
+    minutes <= 0
+      ? pick(locale, N.lifted)
+      : reason.trim()
+        ? pick(locale, N.withReason, { dur: durLabel(minutes, locale), reason: reason.trim() })
+        : pick(locale, N.banned, { dur: durLabel(minutes, locale) });
+
+  // 인앱 줄을 먼저 넣는다 — 푸시가 아이콘 뱃지 숫자를 이 표에서 읽어 간다
+  await insertInAppNotice([userId], null, NOTIF.ban, () => text);
+  await sendPush([userId], { title: 'Kansas Korean', body: text, url: `${origin}/`, tag: 'ban' });
 }
 
 export interface BannedUser {
