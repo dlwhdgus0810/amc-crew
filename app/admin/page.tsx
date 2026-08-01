@@ -196,6 +196,8 @@ export default function AdminPage() {
   } | null>(null);
   // 기본은 접어 둔다 — 관리자 화면에 들를 때마다 볼 표는 아니다
   const [statsOpen, setStatsOpen] = useState(false);
+  // 지운 알림도 접어 둔다 — 무슨 일이 있을 때 찾아보는 것이지 늘 보는 표가 아니다
+  const [deletedOpen, setDeletedOpen] = useState(false);
   const [newsBusy, setNewsBusy] = useState(false);
   const t = useT();
   const locale = useLocale();
@@ -567,7 +569,17 @@ export default function AdminPage() {
             </button>
           </div>
 
-          <h1 style={{ marginTop: 80 }}>{t(T.deletedTitle)}</h1>
+          <h1 style={{ marginTop: 80 }}>
+            <button className="collapse-h1" aria-expanded={deletedOpen} onClick={() => setDeletedOpen((v) => !v)}>
+              {t(T.deletedTitle)}
+              {deleted !== null && deleted.length > 0 ? ` ${deleted.length}` : ''}
+              <span className="collapse-caret" aria-hidden>
+                {deletedOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {deletedOpen && (
+            <>
           <p className="subtitle">{t(T.deletedDesc)}</p>
           <div className="card">
             {deleted === null ? (
@@ -597,6 +609,8 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+            </>
+          )}
 
           <h1 style={{ marginTop: 80 }}>{t(T.onlineTitle)}</h1>
           <p className="subtitle">{t(T.onlineDesc, { n: presence?.windowMinutes ?? 3 })}</p>
