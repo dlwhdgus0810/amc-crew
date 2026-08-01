@@ -2,6 +2,7 @@
 // talk_message 동의 + 저장된 토큰이 있는 사용자에게만 보내고, 실패해도 호출부 흐름을 막지 않는다.
 
 import { dbGetUser, dbSaveKakaoTokens, dbSetTalkMessage } from './db/users';
+import { unbannedIds } from './db/bans';
 
 interface KakaoTokenResponse {
   access_token: string;
@@ -209,8 +210,10 @@ export async function sendKakaoMemos(
   if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])/i.test(linkUrl)) {
     console.error('[kakao-memo] 로컬 주소가 링크에 들어갔습니다 — siteUrl()을 거치지 않은 호출부:', linkUrl);
   }
+  // 정지된 사람은 빼고 보낸다 (인앱 알림은 그대로 쌓이므로 풀리면 볼 수 있다)
+  const targets = await unbannedIds(userIds);
   await Promise.allSettled(
-    userIds.map(async (userId) => {
+    targets.map(async (userId) => {
       try {
         const token = await getValidAccessToken(userId);
         if (!token) return;

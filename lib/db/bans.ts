@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { getDb } from './index';
 import { users } from './schema';
 import { adminIds } from '../auth';
@@ -29,6 +29,25 @@ export async function banStateOf(userId: string): Promise<BanState | null> {
     .from(users)
     .where(eq(users.id, userId));
   return toState(row?.until ?? null, row?.reason ?? null);
+}
+
+/**
+ * 정지 중인 사람을 뺀 명단.
+ *
+ * 카톡·푸시 발송(lib/kakao.ts, lib/push.ts) 앞에서 한 번 거른다. 앱을 못 쓰는 사람에게
+ * "새 모임이 올라왔어요"가 울리면, 눌러도 정지 화면만 나오는 알림이 된다.
+ * 인앱 알림 줄은 그대로 쌓아 둔다 — 풀리고 나서 무슨 일이 있었는지 볼 수 있어야 한다.
+ */
+export async function unbannedIds(userIds: string[]): Promise<string[]> {
+  if (userIds.length === 0) return [];
+  const db = await getDb();
+  const rows = await db
+    .select({ id: users.id, until: users.bannedUntil })
+    .from(users)
+    .where(inArray(users.id, userIds));
+  const now = Date.now();
+  const blocked = new Set(rows.filter((r) => r.until && r.until.getTime() > now).map((r) => r.id));
+  return userIds.filter((id) => !blocked.has(id));
 }
 
 /** 행을 이미 들고 있을 때 — 조회를 한 번 더 하지 않으려고 */
