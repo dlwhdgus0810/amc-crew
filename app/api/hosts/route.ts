@@ -5,6 +5,9 @@ import { hostRanking, joinRanking } from '@/lib/db/hosting';
 
 export const dynamic = 'force-dynamic';
 
+/** 순위표에 보여줄 인원 */
+const TOP = 10;
+
 /**
  * 종합 주최·참가 랭킹 — 로그인한 사람만.
  * 이름과 "누가 모임을 열었는지"가 통째로 담긴 목록이라, 모임 카드에서 주최자를
@@ -15,6 +18,7 @@ export async function GET() {
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
-  const [hosts, joiners] = await Promise.all([hostRanking(), joinRanking()]);
+  // 화면에는 10등까지만 — 더 길어지면 순위표라기보다 회원 명단이 된다
+  const [hosts, joiners] = await Promise.all([hostRanking(TOP), joinRanking(TOP)]);
   return NextResponse.json({ hosts, joiners });
 }
