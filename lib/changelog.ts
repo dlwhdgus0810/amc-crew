@@ -35,12 +35,8 @@ const ENTRIES: ChangelogEntry[] = [
     title: { ko: '리더보드에 참가 순위도', en: 'A joined ranking on the leaderboard' },
     items: [
       {
-        ko: '리더보드에서 「많이 간 사람」을 눌러 모임에 많이 참가한 순위를 볼 수 있어요.',
+        ko: '리더보드에서 「참여 순위」를 눌러 모임에 많이 참가한 순위를 볼 수 있어요.',
         en: 'Tap “Joined” on the leaderboard to see who turns up the most.',
-      },
-      {
-        ko: '관리자는 두 순위에서 모두 빠져요. 호스트 스티커도 관리자에게는 붙지 않아요.',
-        en: 'Admins are left out of both rankings, and don’t get host stickers either.',
       },
     ],
   },
