@@ -208,6 +208,12 @@ export const friendships = pgTable(
      */
     aShowsPresence: boolean('a_shows_presence').notNull().default(true),
     bShowsPresence: boolean('b_shows_presence').notNull().default(true),
+    /*
+     * 내 모임을 이 친구에게 어디까지 보여줄지. 접속 표시와 같은 이유로 방향마다 따로 둔다.
+     * all(예정+지난) | upcoming(예정만) | none(숨김). 비공개 모임은 어느 값에서도 나가지 않는다.
+     */
+    aShowsMeetups: text('a_shows_meetups').notNull().default('all'),
+    bShowsMeetups: text('b_shows_meetups').notNull().default('all'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     acceptedAt: timestamp('accepted_at', { withTimezone: true }),
   },

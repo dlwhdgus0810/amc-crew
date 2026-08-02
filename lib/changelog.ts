@@ -31,6 +31,29 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-02T15:49',
+    notable: true,
+    title: { ko: '친구가 가는 모임 보기', en: 'See where your friends are going' },
+    items: [
+      {
+        ko: '친구 화면에서 이름을 누르면 그 친구의 예정된 모임과 지난 모임을 볼 수 있어요. 같이 갔던 모임에는 「같이 감」이 붙어요.',
+        en: 'Tap a name in Friends to see their upcoming and past meetups — the ones you both went to are marked “Together”.',
+      },
+      {
+        ko: '친구마다 내 모임을 어디까지 보여줄지 정할 수 있어요. 전부 · 예정만 · 숨김 중에 고르면 돼요.',
+        en: 'For each friend you choose how much of yours they see: all, upcoming only, or hidden.',
+      },
+      {
+        ko: '비공개 모임은 어느 경우에도 친구에게 보이지 않아요.',
+        en: 'Private meetups never appear there, whichever setting you pick.',
+      },
+      {
+        ko: '접속 상태 설정도 같은 화면으로 옮겼어요. 둘 다 내 쪽만 바뀌고, 상대에게는 알리지 않아요.',
+        en: 'The online-visibility setting moved to that screen too. Both are one-way, and nobody is told.',
+      },
+    ],
+  },
+  {
     at: '2026-08-01T18:37',
     title: { ko: '생일파티 카테고리', en: 'A Birthday Party category' },
     items: [

@@ -1162,3 +1162,40 @@ button.person-chip.pick.on {
 /* 관리자 표: 앱 푸시 켜짐/꺼짐 — 훑어볼 때 바로 갈리게 */
 .stats-table .push-on { color: var(--text); font-weight: 600; }
 .stats-table .push-off { color: var(--text-dim); }
+
+/* 친구 목록: 이름을 눌러 그 친구의 화면으로 */
+a.friend-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 친구 화면: 머리와 모임 목록 */
+.fm-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 18px; flex-wrap: wrap; }
+.fm-head h1 { margin: 0; }
+.fm-online {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12.5px; font-weight: 600; color: var(--text-mid);
+}
+.fm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.fm-list li + li { border-top: 1px solid var(--border-soft); }
+a.fm-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 0; text-decoration: none; color: inherit; min-width: 0;
+}
+.fm-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
+.fm-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.fm-when { font-size: 13.5px; font-weight: 700; }
+.fm-what {
+  font-size: 12.5px; color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fm-together {
+  flex: none; font-size: 11px; font-weight: 600;
+  padding: 3px 8px; border-radius: 999px;
+  background: var(--surface-2); color: var(--text-mid);
+}

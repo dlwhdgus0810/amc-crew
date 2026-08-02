@@ -111,6 +111,8 @@ CREATE TABLE IF NOT EXISTS friendships (
   status text NOT NULL DEFAULT 'pending',
   a_shows_presence boolean NOT NULL DEFAULT true,
   b_shows_presence boolean NOT NULL DEFAULT true,
+  a_shows_meetups text NOT NULL DEFAULT 'all',
+  b_shows_meetups text NOT NULL DEFAULT 'all',
   created_at timestamptz NOT NULL DEFAULT now(),
   accepted_at timestamptz,
   PRIMARY KEY (user_a, user_b)

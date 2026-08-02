@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useT } from '../i18n';
 
@@ -34,11 +35,9 @@ const T = {
   },
 
   listHint: {
-    ko: '친구마다 내 접속 상태를 보여줄지 정할 수 있어요. 감춰도 상대에게는 알리지 않아요.',
-    en: 'Choose who can see when you’re online. They aren’t told if you hide it.',
+    ko: '이름을 누르면 그 친구의 모임과, 그 친구에게 보여줄 범위를 정할 수 있어요.',
+    en: 'Tap a name to see their meetups and choose what they see of yours.',
   },
-  presenceOn: { ko: '내 접속 보임', en: 'They see you' },
-  presenceOff: { ko: '내 접속 숨김', en: 'Hidden from them' },
 
   accept: { ko: '수락', en: 'Accept' },
   decline: { ko: '거절', en: 'Decline' },
@@ -103,20 +102,6 @@ export default function FriendsPage() {
 
   const accept = (f: Friend) => act(f.id, 'POST', `/api/friends/${f.id}/accept`);
 
-  /** 이 친구에게 내 접속을 보여줄지 뒤집는다 */
-  async function togglePresence(f: Friend) {
-    setBusy(f.id);
-    setError(null);
-    const res = await fetch(`/api/friends/${f.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ showPresence: !f.showsPresence }),
-    });
-    if (!res.ok) setError(t(T.failed));
-    await load();
-    setBusy(null);
-  }
-
   const drop = (f: Friend) => act(f.id, 'DELETE', `/api/friends/${f.id}`);
   function unfriend(f: Friend) {
     if (!confirm(t(T.unfriendAsk, { name: f.name }))) return;
@@ -143,6 +128,18 @@ export default function FriendsPage() {
       {f.online && <span className="online-dot" aria-hidden="true" />}
       {face(f)}
       <span className="online-name">{f.name}</span>
+      <span className="friend-actions">{actions}</span>
+    </li>
+  );
+
+  /** 맺어진 친구는 이름을 눌러 그 사람의 화면으로 간다 */
+  const linkRow = (f: Friend, actions: React.ReactNode) => (
+    <li key={f.id} className="friend-row">
+      {f.online && <span className="online-dot" aria-hidden="true" />}
+      <Link href={`/friends/${f.id}`} className="friend-link">
+        {face(f)}
+        <span className="online-name">{f.name}</span>
+      </Link>
       <span className="friend-actions">{actions}</span>
     </li>
   );
@@ -215,21 +212,11 @@ export default function FriendsPage() {
         ) : (
           <ul className="online-list">
             {data.friends.map((f) =>
-              row(
+              linkRow(
                 f,
-                <>
-                  <button
-                    className={`link-btn ${f.showsPresence ? '' : 'muted-text'}`}
-                    disabled={busy === f.id}
-                    aria-pressed={f.showsPresence}
-                    onClick={() => togglePresence(f)}
-                  >
-                    {f.showsPresence ? t(T.presenceOn) : t(T.presenceOff)}
-                  </button>
-                  <button className="link-btn danger-text" disabled={busy === f.id} onClick={() => unfriend(f)}>
-                    {t(T.unfriend)}
-                  </button>
-                </>
+                <button className="link-btn danger-text" disabled={busy === f.id} onClick={() => unfriend(f)}>
+                  {t(T.unfriend)}
+                </button>
               )
             )}
           </ul>

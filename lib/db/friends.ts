@@ -23,6 +23,10 @@ const N = {
   okLine: { ko: '{name}님과 친구가 됐어요', en: 'You and {name} are now friends' },
 };
 
+/** 내 모임을 친구에게 어디까지 보여줄지 */
+export const MEETUP_SCOPES = ['all', 'upcoming', 'none'] as const;
+export type MeetupScope = (typeof MEETUP_SCOPES)[number];
+
 export interface FriendView {
   id: string;
   name: string;
@@ -134,6 +138,34 @@ export async function setPresenceVisible(me: string, other: string, visible: boo
   return rows.length > 0;
 }
 
+/** 내 모임을 이 친구에게 어디까지 보여줄지 정한다 (내 쪽 칸만 바뀐다) */
+export async function setMeetupScope(me: string, other: string, scope: MeetupScope): Promise<boolean> {
+  const db = await getDb();
+  const [lo, hi] = pair(me, other);
+  const rows = await db
+    .update(friendships)
+    .set(me === lo ? { aShowsMeetups: scope } : { bShowsMeetups: scope })
+    .where(and(eq(friendships.userA, lo), eq(friendships.userB, hi), eq(friendships.status, 'accepted')))
+    .returning();
+  return rows.length > 0;
+}
+
+/**
+ * 이 친구가 나에게 자기 모임을 어디까지 보여주는지 (내가 보는 쪽).
+ * 친구가 아니면 null — 남의 모임 목록은 친구 사이에서만 열린다.
+ */
+export async function meetupScopeFor(viewer: string, owner: string): Promise<MeetupScope | null> {
+  const db = await getDb();
+  const [lo, hi] = pair(viewer, owner);
+  const [row] = await db
+    .select({ a: friendships.aShowsMeetups, b: friendships.bShowsMeetups, status: friendships.status })
+    .from(friendships)
+    .where(and(eq(friendships.userA, lo), eq(friendships.userB, hi), eq(friendships.status, 'accepted')));
+  if (!row) return null;
+  // owner 쪽 칸이 곧 "owner가 보여주기로 한 범위"다
+  return (owner === lo ? row.a : row.b) as MeetupScope;
+}
+
 /** 맺어진 친구인지 (요청 중은 아무 권한도 주지 않는다) */
 export async function areFriends(a: string, b: string): Promise<boolean> {
   const db = await getDb();
@@ -166,6 +198,8 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
       requestedBy: friendships.requestedBy,
       aShows: friendships.aShowsPresence,
       bShows: friendships.bShowsPresence,
+      aScope: friendships.aShowsMeetups,
+      bScope: friendships.bShowsMeetups,
     })
     .from(friendships)
     .where(or(eq(friendships.userA, me), eq(friendships.userB, me)));
@@ -207,6 +241,7 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
         status:
           l.status === 'accepted' ? ('friends' as const) : l.requestedBy === me ? ('outgoing' as const) : ('incoming' as const),
         showsPresence: meIsA ? l.aShows : l.bShows,
+        showsMeetups: (meIsA ? l.aScope : l.bScope) as MeetupScope,
         online,
         secondsAgo: online ? Math.max(0, Math.round((now - seen) / 1000)) : null,
       },
