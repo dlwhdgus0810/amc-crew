@@ -381,6 +381,25 @@ export const settlementItems = pgTable(
 );
 
 /** scope='some' 항목을 나눠 낼 사람들 */
+/**
+ * 모임에는 없지만 이 정산에는 들어가는 사람 (내 친구).
+ *
+ * 같이 밥은 먹었는데 모임에는 이름이 없는 경우가 있다. 참가자로 넣어 버리면
+ * 그 모임에 갔던 것으로 기록이 남으니, 정산에만 얹는다.
+ */
+export const settlementMembers = pgTable(
+  'settlement_members',
+  {
+    settlementId: uuid('settlement_id')
+      .notNull()
+      .references(() => settlements.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+  },
+  (t) => [primaryKey({ columns: [t.settlementId, t.userId] })]
+);
+
 export const settlementItemMembers = pgTable(
   'settlement_item_members',
   {

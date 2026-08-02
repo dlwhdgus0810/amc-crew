@@ -9,6 +9,7 @@ import {
   settlementItemMembers,
   settlementItems,
   settlements,
+  settlementMembers,
   users,
 } from './schema';
 import { resolveDisplayName } from '../store';
@@ -49,6 +50,8 @@ export interface SettlementView {
   /** 사람별로 내야 할 금액 (0원인 사람은 빠진다). 받을 사람 본인도 자기 몫이 있으면 들어간다 */
   shares: { userId: string; name: string; avatar: string | null; cents: number }[];
   totalCents: number;
+  /** 모임에 없지만 이 정산에 넣은 사람들 (내 친구) — 낼 금액이 0이어도 목록에 남아야 한다 */
+  extraMembers: { id: string; name: string }[];
   /** 앱 밖 사람에게 전달할 짧은 링크의 코드 (/v/<code>) */
   shortCode: string | null;
   createdAt: string;
@@ -87,6 +90,35 @@ function displayNameOf(row: { kakaoName: string; nickname: string | null } | und
     { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] },
     fallback
   );
+}
+
+/**
+ * 이 정산에서 돈을 나눠 낼 사람들 = 모임 참가자 + 정산에만 넣은 사람.
+ *
+ * "전원이 나눠요"의 전원이 이 명단이다. 넣어 놓고 전원 계산에서 빠지면
+ * 왜 넣었는지 알 수 없게 된다.
+ */
+async function payerIds(postId: string, extras: string[]): Promise<string[]> {
+  const inMeetup = await participantIds(postId);
+  const seen = new Set(inMeetup);
+  return [...inMeetup, ...extras.filter((id) => !seen.has(id))];
+}
+
+/** 이 정산을 볼 수 있는 사람 (참가자 + 정산에 들어간 사람). 라우트의 접근 확인에 쓴다 */
+export async function settlementViewers(postId: string): Promise<string[]> {
+  const db = await getDb();
+  const [row] = await db.select({ id: settlements.id }).from(settlements).where(eq(settlements.postId, postId));
+  const extras = row ? await extraMemberIds(row.id) : [];
+  return payerIds(postId, extras);
+}
+
+async function extraMemberIds(settlementId: string): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({ userId: settlementMembers.userId })
+    .from(settlementMembers)
+    .where(eq(settlementMembers.settlementId, settlementId));
+  return rows.map((r) => r.userId);
 }
 
 async function participantIds(postId: string): Promise<string[]> {
@@ -168,7 +200,8 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
     membersByItem.get(m.itemId)!.push(m.userId);
   }
 
-  const participants = await participantIds(postId);
+  const extras = await extraMemberIds(row.id);
+  const participants = await payerIds(postId, extras);
   const items = itemRows.map((i) => {
     const base = {
       id: i.id,
@@ -206,6 +239,7 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
     items,
     shares,
     totalCents: items.reduce((n, i) => n + i.amountCents, 0),
+    extraMembers: extras.map((id) => ({ id, name: displayNameOf(userById.get(id), '알 수 없음') })),
     shortCode: row.shortCode ?? null,
     createdAt: row.createdAt.toISOString(),
   };
@@ -219,6 +253,8 @@ export async function saveSettlement(input: {
   postId: string;
   payeeId: string;
   items: SettlementItemInput[];
+  /** 모임에 없지만 정산에 넣을 사람 (라우트에서 이미 "내 친구"로 걸러 온다) */
+  extraMemberIds?: string[];
 }): Promise<void> {
   const db = await getDb();
   const [existing] = await db.select().from(settlements).where(eq(settlements.postId, input.postId));
@@ -258,6 +294,13 @@ export async function saveSettlement(input: {
         : []
     );
     if (memberRows.length > 0) await db.insert(settlementItemMembers).values(memberRows);
+  }
+
+  // 항목과 마찬가지로 통째로 갈아끼운다 (뺀 사람이 남아 있으면 계속 청구된다)
+  await db.delete(settlementMembers).where(eq(settlementMembers.settlementId, settlementId));
+  const extras = [...new Set(input.extraMemberIds ?? [])];
+  if (extras.length > 0) {
+    await db.insert(settlementMembers).values(extras.map((userId) => ({ settlementId, userId })));
   }
 }
 

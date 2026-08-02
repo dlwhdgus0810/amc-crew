@@ -31,6 +31,21 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-02T16:41',
+    notable: true,
+    title: { ko: '모임에 없는 친구도 정산에', en: 'Settle up with friends who weren’t in the meetup' },
+    items: [
+      {
+        ko: '같이 냈는데 모임에 이름이 없는 친구를 정산에 넣을 수 있어요. 정산 고치기에서 「＋ 친구 넣기」를 누르세요.',
+        en: 'Add a friend who chipped in but isn’t in the meetup — tap “+ Add a friend” while editing the split.',
+      },
+      {
+        ko: '넣은 친구도 1인당 계산에 들어가고, 얼마 보내면 되는지 알림을 받아요. 모임 참가자로 들어가지는 않아요.',
+        en: 'They count toward each person’s share and get their own alert — without joining the meetup.',
+      },
+    ],
+  },
+  {
     at: '2026-08-02T16:20',
     title: { ko: '리더보드에 참가 순위도', en: 'A joined ranking on the leaderboard' },
     items: [

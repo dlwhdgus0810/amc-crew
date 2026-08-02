@@ -65,6 +65,13 @@ const T = {
   badAmount: { ko: '금액을 올바르게 넣어주세요 (예: 12.50).', en: 'Enter a valid amount (e.g. 12.50).' },
   badMembers: { ko: '나눠 낼 사람을 골라주세요.', en: 'Pick who splits it.' },
   addItem: { ko: '+ 항목 추가', en: '+ Add an item' },
+  guestsTitle: { ko: '모임에 없는 친구', en: 'Friends not in the meetup' },
+  guestsAdd: { ko: '+ 친구 넣기', en: '+ Add a friend' },
+  guestsNone: { ko: '넣을 수 있는 친구가 없어요.', en: 'No friends left to add.' },
+  guestsHint: {
+    ko: '같이 냈는데 모임에 이름이 없는 친구를 넣어요. 참가자로 들어가지는 않고, 정산에만 포함돼 알림을 받아요.',
+    en: 'For friends who chipped in but aren’t in the meetup. They don’t join it — they just get counted here, and notified.',
+  },
   dropItem: { ko: '이 항목 빼기', en: 'Remove this item' },
   whoPays: { ko: '누가 나눠 내나요', en: 'Who splits it' },
   everyone: { ko: '참가자 전원', en: 'Everyone' },
@@ -121,6 +128,8 @@ export interface Settlement {
   items: Item[];
   shares: Share[];
   totalCents: number;
+  /** 모임에 없지만 정산에 넣은 사람들 */
+  extraMembers: { id: string; name: string }[];
   /** 앱 밖 사람에게 전달할 짧은 링크의 코드 (/v/<code>) */
   shortCode: string | null;
   createdAt: string;
@@ -189,6 +198,13 @@ export default function SettlementPanel({
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([{ ...EMPTY }]);
+  /*
+   * 모임에는 없지만 이 정산에 넣은 친구들. 참가자와 합쳐 "낼 사람" 명단이 되고,
+   * 그 명단이 곧 전원 계산의 전원이다.
+   */
+  const [extras, setExtras] = useState<{ id: string; name: string }[]>([]);
+  const [friends, setFriends] = useState<{ id: string; name: string }[]>([]);
+  const [pickFriends, setPickFriends] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   // 복사한 값 자체를 담는다 — 복사 버튼이 여러 개라 boolean으로는 어느 것인지 구분이 안 된다
@@ -238,6 +254,14 @@ export default function SettlementPanel({
   }, [loading]);
 
   function startEditing() {
+    setExtras(settlement?.extraMembers ?? []);
+    // 친구 목록은 편집을 시작할 때만 받는다 (정산을 보기만 하는 사람에게는 필요 없다)
+    if (friends.length === 0) {
+      fetch('/api/friends')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => d && setFriends((d.friends ?? []).map((f: { id: string; name: string }) => ({ id: f.id, name: f.name }))))
+        .catch(() => {});
+    }
     setDrafts(
       settlement && settlement.items.length > 0
         ? settlement.items.map((i) => ({
@@ -339,6 +363,7 @@ export default function SettlementPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: drafts.map((d) => ({ ...d, extraPeople: d.extra.trim() ? Number(d.extra) : 0 })),
+          extraMemberIds: extras.map((e) => e.id),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -387,6 +412,8 @@ export default function SettlementPanel({
       ? `${window.location.origin}/v/${settlement.shortCode}`
       : '';
 
+  /* 낼 사람 명단 — "전원이 나눠요"의 전원이 이 명단이다 */
+  const payers = [...participants, ...extras.filter((e) => !participants.some((p) => p.id === e.id))];
   const inMeetup = participants.some((p) => p.id === currentUserId);
   // 참가하지 않았으면 정산이 있는지조차 보이지 않는다 (금액·받을 계좌가 담긴 화면이다)
   if (!inMeetup && !isAdmin) return null;
@@ -515,7 +542,7 @@ export default function SettlementPanel({
                     {item.scope === 'some' && (
                       <span className="settle-item-who">
                         {item.memberIds
-                          .map((id) => participants.find((p) => p.id === id)?.name ?? '?')
+                          .map((id) => payers.find((p) => p.id === id)?.name ?? '?')
                           .join(', ')}
                       </span>
                     )}
@@ -605,7 +632,7 @@ export default function SettlementPanel({
                   <>
                     <p className="settle-hint">{t(T.pickHint)}</p>
                     <div className="settle-people">
-                      {participants.map((p) => (
+                      {payers.map((p) => (
                         <button
                           key={p.id}
                           className={`settle-chip ${d.memberIds.includes(p.id) ? 'on' : ''}`}
@@ -636,7 +663,7 @@ export default function SettlementPanel({
                 <div className="settle-live">
                   {(() => {
                     const cents = parseAmountCents(d.amount);
-                    const heads = headsOf(d, participants.map((p) => p.id));
+                    const heads = headsOf(d, payers.map((p) => p.id));
                     if (cents === null || heads === 0) return t(T.liveNeedAmount);
                     return t(T.livePerHead, {
                       heads: String(heads),
@@ -665,11 +692,62 @@ export default function SettlementPanel({
               )}
             </div>
 
+            {/*
+              * 모임에는 없는데 같이 낸 친구 넣기.
+              * 여기 넣으면 낼 사람 명단에 들어가서 "전원이 나눠요"에도 포함되고, 알림도 받는다.
+              */}
+            <div className="settle-guests">
+              <div className="field-label">{t(T.guestsTitle)}</div>
+              {extras.length > 0 && (
+                <div className="settle-people">
+                  {extras.map((e) => (
+                    <button
+                      key={e.id}
+                      className="settle-chip on"
+                      aria-pressed
+                      onClick={() => setExtras((list) => list.filter((x) => x.id !== e.id))}
+                    >
+                      {e.name} ✕
+                    </button>
+                  ))}
+                </div>
+              )}
+              {pickFriends ? (
+                (() => {
+                  const pickable = friends.filter(
+                    (f) => !participants.some((p) => p.id === f.id) && !extras.some((e) => e.id === f.id)
+                  );
+                  return pickable.length === 0 ? (
+                    <p className="hint">{t(T.guestsNone)}</p>
+                  ) : (
+                    <div className="settle-people">
+                      {pickable.map((f) => (
+                        <button
+                          key={f.id}
+                          className="settle-chip"
+                          onClick={() => setExtras((list) => [...list, f])}
+                        >
+                          ＋ {f.name}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()
+              ) : (
+                <button className="link-btn" onClick={() => setPickFriends(true)}>
+                  {t(T.guestsAdd)}
+                </button>
+              )}
+              <p className="hint" style={{ marginTop: 6 }}>
+                {t(T.guestsHint)}
+              </p>
+            </div>
+
             {confirming && (
               <div className="settle-confirm">
                 <strong>{t(T.confirmTitle)}</strong>
                 {(() => {
-                  const p = preview(drafts, participants.map((x) => x.id));
+                  const p = preview(drafts, payers.map((x) => x.id));
                   if (!p) return null;
                   const rows = [...p.perUser].filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]);
                   const others = rows.filter(([id]) => id !== currentUserId);
@@ -677,7 +755,7 @@ export default function SettlementPanel({
                     <>
                       <ul className="settle-shares">
                         {rows.map(([id, cents]) => {
-                          const name = participants.find((x) => x.id === id)?.name ?? '?';
+                          const name = payers.find((x) => x.id === id)?.name ?? '?';
                           return (
                             <li key={id}>
                               <span>{id === currentUserId ? t(T.confirmMine, { name }) : name}</span>

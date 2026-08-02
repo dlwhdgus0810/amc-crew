@@ -193,6 +193,12 @@ CREATE TABLE IF NOT EXISTS settlement_items (
 );
 CREATE INDEX IF NOT EXISTS settlement_items_settlement_idx ON settlement_items (settlement_id, sort);
 
+CREATE TABLE IF NOT EXISTS settlement_members (
+  settlement_id uuid NOT NULL REFERENCES settlements(id) ON DELETE CASCADE,
+  user_id text NOT NULL REFERENCES users(id),
+  PRIMARY KEY (settlement_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS settlement_item_members (
   item_id uuid NOT NULL REFERENCES settlement_items(id) ON DELETE CASCADE,
   user_id text NOT NULL REFERENCES users(id),

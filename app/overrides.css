@@ -1198,3 +1198,11 @@ a.fm-row {
   padding: 3px 8px; border-radius: 999px;
   background: var(--surface-2); color: var(--text-mid);
 }
+
+/* 정산: 모임에 없는 친구 넣기 */
+.settle-guests {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+.settle-guests .settle-people { margin-top: 8px; }

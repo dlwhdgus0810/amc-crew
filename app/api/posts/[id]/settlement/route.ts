@@ -9,9 +9,11 @@ import {
   notifySettlement,
   saveSettlement,
   settlementPayee,
+  settlementViewers,
   type ItemScope,
   type SettlementItemInput,
 } from '@/lib/db/settlements';
+import { friendIds } from '@/lib/db/friends';
 import { parseAmountCents } from '@/lib/money';
 import { siteUrl } from '@/lib/site';
 
@@ -33,8 +35,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const post = await getPostView(id, viewer.id);
   if (!post) return await errJson(E.postNotFound, 404);
-  const joined = post.participants.some((p) => p.id === viewer.id);
-  if (!joined && !isAdmin(viewer)) return await errJson(E.settleNotFound, 404);
+  // 모임에 없어도 이 정산에 이름이 올라간 사람은 자기 금액을 봐야 한다
+  const allowed = (await settlementViewers(id)).includes(viewer.id);
+  if (!allowed && !isAdmin(viewer)) return await errJson(E.settleNotFound, 404);
 
   return NextResponse.json({ settlement: await getSettlement(id) });
 }
@@ -62,7 +65,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const raw = Array.isArray(body?.items) ? body.items : null;
   if (!raw || raw.length === 0 || raw.length > MAX_ITEMS) return await errJson(E.settleItems, 400);
 
-  const memberIds = new Set(post.participants.map((p) => p.id));
+  /*
+   * 낼 사람 후보 = 모임 참가자 + 만드는 사람이 넣은 자기 친구.
+   * 친구인지는 서버에서 다시 확인한다 — 아무 아이디나 넣어 남의 이름으로 청구서를 만들 수 없어야 한다.
+   */
+  const asked = Array.isArray(body?.extraMemberIds)
+    ? [...new Set((body.extraMemberIds as unknown[]).filter((v): v is string => typeof v === 'string'))].slice(0, 50)
+    : [];
+  const inMeetup = new Set(post.participants.map((p) => p.id));
+  const myFriends = asked.length > 0 ? new Set(await friendIds(user.id)) : new Set<string>();
+  const extraMemberIds = asked.filter((uid) => myFriends.has(uid) && !inMeetup.has(uid));
+
+  const memberIds = new Set([...inMeetup, ...extraMemberIds]);
   const items: SettlementItemInput[] = [];
   for (const entry of raw) {
     const label = typeof entry?.label === 'string' ? entry.label.trim() : '';
@@ -72,7 +86,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (amountCents === null) return await errJson(E.settleAmount, 400);
 
     const scope: ItemScope = entry?.scope === 'some' ? 'some' : 'all';
-    // 참가자가 아닌 사람은 걸러낸다 — 남의 이름으로 청구서를 만들 수 없어야 한다
+    // 후보 밖의 사람은 걸러낸다 — 남의 이름으로 청구서를 만들 수 없어야 한다
     const picked: string[] =
       scope === 'some' && Array.isArray(entry?.memberIds)
         ? [
@@ -94,7 +108,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     items.push({ label, amountCents, scope, memberIds: picked, extraPeople: extraRaw });
   }
 
-  await saveSettlement({ postId: id, payeeId: payee ?? user.id, items });
+  await saveSettlement({ postId: id, payeeId: payee ?? user.id, items, extraMemberIds });
   const { sent } = await notifySettlement(id, siteUrl(req.nextUrl.origin));
   return NextResponse.json({ ok: true, notified: sent, settlement: await getSettlement(id) });
 }
