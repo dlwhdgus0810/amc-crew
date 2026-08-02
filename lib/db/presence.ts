@@ -1,7 +1,7 @@
 import { and, desc, isNotNull, gte } from 'drizzle-orm';
 import { eq, sql } from 'drizzle-orm';
 import { getDb } from './index';
-import { users } from './schema';
+import { pushSubscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { localStamp } from '../dates';
 
@@ -82,6 +82,8 @@ export interface PresenceStat {
   lastSeenSecondsAgo: number | null;
   /** 마지막 접속 시각, 앱 시간대의 'YYYY-MM-DDTHH:mm' (한 번도 없었으면 null) */
   lastSeenAt: string | null;
+  /** 앱 푸시 알림을 켠 기기 수 (0이면 꺼짐) */
+  pushDevices: number;
 }
 
 /**
@@ -116,6 +118,16 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
     ORDER BY week_seconds DESC, u.kakao_name ASC
   `);
 
+  /*
+   * 푸시 구독은 따로 센다. 위 질의에 조인을 하나 더 붙이면 접속 구간이 기기 수만큼
+   * 복제되어 머문 시간이 부풀려진다 (구독 2대면 7일 합계가 두 배가 된다).
+   */
+  const subRows = await db
+    .select({ userId: pushSubscriptions.userId, n: sql<number>`count(*)::int` })
+    .from(pushSubscriptions)
+    .groupBy(pushSubscriptions.userId);
+  const devices = new Map(subRows.map((r) => [r.userId, r.n]));
+
   const now = Date.now();
   // drizzle의 execute 반환 형태가 드라이버마다 다르다 (neon-http는 { rows }, 배열인 경우도 있다)
   const list = (Array.isArray(rows) ? rows : ((rows as { rows?: unknown[] }).rows ?? [])) as Record<
@@ -141,6 +153,7 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
       ? Math.max(0, Math.round((now - new Date(r.last_seen as string).getTime()) / 1000))
       : null,
     lastSeenAt: r.last_seen ? localStamp(new Date(r.last_seen as string)) : null,
+    pushDevices: devices.get(String(r.id)) ?? 0,
   }));
 }
 

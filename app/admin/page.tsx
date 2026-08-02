@@ -119,6 +119,9 @@ const T = {
   statsWeek: { ko: '7일', en: '7d' },
   statsVisits: { ko: '접속', en: 'Visits' },
   statsLast: { ko: '마지막', en: 'Last seen' },
+  statsPush: { ko: '푸시', en: 'Push' },
+  statsPushOn: { ko: '앱 푸시 알림을 켠 기기 {n}대', en: '{n} device(s) with app push on' },
+  statsPushOff: { ko: '앱 푸시 알림 꺼짐', en: 'App push notifications off' },
   statsLastJustNow: { ko: '방금', en: 'just now' },
   statsLastMins: { ko: '{n}분 전', en: '{n}m ago' },
   statsLastHours: { ko: '{n}시간 전', en: '{n}h ago' },
@@ -209,6 +212,7 @@ export default function AdminPage() {
       visits: number;
       lastSeenSecondsAgo: number | null;
       lastSeenAt: string | null;
+      pushDevices: number;
     }[];
   } | null>(null);
   // 기본은 접어 둔다 — 관리자 화면에 들를 때마다 볼 표는 아니다
@@ -834,6 +838,7 @@ export default function AdminPage() {
                     <tr>
                       <th>{t(T.statsUser)}</th>
                       <th>{t(T.statsLast)}</th>
+                      <th>{t(T.statsPush)}</th>
                       <th>{t(T.statsDay)}</th>
                       <th>{t(T.statsWeek)}</th>
                       <th>{t(T.statsVisits)}</th>
@@ -852,6 +857,10 @@ export default function AdminPage() {
                         </td>
                         {/* 정확한 시각은 언제든 필요하므로 title로 항상 달아 둔다 */}
                         <td title={u.lastSeenAt ? entryLabel(u.lastSeenAt, locale) : undefined}>{lastSeen(u)}</td>
+                        {/* 기기 수까지 보여준다 — 폰만 켠 사람과 노트북까지 켠 사람은 다르다 */}
+                        <td title={u.pushDevices > 0 ? t(T.statsPushOn, { n: u.pushDevices }) : t(T.statsPushOff)}>
+                          {u.pushDevices > 0 ? `🔔 ${u.pushDevices}` : '–'}
+                        </td>
                         <td>{dur(u.daySeconds)}</td>
                         <td>{u.weekSeconds > 0 ? dur(u.weekSeconds) : t(T.statsNever)}</td>
                         <td>{t(T.statsVisitsUnit, { n: u.visits })}</td>
