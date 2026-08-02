@@ -16,6 +16,7 @@ import PresenceBeat from './presence-beat';
 import ViewingAs from './viewing-as';
 import { I18nProvider } from './i18n';
 import { getLocale } from '@/lib/locale';
+import { SITE_URL } from '@/lib/site';
 import { pick } from '@/lib/i18n';
 import './globals.css';
 // 타입 보정 — 굵기·행간·자간·라벨 표기만 (구조·서체는 그대로)
@@ -38,6 +39,8 @@ const META = {
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   return {
+    // 미리보기 이미지 주소를 공개 주소 기준으로 만든다 (안 정해 두면 요청 호스트를 쓴다)
+    ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
     title: pick(locale, META.title),
     description: pick(locale, META.description),
     /*

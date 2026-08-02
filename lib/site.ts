@@ -9,6 +9,13 @@
  */
 const CONFIGURED = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '');
 
+/**
+ * 설정해 둔 공개 주소 (없으면 null).
+ * metadataBase처럼 "요청 호스트가 아니라 진짜 주소"가 필요한 곳에서 쓴다 —
+ * 미리보기 이미지 주소가 요청마다 달라지면 카톡이 캐시를 따로따로 잡는다.
+ */
+export const SITE_URL = CONFIGURED ?? null;
+
 export function siteUrl(fallbackOrigin: string): string {
   if (CONFIGURED) return CONFIGURED;
   // Vercel 프로덕션이면 프로젝트 공개 도메인이라도 쓴다 (localhost보다는 낫다)

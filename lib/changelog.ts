@@ -31,6 +31,20 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-02T16:15',
+    title: { ko: '링크를 보내면 카드가 떠요', en: 'Links now show a card' },
+    items: [
+      {
+        ko: '모임 링크를 카톡에 붙이면 그 카테고리 색으로 된 카드가 떠요. 날짜·장소·참가 인원까지 그림에 들어가 있어요.',
+        en: 'Paste a meetup link in a chat and it shows a card in that category’s colour, with the date, place and headcount on it.',
+      },
+      {
+        ko: '카테고리 링크도 마찬가지예요. 무슨 모임인지 링크만 봐도 알 수 있어요.',
+        en: 'Category links too — you can tell what it is without opening it.',
+      },
+    ],
+  },
+  {
     at: '2026-08-02T15:49',
     notable: true,
     // 홈 카드에 띄울 항목 — 친구 기능 중 지금 제일 보여주고 싶은 것으로 옮겼다
