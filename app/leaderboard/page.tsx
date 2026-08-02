@@ -14,8 +14,8 @@ interface HostRank {
 const T = {
   title: { ko: '리더보드', en: 'Leaderboard' },
   subtitle: {
-    ko: '카테고리를 가리지 않고 공개 모임만 세요. 관리자는 빠져 있어요.',
-    en: 'All categories together, public meetups only. Admins are left out.',
+    ko: '카테고리를 가리지 않고 공개 모임만 세요.',
+    en: 'All categories together, public meetups only.',
   },
   tabHosts: { ko: '호스팅 순위', en: 'Hosted' },
   tabJoiners: { ko: '참여 순위', en: 'Joined' },
