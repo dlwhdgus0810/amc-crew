@@ -119,9 +119,13 @@ const T = {
   statsWeek: { ko: '7일', en: '7d' },
   statsVisits: { ko: '접속', en: 'Visits' },
   statsLast: { ko: '마지막', en: 'Last seen' },
-  statsPush: { ko: '푸시', en: 'Push' },
-  statsPushOn: { ko: '앱 푸시 알림을 켠 기기 {n}대', en: '{n} device(s) with app push on' },
-  statsPushOff: { ko: '앱 푸시 알림 꺼짐', en: 'App push notifications off' },
+  statsPush: { ko: '앱 푸시', en: 'App push' },
+  statsPushOn: { ko: '켜짐 {n}', en: 'On {n}' },
+  statsPushOff: { ko: '꺼짐', en: 'Off' },
+  statsPushNote: {
+    ko: '앱 푸시는 홈 화면에 추가한 앱으로 오는 알림이에요 (인앱 알림·카카오톡과 별개). 켜짐 옆 숫자는 켜 둔 기기 수예요.',
+    en: 'App push is the notification that reaches the home-screen app — separate from in-app alerts and KakaoTalk. The number is how many devices have it on.',
+  },
   statsLastJustNow: { ko: '방금', en: 'just now' },
   statsLastMins: { ko: '{n}분 전', en: '{n}m ago' },
   statsLastHours: { ko: '{n}시간 전', en: '{n}h ago' },
@@ -829,6 +833,9 @@ export default function AdminPage() {
             <>
           <p className="subtitle">{t(T.statsDesc)}</p>
           <div className="card">
+            <p className="hint" style={{ marginBottom: 12 }}>
+              {t(T.statsPushNote)}
+            </p>
             {!presence?.stats?.length ? (
               <p className="hint">{t(T.statsEmpty)}</p>
             ) : (
@@ -857,9 +864,12 @@ export default function AdminPage() {
                         </td>
                         {/* 정확한 시각은 언제든 필요하므로 title로 항상 달아 둔다 */}
                         <td title={u.lastSeenAt ? entryLabel(u.lastSeenAt, locale) : undefined}>{lastSeen(u)}</td>
-                        {/* 기기 수까지 보여준다 — 폰만 켠 사람과 노트북까지 켠 사람은 다르다 */}
-                        <td title={u.pushDevices > 0 ? t(T.statsPushOn, { n: u.pushDevices }) : t(T.statsPushOff)}>
-                          {u.pushDevices > 0 ? `🔔 ${u.pushDevices}` : '–'}
+                        {/*
+                          * 켜짐/꺼짐을 글자로 적는다. 아이콘 + title로 두면 폰에서는 아무것도 알 수 없다 —
+                          * 터치 화면에는 마우스를 올릴 수가 없어서 title이 뜨지 않는다.
+                          */}
+                        <td className={u.pushDevices > 0 ? 'push-on' : 'push-off'}>
+                          {u.pushDevices > 0 ? t(T.statsPushOn, { n: u.pushDevices }) : t(T.statsPushOff)}
                         </td>
                         <td>{dur(u.daySeconds)}</td>
                         <td>{u.weekSeconds > 0 ? dur(u.weekSeconds) : t(T.statsNever)}</td>
