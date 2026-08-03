@@ -25,6 +25,8 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CATEGORIES, getCategory } from '@/lib/categories';
+import { statementOfDay } from '@/lib/statements';
+import { todayLocal } from '@/lib/dates';
 import { useT } from './i18n';
 import CategoryCard from './category-card';
 import SortableCategoryCard from './sortable-card';
@@ -33,8 +35,6 @@ import WhatsNewCard from './whats-new-card';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
-  statement1: { ko: '취미로 모이는 크루.', en: 'A crew that gathers around hobbies.' },
-  statement2: { ko: '오늘 뭐 하고 놀지, 같이 정합니다.', en: 'Let’s decide together what to do today.' },
   profile: { ko: '프로필 →', en: 'Profile →' },
   kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
   loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
@@ -305,13 +305,18 @@ export default function HubPage() {
   // 즐겨찾기가 있으면 홈에는 그것만 — 사용자가 정한 순서대로. 나머지는 "전체 카테고리"에서 본다
   const shown = favList.length > 0 ? favList.map(getCategory).filter((c) => c !== undefined) : CATEGORIES;
   const canReorder = Boolean(user) && favList.length > 1;
+  /*
+   * 그날의 문구. todayLocal()은 앱 시간대(America/Chicago)로 날짜를 내므로
+   * 서버에서 그릴 때와 브라우저에서 그릴 때 같은 줄이 나온다.
+   */
+  const today = statementOfDay(todayLocal());
 
   return (
     <>
       <div className="statement">
-        {t(T.statement1)}
+        {t(today.top)}
         <br />
-        <span className="dim2">{t(T.statement2)}</span>
+        <span className="dim2">{t(today.bottom)}</span>
       </div>
       {/* 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다 */}
       <div className="statement-meta">{CATEGORIES.map((c) => c.en).join(' — ')}</div>
