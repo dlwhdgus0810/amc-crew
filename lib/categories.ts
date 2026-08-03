@@ -198,7 +198,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '카페 메이트', en: 'Café Mate' },
-    description: { ko: '입장권(맥북) 깜빡하시면 안돼요', en: 'Don’t forget your ticket (a MacBook).' },
+    description: { ko: '콘센트 자리는 선착순입니다', en: 'Outlets are first come, first served.' },
     locationLabel: { ko: '카페', en: 'Café' },
     locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall' },
   },
