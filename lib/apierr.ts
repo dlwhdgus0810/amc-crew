@@ -65,6 +65,10 @@ export const E = {
   },
   banAdmin: { ko: '관리자는 정지할 수 없어요.', en: 'Admins can’t be suspended.' },
   banMinutes: { ko: '정지 기간이 올바르지 않아요.', en: 'That isn’t a valid duration.' },
+  pastDelete: {
+    ko: '이미 지난 모임은 지울 수 없어요. 기록으로 남겨둬요.',
+    en: 'A meetup that already happened can’t be deleted — it stays as a record.',
+  },
   coHostNotFriend: {
     ko: '같이 여는 사람은 친구 중에서 고를 수 있어요.',
     en: 'You can only co-host with a friend.',

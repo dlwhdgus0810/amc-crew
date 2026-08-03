@@ -7,7 +7,7 @@ import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, updatePost } from '@/lib/db/posts';
 import { getCategory } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
-import { todayLocal } from '@/lib/dates';
+import { isPastSlot, todayLocal } from '@/lib/dates';
 import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -145,6 +145,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
   if (post.authorId !== user.id && post.coHostId !== user.id && !isAdmin(user)) {
     return await errJson(E.authorOnlyDelete, 403);
+  }
+  /*
+   * 이미 지난 모임은 아무도 못 지운다 — 만든 사람도, 관리자도.
+   * 지난 모임은 기록이다: 누가 언제 뭘 했는지, 호스트 점수가 어디서 왔는지가 여기 남는다.
+   * 실수로 하나 지우면 그 기록이 통째로 사라지고 되돌릴 방법이 없다.
+   */
+  if (isPastSlot(post.date, post.startTime, post.endTime)) {
+    return await errJson(E.pastDelete, 400);
   }
   await deletePost(post, user.id, await displayNameOf(user), siteUrl(req.nextUrl.origin));
   return NextResponse.json({ ok: true });

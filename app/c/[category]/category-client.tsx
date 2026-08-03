@@ -1014,6 +1014,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
   function renderPost(post: PostView, past: boolean) {
     const joined = user ? post.participants.some((p) => p.id === user.id) : false;
     const mine = user?.id === post.authorId;
+    // 같이 연 사람도 호스트다 — 수정은 할 수 있고, 삭제는 만든 사람·관리자만이다
+    const isCoHost = Boolean(user && post.coHost?.id === user.id);
     const full = post.capacity != null && post.participantCount >= post.capacity;
     const commentsOpen = openComments.has(post.id);
     const peopleOpen = openPeople.has(post.id);
@@ -1148,7 +1150,11 @@ export default function CategoryClient({ slug }: { slug: string }) {
               {t(T.share)}
             </button>
           )}
-          {(mine || isAdmin) && !past && (
+          {/*
+            * 지난 모임에서도 고칠 수 있다 — 같이 연 사람을 뒤늦게 넣는 일이 있어서다.
+            * (날짜만 못 옮긴다. 서버가 막는다)
+            */}
+          {(mine || isCoHost || isAdmin) && (
             <button className="link-btn" disabled={busy} onClick={() => startEditPost(post)}>
               {t(T.edit)}
             </button>
@@ -1174,13 +1180,15 @@ export default function CategoryClient({ slug }: { slug: string }) {
           )}
         </div>
 
-        {(mine || isAdmin) && (
+        {/* 지난 모임에는 이 줄에 남는 게 없다 — 빈 칸만 남기지 않도록 통째로 뺀다 */}
+        {(mine || isAdmin) && !past && (
           <div className="post-owner-actions">
-            {!past && post.recurringRuleId && (
+            {post.recurringRuleId && (
               <button className="link-btn" disabled={busy} onClick={() => stopRepeat(post)}>
                 {t(T.stopRepeat)}
               </button>
             )}
+            {/* 지난 모임은 지울 수 없다 — 기록이라서다 (서버에서도 막는다) */}
             <button className="link-btn danger-text" disabled={busy} onClick={() => remove(post)}>
               {t(T.del)}
             </button>
