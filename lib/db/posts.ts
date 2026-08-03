@@ -864,10 +864,17 @@ export async function deletePost(
   post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
   actorId: string,
   actorName: string,
-  origin?: string
+  origin?: string,
+  /**
+   * 취소 알림을 보내지 않는다.
+   *
+   * 지난 모임을 치울 때 쓴다 — 이미 지나간 일에 "모임이 취소됐어요"가 날아가면
+   * 받는 사람은 무슨 모임이 취소됐다는 건지 알 수 없다.
+   */
+  silent = false
 ): Promise<void> {
   const db = await getDb();
-  const recipients = await participantIdsExcept(post.id, actorId);
+  const recipients = silent ? [] : await participantIdsExcept(post.id, actorId);
   const notice = await buildNotice(
     recipients,
     (locale) =>

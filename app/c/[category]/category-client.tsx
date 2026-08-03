@@ -173,6 +173,10 @@ const T = {
     ko: '이 모임을 취소(삭제)할까요? 참가자들에게 취소 알림이 가요.',
     en: 'Cancel (delete) this meetup? Participants will be notified.',
   },
+  deletePastConfirm: {
+    ko: '이미 지난 모임이에요. 지우면 명단과 호스트 점수도 같이 사라지고 되돌릴 수 없어요. 지울까요?',
+    en: 'This meetup already happened. Deleting it also removes its roster and host points, for good. Delete it?',
+  },
   deleteFailed: { ko: '삭제 실패', en: 'Couldn’t delete' },
 };
 
@@ -614,7 +618,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
   }
 
   async function remove(post: PostView) {
-    if (!confirm(t(T.deleteConfirm))) return;
+    // 지난 모임은 취소가 아니라 기록을 지우는 일이라, 무엇이 사라지는지 다르게 묻는다
+    if (!confirm(t(post.isPast ? T.deletePastConfirm : T.deleteConfirm))) return;
     setBusy(true);
     setMsg(null);
     const res = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
@@ -1216,15 +1221,15 @@ export default function CategoryClient({ slug }: { slug: string }) {
           )}
         </div>
 
-        {/* 지난 모임에는 이 줄에 남는 게 없다 — 빈 칸만 남기지 않도록 통째로 뺀다 */}
-        {(mine || isAdmin) && !past && (
+        {/* 지난 모임에서 남는 건 관리자의 삭제뿐이다 — 그것도 없으면 빈 칸이라 통째로 뺀다 */}
+        {(isAdmin || (mine && !past)) && (
           <div className="post-owner-actions">
-            {post.recurringRuleId && (
+            {!past && post.recurringRuleId && (
               <button className="link-btn" disabled={busy} onClick={() => stopRepeat(post)}>
                 {t(T.stopRepeat)}
               </button>
             )}
-            {/* 지난 모임은 지울 수 없다 — 기록이라서다 (서버에서도 막는다) */}
+            {/* 지난 모임은 관리자만 지운다 — 기록이라서다 (서버에서도 같은 규칙) */}
             <button className="link-btn danger-text" disabled={busy} onClick={() => remove(post)}>
               {t(T.del)}
             </button>

@@ -156,13 +156,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return await errJson(E.authorOnlyDelete, 403);
   }
   /*
-   * 이미 지난 모임은 아무도 못 지운다 — 만든 사람도, 관리자도.
-   * 지난 모임은 기록이다: 누가 언제 뭘 했는지, 호스트 점수가 어디서 왔는지가 여기 남는다.
-   * 실수로 하나 지우면 그 기록이 통째로 사라지고 되돌릴 방법이 없다.
+   * 지난 모임은 기록이다 — 누가 언제 뭘 했는지, 호스트 점수가 어디서 왔는지가 여기 남는다.
+   * 그래서 호스트에게는 지우는 길을 막아 둔다. 실수로 하나 지우면 되돌릴 방법이 없다.
+   * 관리자만 지운다: 잘못 올라간 모임을 치우는 사람이 아무도 없으면 그건 그것대로 막힌다.
    */
-  if (isPastSlot(post.date, post.startTime, post.endTime)) {
+  if (!isAdmin(user) && isPastSlot(post.date, post.startTime, post.endTime)) {
     return await errJson(E.pastDelete, 400);
   }
-  await deletePost(post, user.id, await displayNameOf(user), siteUrl(req.nextUrl.origin));
+  // 지난 모임을 치우는 것은 정리지 취소가 아니다 — 알림을 보내지 않는다
+  const wasPast = isPastSlot(post.date, post.startTime, post.endTime);
+  await deletePost(post, user.id, await displayNameOf(user), siteUrl(req.nextUrl.origin), wasPast);
   return NextResponse.json({ ok: true });
 }
