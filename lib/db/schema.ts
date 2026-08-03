@@ -51,6 +51,8 @@ export const recurringRules = pgTable(
       .references(() => users.id),
     /** 같이 여는 사람 — 다음 주 회차에도 그대로 이어진다 */
     coHostId: text('co_host_id').references(() => users.id),
+    /** 닉네임 허용 여부도 다음 주 회차로 이어진다 */
+    allowNicknames: boolean('allow_nicknames').notNull().default(false),
     weekday: integer('weekday').notNull(), // 0=일 ~ 6=토
     startDate: text('start_date').notNull(), // 첫 회차 날짜 (이전 날짜는 생성하지 않음)
     title: text('title'),
@@ -81,6 +83,12 @@ export const posts = pgTable(
      * 호스트 점수는 참가 인원을 호스트 수로 나눠 갖는다 (lib/db/hosting.ts).
      */
     coHostId: text('co_host_id').references(() => users.id),
+    /**
+     * 이 모임 안에서 닉네임으로 보여도 되는지. 기본은 실명 모임(false)이다 —
+     * 같이 노는 사람들끼리 누가 누군지 모르면 명단이 제 구실을 못 한다.
+     * 켜면 그 모임의 이름·댓글·참가자 명단이 각자의 닉네임으로 보인다 (설정한 사람만).
+     */
+    allowNicknames: boolean('allow_nicknames').notNull().default(false),
     title: text('title'), // 뭐 볼지/뭐 할지 (카테고리에 titleLabel이 있을 때만 사용)
     titleMeta: jsonb('title_meta').$type<TitleMeta>(), // TMDB 메타 (평점·감독·출연·포스터), 검색으로 고른 경우만
     // 정기 모임에서 생성된 회차면 규칙 id (규칙 삭제 시 회차는 남기고 연결만 끊는다)

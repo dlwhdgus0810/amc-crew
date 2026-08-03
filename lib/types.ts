@@ -44,8 +44,7 @@ export interface UserSelection {
 
 export interface UserProfile {
   kakaoName: string; // 최신 카카오 닉네임 (로그인마다 갱신)
-  /** @deprecated 실명제로 바꾸면서 안 쓴다 — 예전 값이 DB에 남아 있을 뿐이다 (lib/store.ts) */
-  nickname?: string;
+  nickname?: string; // 사용자가 앱에서 설정한 닉네임 (있으면 표시에 우선 사용)
   kakaoNameHistory: { name: string; at: string }[]; // 카카오 닉네임 변경 이력 (보관용)
 }
 

@@ -25,6 +25,8 @@ export interface PostView {
   recurringRuleId: string | null; // 정기 모임 회차면 규칙 id
   /** 같이 연 사람 — 없으면 null. 이름은 화면에 그대로 쓴다 */
   coHost: { id: string; name: string } | null;
+  /** 이 모임에서 닉네임으로 보여도 되는지 (수정 화면이 그대로 되살리려면 필요하다) */
+  allowNicknames: boolean;
   date: string;
   startTime: string;
   /** 안 적었으면 null — 화면에서 시작 시각만 보여준다 */
@@ -67,10 +69,21 @@ export interface CommentView {
   likedByMe: boolean;
 }
 
-function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined, fallback: string): string {
+/**
+ * 이 모임에서 보여줄 이름.
+ *
+ * 기본은 실명이다. 모임을 만들 때 닉네임을 허용해 둔 경우에만 각자의 닉네임으로 보인다 —
+ * 닉네임을 안 정한 사람은 그대로 실명이다.
+ * 같은 사람이 모임마다 다른 이름으로 보일 수 있다는 뜻이고, 그게 이 설정의 목적이다.
+ */
+function displayNameOf(
+  row: { kakaoName: string; nickname: string | null } | undefined,
+  fallback: string,
+  allowNicknames = false
+): string {
   if (!row) return fallback;
   return resolveDisplayName(
-    { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] },
+    { kakaoName: row.kakaoName, ...(allowNicknames && row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] },
     fallback
   );
 }
@@ -155,12 +168,14 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
       ? [...new Set(participantRows.filter((p) => p.userId === viewerId).map((p) => p.postId))]
       : [];
   const settleByPost = await settlementSummaries(myPostIds, viewerId);
+  // 모임마다 닉네임 허용 여부가 다르다 — 참가자 이름은 그 모임의 규칙으로 만든다
+  const nickOk = new Map(postRows.map((p) => [p.id, p.allowNicknames]));
   const byPost = new Map<string, { id: string; name: string; avatar: string | null; hostCount: number }[]>();
   for (const p of participantRows) {
     if (!byPost.has(p.postId)) byPost.set(p.postId, []);
     byPost.get(p.postId)!.push({
       id: p.userId,
-      name: displayNameOf(userById.get(p.userId), '알 수 없음'),
+      name: displayNameOf(userById.get(p.userId), '알 수 없음', nickOk.get(p.postId) ?? false),
       avatar: userById.get(p.userId)?.avatar ?? null,
       hostCount: hostCounts.get(p.userId) ?? 0,
     });
@@ -191,7 +206,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     commentsByPost.get(c.postId)!.push({
       id: c.id,
       userId: c.userId,
-      name: hideName ? null : displayNameOf(userById.get(c.userId), '알 수 없음'),
+      name: hideName ? null : displayNameOf(userById.get(c.userId), '알 수 없음', nickOk.get(c.postId) ?? false),
       anonymous: c.anonymous,
       body: c.body,
       createdAt: c.createdAt.toISOString(),
@@ -211,15 +226,16 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     id: p.id,
     category: p.category,
     authorId: p.authorId,
-    authorName: signedIn ? displayNameOf(userById.get(p.authorId), '알 수 없음') : null,
+    authorName: signedIn ? displayNameOf(userById.get(p.authorId), '알 수 없음', p.allowNicknames) : null,
     title: p.title,
     titleMeta: p.titleMeta ?? null,
     recurringRuleId: p.recurringRuleId ?? null,
     // 로그인한 사람에게만 이름을 준다 — 주최자 이름과 같은 기준이다
     coHost:
       p.coHostId && signedIn
-        ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), '알 수 없음') }
+        ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), '알 수 없음', p.allowNicknames) }
         : null,
+    allowNicknames: p.allowNicknames,
     date: p.date,
     startTime: p.startTime,
     endTime: p.endTime,
@@ -541,6 +557,8 @@ export async function createPost(input: {
   authorName: string;
   /** 같이 여는 사람 (최대 한 명) — 참가자로도 함께 들어간다 */
   coHostId?: string | null;
+  /** 이 모임에서 닉네임으로 보여도 되는지 (기본 실명) */
+  allowNicknames?: boolean;
   title?: string;
   titleMeta?: TitleMeta;
   date: string;
@@ -594,6 +612,7 @@ export async function createPost(input: {
     category: input.category,
     authorId: input.authorId,
     coHostId: input.coHostId ?? null,
+    allowNicknames: input.allowNicknames ?? false,
     title: input.title ?? null,
     titleMeta: input.titleMeta ?? null,
     recurringRuleId: input.recurringRuleId ?? null,
@@ -759,6 +778,8 @@ export async function updatePost(input: {
   visibility?: 'public' | 'link';
   /** undefined면 그대로 두고, null이면 같이 여는 사람을 뗀다 */
   coHostId?: string | null;
+  /** 주지 않으면 지금 값을 그대로 둔다 */
+  allowNicknames?: boolean;
   origin?: string;
 }): Promise<void> {
   const db = await getDb();
@@ -787,6 +808,7 @@ export async function updatePost(input: {
     location: input.location,
     ...(input.visibility ? { visibility: input.visibility } : {}),
     ...(input.coHostId !== undefined ? { coHostId: input.coHostId } : {}),
+    ...(input.allowNicknames !== undefined ? { allowNicknames: input.allowNicknames } : {}),
     description: input.description,
     capacity: input.capacity,
   };

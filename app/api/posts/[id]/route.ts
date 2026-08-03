@@ -125,6 +125,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ? { visibility: body.visibility as 'public' | 'link' }
       : {}),
     ...(coHostId !== undefined ? { coHostId } : {}),
+    ...(typeof body?.allowNicknames === 'boolean' ? { allowNicknames: body.allowNicknames } : {}),
     origin: siteUrl(req.nextUrl.origin),
   });
   return NextResponse.json({ ok: true });

@@ -125,6 +125,10 @@ async function withProfiles(rows: { id: string; n: number }[], limit: number): P
     const p = byId.get(r.id);
     return {
       id: r.id,
+      /*
+       * 순위표는 실명이다. 닉네임 허용은 모임마다 정하는 것인데, 이 표는 여러 모임을
+       * 합친 결과라 어느 모임의 규칙을 따를지가 없다.
+       */
       name: p ? resolveDisplayName({ kakaoName: p.kakaoName, kakaoNameHistory: [] }, '알 수 없음') : '알 수 없음',
       avatar: p?.avatar ?? null,
       count: Number(r.n),

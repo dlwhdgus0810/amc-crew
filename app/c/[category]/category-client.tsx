@@ -108,6 +108,11 @@ const T = {
     en: 'One person. You’ll split the host points evenly.',
   },
   coHostNone: { ko: '친구를 만들면 같이 열 수 있어요.', en: 'Add a friend to co-host with them.' },
+  nickToggle: { ko: '닉네임 허용', en: 'Allow nicknames' },
+  nickHint: {
+    ko: '— 이 모임에서는 닉네임을 정해둔 사람이 닉네임으로 보여요. 기본은 실명이에요',
+    en: '— people who set a nickname show up under it, just in this meetup. Real names by default',
+  },
   memoPh: { ko: '메모 (선택) — 준비물, 실력대, 주차 안내 등', en: 'Note (optional) — what to bring, skill level, parking' },
   titleSearchPh: { ko: '{label} 제목 검색 (예: 듄: 파트2)', en: 'Search {label} (e.g. Dune: Part Two)' },
   titleFreePh: { ko: '{label} (선택)', en: '{label} (optional)' },
@@ -182,6 +187,7 @@ interface PostView {
   authorId: string;
   authorName: string | null;
   coHost: { id: string; name: string } | null;
+  allowNicknames: boolean;
   title: string | null;
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null;
@@ -267,6 +273,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const [fInvite, setFInvite] = useState<Set<string>>(new Set());
   /** 같이 여는 사람 (한 명까지) */
   const [fCoHost, setFCoHost] = useState<string | null>(null);
+  /** 이 모임에서 닉네임을 허용할지 (기본 실명) */
+  const [fNick, setFNick] = useState(false);
 
   function resetForm() {
     setFTitle('');
@@ -282,6 +290,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setFPrivate(false);
     setFInvite(new Set());
     setFCoHost(null);
+    setFNick(false);
   }
 
   // 지난 모임
@@ -411,6 +420,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           description: fMemo,
           capacity: fCapacity || undefined,
           ...(fCoHost ? { coHostId: fCoHost } : {}),
+          allowNicknames: fNick,
           repeatWeekly: fRepeat,
           visibility: fPrivate ? 'link' : 'public',
           ...(fPrivate && !fRepeat ? { inviteFriendIds: [...fInvite] } : {}),
@@ -452,6 +462,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setFMemo(post.description ?? '');
     setFCapacity(post.capacity != null ? String(post.capacity) : '');
     setFCoHost(post.coHost?.id ?? null);
+    setFNick(post.allowNicknames);
     setFPrivate(post.visibility === 'link');
   }
 
@@ -473,6 +484,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           description: fMemo,
           capacity: fCapacity || undefined,
           coHostId: fCoHost,
+          allowNicknames: fNick,
           visibility: fPrivate ? 'link' : 'public',
         }),
       });
@@ -942,6 +954,14 @@ export default function CategoryClient({ slug }: { slug: string }) {
                 )}
               </div>
             )}
+
+            <label className="repeat-check" style={{ marginTop: 10 }}>
+              <input type="checkbox" checked={fNick} onChange={(e) => setFNick(e.target.checked)} />
+              <span>
+                {t(T.nickToggle)}
+                <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}> {t(T.nickHint)}</span>
+              </span>
+            </label>
 
             <label className="repeat-check" style={{ marginTop: 10 }}>
               <input type="checkbox" checked={fPrivate} onChange={(e) => setFPrivate(e.target.checked)} />

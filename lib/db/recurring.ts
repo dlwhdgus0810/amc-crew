@@ -19,6 +19,8 @@ export interface RuleInput {
   authorName: string;
   /** 같이 여는 사람 — 다음 주 회차에도 그대로 이어진다 */
   coHostId?: string | null;
+  /** 닉네임 허용 여부도 다음 주 회차로 이어진다 */
+  allowNicknames?: boolean;
   startDate: string; // 첫 회차 날짜 — 이 날짜의 요일이 반복 요일이 된다
   startTime: string;
   endTime: string | null;
@@ -44,6 +46,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
     category: input.category,
     authorId: input.authorId,
     coHostId: input.coHostId ?? null,
+    allowNicknames: input.allowNicknames ?? false,
     weekday: weekdayOf(input.startDate),
     startDate: input.startDate,
     title: input.title ?? null,
@@ -61,6 +64,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
     authorId: input.authorId,
     authorName: input.authorName,
     ...(input.coHostId ? { coHostId: input.coHostId } : {}),
+    ...(input.allowNicknames ? { allowNicknames: true } : {}),
     ...(input.title ? { title: input.title } : {}),
     ...(input.titleMeta ? { titleMeta: input.titleMeta } : {}),
     date: input.startDate,
@@ -122,6 +126,7 @@ export async function materializeDueOccurrences(origin: string): Promise<{ creat
         authorId: rule.authorId,
         authorName: resolveDisplayName(profiles[rule.authorId], '알 수 없음'),
         ...(rule.coHostId ? { coHostId: rule.coHostId } : {}),
+        ...(rule.allowNicknames ? { allowNicknames: true } : {}),
         ...(rule.title ? { title: rule.title } : {}),
         ...(rule.titleMeta ? { titleMeta: rule.titleMeta } : {}),
         date,

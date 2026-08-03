@@ -110,6 +110,8 @@ export async function POST(req: NextRequest) {
     ...(body?.visibility === 'link' ? { visibility: 'link' as const } : {}),
     origin: siteUrl(req.nextUrl.origin),
     ...(askedCoHost ? { coHostId: askedCoHost } : {}),
+    // 닉네임 허용은 명시적으로 켤 때만 — 기본은 실명 모임이다
+    ...(body?.allowNicknames === true ? { allowNicknames: true } : {}),
   };
 
   // 매주 반복이면 규칙을 만들고 첫 회차를 생성한다 (이후 회차는 크론이 매일 채운다)

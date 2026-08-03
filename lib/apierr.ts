@@ -38,6 +38,8 @@ export const E = {
   adminOnly: { ko: '관리자만 사용할 수 있어요.', en: 'Admins only.' },
   adminOnlyReview: { ko: '관리자만 검토할 수 있어요.', en: 'Only admins can review suggestions.' },
   requestNotFound: { ko: '제안을 찾을 수 없어요.', en: 'Suggestion not found.' },
+  nickname: { ko: '닉네임은 20자 이하로 입력해주세요.', en: 'Nickname must be 20 characters or fewer.' },
+  nicknameBad: { ko: '닉네임 형식이 올바르지 않아요.', en: 'That nickname isn’t valid.' },
   birthday: { ko: '생년월일을 올바르게 입력해주세요.', en: 'Enter a valid date of birth.' },
   gender: { ko: '성별을 선택해주세요.', en: 'Choose a gender.' },
   locale: { ko: '지원하지 않는 언어입니다.', en: 'Unsupported language.' },

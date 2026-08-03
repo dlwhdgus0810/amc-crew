@@ -83,7 +83,7 @@ function useSession() {
         })
         .catch(() => {});
     load();
-    // 프로필에서 사진을 바꾸면 화면을 옮기지 않아도 탭바가 따라오도록
+    // 프로필에서 사진·닉네임을 바꾸면 화면을 옮기지 않아도 탭바가 따라오도록
     window.addEventListener(PROFILE_UPDATED, load);
     return () => window.removeEventListener(PROFILE_UPDATED, load);
   }, [pathname, router]);

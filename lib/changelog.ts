@@ -31,6 +31,61 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-03T15:40',
+    notable: true,
+    title: { ko: '호스트 순위가 사람 수로 바뀌었어요', en: 'Host ranking now counts people' },
+    items: [
+      {
+        ko: '몇 번 열었는지가 아니라 몇 명이 모였는지로 세요. 두 명 모인 모임 열 번보다 열 명 모인 모임 두 번이 더 큰 일이니까요.',
+        en: 'It counts how many people turned up, not how many meetups you opened.',
+      },
+      {
+        ko: '모임을 만들 때 친구 한 명을 「같이 여는 사람」으로 고를 수 있어요. 그 모임 점수는 둘이 반씩 나눠 가져요 — 10명이면 각각 5점이에요.',
+        en: 'Pick one friend as a co-host and you split that meetup’s points — ten people means five each.',
+      },
+      {
+        ko: '같이 연 사람도 그 모임을 고칠 수 있어요. 같이 열 사람을 바꾸는 건 만든 사람만 할 수 있어요.',
+        en: 'A co-host can edit the meetup. Only the person who made it can change who the co-host is.',
+      },
+      {
+        ko: '등급은 10 · 30 · 60 · 120점부터예요. 세는 방법이 바뀌어서 지금 점수는 예전과 달라요.',
+        en: 'Tiers start at 10 · 30 · 60 · 120 points. Your number will look different — it’s counted a new way.',
+      },
+      {
+        ko: '지난 모임에도 같이 연 사람을 뒤늦게 넣을 수 있어요. 지난 모임 카드의 「수정」을 누르세요.',
+        en: 'You can add a co-host to a meetup that already happened — tap Edit on its card.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-03T15:35',
+    title: { ko: '지난 모임은 지울 수 없어요', en: 'Past meetups can’t be deleted' },
+    items: [
+      {
+        ko: '이미 끝난 모임은 아무도 지울 수 없어요. 만든 사람도, 관리자도요.',
+        en: 'Once a meetup has happened, nobody can delete it — not even the person who made it.',
+      },
+      {
+        ko: '지난 모임은 기록이에요. 누가 언제 뭘 했는지, 호스트 점수가 어디서 왔는지가 거기 남아 있어요.',
+        en: 'They’re the record — of who did what, and where the host points came from.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-03T15:30',
+    title: { ko: '닉네임으로 노는 모임', en: 'Nickname meetups' },
+    items: [
+      {
+        ko: '모임을 만들 때 「닉네임 허용」을 켜면, 그 모임에서만 닉네임을 정해둔 사람이 닉네임으로 보여요.',
+        en: 'Tick “Allow nicknames” when you make a meetup and, just there, people show up under the nickname they set.',
+      },
+      {
+        ko: '기본은 실명이에요. 켠 모임에서만 달라지고, 닉네임을 안 정한 사람은 그대로예요.',
+        en: 'Real names by default — only that meetup changes, and only for people who set one.',
+      },
+    ],
+  },
+  {
     at: '2026-08-02T16:41',
     notable: true,
     title: { ko: '모임에 없는 친구도 정산에', en: 'Settle up with friends who weren’t in the meetup' },

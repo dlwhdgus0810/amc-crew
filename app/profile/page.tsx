@@ -16,8 +16,8 @@ const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   title: { ko: '프로필', en: 'Profile' },
   subtitle: {
-    ko: '사진, 기본 정보, 언어, 구독을 관리해요.',
-    en: 'Manage your photo, basic info, language and subscriptions.',
+    ko: '사진, 닉네임, 기본 정보, 언어, 구독을 관리해요.',
+    en: 'Manage your photo, nickname, basic info, language and subscriptions.',
   },
   loginPrompt: {
     ko: '카카오 로그인 후 프로필을 관리할 수 있어요.',
@@ -35,11 +35,14 @@ const T = {
   photoSaved: { ko: '프로필 사진을 저장했어요.', en: 'Profile photo saved.' },
   photoRemoved: { ko: '프로필 사진을 지웠어요.', en: 'Profile photo removed.' },
   photoBad: { ko: '이미지 파일만 올릴 수 있어요.', en: 'Only image files can be uploaded.' },
-  nameTitle: { ko: '이름', en: 'Name' },
-  nameHint: {
-    ko: '카카오톡 이름을 그대로 써요. 카카오톡에서 이름을 바꾸면 다음 로그인 때 따라 바뀌어요.',
-    en: 'Your Kakao name is used as-is. Change it in KakaoTalk and it follows on your next login.',
+  nickname: { ko: '닉네임', en: 'Nickname' },
+  nicknamePh: { ko: '닉네임', en: 'Nickname' },
+  nicknameSaved: { ko: '닉네임을 저장했어요.', en: 'Nickname saved.' },
+  nicknameHint: {
+    ko: '비워두고 저장하면 카카오 닉네임({name})을 사용해요.',
+    en: 'Leave it empty to use your Kakao nickname ({name}).',
   },
+  kakaoNamePrefix: { ko: '카카오: {name}', en: 'Kakao: {name}' },
   venmo: { ko: 'Venmo 아이디', en: 'Venmo username' },
   venmoDesc: {
     ko: '모임 정산에서 다른 사람이 바로 보낼 수 있게 해줘요. 돈은 앱을 거치지 않고 Venmo에서 직접 오갑니다.',
@@ -196,7 +199,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; name: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [nickname, setNickname] = useState<string | null>(null);
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [kakaoName, setKakaoName] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | ''>('');
   const [subs, setSubs] = useState<Set<string>>(new Set());
@@ -213,6 +218,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
   const [editingInfo, setEditingInfo] = useState(false);
   const [bInput, setBInput] = useState('');
   const [gInput, setGInput] = useState<'male' | 'female' | ''>('');
@@ -234,7 +241,11 @@ export default function ProfilePage() {
     ])
       .then(([auth, sub, fav, news]) => {
         setUser(auth.user ?? null);
-        setIsAdmin(Boolean(auth.isAdmin));        setAvatar(auth.avatar ?? null);        setBirthday(auth.birthday ?? '');
+        setIsAdmin(Boolean(auth.isAdmin));
+        setNickname(auth.nickname ?? null);
+        setAvatar(auth.avatar ?? null);
+        setKakaoName(auth.kakaoName ?? '');
+        setBirthday(auth.birthday ?? '');
         setGender(auth.gender ?? '');
         setTalkMessage(auth.kakaoTalkMessage ?? null);
         setSubs(new Set(sub.subscriptions ?? []));
@@ -309,13 +320,17 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
-      setUser((u) => (u ? { ...u, name: data.name } : u));      if (data.avatar !== undefined) setAvatar(data.avatar);
+      setUser((u) => (u ? { ...u, name: data.name } : u));
+      setNickname(data.nickname ?? null);
+      if (data.avatar !== undefined) setAvatar(data.avatar);
       if (data.venmo !== undefined) setVenmo(data.venmo ?? '');
       if (data.zelle !== undefined) setZelle(data.zelle ?? '');
       setEditingVenmo(false);
       setEditingZelle(false);
+      setKakaoName(data.kakaoName ?? '');
       setBirthday(data.birthday ?? '');
       setGender(data.gender ?? '');
+      setEditingName(false);
       setEditingInfo(false);
       setMsg({ type: 'ok', text: okText });
       window.dispatchEvent(new Event(PROFILE_UPDATED)); // 탭바 아바타·이름 갱신
@@ -531,13 +546,50 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <h2>{t(T.nameTitle)}</h2>
+      <h2>{t(T.nickname)}</h2>
       <div className="card">
-        {/* 실명제라 고칠 수 없다 — 카카오톡 이름을 그대로 쓴다 */}
-        <div className="field-row" style={{ justifyContent: 'space-between' }}>
-          <span style={{ fontWeight: 600, fontSize: 17 }}>{user.name}</span>
-        </div>
-        <p className="hint" style={{ marginTop: 8 }}>{t(T.nameHint)}</p>
+        {editingName ? (
+          <div>
+            <div className="field-row">
+              <input
+                type="text"
+                placeholder={t(T.nicknamePh)}
+                value={nameInput}
+                maxLength={20}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !saving && saveProfile({ nickname: nameInput }, t(T.nicknameSaved))}
+                autoFocus
+              />
+              <button className="secondary" disabled={saving} onClick={() => saveProfile({ nickname: nameInput }, t(T.nicknameSaved))}>
+                {saving ? t(T.saving) : t(T.save)}
+              </button>
+              <button className="secondary" disabled={saving} onClick={() => setEditingName(false)}>
+                {t(T.cancel)}
+              </button>
+            </div>
+            <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '10px 2px 0' }}>
+              {t(T.nicknameHint, { name: kakaoName })}
+            </p>
+          </div>
+        ) : (
+          <div className="field-row" style={{ justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 600, fontSize: 17 }}>
+              {user.name}
+              <span style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, marginLeft: 10 }}>
+                {t(T.kakaoNamePrefix, { name: kakaoName })}
+              </span>
+            </span>
+            <button
+              className="secondary"
+              onClick={() => {
+                setNameInput(nickname ?? '');
+                setEditingName(true);
+              }}
+            >
+              {t(T.edit)}
+            </button>
+          </div>
+        )}
       </div>
 
       <h2>{t(T.pay)}</h2>
