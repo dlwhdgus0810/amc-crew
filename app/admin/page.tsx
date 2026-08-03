@@ -115,22 +115,27 @@ const T = {
     en: 'Runs of consecutive check-ins counted as one visit. Last 7 days.',
   },
   statsUser: { ko: '회원', en: 'Member' },
-  statsDay: { ko: '24시간', en: '24h' },
+  statsActive: { ko: '활동시간', en: 'Active hours' },
   statsWeek: { ko: '7일', en: '7d' },
-  statsVisits: { ko: '접속', en: 'Visits' },
   statsLast: { ko: '마지막', en: 'Last seen' },
   statsPush: { ko: '앱 푸시', en: 'App push' },
-  statsPushOn: { ko: '켜짐 {n}', en: 'On {n}' },
+  statsPushOn: { ko: '켜짐', en: 'On' },
   statsPushOff: { ko: '꺼짐', en: 'Off' },
   statsPushNote: {
-    ko: '앱 푸시는 홈 화면에 추가한 앱으로 오는 알림이에요 (인앱 알림·카카오톡과 별개). 켜짐 옆 숫자는 켜 둔 기기 수예요.',
-    en: 'App push is the notification that reaches the home-screen app — separate from in-app alerts and KakaoTalk. The number is how many devices have it on.',
+    ko: '앱 푸시는 홈 화면에 추가한 앱으로 오는 알림이에요 (인앱 알림·카카오톡과 별개). 켜 둔 기기가 하나라도 있으면 켜짐이에요.',
+    en: 'App push is the notification that reaches the home-screen app — separate from in-app alerts and KakaoTalk. On means at least one device has it.',
   },
+  statsActiveNote: {
+    ko: '활동시간은 캔자스 시간 오전 7시부터 다음날 새벽 1시까지 머문 시간이에요. 새벽 1시를 넘기면 그날 것으로 묶여요.',
+    en: 'Active hours counts time between 7am and 1am the next day, Kansas time — a late night still belongs to that day.',
+  },
+  statsSortBy: { ko: '정렬', en: 'Sort' },
+  statsSortActive: { ko: '활동시간순', en: 'Active hours' },
+  statsSortLast: { ko: '최근 접속순', en: 'Last seen' },
   statsLastJustNow: { ko: '방금', en: 'just now' },
   statsLastMins: { ko: '{n}분 전', en: '{n}m ago' },
   statsLastHours: { ko: '{n}시간 전', en: '{n}h ago' },
   statsLastDays: { ko: '{n}일 전', en: '{n}d ago' },
-  statsVisitsUnit: { ko: '{n}회', en: '{n}' },
   statsNever: { ko: '기록 없음', en: 'never' },
   deletedTitle: { ko: '지운 알림', en: 'Deleted alerts' },
   deletedDesc: {
@@ -211,8 +216,9 @@ export default function AdminPage() {
       id: string;
       name: string;
       avatar: string | null;
-      daySeconds: number;
+      activeSeconds: number;
       weekSeconds: number;
+      /** 표에서는 안 쓴다 — 기록만 남겨 둔 값이다 */
       visits: number;
       lastSeenSecondsAgo: number | null;
       lastSeenAt: string | null;
@@ -221,6 +227,11 @@ export default function AdminPage() {
   } | null>(null);
   // 기본은 접어 둔다 — 관리자 화면에 들를 때마다 볼 표는 아니다
   const [statsOpen, setStatsOpen] = useState(false);
+  /*
+   * 표를 보는 이유가 둘이다 — "요즘 누가 제일 많이 들어오나"와 "이 사람 언제 마지막으로 왔나".
+   * 하나로는 다른 하나를 못 본다. 서버에 다시 물어보지 않고 여기서 줄만 다시 세운다.
+   */
+  const [statsSort, setStatsSort] = useState<'active' | 'last'>('active');
   // 지운 알림도 접어 둔다 — 무슨 일이 있을 때 찾아보는 것이지 늘 보는 표가 아니다
   const [deletedOpen, setDeletedOpen] = useState(false);
   const [banOpen, setBanOpen] = useState(false);
@@ -317,6 +328,17 @@ export default function AdminPage() {
       setBanBusy(null);
     }
   }
+
+  /*
+   * 고른 기준으로 줄 세우기.
+   * 한 번도 안 들어온 사람(lastSeenSecondsAgo === null)은 최근순에서 맨 뒤로 보낸다 —
+   * null을 0으로 치면 방금 들어온 사람보다 위에 뜬다.
+   */
+  const sortedStats = [...(presence?.stats ?? [])].sort((a, b) =>
+    statsSort === 'last'
+      ? (a.lastSeenSecondsAgo ?? Infinity) - (b.lastSeenSecondsAgo ?? Infinity)
+      : b.activeSeconds - a.activeSeconds || b.weekSeconds - a.weekSeconds
+  );
 
   function dur(seconds: number): string {
     if (seconds <= 0) return '–';
@@ -833,12 +855,24 @@ export default function AdminPage() {
             <>
           <p className="subtitle">{t(T.statsDesc)}</p>
           <div className="card">
+            <p className="hint" style={{ marginBottom: 8 }}>
+              {t(T.statsActiveNote)}
+            </p>
             <p className="hint" style={{ marginBottom: 12 }}>
               {t(T.statsPushNote)}
             </p>
             {!presence?.stats?.length ? (
               <p className="hint">{t(T.statsEmpty)}</p>
             ) : (
+              <>
+              <div className="segbar" style={{ marginBottom: 12 }}>
+                <button className={statsSort === 'active' ? 'on' : ''} onClick={() => setStatsSort('active')}>
+                  {t(T.statsSortActive)}
+                </button>
+                <button className={statsSort === 'last' ? 'on' : ''} onClick={() => setStatsSort('last')}>
+                  {t(T.statsSortLast)}
+                </button>
+              </div>
               <div className="stats-scroll">
                 <table className="stats-table">
                   <thead>
@@ -846,13 +880,12 @@ export default function AdminPage() {
                       <th>{t(T.statsUser)}</th>
                       <th>{t(T.statsLast)}</th>
                       <th>{t(T.statsPush)}</th>
-                      <th>{t(T.statsDay)}</th>
+                      <th>{t(T.statsActive)}</th>
                       <th>{t(T.statsWeek)}</th>
-                      <th>{t(T.statsVisits)}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {presence.stats.map((u) => (
+                    {sortedStats.map((u) => (
                       <tr key={u.id}>
                         <td>
                           <span className="stats-name">
@@ -869,16 +902,16 @@ export default function AdminPage() {
                           * 터치 화면에는 마우스를 올릴 수가 없어서 title이 뜨지 않는다.
                           */}
                         <td className={u.pushDevices > 0 ? 'push-on' : 'push-off'}>
-                          {u.pushDevices > 0 ? t(T.statsPushOn, { n: u.pushDevices }) : t(T.statsPushOff)}
+                          {u.pushDevices > 0 ? t(T.statsPushOn) : t(T.statsPushOff)}
                         </td>
-                        <td>{dur(u.daySeconds)}</td>
+                        <td>{dur(u.activeSeconds)}</td>
                         <td>{u.weekSeconds > 0 ? dur(u.weekSeconds) : t(T.statsNever)}</td>
-                        <td>{t(T.statsVisitsUnit, { n: u.visits })}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
             </>

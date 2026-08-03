@@ -130,3 +130,19 @@ export function addDays(date: string, n: number): string {
 export function nextWeekdayOnOrAfter(from: string, weekday: number): string {
   return addDays(from, (weekday - weekdayOf(from) + 7) % 7);
 }
+
+/**
+ * 앱 시간대의 벽시계 시각(날짜 + 'HH:mm')이 가리키는 실제 순간.
+ *
+ * localStamp의 반대 방향이다. 시차를 -6시간으로 박아 두면 3월과 11월에 한 시간씩
+ * 어긋나므로(서머타임), 그 순간의 시차를 재서 맞춘다 — 한 번 어림잡고 한 번 더 맞춘다.
+ * (시계를 되돌리는 새벽 1~2시는 같은 벽시계 시각이 두 번 오는데, 그때는 앞의 것을 준다)
+ */
+export function instantAt(date: string, hhmm: string): Date {
+  const wall = Date.parse(`${date}T${hhmm}:00Z`);
+  let guess = wall;
+  for (let i = 0; i < 2; i++) {
+    guess = wall + (guess - Date.parse(`${localStamp(new Date(guess))}:00Z`));
+  }
+  return new Date(guess);
+}

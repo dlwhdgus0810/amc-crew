@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { pushSubscriptions, users } from './schema';
 import { resolveDisplayName } from '../store';
-import { localStamp } from '../dates';
+import { addDays, instantAt, localStamp } from '../dates';
 
 /**
  * 접속 현황 — 서버리스라 연결을 붙들고 있을 수 없어서, 앱을 보고 있는 사람이
@@ -29,6 +29,31 @@ const SESSION_GAP_MINUTES = 5;
  * 그걸 0분으로 세면 "열어본 적 없음"처럼 보인다.
  */
 const MIN_SESSION_MINUTES = 1;
+
+/**
+ * 사람들이 실제로 앱을 보는 시간대 — 캔자스 기준 오전 7시부터 다음날 새벽 1시까지.
+ *
+ * 예전에는 「최근 24시간」이었는데, 그 창은 새벽 1~7시를 끼고 있어서 아무도 안 쓰는
+ * 여섯 시간이 늘 섞여 들어왔다. 게다가 굴러가는 창이라 아침에 본 것과 저녁에 본 것이
+ * 같은 하루를 가리키지 않는다. 하루의 경계를 자정이 아니라 새벽 1시에 두면
+ * 밤늦게까지 논 것도 그날 것으로 묶인다.
+ */
+const ACTIVE_FROM = '07:00';
+const ACTIVE_TO = '01:00';
+
+/**
+ * 지금이 속한 활동 시간대의 시작·끝.
+ *
+ * 새벽 1시부터 아침 7시 사이에는 열려 있는 창이 없다 — 그때는 방금 닫힌 창을 준다.
+ * (그 시간에 표를 열어 놓고 숫자가 0으로 보이면 기록이 날아간 줄 안다)
+ */
+export function activeWindow(now = new Date()): { start: Date; end: Date } {
+  const stamp = localStamp(now);
+  const day = stamp.slice(0, 10);
+  const hour = Number(stamp.slice(11, 13));
+  const base = hour < Number(ACTIVE_FROM.slice(0, 2)) ? addDays(day, -1) : day;
+  return { start: instantAt(base, ACTIVE_FROM), end: instantAt(addDays(base, 1), ACTIVE_TO) };
+}
 
 export interface OnlineUser {
   id: string;
@@ -72,11 +97,11 @@ export interface PresenceStat {
   id: string;
   name: string;
   avatar: string | null;
-  /** 최근 24시간 머문 시간(초) */
-  daySeconds: number;
+  /** 이번 활동 시간대(오전 7시~새벽 1시)에 머문 시간(초) */
+  activeSeconds: number;
   /** 최근 7일 머문 시간(초) */
   weekSeconds: number;
-  /** 최근 7일 접속 횟수 */
+  /** 최근 7일 접속 횟수 — 표에서는 뺐지만 기록은 그대로 둔다 */
   visits: number;
   /** 마지막 신호로부터 지난 초 (한 번도 없었으면 null) */
   lastSeenSecondsAgo: number | null;
@@ -91,10 +116,16 @@ export interface PresenceStat {
  *
  * 구간 길이는 최소 1분으로 올려 잡는다 — 신호 한 번짜리 방문이 0분으로 보이면 안 된다.
  * 접속한 적 없는 회원도 0으로 함께 내려준다 (명단에서 빠지면 "아직 안 왔다"를 알 수 없다).
+ *
+ * 정렬은 화면에서 한다 — 열두 명짜리 표라 다시 물어보러 갈 일이 아니다.
+ * 여기서는 보기 좋은 기본 순서(7일 많은 순)만 정해 준다.
  */
 export async function listPresenceStats(): Promise<PresenceStat[]> {
   const db = await getDb();
   const min = sql`(${MIN_SESSION_MINUTES} * interval '1 minute')`;
+  const { start, end } = activeWindow();
+  const from = sql`${start.toISOString()}::timestamptz`;
+  const to = sql`${end.toISOString()}::timestamptz`;
   const rows = await db.execute(sql`
     SELECT
       u.id,
@@ -102,9 +133,11 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
       u.nickname,
       u.avatar,
       u.last_seen,
+      -- 창 밖으로 삐져나온 부분은 잘라 낸다. 새벽 1시를 넘겨 논 사람의 구간을
+      -- 통째로 버리면 자정까지 논 시간까지 같이 사라진다.
       COALESCE(SUM(
-        EXTRACT(EPOCH FROM GREATEST(s.ended_at - s.started_at, ${min}))
-      ) FILTER (WHERE s.ended_at > now() - interval '24 hours'), 0) AS day_seconds,
+        EXTRACT(EPOCH FROM GREATEST(LEAST(s.ended_at, ${to}) - GREATEST(s.started_at, ${from}), ${min}))
+      ) FILTER (WHERE s.ended_at > ${from} AND s.started_at < ${to}), 0) AS active_seconds,
       -- GREATEST는 NULL을 무시해서, 접속 기록이 없는 회원(LEFT JOIN의 빈 행)도
       -- 최소 길이만큼 세어버린다. 실제 구간이 있는 행만 더한다.
       COALESCE(SUM(
@@ -146,7 +179,7 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
       String(r.kakao_name)
     ),
     avatar: (r.avatar as string) ?? null,
-    daySeconds: Math.round(Number(r.day_seconds)),
+    activeSeconds: Math.round(Number(r.active_seconds)),
     weekSeconds: Math.round(Number(r.week_seconds)),
     visits: Number(r.visits),
     lastSeenSecondsAgo: r.last_seen
