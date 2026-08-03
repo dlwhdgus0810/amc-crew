@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { hostTier, HOST_TIERS } from '@/lib/hosting';
+import { formatPoints, hostTier, HOST_TIERS } from '@/lib/hosting';
 import { useT } from '../i18n';
 
 interface HostRank {
@@ -14,8 +14,8 @@ interface HostRank {
 const T = {
   title: { ko: '리더보드', en: 'Leaderboard' },
   subtitle: {
-    ko: '카테고리를 가리지 않고 공개 모임만 세요.',
-    en: 'All categories together, public meetups only.',
+    ko: '호스팅은 연 모임에 몇 명이 모였는지로 셉니다 (같이 연 모임은 나눠 가져요). 카테고리를 가리지 않고 공개 모임만 세요.',
+    en: 'Hosting counts how many people showed up — co-hosts split it. All categories together, public meetups only.',
   },
   tabHosts: { ko: '호스팅 순위', en: 'Hosted' },
   tabJoiners: { ko: '참여 순위', en: 'Joined' },
@@ -27,9 +27,9 @@ const T = {
     ko: '카카오 로그인 후 볼 수 있어요.',
     en: 'Log in with Kakao to see the leaderboard.',
   },
-  count: { ko: '{n}회 주최', en: 'Hosted {n}' },
+  count: { ko: '{n}점', en: '{n} pts' },
   tiersTitle: { ko: '호스트 등급', en: 'Host tiers' },
-  tierFrom: { ko: '{n}회부터', en: 'From {n}' },
+  tierFrom: { ko: '{n}점부터', en: 'From {n} pts' },
 };
 
 /** 종합 주최 랭킹 — 둘러보기에서 들어온다 */
@@ -99,7 +99,10 @@ export default function LeaderboardPage() {
                         {tier && <span className="host-rank-tier">{t(tier.label)}</span>}
                       </span>
                       <span className="host-rank-count">
-                        {tab === 'hosts' ? t(T.count, { n: h.count }) : t(T.countJoin, { n: h.count })}
+                        {/* 호스팅은 점수(.5까지), 참가는 횟수다 */}
+                        {tab === 'hosts'
+                          ? t(T.count, { n: formatPoints(h.count) })
+                          : t(T.countJoin, { n: h.count })}
                       </span>
                     </li>
                   );

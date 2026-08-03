@@ -23,6 +23,8 @@ export interface PostView {
   title: string | null;
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null; // 정기 모임 회차면 규칙 id
+  /** 같이 연 사람 — 없으면 null. 이름은 화면에 그대로 쓴다 */
+  coHost: { id: string; name: string } | null;
   date: string;
   startTime: string;
   /** 안 적었으면 null — 화면에서 시작 시각만 보여준다 */
@@ -213,6 +215,11 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     title: p.title,
     titleMeta: p.titleMeta ?? null,
     recurringRuleId: p.recurringRuleId ?? null,
+    // 로그인한 사람에게만 이름을 준다 — 주최자 이름과 같은 기준이다
+    coHost:
+      p.coHostId && signedIn
+        ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), '알 수 없음') }
+        : null,
     date: p.date,
     startTime: p.startTime,
     endTime: p.endTime,
@@ -532,6 +539,8 @@ export async function createPost(input: {
   category: string;
   authorId: string;
   authorName: string;
+  /** 같이 여는 사람 (최대 한 명) — 참가자로도 함께 들어간다 */
+  coHostId?: string | null;
   title?: string;
   titleMeta?: TitleMeta;
   date: string;
@@ -584,6 +593,7 @@ export async function createPost(input: {
     id: postId,
     category: input.category,
     authorId: input.authorId,
+    coHostId: input.coHostId ?? null,
     title: input.title ?? null,
     titleMeta: input.titleMeta ?? null,
     recurringRuleId: input.recurringRuleId ?? null,
@@ -636,9 +646,12 @@ export async function createPost(input: {
   const anyDb = db as any;
   if (typeof anyDb.batch === 'function') {
     // neon-http: batch = 단일 트랜잭션
+    // 여는 사람은 둘 다 참가자로 들어간다 — 호스트 점수도 참가 인원으로 세므로 명단이 곧 인원이다
+    const hostRows = [{ postId, userId: input.authorId }];
+    if (input.coHostId && input.coHostId !== input.authorId) hostRows.push({ postId, userId: input.coHostId });
     const statements: unknown[] = [
       db.insert(posts).values(postValues),
-      db.insert(postParticipants).values({ postId, userId: input.authorId }),
+      db.insert(postParticipants).values(hostRows),
     ];
     if (notificationValues.length > 0) statements.push(db.insert(notifications).values(notificationValues));
     if (inviteValues.length > 0) statements.push(db.insert(notifications).values(inviteValues));
@@ -647,7 +660,9 @@ export async function createPost(input: {
     // PGlite(로컬 폴백): 인터랙티브 트랜잭션 사용
     await anyDb.transaction(async (tx: typeof db) => {
       await tx.insert(posts).values(postValues);
-      await tx.insert(postParticipants).values({ postId, userId: input.authorId });
+      const rows = [{ postId, userId: input.authorId }];
+      if (input.coHostId && input.coHostId !== input.authorId) rows.push({ postId, userId: input.coHostId });
+      await tx.insert(postParticipants).values(rows);
       if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
       if (inviteValues.length > 0) await tx.insert(notifications).values(inviteValues);
     });
@@ -742,6 +757,8 @@ export async function updatePost(input: {
   capacity: number | null;
   /** 주지 않으면 지금 값을 그대로 둔다 */
   visibility?: 'public' | 'link';
+  /** undefined면 그대로 두고, null이면 같이 여는 사람을 뗀다 */
+  coHostId?: string | null;
   origin?: string;
 }): Promise<void> {
   const db = await getDb();
@@ -769,6 +786,7 @@ export async function updatePost(input: {
     endTime: input.endTime,
     location: input.location,
     ...(input.visibility ? { visibility: input.visibility } : {}),
+    ...(input.coHostId !== undefined ? { coHostId: input.coHostId } : {}),
     description: input.description,
     capacity: input.capacity,
   };
@@ -780,13 +798,33 @@ export async function updatePost(input: {
   }));
 
   const anyDb = db as any;
+  /*
+   * 새로 지정된 사람은 참가자로도 들어간다 — 호스트 점수를 참가 인원으로 세기 때문에,
+   * 명단에 없는 호스트는 자기가 연 모임의 인원에서 자기만 빠진 값을 받게 된다.
+   * 이미 참가 중이면 아무 일도 일어나지 않는다.
+   */
+  const joinCoHost =
+    input.coHostId && input.coHostId !== input.actorId
+      ? db
+          .insert(postParticipants)
+          .values({ postId: input.postId, userId: input.coHostId })
+          .onConflictDoNothing()
+      : null;
+
   if (typeof anyDb.batch === 'function') {
     const statements: unknown[] = [db.update(posts).set(set).where(eq(posts.id, input.postId))];
+    if (joinCoHost) statements.push(joinCoHost);
     if (notificationValues.length > 0) statements.push(db.insert(notifications).values(notificationValues));
     await anyDb.batch(statements);
   } else {
     await anyDb.transaction(async (tx: typeof db) => {
       await tx.update(posts).set(set).where(eq(posts.id, input.postId));
+      if (input.coHostId && input.coHostId !== input.actorId) {
+        await tx
+          .insert(postParticipants)
+          .values({ postId: input.postId, userId: input.coHostId })
+          .onConflictDoNothing();
+      }
       if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
     });
   }

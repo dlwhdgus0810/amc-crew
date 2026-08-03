@@ -13,11 +13,6 @@ const T = {
     en: 'Just a few things before you start. You can change any of these later in your profile.',
   },
   language: { ko: '언어', en: 'Language' },
-  nickname: { ko: '닉네임', en: 'Nickname' },
-  nicknameHint: {
-    ko: '비워두면 카카오톡 닉네임({name})을 그대로 써요.',
-    en: 'Leave it empty to use your Kakao nickname ({name}).',
-  },
   birthday: { ko: '생년월일', en: 'Date of birth' },
   gender: { ko: '성별', en: 'Gender' },
   male: { ko: '남성', en: 'Male' },
@@ -37,7 +32,6 @@ function nextPath(): string {
 export default function WelcomePage() {
   const router = useRouter();
   const [kakaoName, setKakaoName] = useState('');
-  const [nickname, setNickname] = useState('');
   const [birthday, setBirthday] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | ''>('');
   const [loading, setLoading] = useState(true);
@@ -62,7 +56,6 @@ export default function WelcomePage() {
           return;
         }
         setKakaoName(auth.kakaoName || auth.user.name);
-        setNickname(auth.nickname ?? '');
         setBirthday(auth.birthday ?? '');
         setGender(auth.gender ?? '');
         if (auth.locale) setLocale(auth.locale);
@@ -77,8 +70,7 @@ export default function WelcomePage() {
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        // 닉네임은 비워서 보내도 된다 — 서버가 빈 값을 「카카오톡 닉네임 쓰기」로 받는다
-        body: JSON.stringify({ birthday, gender, locale, nickname: nickname.trim() }),
+        body: JSON.stringify({ birthday, gender, locale }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
@@ -98,7 +90,7 @@ export default function WelcomePage() {
 
   return (
     <>
-      <h1>{t(T.welcome, { name: nickname.trim() || kakaoName })}</h1>
+      <h1>{t(T.welcome, { name: kakaoName })}</h1>
       <p className="subtitle">{t(T.subtitle)}</p>
 
       <div className="card">
@@ -111,20 +103,6 @@ export default function WelcomePage() {
               </button>
             ))}
           </div>
-        </div>
-
-        <div style={{ marginBottom: 18 }}>
-          <div className="field-label">{t(T.nickname)}</div>
-          <input
-            type="text"
-            value={nickname}
-            maxLength={20}
-            placeholder={kakaoName}
-            onChange={(e) => setNickname(e.target.value)}
-          />
-          <p className="subtitle" style={{ marginTop: 6, fontSize: 13 }}>
-            {t(T.nicknameHint, { name: kakaoName })}
-          </p>
         </div>
 
         <div style={{ marginBottom: 18 }}>

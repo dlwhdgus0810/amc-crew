@@ -220,9 +220,14 @@ export async function updateProfile(
 }
 
 /** 표시 이름 해석: 앱 닉네임 → 카카오 닉네임 → 저장 시점 스냅샷 */
+/**
+ * 화면에 쓰는 이름 — 카카오톡 이름 그대로다.
+ *
+ * 실명제다. 닉네임으로 바꿔 쓰던 기능은 없앴다 — 같이 노는 사람들끼리
+ * 누가 누군지 모르는 이름이 섞이면 모임 명단이 제 구실을 못 한다.
+ * (users.nickname 칸은 예전 값이 남아 있지만 아무 데서도 읽지 않는다)
+ */
 export function resolveDisplayName(profile: UserProfile | undefined, fallback: string): string {
-  const nickname = profile?.nickname?.trim();
-  if (nickname) return nickname;
   if (profile?.kakaoName) return profile.kakaoName;
   return fallback;
 }

@@ -14,7 +14,7 @@ const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 /** base64 기준 상한 — 256px로 줄이면 보통 30KB 안쪽이라 넉넉하다 */
 const AVATAR_MAX_CHARS = 400_000;
 
-/** 프로필 부분 업데이트: 닉네임(빈 값이면 해제) / 생년월일 / 성별 / 언어 */
+/** 프로필 부분 업데이트: 생년월일 / 성별 / 언어 / 사진 / 송금 정보 (이름은 카카오톡 것을 쓴다) */
 export async function PUT(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest) {
     return await errJson(E.badRequest, 400);
   }
 
-  const patch: { nickname?: string | null; birthday?: string; gender?: string; locale?: Locale; avatar?: string | null; venmo?: string | null; zelle?: string | null } = {};
+  const patch: { birthday?: string; gender?: string; locale?: Locale; avatar?: string | null; venmo?: string | null; zelle?: string | null } = {};
 
   if (body.venmo !== undefined) {
     const venmo = typeof body.venmo === 'string' ? body.venmo.trim().replace(/^@/, '') : '';
@@ -46,17 +46,6 @@ export async function PUT(req: NextRequest) {
       return await errJson(E.zelleId, 400);
     }
     patch.zelle = zelle || null;
-  }
-
-  if (body.nickname !== undefined) {
-    if (typeof body.nickname !== 'string') {
-      return await errJson(E.nicknameBad, 400);
-    }
-    const nickname = body.nickname.trim();
-    if (nickname.length > 20) {
-      return await errJson(E.nickname, 400);
-    }
-    patch.nickname = nickname || null;
   }
 
   if (body.birthday !== undefined) {
@@ -111,7 +100,6 @@ export async function PUT(req: NextRequest) {
   const res = NextResponse.json({
     ok: true,
     name: resolveDisplayName(profile, user.name),
-    nickname: profile.nickname ?? null,
     kakaoName: profile.kakaoName || user.name,
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,

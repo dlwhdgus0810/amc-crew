@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
+import { friendIds } from '@/lib/db/friends';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, updatePost } from '@/lib/db/posts';
@@ -40,7 +41,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!post) {
     return await errJson(E.postNotFound, 404);
   }
-  if (post.authorId !== user.id && !isAdmin(user)) {
+  // 같이 연 사람도 호스트다 — 시간·장소를 고치는 건 둘 다 할 수 있어야 한다
+  if (post.authorId !== user.id && post.coHostId !== user.id && !isAdmin(user)) {
     return await errJson(E.authorOnlyEdit, 403);
   }
 
@@ -62,6 +64,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (endTime !== null && startTime >= endTime) {
     return await errJson(E.endBeforeStart, 400);
+  }
+
+  /*
+   * 같이 여는 사람 바꾸기. 값을 아예 안 보내면 지금 사람을 그대로 둔다.
+   * 바꾸는 건 모임을 만든 사람만 — 공동 호스트가 자기를 빼거나 남으로 갈아끼울 수 있으면
+   * 점수가 걸린 자리를 서로 뺏을 수 있다.
+   */
+  let coHostId: string | null | undefined;
+  if (body?.coHostId !== undefined && post.authorId === user.id) {
+    coHostId = typeof body.coHostId === 'string' && body.coHostId ? body.coHostId : null;
+    if (coHostId && (coHostId === user.id || !(await friendIds(user.id)).includes(coHostId))) {
+      return await errJson(E.coHostNotFriend, 400);
+    }
   }
   // 지난 날짜로 옮기는 것만 막는다 — 이미 끝난 모임의 메모·장소를 고치는 건 그대로 허용
   if (date < todayLocal() && date !== post.date) {
@@ -109,6 +124,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     ...(body?.visibility === 'link' || body?.visibility === 'public'
       ? { visibility: body.visibility as 'public' | 'link' }
       : {}),
+    ...(coHostId !== undefined ? { coHostId } : {}),
     origin: siteUrl(req.nextUrl.origin),
   });
   return NextResponse.json({ ok: true });
@@ -127,7 +143,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!post) {
     return await errJson(E.postNotFound, 404);
   }
-  if (post.authorId !== user.id && !isAdmin(user)) {
+  if (post.authorId !== user.id && post.coHostId !== user.id && !isAdmin(user)) {
     return await errJson(E.authorOnlyDelete, 403);
   }
   await deletePost(post, user.id, await displayNameOf(user), siteUrl(req.nextUrl.origin));

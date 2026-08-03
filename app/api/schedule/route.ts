@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const [selections, profiles] = await Promise.all([getSelections(), getProfiles()]);
 
-  // 표시 이름은 읽기 시점에 프로필 기준으로 해석 (앱 닉네임 → 카카오 닉네임 → 저장 시점 스냅샷)
+  // 표시 이름은 읽기 시점에 프로필 기준으로 해석 (카카오 이름 → 저장 시점 스냅샷)
   const resolved: Selections = {};
   for (const [userId, sel] of Object.entries(selections)) {
     resolved[userId] = { ...sel, name: resolveDisplayName(profiles[userId], sel.name) };

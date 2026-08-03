@@ -17,6 +17,8 @@ export interface RuleInput {
   category: string;
   authorId: string;
   authorName: string;
+  /** 같이 여는 사람 — 다음 주 회차에도 그대로 이어진다 */
+  coHostId?: string | null;
   startDate: string; // 첫 회차 날짜 — 이 날짜의 요일이 반복 요일이 된다
   startTime: string;
   endTime: string | null;
@@ -41,6 +43,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
     id: ruleId,
     category: input.category,
     authorId: input.authorId,
+    coHostId: input.coHostId ?? null,
     weekday: weekdayOf(input.startDate),
     startDate: input.startDate,
     title: input.title ?? null,
@@ -57,6 +60,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
     category: input.category,
     authorId: input.authorId,
     authorName: input.authorName,
+    ...(input.coHostId ? { coHostId: input.coHostId } : {}),
     ...(input.title ? { title: input.title } : {}),
     ...(input.titleMeta ? { titleMeta: input.titleMeta } : {}),
     date: input.startDate,
@@ -117,6 +121,7 @@ export async function materializeDueOccurrences(origin: string): Promise<{ creat
         category: rule.category,
         authorId: rule.authorId,
         authorName: resolveDisplayName(profiles[rule.authorId], '알 수 없음'),
+        ...(rule.coHostId ? { coHostId: rule.coHostId } : {}),
         ...(rule.title ? { title: rule.title } : {}),
         ...(rule.titleMeta ? { titleMeta: rule.titleMeta } : {}),
         date,

@@ -46,12 +46,6 @@ const T = {
     ko: '저장됐어요! "그룹"에서 누구랑 겹치는지 확인해보세요.',
     en: 'Saved — check “Groups” to see who overlaps with you.',
   },
-  nicknameFailed: { ko: '닉네임 저장 실패', en: 'Couldn’t save the nickname' },
-  nickname: { ko: '닉네임', en: 'Nickname' },
-  nicknameHint: {
-    ko: '비워두고 저장하면 카카오 닉네임({name})을 사용해요.',
-    en: 'Leave it empty to use your Kakao nickname ({name}).',
-  },
   save: { ko: '저장', en: 'Save' },
   saving: { ko: '저장 중…', en: 'Saving…' },
   cancel: { ko: '취소', en: 'Cancel' },
@@ -114,11 +108,7 @@ export default function PickPage() {
   // 크게 보고 있는 포스터 (null이면 닫힘)
   const [zoomed, setZoomed] = useState<{ src: string; name: string } | null>(null);
 
-  const [nickname, setNickname] = useState<string | null>(null);
   const [kakaoName, setKakaoName] = useState('');
-  const [editingName, setEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState('');
-  const [savingName, setSavingName] = useState(false);
   const t = useT();
   const locale = useLocale();
   const to12h = (time: string) => fmtTime(time, locale);
@@ -159,9 +149,7 @@ export default function PickPage() {
   useEffect(() => {
     Promise.all([loadDay(), fetch('/api/auth/me').then((r) => r.json())])
       .then(([, auth]) => {
-        setUser(auth.user ?? null);
-        setNickname(auth.nickname ?? null);
-        setKakaoName(auth.kakaoName ?? '');
+        setUser(auth.user ?? null);        setKakaoName(auth.kakaoName ?? '');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -228,29 +216,6 @@ export default function PickPage() {
     setMsg(null);
   }
 
-  async function saveNickname() {
-    setSavingName(true);
-    setMsg(null);
-    try {
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: nameInput }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t(T.nicknameFailed));
-      setUser((u) => (u ? { ...u, name: data.name } : u));
-      setNickname(data.nickname ?? null);
-      setKakaoName(data.kakaoName ?? '');
-      setEditingName(false);
-      await loadDay(date);
-    } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.nicknameFailed) });
-    } finally {
-      setSavingName(false);
-    }
-  }
-
   if (loading) return <p className="subtitle">{t(T.loading)}</p>;
 
   return (
@@ -264,50 +229,15 @@ export default function PickPage() {
 
       <div className="card">
         {user ? (
-          editingName ? (
-            <div>
-              <div className="field-row">
-                <input
-                  type="text"
-                  placeholder={t(T.nickname)}
-                  value={nameInput}
-                  maxLength={20}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !savingName && saveNickname()}
-                  autoFocus
-                />
-                <button className="secondary" disabled={savingName} onClick={saveNickname}>
-                  {savingName ? t(T.saving) : t(T.save)}
-                </button>
-                <button className="secondary" disabled={savingName} onClick={() => setEditingName(false)}>
-                  {t(T.cancel)}
-                </button>
-              </div>
-              <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '10px 2px 0' }}>
-                {t(T.nicknameHint, { name: kakaoName })}
-              </p>
-            </div>
-          ) : (
-            <div className="field-row" style={{ justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'baseline', gap: 14 }}>
-                {user.name}
-                <button
-                  className="secondary"
-                  style={{ fontSize: 12.5 }}
-                  onClick={() => {
-                    setNameInput(nickname ?? '');
-                    setEditingName(true);
-                  }}
-                >
-                  {t(T.nickname)}
-                </button>
-                <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 500 }}>
-                  {picked.size > 0 ? t(T.pickedElsewhere, { n: picked.size }) : t(T.pickPrompt)}
-                </span>
+          <div className="field-row" style={{ justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'baseline', gap: 14 }}>
+              {user.name}
+              <span style={{ color: 'var(--text-dim)', fontSize: 13.5, fontWeight: 500 }}>
+                {picked.size > 0 ? t(T.pickedElsewhere, { n: picked.size }) : t(T.pickPrompt)}
               </span>
-              <button className="secondary" onClick={logout}>{t(T.logout)}</button>
-            </div>
-          )
+            </span>
+            <button className="secondary" onClick={logout}>{t(T.logout)}</button>
+          </div>
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>

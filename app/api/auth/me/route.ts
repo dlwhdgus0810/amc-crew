@@ -16,11 +16,10 @@ export async function GET() {
   }
   const row = await dbGetUser(user.id);
   const profile = row
-    ? { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] }
+    ? { kakaoName: row.kakaoName, kakaoNameHistory: [] }
     : undefined;
   return NextResponse.json({
     user: { id: user.id, name: resolveDisplayName(profile, user.name) },
-    nickname: row?.nickname ?? null,
     avatar: row?.avatar ?? null,
     venmo: row?.venmo ?? null,
     zelle: row?.zelle ?? null,

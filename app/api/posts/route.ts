@@ -86,6 +86,15 @@ export async function POST(req: NextRequest) {
   await ensureUser(user);
   const profile = (await getProfiles())[user.id];
   const authorName = resolveDisplayName(profile, user.name);
+  /*
+   * 같이 여는 사람. 화면에서 친구만 고르게 되어 있지만 서버에서 다시 확인한다 —
+   * 오래 열어 둔 화면이 예전 목록을 들고 있을 수 있고, 점수가 걸린 값이라 더 그렇다.
+   */
+  const askedCoHost = typeof body?.coHostId === 'string' && body.coHostId ? body.coHostId : null;
+  if (askedCoHost && (askedCoHost === user.id || !(await friendIds(user.id)).includes(askedCoHost))) {
+    return await errJson(E.coHostNotFriend, 400);
+  }
+
   const common = {
     category,
     authorId: user.id,
@@ -100,6 +109,7 @@ export async function POST(req: NextRequest) {
     // 비공개면 링크를 아는 사람만 볼 수 있다 (목록·구독 알림·홈 요약에서 빠진다)
     ...(body?.visibility === 'link' ? { visibility: 'link' as const } : {}),
     origin: siteUrl(req.nextUrl.origin),
+    ...(askedCoHost ? { coHostId: askedCoHost } : {}),
   };
 
   // 매주 반복이면 규칙을 만들고 첫 회차를 생성한다 (이후 회차는 크론이 매일 채운다)

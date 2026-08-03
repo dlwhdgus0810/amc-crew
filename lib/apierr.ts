@@ -38,8 +38,6 @@ export const E = {
   adminOnly: { ko: '관리자만 사용할 수 있어요.', en: 'Admins only.' },
   adminOnlyReview: { ko: '관리자만 검토할 수 있어요.', en: 'Only admins can review suggestions.' },
   requestNotFound: { ko: '제안을 찾을 수 없어요.', en: 'Suggestion not found.' },
-  nickname: { ko: '닉네임은 20자 이하로 입력해주세요.', en: 'Nickname must be 20 characters or fewer.' },
-  nicknameBad: { ko: 'nickname이 올바르지 않습니다.', en: 'Invalid nickname.' },
   birthday: { ko: '생년월일을 올바르게 입력해주세요.', en: 'Enter a valid date of birth.' },
   gender: { ko: '성별을 선택해주세요.', en: 'Choose a gender.' },
   locale: { ko: '지원하지 않는 언어입니다.', en: 'Unsupported language.' },
@@ -67,6 +65,10 @@ export const E = {
   },
   banAdmin: { ko: '관리자는 정지할 수 없어요.', en: 'Admins can’t be suspended.' },
   banMinutes: { ko: '정지 기간이 올바르지 않아요.', en: 'That isn’t a valid duration.' },
+  coHostNotFriend: {
+    ko: '같이 여는 사람은 친구 중에서 고를 수 있어요.',
+    en: 'You can only co-host with a friend.',
+  },
   friendSelf: { ko: '자기 자신에게는 친구 요청을 보낼 수 없어요.', en: 'You can’t send yourself a friend request.' },
   friendNoShared: {
     ko: '같은 모임에서 만난 사람에게만 친구 요청을 보낼 수 있어요.',

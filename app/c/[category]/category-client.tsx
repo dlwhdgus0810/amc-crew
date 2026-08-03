@@ -102,6 +102,12 @@ const T = {
   fieldStart: { ko: '시작', en: 'Starts' },
   fieldEnd: { ko: '종료 (선택)', en: 'Ends (optional)' },
   capacityPh: { ko: '정원 (선택)', en: 'Capacity (optional)' },
+  coHostLabel: { ko: '같이 여는 사람 (선택)', en: 'Co-host (optional)' },
+  coHostHint: {
+    ko: '한 명까지 고를 수 있어요. 호스트 점수를 반씩 나눠 가져요.',
+    en: 'One person. You’ll split the host points evenly.',
+  },
+  coHostNone: { ko: '친구를 만들면 같이 열 수 있어요.', en: 'Add a friend to co-host with them.' },
   memoPh: { ko: '메모 (선택) — 준비물, 실력대, 주차 안내 등', en: 'Note (optional) — what to bring, skill level, parking' },
   titleSearchPh: { ko: '{label} 제목 검색 (예: 듄: 파트2)', en: 'Search {label} (e.g. Dune: Part Two)' },
   titleFreePh: { ko: '{label} (선택)', en: '{label} (optional)' },
@@ -175,6 +181,7 @@ interface PostView {
   category: string;
   authorId: string;
   authorName: string | null;
+  coHost: { id: string; name: string } | null;
   title: string | null;
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null;
@@ -258,6 +265,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const [fPrivate, setFPrivate] = useState(false); // 비공개 — 링크를 아는 사람만
   /** 비공개 모임을 알릴 친구 — 처음엔 전원이 켜져 있고, 뺄 사람만 뺀다 */
   const [fInvite, setFInvite] = useState<Set<string>>(new Set());
+  /** 같이 여는 사람 (한 명까지) */
+  const [fCoHost, setFCoHost] = useState<string | null>(null);
 
   function resetForm() {
     setFTitle('');
@@ -272,6 +281,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setFRepeat(false);
     setFPrivate(false);
     setFInvite(new Set());
+    setFCoHost(null);
   }
 
   // 지난 모임
@@ -400,6 +410,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
+          ...(fCoHost ? { coHostId: fCoHost } : {}),
           repeatWeekly: fRepeat,
           visibility: fPrivate ? 'link' : 'public',
           ...(fPrivate && !fRepeat ? { inviteFriendIds: [...fInvite] } : {}),
@@ -440,6 +451,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setFLocation(post.location);
     setFMemo(post.description ?? '');
     setFCapacity(post.capacity != null ? String(post.capacity) : '');
+    setFCoHost(post.coHost?.id ?? null);
     setFPrivate(post.visibility === 'link');
   }
 
@@ -460,6 +472,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
+          coHostId: fCoHost,
           visibility: fPrivate ? 'link' : 'public',
         }),
       });
@@ -720,6 +733,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
   /** 모임 만들기 / 수정 — 전체 화면 패널 */
   function renderCreatePanel() {
     const isCreate = !editId;
+    // 수정 중인 모임 — 같이 여는 사람은 만든 사람만 바꿀 수 있어서 누구 것인지 알아야 한다
+    const editing = editId ? (posts.find((p) => p.id === editId) ?? pastPosts?.find((p) => p.id === editId) ?? null) : null;
     const onSave = isCreate ? createPost : saveEditPost;
     const onCancel = () => {
       setShowForm(false);
@@ -897,6 +912,37 @@ export default function CategoryClient({ slug }: { slug: string }) {
               onChange={(e) => setFMemo(e.target.value)}
               style={{ marginTop: 8 }}
             />
+            {/*
+             * 같이 여는 사람. 한 명까지만 고를 수 있어 다시 누르면 풀린다 —
+             * 점수를 나눠 갖는 자리라 "몇 명까지"가 규칙으로 분명해야 한다.
+             * 수정에서는 만든 사람에게만 보인다 (공동 호스트가 자기를 갈아끼우지 못하게).
+             */}
+            {(isCreate || editing?.authorId === user?.id) && (
+              <div className="invite-pick" style={{ marginTop: 12 }}>
+                <div className="field-label">{t(T.coHostLabel)}</div>
+                {friends.friends.length === 0 ? (
+                  <p className="hint">{t(T.coHostNone)}</p>
+                ) : (
+                  <>
+                    <div className="people-list">
+                      {friends.friends.map((f) => (
+                        <button
+                          key={f.id}
+                          className={`person-chip pick ${fCoHost === f.id ? 'on' : ''}`}
+                          aria-pressed={fCoHost === f.id}
+                          onClick={() => setFCoHost((cur) => (cur === f.id ? null : f.id))}
+                        >
+                          {fCoHost === f.id ? '✓ ' : ''}
+                          {f.name}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="hint">{t(T.coHostHint)}</p>
+                  </>
+                )}
+              </div>
+            )}
+
             <label className="repeat-check" style={{ marginTop: 10 }}>
               <input type="checkbox" checked={fPrivate} onChange={(e) => setFPrivate(e.target.checked)} />
               <span>
@@ -1008,7 +1054,13 @@ export default function CategoryClient({ slug }: { slug: string }) {
         )}
         <div className="post-meta">
           <PlaceLink location={post.location} />
-          {post.authorName && <> · {post.authorName}</>}
+          {post.authorName && (
+            <>
+              {' '}
+              · {post.authorName}
+              {post.coHost && <>, {post.coHost.name}</>}
+            </>
+          )}
         </div>
         {post.description && <div className="post-desc">“{post.description}”</div>}
 
