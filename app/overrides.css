@@ -904,8 +904,7 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
    버튼을 줄 뒤에 숨기고 밀었을 때만 꺼낸다 (app/notif-swipe.tsx). */
 .notif-swipe {
   position: relative;
-  /* 뒤에 숨은 버튼이 카드 모서리 밖으로 나오지 않게 */
-  border-radius: var(--r);
+  /* 뒤에 숨은 버튼이 줄 밖으로 나오지 않게 */
   overflow: hidden;
   margin-bottom: 10px;
 }
@@ -919,14 +918,15 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
   /* 세로 스크롤은 브라우저에, 가로는 우리가 — 미는 동안 화면이 같이 흔들리지 않는다 */
   touch-action: pan-y;
 }
+/* 미는 동안에만 그린다 (app/notif-swipe.tsx가 data-live를 붙인다) */
 .notif-swipe-del {
+  opacity: 0;
+  pointer-events: none;
   position: absolute;
-  /* 1px 들여 놓는다 — 딱 맞추면 둥근 모서리와 몸통 사이로 빨간 선이 비친다 */
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: 88px;
-  border-radius: 0 var(--r) var(--r) 0;
   border: none;
   border-radius: 0;
   background: var(--danger);
@@ -935,6 +935,7 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
   font-weight: 600;
   cursor: pointer;
 }
+.notif-swipe[data-live] .notif-swipe-del { opacity: 1; pointer-events: auto; }
 .notif-swipe-del:disabled { opacity: 0.6; }
 
 /* 지운 알림 목록 — 되돌릴 수 있게 흐리게 보여준다 */

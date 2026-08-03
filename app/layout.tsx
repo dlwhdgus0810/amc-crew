@@ -27,6 +27,8 @@ import './color-8f.css';
 import './overrides.css';
 import './calendar.css';
 import './font-plex.css';
+// 시안 13c — 버튼의 면과 목록 카드를 걷어낸다 (반드시 맨 마지막)
+import './button-13c.css';
 
 const META = {
   title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?' },

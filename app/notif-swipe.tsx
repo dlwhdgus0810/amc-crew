@@ -31,6 +31,7 @@ export default function NotifSwipe({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const startY = useRef(0);
@@ -41,6 +42,16 @@ export default function NotifSwipe({
 
   const setX = (px: number) => {
     if (body.current) body.current.style.transform = px === 0 ? '' : `translateX(${px}px)`;
+  };
+  /*
+   * 빨간 버튼은 밀기 시작할 때만 그린다.
+   * 늘 깔아두면 몸통과 버튼의 아래 모서리가 소수점 픽셀에서 어긋나 빨간 실선이 비친다.
+   * (몸통이 정확히 덮고 있어도 그렇다 — 반올림 문제라 크기로는 못 막는다)
+   */
+  const showDel = (on: boolean) => {
+    if (!box.current) return;
+    if (on) box.current.dataset.live = '1';
+    else delete box.current.dataset.live;
   };
   const settle = (px: number) => {
     if (!body.current) return;
@@ -70,6 +81,7 @@ export default function NotifSwipe({
       if (Math.abs(dx) < SLOP) return;
       dragging.current = true;
       moved.current = true;
+      showDel(true);
     }
     // 열린 상태에서 이어 밀 수 있게 지금 위치를 더한다. 오른쪽으로는 제자리까지만.
     const x = Math.min(0, (open ? -REVEAL : 0) + dx);
@@ -92,10 +104,11 @@ export default function NotifSwipe({
     const next = -x > REVEAL / 2;
     setOpen(next);
     settle(next ? -REVEAL : 0);
+    if (!next) window.setTimeout(() => showDel(false), 200);
   }
 
   return (
-    <div className="notif-swipe">
+    <div className="notif-swipe" ref={box} {...(open ? { 'data-live': '1' } : {})}>
       <button
         className="notif-swipe-del"
         tabIndex={open ? 0 : -1}
@@ -119,6 +132,7 @@ export default function NotifSwipe({
           dragging.current = false;
           setOpen(false);
           settle(0);
+          window.setTimeout(() => showDel(false), 200);
         }}
         onClickCapture={(e) => {
           // 밀어서 연 상태에서의 탭은 링크를 열지 않고 닫기만 한다
@@ -129,6 +143,7 @@ export default function NotifSwipe({
             if (open) {
               setOpen(false);
               settle(0);
+              window.setTimeout(() => showDel(false), 200);
             }
           }
         }}

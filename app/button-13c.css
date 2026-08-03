@@ -1,0 +1,151 @@
+/* ============================================================
+   app/button-13c.css — 새 파일. (시안 13c · 면 없이 글자만 + 12b 세로선 그룹)
+
+   layout.tsx에서 맨 마지막(font-plex.css 다음)에 불러온다.
+   색·서체·크기 토큰은 건드리지 않는다 — 버튼의 면과 목록의 카드만 걷어낸다.
+
+   원칙
+   1. 면(배경색)을 가진 버튼은 「새 일이 일어나는」 것에만 남긴다
+      — 참가·보내기·저장·모임 만들기(primary).
+   2. 나머지 동작(수정·공유·취소·모두 읽음·상태 확인 등)은 초록 글자.
+   3. 두 갈래 선택(주/월, 한국어/English, 예정/지난)은 밑줄 탭.
+   4. 목록·설정 카드는 왼쪽 세로선 한 줄로 묶는다 (12b).
+   ============================================================ */
+
+/* ── 1. primary — 면은 남기되 낮게 ───────────────────────── */
+button {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+button.big-cta {
+  min-height: 48px;
+  font-size: 15px;
+}
+
+/* ── 2. secondary — 면과 테두리를 지우고 글자만 ──────────── */
+button.secondary {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  color: var(--accent);
+  min-height: 40px;
+  padding: 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+}
+@media (hover: hover) {
+  button.secondary:hover { background: transparent; opacity: 0.75; }
+}
+button.secondary:disabled { opacity: 0.35; }
+
+/* 취소처럼 물러서는 동작은 초록도 아니고 회색 */
+button.secondary.muted, .install-actions button.secondary { color: var(--text-mid); }
+
+/* danger는 이미 글자만이라 크기만 맞춘다 */
+button.danger { min-height: 40px; font-size: 13px; padding: 0 2px; }
+
+/* ── 3. 두 갈래 선택 → 밑줄 탭 ──────────────────────────── */
+.segbar { gap: 18px; }
+.segbar a, .segbar button, .seg {
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid transparent;
+  border-radius: 0;
+  min-height: 36px;
+  padding: 0 1px;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  font-weight: 450;
+}
+.segbar a.active, .segbar button.on, .seg.on {
+  background: transparent;
+  border-color: transparent;
+  border-bottom-color: var(--text);
+  color: var(--text);
+  font-weight: 600;
+}
+.seg-group { gap: 18px; }
+
+/* 캘린더 주/월도 같은 탭으로 */
+.cal-views { gap: 18px; }
+.cal-views button {
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid transparent;
+  border-radius: 0;
+  min-height: 36px;
+  padding: 0 1px;
+  color: var(--text-dim);
+  font-weight: 450;
+}
+.cal-views button.on {
+  background: transparent;
+  border-bottom-color: var(--text);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ‹ › 는 면을 아주 옅게만 — 두 개뿐이라 글자보다 과녁이 낫다 */
+.cal-nav {
+  background: var(--accent-soft);
+  border: none;
+  color: var(--accent);
+}
+@media (hover: hover) {
+  .cal-nav:hover:not(:disabled) { background: var(--accent-soft); opacity: 0.75; }
+}
+
+/* ── 4. 목록·설정 카드 → 왼쪽 세로선 (12b) ──────────────── */
+.card,
+.notif-item,
+.ticket-row {
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--border);
+  border-radius: 0;
+  padding: 0 0 0 14px;
+  margin-bottom: 20px;
+}
+
+/* 카드 안 입력칸은 배경이 없어지면 경계가 사라진다 — 옅은 면을 되돌린다 */
+.card input[type='text'], .card input[type='password'], .card input[type='date'],
+.card input[type='time'], .card input[type='number'], .card select, .card textarea {
+  background: var(--surface);
+}
+
+/* 안 읽은 알림은 왼쪽 선 자체를 초록으로 (예전 3px 덧대기 대신) */
+.notif-item.unread { border-left-color: var(--accent); }
+
+/* 친구 들어가기 줄은 카드가 아니라 한 줄로 */
+a.friend-entry {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 12px 0;
+  margin-bottom: 4px;
+}
+
+/* 정산 패널·건의 알림처럼 카드 안에 또 카드가 있는 곳은 선을 겹치지 않게 */
+.card .card { border-left: none; padding-left: 0; }
+
+/* ── 5. 모임 카드는 그대로 흰 면 ─────────────────────────
+   피드의 .post-card는 하루에 여러 개가 붙어서 면이 있어야 서로 구분된다.
+   여기서는 건드리지 않는다. */
+
+/* ── 시안에 없던 한 곳 ───────────────────────────────────────
+   프로필의 「사진 고르기」는 파일 고르기라 <label class="secondary">다.
+   위 규칙이 button.secondary만 잡아서, 같은 .secondary인데 혼자 흰 알약으로 남았다.
+   같은 자리에 있는 「수정」이 초록 글자인데 그 옆만 알약이면 둘이 다른 것처럼 보인다. */
+label.secondary {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  color: var(--accent);
+  min-height: 40px;
+  padding: 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+}
