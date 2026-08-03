@@ -8,6 +8,13 @@ export interface Category {
   fg: string; // 컬러 위 텍스트 색
   kind: 'movie' | 'posts';
   name: Msg;
+  /**
+   * 카드 부제목 (app/category-card.tsx 한 곳에서만 쓴다 — 알림·카톡으로는 안 나간다).
+   *
+   * 「~할 사람 모집」으로 통일하지 않는다. 열두 장이 같은 꼴이면 눈이 건너뛰어서
+   * 아무것도 안 읽힌다. 그 종목에만 할 수 있는 말을 한 줄 적되, 되도록
+   * 「못해도 된다」 쪽으로 — 이 앱에 처음 들어온 사람이 제일 걱정하는 게 그거다.
+   */
   description: Msg;
   /** 설정하면 모임 만들기에 선택 입력이 하나 생긴다 (예: 영화/드라마, 메뉴) */
   titleLabel?: Msg;
@@ -56,7 +63,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '축구', en: 'Soccer' },
-    description: { ko: '같이 할 사람 모집', en: 'Find players' },
+    description: { ko: '숨차면 걸어도 됩니다', en: 'Walk when you need to.' },
   },
   {
     slug: 'tennis',
@@ -78,7 +85,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '무비나잇', en: 'Movie Night' },
-    description: { ko: '같이 영화 볼 사람 모집', en: 'Find people for a movie night' },
+    description: { ko: '팝콘은 각자, 감상은 같이', en: 'Popcorn separately, opinions together.' },
     titleLabel: { ko: '영화/드라마', en: 'Movie/Show' },
     titleSearch: 'tmdb',
     // AMC 회차 고르기는 따로 카드를 두지 않고 여기서 연다 — 회차에서 만든 모임도
@@ -100,7 +107,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '베이킹 클래스', en: 'Baking Class' },
-    description: { ko: '같이 구울 사람 모집', en: 'Find people to bake with' },
+    description: { ko: '실패해도 먹을 수는 있습니다', en: 'Even the failures are edible.' },
     titleLabel: { ko: '만들 것', en: 'What we’re baking' },
     locationLabel: { ko: '장소', en: 'Place' },
     locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio' },
@@ -113,7 +120,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '러닝 크루', en: 'Running Crew' },
-    description: { ko: '러닝 같이 가요', en: 'Run together' },
+    description: { ko: '혼자면 안 나가게 되니까요', en: 'Alone, you’d skip it.' },
     locationHint: { ko: '예: Indian Creek Trail', en: 'e.g. Indian Creek Trail' },
     proposedBy: '지유',
   },
@@ -125,7 +132,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '피클볼', en: 'Pickleball' },
-    description: { ko: '같이 칠 사람 모집', en: 'Find players' },
+    description: { ko: '다들 그렇게 시작했습니다', en: 'Everyone started that way.' },
   },
   {
     slug: 'game',
@@ -135,7 +142,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '게임', en: 'Game' },
-    description: { ko: '같이 협곡에 놀 사람', en: 'Find people to play with' },
+    description: { ko: '듀오 구합니다', en: 'Looking for a duo.' },
     titleLabel: { ko: '게임', en: 'Game' },
     titleOptions: [
       { ko: '리그 오브 레전드', en: 'League of Legends' },
@@ -154,7 +161,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '볼링', en: 'Bowling' },
-    description: { ko: '같이 칠 사람 모집', en: 'Find bowlers' },
+    description: { ko: '양말만 챙겨 오세요', en: 'Just bring socks.' },
   },
   {
     slug: 'birthday',
@@ -164,7 +171,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '생일파티', en: 'Birthday Party' },
-    description: { ko: '같이 축하해줄 사람 모집', en: 'Find people to celebrate with' },
+    description: { ko: '많을수록 좋은 자리니까요', en: 'The more, the better.' },
     // 생일 모임에서 제일 먼저 알아야 할 건 누구 생일인가다
     titleLabel: { ko: '누구 생일', en: 'Whose birthday' },
     locationHint: { ko: '예: 우리집 / 대장금 Overland Park', en: 'e.g. my place / Dae Jang Geum, Overland Park' },
@@ -178,7 +185,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '밥친구', en: 'Meal Buddy' },
-    description: { ko: '같이 밥 먹을 사람 모집', en: 'Find people to eat with' },
+    description: { ko: '혼밥도 좋지만 오늘은 말고', en: 'Solo dining, but not tonight.' },
     titleLabel: { ko: '메뉴', en: 'Menu' },
     locationLabel: { ko: '식당', en: 'Restaurant' },
     locationHint: { ko: '예: 대장금 Overland Park', en: 'e.g. Dae Jang Geum, Overland Park' },
@@ -191,7 +198,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '카페 메이트', en: 'Café Mate' },
-    description: { ko: '같이 카페 갈 사람 모집', en: 'Find a café buddy' },
+    description: { ko: '입장권(맥북) 깜빡하시면 안돼요', en: 'Don’t forget your ticket (a MacBook).' },
     locationLabel: { ko: '카페', en: 'Café' },
     locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall' },
   },
@@ -203,7 +210,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '헬스장', en: 'Gym' },
-    description: { ko: '같이 운동할 사람 모집', en: 'Find a workout buddy' },
+    description: { ko: '봐줄 사람 있으면 한 개 더', en: 'One more rep with a spotter.' },
     locationLabel: { ko: '헬스장', en: 'Gym' },
     locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park' },
   },
