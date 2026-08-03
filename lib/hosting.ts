@@ -16,10 +16,10 @@ export interface HostTier {
 
 /** 낮은 등급부터 — hostTier()가 뒤에서부터 찾는다 */
 export const HOST_TIERS: HostTier[] = [
-  { min: 10, sticker: '🌱', label: { ko: '새싹 호스트', en: 'Sprout host' } },
-  { min: 30, sticker: '⭐', label: { ko: '단골 호스트', en: 'Regular host' } },
-  { min: 60, sticker: '🔥', label: { ko: '열정 호스트', en: 'Fired-up host' } },
-  { min: 120, sticker: '👑', label: { ko: '전설의 호스트', en: 'Legendary host' } },
+  { min: 5, sticker: '🌱', label: { ko: '새싹 호스트', en: 'Sprout host' } },
+  { min: 15, sticker: '⭐', label: { ko: '단골 호스트', en: 'Regular host' } },
+  { min: 30, sticker: '🔥', label: { ko: '열정 호스트', en: 'Fired-up host' } },
+  { min: 60, sticker: '👑', label: { ko: '전설의 호스트', en: 'Legendary host' } },
 ];
 
 /** 주최 점수 → 등급 (첫 칸에 못 미치면 null) */

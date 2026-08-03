@@ -48,8 +48,8 @@ const ENTRIES: ChangelogEntry[] = [
         en: 'A co-host can edit the meetup. Only the person who made it can change who the co-host is.',
       },
       {
-        ko: '등급은 10 · 30 · 60 · 120점부터예요. 세는 방법이 바뀌어서 지금 점수는 예전과 달라요.',
-        en: 'Tiers start at 10 · 30 · 60 · 120 points. Your number will look different — it’s counted a new way.',
+        ko: '등급은 5 · 15 · 30 · 60점부터예요. 세는 방법이 바뀌어서 지금 점수는 예전과 달라요.',
+        en: 'Tiers start at 5 · 15 · 30 · 60 points. Your number will look different — it’s counted a new way.',
       },
       {
         ko: '지난 모임에도 같이 연 사람을 뒤늦게 넣을 수 있어요. 지난 모임 카드의 「수정」을 누르세요.',
