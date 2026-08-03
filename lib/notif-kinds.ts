@@ -22,6 +22,8 @@ export const NOTIF = {
   invite: 'invite',
   /** 이용 정지가 걸렸거나 풀렸다 */
   ban: 'ban',
+  /** 새 소식 — 그 소식 자리로 */
+  news: 'news',
 } as const;
 
 /** 모임 화면(/p/<id>)으로 보내는 종류 */

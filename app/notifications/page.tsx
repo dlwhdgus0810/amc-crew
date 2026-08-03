@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import { Locale, pick } from '@/lib/i18n';
 import { FRIEND_KINDS, NOTIF, POST_KINDS } from '@/lib/notif-kinds';
+import { CHANGELOG } from '@/lib/changelog';
 import NotifSwipe from '../notif-swipe';
 
 const T = {
@@ -176,8 +177,19 @@ export default function NotificationsPage() {
          * 피드로 보내면 찾을 수 없는 곳에 떨어진다.
          * 나머지는 예전처럼 카테고리 피드 — 목록에서 앞뒤 맥락까지 같이 보는 게 낫다.
          */
-        const href =
-          n.kind === NOTIF.settle && n.postId
+        /*
+         * 새 소식 알림은 그 소식 자리로 보낸다.
+         * 어느 소식인지는 문구에 든 제목으로 찾는다 — 알림에 소식 위치를 따로 저장하지 않았고,
+         * 제목이 곧 사람이 보고 누른 그 줄이라 이쪽이 더 정확하다.
+         * 예전에 나간 알림은 kind가 비어 있어 📣로도 알아본다.
+         */
+        const isNews = n.kind === NOTIF.news || (!n.kind && n.message.startsWith('📣'));
+        const newsEntry = isNews ? CHANGELOG.find((e) => n.message.includes(pick(locale, e.title))) : null;
+        const href = isNews
+          ? newsEntry
+            ? `/whats-new#${encodeURIComponent(newsEntry.at)}`
+            : '/whats-new'
+          : n.kind === NOTIF.settle && n.postId
             ? `/p/${n.postId}#settle`
             : n.postId && POST_KINDS.includes(n.kind ?? '')
               ? `/p/${n.postId}`

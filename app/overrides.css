@@ -1236,3 +1236,6 @@ a.fm-row {
   border-top: 1px solid var(--border-soft);
 }
 .settle-guests .settle-people { margin-top: 8px; }
+
+/* 새 소식 알림으로 들어오면 그 항목으로 스크롤된다 — 상단 바에 가리지 않게 자리를 둔다 */
+.news-entry { scroll-margin-top: 76px; }

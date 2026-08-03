@@ -4,6 +4,7 @@ import { notifications, users } from './schema';
 import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
 import { Locale, Msg, pick, toLocale } from '../i18n';
+import { NOTIF } from '../notif-kinds';
 
 /**
  * 새 소식 알림.
@@ -42,7 +43,9 @@ export interface NewsSendResult {
  * 같은 문구를 이미 받은 사람은 건너뛴다 — 관리자가 버튼을 두 번 눌러도 두 번 가지 않는다.
  * 소식 제목이 곧 문구라, 발송 이력 테이블을 따로 두지 않고 알림 자체를 표식으로 쓴다.
  */
-export async function sendNews(title: Msg, linkUrl: string): Promise<NewsSendResult> {
+export async function sendNews(title: Msg, linkUrl: string, at?: string): Promise<NewsSendResult> {
+  // 소식 자리로 바로 열리게 (whats-new의 각 항목이 at를 id로 갖는다)
+  const url = at ? `${linkUrl}#${encodeURIComponent(at)}` : linkUrl;
   const db = await getDb();
   const rows = await db
     .select({ id: users.id, locale: users.locale })
@@ -72,10 +75,14 @@ export async function sendNews(title: Msg, linkUrl: string): Promise<NewsSendRes
     if (targets.length === 0) continue;
 
     await db.insert(notifications).values(
-      targets.map((userId) => ({ id: crypto.randomUUID(), userId, postId: null, message }))
+      /*
+       * kind로 「새 소식」임을 남긴다 — 알림을 눌렀을 때 그 소식 자리로 보내려면 필요하다.
+       * 어느 소식인지는 message에 제목이 들어 있어 화면에서 찾는다 (at는 링크에만 쓴다).
+       */
+      targets.map((userId) => ({ id: crypto.randomUUID(), userId, postId: null, kind: NOTIF.news, message }))
     );
-    await sendKakaoMemos(targets, message, linkUrl, pick(locale, T.button));
-    await sendPush(targets, { title: 'Kansas Korean', body: message, url: linkUrl, tag: 'whats-new' });
+    await sendKakaoMemos(targets, message, url, pick(locale, T.button));
+    await sendPush(targets, { title: 'Kansas Korean', body: message, url, tag: 'whats-new' });
     sent += targets.length;
   }
   return { sent, skipped };

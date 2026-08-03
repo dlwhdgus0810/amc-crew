@@ -47,6 +47,6 @@ export async function POST(req: NextRequest) {
   if (!latest) {
     return await errJson(E.badRequest, 400);
   }
-  const result = await sendNews(latest.title, `${siteUrl(req.nextUrl.origin)}/whats-new`);
+  const result = await sendNews(latest.title, `${siteUrl(req.nextUrl.origin)}/whats-new`, latest.at);
   return NextResponse.json({ ok: true, ...result });
 }

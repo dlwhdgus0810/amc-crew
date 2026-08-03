@@ -45,7 +45,7 @@ export default function WhatsNewPage() {
         <p className="hint">{t(T.empty)}</p>
       ) : (
         CHANGELOG.map((entry) => (
-          <section key={entry.at} className="news-entry">
+          <section key={entry.at} id={entry.at} className="news-entry">
             <div className="news-date">{entryLabel(entry.at, locale)}</div>
             <h2 className="news-title">{t(entry.title)}</h2>
             <ul className="news-items">
