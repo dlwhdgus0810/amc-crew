@@ -28,6 +28,10 @@ const T = {
     ko: '관리자라 친구가 아닌 사람도 넣고 뺄 수 있어요. 지난 모임도요.',
     en: 'As an admin you can add or remove anyone, including on past meetups.',
   },
+  hostHint: {
+    ko: '지난 모임이라 그날 온 친구를 뒤늦게 넣거나 뺄 수 있어요. 알림은 가지 않아요.',
+    en: 'This meetup already happened — add or remove who actually came. Nobody is notified.',
+  },
   sending: { ko: '보내는 중…', en: 'Sending…' },
   sent: { ko: '친구 요청을 보냈어요.', en: 'Friend request sent.' },
   waiting: { ko: '친구 요청을 보내 둔 사이예요. 상대가 수락하면 친구가 돼요.', en: 'Your request is waiting for them to accept.' },
@@ -192,14 +196,17 @@ export function AddFriendSheet({
   postId,
   candidates,
   roster,
+  asAdmin,
   onClose,
   onDone,
 }: {
   postId: string;
   /** 아직 이 모임에 없는 사람들 (관리자는 회원 전체, 그 밖에는 내 친구) */
   candidates: Person[];
-  /** 관리자에게만 준다 — 지금 명단에서 뺄 수 있게 */
+  /** 주면 「지금 명단」에서 뺄 수 있다 — 관리자, 그리고 지난 모임의 호스트 */
   roster?: Person[];
+  /** 안내 문구를 가른다 — 관리자는 회원 전체를, 호스트는 친구만 넣을 수 있다 */
+  asAdmin?: boolean;
   onClose: () => void;
   onDone: () => void | Promise<void>;
 }) {
@@ -266,7 +273,7 @@ export function AddFriendSheet({
 
   return (
     <Shell title={roster ? t(T.adminTitle) : t(T.addTitle)} onClose={onClose}>
-      <p className="nudge-why">{roster ? t(T.adminHint) : t(T.addHint)}</p>
+      <p className="nudge-why">{roster ? t(asAdmin ? T.adminHint : T.hostHint) : t(T.addHint)}</p>
 
       {/* 관리자에게만 보이는 칸 — 잘못 올라간 이름을 여기서 뺀다 */}
       {roster && staying.length > 0 && (

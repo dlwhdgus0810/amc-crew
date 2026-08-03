@@ -43,12 +43,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
    * 그걸 못 하면 명단이 틀린 채로 굳고, 호스트 점수까지 같이 틀어진다.
    */
   const asAdmin = isAdmin(user);
+  const isHost = post.authorId === user.id || post.coHostId === user.id;
+  const past = isPastSlot(post.date, post.startTime, post.endTime);
   if (!asAdmin) {
-    if (isPastSlot(post.date, post.startTime, post.endTime)) {
+    /*
+     * 지난 모임의 명단은 호스트만 고친다 — 그날 온 사람을 뒤늦게 적는 일이라
+     * 누가 왔는지 아는 사람이 해야 한다. 참가자 아무나 열어두면 남의 기록이 된다.
+     */
+    if (past && !isHost) {
       return await errJson(E.friendAddPast, 400);
     }
-    // 이 모임에 있는 사람만 남을 부를 수 있다 — 지나가던 사람이 남의 모임 명단을 채우면 안 된다
-    if (!(await isParticipant(id, user.id))) {
+    // 예정 모임은 이 모임에 있는 사람이면 부를 수 있다 (지나가던 사람이 명단을 채우면 안 된다)
+    if (!past && !(await isParticipant(id, user.id))) {
       return await errJson(E.friendAddOnly, 403);
     }
     if (!(await areFriends(user.id, friendId))) {
@@ -61,20 +67,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   await ensureUser(user);
-  if (!(await joinPost(id, friendId, asAdmin ? null : post.capacity))) {
+  // 지난 모임은 실제로 온 사람을 적는 일이라 정원으로 막지 않는다 (예정 모임은 그대로)
+  if (!(await joinPost(id, friendId, asAdmin || past ? null : post.capacity))) {
     return await errJson(E.postFull, 409);
   }
 
-  try {
-    const profiles = await getProfiles();
-    const actorName = resolveDisplayName(profiles[user.id], user.name);
-    const friendName = resolveDisplayName(profiles[friendId], '알 수 없음');
-    await notifyAddedToPost(post, actorName, friendId);
-    // 넣긴 사람의 다른 친구들에게도 알린다. 누른 사람만 뺀다 — 방금 자기가 한 일이다.
-    const others = (await friendIds(friendId)).filter((uid) => uid !== user.id);
-    await notifyFriendJoin(post, friendName, others);
-  } catch (e) {
-    console.error('[participants] notify failed:', e);
+  /*
+   * 지난 모임에 넣는 건 그날 온 사람을 뒤늦게 적는 일이라 아무에게도 알리지 않는다.
+   * 「이 모임에 넣었어요」나 「◯◯님이 갑니다」가 끝난 모임에 대해 오면 앞뒤가 맞지 않는다.
+   */
+  if (!past) {
+    try {
+      const profiles = await getProfiles();
+      const actorName = resolveDisplayName(profiles[user.id], user.name);
+      const friendName = resolveDisplayName(profiles[friendId], '알 수 없음');
+      await notifyAddedToPost(post, actorName, friendId);
+      // 넣긴 사람의 다른 친구들에게도 알린다. 누른 사람만 뺀다 — 방금 자기가 한 일이다.
+      const others = (await friendIds(friendId)).filter((uid) => uid !== user.id);
+      await notifyFriendJoin(post, friendName, others);
+    } catch (e) {
+      console.error('[participants] notify failed:', e);
+    }
   }
 
   return NextResponse.json({ ok: true });
@@ -92,13 +105,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
-  if (!isAdmin(user)) {
-    return await errJson(E.adminOnly, 403);
-  }
   const { id } = await params;
   const post = await getPost(id);
   if (!post) {
     return await errJson(E.postNotFound, 404);
+  }
+  /*
+   * 관리자는 언제든, 호스트는 지난 모임에서만 뺄 수 있다.
+   * 예정 모임에서 남을 빼는 건 "나가라"는 말이 되어 성격이 다르다 — 그건 열어두지 않는다.
+   */
+  const isHost = post.authorId === user.id || post.coHostId === user.id;
+  const past = isPastSlot(post.date, post.startTime, post.endTime);
+  if (!isAdmin(user) && !(isHost && past)) {
+    return await errJson(E.rosterHostOnly, 403);
   }
   const body = await req.json().catch(() => null);
   const targetId = typeof body?.userId === 'string' ? body.userId : '';

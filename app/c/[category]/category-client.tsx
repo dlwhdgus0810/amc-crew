@@ -725,15 +725,17 @@ export default function CategoryClient({ slug }: { slug: string }) {
         />
       )}
 
+      {/* 명단에서 뺄 수 있는 건 관리자, 그리고 지난 모임의 호스트다 */}
       {addTo && (
         <AddFriendSheet
           postId={addTo.id}
           candidates={(isAdmin ? members : friends.friends).filter(
             (f) => !addTo.participants.some((p) => p.id === f.id)
           )}
-          {...(isAdmin
+          {...(isAdmin || (addTo.isPast && (addTo.authorId === user?.id || addTo.coHost?.id === user?.id))
             ? { roster: addTo.participants.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar })) }
             : {})}
+          {...(isAdmin ? { asAdmin: true } : {})}
           onClose={() => setAddTo(null)}
           onDone={reloadAll}
         />
@@ -1164,8 +1166,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
               );
             })}
             {/* 대신 넣기 — 명단에 없는 친구를 부르는 입구라 참가자 칩과는 따로 둔다.
-                관리자는 명단을 고치는 사람이라 지난 모임·정원 초과에도 열린다 */}
-            {user && (isAdmin || (!past && !full)) && (
+                관리자는 언제든, 호스트는 지난 모임에서도 (그날 온 사람을 뒤늦게 적는다) */}
+            {user && (isAdmin || (past && (mine || isCoHost)) || (!past && !full)) && (
               <button className="person-chip add" onClick={() => setAddTo(post)}>
                 ＋ {t(T.friendChip)}
               </button>

@@ -75,6 +75,8 @@ export default function PostClient({ id }: { id: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
   /** 관리자만 — 회원 전체 (명단에 넣을 후보) */
   const [members, setMembers] = useState<Person[]>([]);
+  /** 호스트가 지난 모임 명단을 고칠 때 고르는 후보 — 내 친구들 */
+  const [friends, setFriends] = useState<Person[]>([]);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [myVenmo, setMyVenmo] = useState<string | null>(null);
   const [myZelle, setMyZelle] = useState<string | null>(null);
@@ -110,6 +112,13 @@ export default function PostClient({ id }: { id: string }) {
           fetch('/api/admin/members')
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => d && setMembers(d.members ?? []))
+            .catch(() => {});
+        }
+        // 호스트는 친구 중에서만 넣는다
+        if (auth.user) {
+          fetch('/api/friends')
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => d && setFriends(d.friends ?? []))
             .catch(() => {});
         }
         setMyVenmo(auth.venmo ?? null);
@@ -263,7 +272,7 @@ export default function PostClient({ id }: { id: string }) {
           * 캘린더나 공유 링크로 들어오면 이 화면이라, 명단을 고칠 자리가 여기에도 있어야 한다.
           * 지난 모임에서도 보인다 — 뒤늦게 바로잡는 일이 대부분 지난 모임이다.
           */}
-        {isAdmin && (
+        {(isAdmin || (past && (mine || post.coHost?.id === user?.id))) && (
           <button className="link-btn" style={{ marginTop: 8 }} onClick={() => setRosterOpen(true)}>
             {t(T.roster)}
           </button>
@@ -301,8 +310,9 @@ export default function PostClient({ id }: { id: string }) {
       {rosterOpen && (
         <AddFriendSheet
           postId={post.id}
-          candidates={members.filter((m) => !post.participants.some((p) => p.id === m.id))}
+          candidates={(isAdmin ? members : friends).filter((m) => !post.participants.some((p) => p.id === m.id))}
           roster={post.participants.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar }))}
+          {...(isAdmin ? { asAdmin: true } : {})}
           onClose={() => setRosterOpen(false)}
           onDone={loadPost}
         />
