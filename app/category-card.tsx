@@ -10,6 +10,7 @@
 
 import Link from 'next/link';
 import { Category, catDisplayName } from '@/lib/categories';
+import CatIcon from './cat-icon';
 import { useT } from './i18n';
 
 const T = {
@@ -118,7 +119,10 @@ export default function CategoryCard({
         )}
       </div>
       <div>
-        <div className="car-name">{t(catDisplayName(category.slug))}</div>
+        <div className="car-name">
+          {t(catDisplayName(category.slug))}
+          <CatIcon slug={category.slug} />
+        </div>
         <div className="car-desc">{t(category.description)}</div>
       </div>
       {summary && (

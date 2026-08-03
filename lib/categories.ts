@@ -45,7 +45,7 @@ export const CATEGORIES: Category[] = [
     slug: 'soccer',
     emoji: '⚽',
     en: 'SOCCER',
-    color: '#E8380D',
+    color: '#C13D34',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '축구', en: 'Soccer' },
@@ -55,9 +55,8 @@ export const CATEGORIES: Category[] = [
     slug: 'tennis',
     emoji: '🎾',
     en: 'TENNIS',
-    color: '#7CB342',
-    // 밝은 연두라 흰 글씨는 대비가 2.4:1밖에 안 나온다 — AMC 노랑처럼 검은 글씨를 쓴다
-    fg: '#101010',
+    color: '#448502',
+    fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '테니스', en: 'Tennis' },
     description: { ko: '같이 해뇨', en: 'Find players' },
@@ -68,7 +67,7 @@ export const CATEGORIES: Category[] = [
     slug: 'movienight',
     emoji: '🍿',
     en: 'MOVIE NIGHT',
-    color: '#008542',
+    color: '#04884D',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '무비나잇', en: 'Movie Night' },
@@ -90,7 +89,7 @@ export const CATEGORIES: Category[] = [
     slug: 'baking',
     emoji: '🧁',
     en: 'BAKING',
-    color: '#00838F',
+    color: '#138282',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '베이킹 클래스', en: 'Baking Class' },
@@ -103,9 +102,8 @@ export const CATEGORIES: Category[] = [
     slug: 'running',
     emoji: '🏃',
     en: 'RUNNING',
-    color: '#93E3FD',
-    // 아주 밝은 하늘색이라 크림색 글씨는 1.3:1밖에 안 나온다 — 테니스처럼 검은 글씨를 쓴다
-    fg: '#101010',
+    color: '#127D9D',
+    fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '러닝 크루', en: 'Running Crew' },
     description: { ko: '러닝 같이 가요', en: 'Run together' },
@@ -116,7 +114,7 @@ export const CATEGORIES: Category[] = [
     slug: 'pickleball',
     emoji: '🥒',
     en: 'PICKLEBALL',
-    color: '#002FA7',
+    color: '#2F6DD3',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '피클볼', en: 'Pickleball' },
@@ -126,12 +124,7 @@ export const CATEGORIES: Category[] = [
     slug: 'game',
     emoji: '🎮',
     en: 'GAME',
-    /*
-     * 제안서에는 #002FA7이 적혀 있었는데 그건 피클볼이 쓰고 있는 색이다.
-     * 카드 색이 곧 카테고리의 표식이라 둘이 같으면 홈에서 구분이 안 된다.
-     * 색상환에서 바로 옆(파랑과 보라 사이)의 남색으로 옮겼다.
-     */
-    color: '#3B2FD9',
+    color: '#6260D1',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '게임', en: 'Game' },
@@ -150,7 +143,7 @@ export const CATEGORIES: Category[] = [
     slug: 'bowling',
     emoji: '🎳',
     en: 'BOWLING',
-    color: '#5B2A86',
+    color: '#904EBA',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '볼링', en: 'Bowling' },
@@ -160,8 +153,7 @@ export const CATEGORIES: Category[] = [
     slug: 'birthday',
     emoji: '🎂',
     en: 'BIRTHDAY',
-    // 보라(볼링)와 자홍(밥친구) 사이 — 색상환 순서를 그대로 잇는다
-    color: '#B02A9B',
+    color: '#B53C7F',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '생일파티', en: 'Birthday Party' },
@@ -175,7 +167,7 @@ export const CATEGORIES: Category[] = [
     slug: 'meal',
     emoji: '🍚',
     en: 'MEAL',
-    color: '#C2185B',
+    color: '#BD3964',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '밥친구', en: 'Meal Buddy' },
@@ -188,7 +180,7 @@ export const CATEGORIES: Category[] = [
     slug: 'cafe',
     emoji: '☕',
     en: 'CAFE',
-    color: '#6F4E37',
+    color: '#A75C00',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '카페 메이트', en: 'Café Mate' },
@@ -200,7 +192,7 @@ export const CATEGORIES: Category[] = [
     slug: 'gym',
     emoji: '🏋️',
     en: 'GYM',
-    color: '#455A64',
+    color: '#0274C7',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '헬스장', en: 'Gym' },
@@ -228,11 +220,15 @@ export function catName(slug: string, locale: Locale): string {
  * 이름 문자열에 섞어 넣으면 알림 문구(`${emoji} ${catName}`)에서 두 번 찍힌다 —
  * 실제로 테니스가 "🎾 테니스 🎾 새 모임"으로 나가고 있었다.
  */
-const DISPLAY_NAMES = new Map<string, Msg>(
-  CATEGORIES.map((c) => [c.slug, { ko: `${c.name.ko} ${c.emoji}`, en: `${c.name.en} ${c.emoji}` }])
-);
+const DISPLAY_NAMES = new Map<string, Msg>(CATEGORIES.map((c) => [c.slug, c.name]));
 
-/** 화면에 띄우는 이름 — 이모지가 뒤에 붙는다. 알림·캘린더 제목에는 쓰지 말 것 (catName을 쓴다) */
+/**
+ * 화면에 띄우는 이름.
+ *
+ * 예전에는 이모지를 뒤에 붙였는데, 기기마다 그림이 달라 같은 화면이 사람마다 다르게 보였다.
+ * 지금은 이름만 주고 그림은 app/cat-icon.tsx의 선 아이콘이 맡는다.
+ * (알림 문구의 이모지는 그대로다 — 카톡·푸시로 나가는 글자라 그림을 넣을 수 없다)
+ */
 export function catDisplayName(slug: string): Msg {
   return DISPLAY_NAMES.get(slug) ?? { ko: slug, en: slug };
 }

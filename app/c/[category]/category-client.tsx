@@ -15,6 +15,7 @@ import {useEffect, useRef, useState} from 'react';
 import Link from 'next/link';
 import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCategory } from '@/lib/categories';
 import PlaceLink from '@/app/place-link';
+import CatIcon from '@/app/cat-icon';
 import { hostTier } from '@/lib/hosting';
 import {useLocale, useT} from '../../i18n';
 import {
@@ -638,7 +639,10 @@ export default function CategoryClient({ slug }: { slug: string }) {
       <div className="feed-head">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <span className="feed-dot" style={{ background: color }} />
-          <h1 style={{ margin: 0 }}>{name}</h1>
+          <h1 style={{ margin: 0 }}>
+            {name}
+            <CatIcon slug={slug} />
+          </h1>
         </div>
         <button
           className={`sub-text ${subscribed ? 'on' : ''}`}

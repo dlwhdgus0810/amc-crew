@@ -1259,3 +1259,17 @@ h2 {
   letter-spacing: -0.02em;
   color: var(--text);
 }
+
+/* ── 카테고리 선 아이콘 ─────────────────────────────────────
+   이모지 자리를 대신한다 (app/cat-icon.tsx). 글자와 같은 크기로 따라오되
+   글자보다 조금 작게 — 이름이 주인공이고 그림은 거드는 쪽이다. */
+.cat-icon {
+  display: inline-block;
+  width: 0.82em;
+  height: 0.82em;
+  margin-left: 0.34em;
+  vertical-align: -0.03em;
+  flex: none;
+  /* 색은 글자색을 따른다 — 카드가 이미 색을 갖고 있어 단색으로도 구분된다 */
+  opacity: 0.9;
+}
