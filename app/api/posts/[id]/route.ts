@@ -4,7 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { friendIds } from '@/lib/db/friends';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
-import { countParticipants, deletePost, getPost, getPostView, updatePost } from '@/lib/db/posts';
+import { countParticipants, deletePost, getPost, getPostView, notifyCoHost, updatePost } from '@/lib/db/posts';
 import { getCategory } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
 import { isPastSlot, todayLocal } from '@/lib/dates';
@@ -119,6 +119,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // 지난 모임을 고치는 건 바로잡는 일이지 알릴 일이 아니다 (고치기 전 기준으로 본다)
   const editingPast = isPastSlot(post.date, post.startTime, post.endTime);
 
+  /*
+   * 같이 여는 사람만 바뀐 경우.
+   *
+   * 그때는 참가자들에게 「모임 변경」을 보내지 않는다 — 시간도 장소도 그대로인데
+   * 변경 알림이 오면 뭐가 달라졌나 다시 열어보게 된다. 대신 새로 세워진 사람에게만 알린다.
+   */
+  const newCoHost = coHostId !== undefined && coHostId !== post.coHostId ? coHostId : null;
+  const onlyCoHostChanged =
+    newCoHost !== null &&
+    date === post.date &&
+    startTime === post.startTime &&
+    endTime === post.endTime &&
+    location === post.location &&
+    (description || null) === post.description &&
+    capacity === post.capacity &&
+    (hasTitle && title ? title : null) === post.title &&
+    (body?.visibility === undefined || body.visibility === post.visibility) &&
+    (typeof body?.allowNicknames !== 'boolean' || body.allowNicknames === post.allowNicknames);
+
   await updatePost({
     postId: id,
     category: post.category,
@@ -137,9 +156,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       : {}),
     ...(coHostId !== undefined ? { coHostId } : {}),
     ...(typeof body?.allowNicknames === 'boolean' ? { allowNicknames: body.allowNicknames } : {}),
-    ...(editingPast ? { silent: true } : {}),
+    ...(editingPast || onlyCoHostChanged ? { silent: true } : {}),
     origin: siteUrl(req.nextUrl.origin),
   });
+
+  /*
+   * 새로 세워진 공동 호스트에게만 따로 알린다. 지난 모임은 알리지 않는다 —
+   * 이미 끝난 모임의 명단을 바로잡는 일이라 그 사람이 할 일이 없다.
+   */
+  if (newCoHost && !editingPast) {
+    try {
+      /*
+       * 고친 뒤의 값으로 알린다. post는 고치기 전 모습이라, 장소를 함께 바꾼 경우
+       * 새 호스트에게 옛 장소가 적힌 알림이 간다.
+       */
+      await notifyCoHost(
+        { ...post, date, startTime, location, title: hasTitle && title ? title : null },
+        await displayNameOf(user),
+        newCoHost
+      );
+    } catch (e) {
+      console.error('[posts] co-host notify failed:', e);
+    }
+  }
   return NextResponse.json({ ok: true });
 }
 

@@ -373,6 +373,10 @@ const N = {
   // 친구 알림 — 주어가 모임이 아니라 사람이라 이름이 앞에 온다
   meetup: { ko: '모임', en: 'meetup' },
   friendJoinLine: { ko: '{name}님이 참가했어요 · {text}', en: '{name} joined · {text}' },
+  coHostLine: {
+    ko: '{name}님이 회원님을 공동 호스트로 정했어요 · {text}',
+    en: '{name} made you a co-host · {text}',
+  },
   addedLine: { ko: '{name}님이 이 모임에 넣었어요 · {text}', en: '{name} added you · {text}' },
   inviteLine: { ko: '{name}님이 초대했어요 · {text}', en: '{name} invited you · {text}' },
 };
@@ -519,6 +523,29 @@ export async function notifyAddedToPost(
     NOTIF.added,
     (locale) =>
       `🤝 ${pick(locale, N.addedLine, {
+        name: actorName,
+        text: describeForNotification(post.category, N.meetup, post.date, post.startTime, post.location, post.title, locale),
+      })}`
+  );
+}
+
+/**
+ * 공동 호스트로 세워졌다고 알린다 — 그 사람에게만, 인앱 한 줄로.
+ *
+ * 남이 나를 모임에 넣었을 때(notifyAddedToPost)와 같은 결이라 같은 방식으로 보낸다:
+ * 폰을 울리지는 않는다. 알아두면 되는 일이지 당장 손댈 일이 아니다.
+ */
+export async function notifyCoHost(
+  post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
+  actorName: string,
+  coHostId: string
+): Promise<void> {
+  await insertInAppNotice(
+    [coHostId],
+    post.id,
+    NOTIF.added,
+    (locale) =>
+      `🤝 ${pick(locale, N.coHostLine, {
         name: actorName,
         text: describeForNotification(post.category, N.meetup, post.date, post.startTime, post.location, post.title, locale),
       })}`
