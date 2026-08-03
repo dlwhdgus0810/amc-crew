@@ -127,8 +127,6 @@ const ENTRIES: ChangelogEntry[] = [
   {
     at: '2026-08-02T15:49',
     notable: true,
-    // 홈 카드에 띄울 항목 — 친구 기능 중 지금 제일 보여주고 싶은 것으로 옮겼다
-    pin: true,
     title: { ko: '친구가 가는 모임 보기', en: 'See where your friends are going' },
     items: [
       {
