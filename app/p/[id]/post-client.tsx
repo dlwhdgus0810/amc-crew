@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { AddFriendSheet, Person } from '../../friend-sheet';
 import PlaceLink from '@/app/place-link';
 import { useEffect, useState } from 'react';
 import { catDisplayName, getCategory } from '@/lib/categories';
@@ -44,6 +45,7 @@ const T = {
   ics: { ko: '캘린더 파일(.ics)', en: 'Calendar file (.ics)' },
   comments: { ko: '댓글', en: 'Comments' },
   del: { ko: '삭제', en: 'Delete' },
+  roster: { ko: '명단 고치기', en: 'Edit roster' },
 };
 import type { PostView } from '@/lib/db/posts';
 import { TMDB_IMG } from '@/lib/tmdb';
@@ -71,6 +73,9 @@ export default function PostClient({ id }: { id: string }) {
   const [post, setPost] = useState<PostView | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  /** 관리자만 — 회원 전체 (명단에 넣을 후보) */
+  const [members, setMembers] = useState<Person[]>([]);
+  const [rosterOpen, setRosterOpen] = useState(false);
   const [myVenmo, setMyVenmo] = useState<string | null>(null);
   const [myZelle, setMyZelle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +105,13 @@ export default function PostClient({ id }: { id: string }) {
       .then(([, auth]) => {
         setUser(auth.user ?? null);
         setIsAdmin(Boolean(auth.isAdmin));
+        // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
+        if (auth.isAdmin) {
+          fetch('/api/admin/members')
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => d && setMembers(d.members ?? []))
+            .catch(() => {});
+        }
         setMyVenmo(auth.venmo ?? null);
         setMyZelle(auth.zelle ?? null);
       })
@@ -247,6 +259,15 @@ export default function PostClient({ id }: { id: string }) {
             {post.participants.map((p) => p.name + (user?.id === p.id ? t(T.me) : '')).join(', ')}
           </div>
         )}
+        {/*
+          * 캘린더나 공유 링크로 들어오면 이 화면이라, 명단을 고칠 자리가 여기에도 있어야 한다.
+          * 지난 모임에서도 보인다 — 뒤늦게 바로잡는 일이 대부분 지난 모임이다.
+          */}
+        {isAdmin && (
+          <button className="link-btn" style={{ marginTop: 8 }} onClick={() => setRosterOpen(true)}>
+            {t(T.roster)}
+          </button>
+        )}
 
         <div className="field-row" style={{ marginTop: 20 }}>
           {past ? null : user ? (
@@ -276,6 +297,16 @@ export default function PostClient({ id }: { id: string }) {
           )}
         </div>
       </div>
+
+      {rosterOpen && (
+        <AddFriendSheet
+          postId={post.id}
+          candidates={members.filter((m) => !post.participants.some((p) => p.id === m.id))}
+          roster={post.participants.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar }))}
+          onClose={() => setRosterOpen(false)}
+          onDone={loadPost}
+        />
+      )}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
