@@ -16,20 +16,8 @@ export interface Statement {
 
 export const STATEMENTS: Statement[] = [
   {
-    top: { ko: '취미로 모이는 크루.', en: 'A crew that gathers around hobbies.' },
-    bottom: { ko: '오늘 뭐 하고 놀지, 같이 정합니다.', en: 'Let’s decide together what to do today.' },
-  },
-  {
-    top: { ko: '먼저 열면 사람이 모입니다.', en: 'Open one and people show up.' },
-    bottom: { ko: '한 명이 시작해야 시작됩니다.', en: 'Someone has to go first.' },
-  },
-  {
-    top: { ko: '혼자 하면 운동, 같이 하면 약속.', en: 'Alone it’s exercise. Together it’s plans.' },
-    bottom: { ko: '약속이 있어야 나가게 됩니다.', en: 'Plans are what get you out the door.' },
-  },
-  {
-    top: { ko: '이번 주에 한 번은 만납시다.', en: 'Let’s meet at least once this week.' },
-    bottom: { ko: '달력에 하나만 있어도 한 주가 다릅니다.', en: 'One thing on the calendar changes the week.' },
+    top: { ko: '아무도 몰라도 괜찮아요.', en: 'It’s fine if you don’t know anyone.' },
+    bottom: { ko: '당신은 환영받기 위해 태어난 사람.', en: 'You were born to be welcomed.' },
   },
   {
     top: { ko: '잘하지 않아도 됩니다.', en: 'You don’t have to be good at it.' },
@@ -71,16 +59,42 @@ export const STATEMENTS: Statement[] = [
     top: { ko: '오늘 뭐 하지?', en: 'What should we do today?' },
     bottom: { ko: '그 질문을 여기서 같이 풉니다.', en: 'That’s the question we answer here.' },
   },
+  {
+    top: { ko: '취미로 모이는 크루.', en: 'A crew that gathers around hobbies.' },
+    bottom: { ko: '오늘 뭐 하고 놀지, 같이 정합니다.', en: 'Let’s decide together what to do today.' },
+  },
+  {
+    top: { ko: '먼저 열면 사람이 모입니다.', en: 'Open one and people show up.' },
+    bottom: { ko: '한 명이 시작해야 시작됩니다.', en: 'Someone has to go first.' },
+  },
+  {
+    top: { ko: '혼자 하면 운동, 같이 하면 약속.', en: 'Alone it’s exercise. Together it’s plans.' },
+    bottom: { ko: '약속이 있어야 나가게 됩니다.', en: 'Plans are what get you out the door.' },
+  },
+  {
+    top: { ko: '이번 주에 한 번은 만납시다.', en: 'Let’s meet at least once this week.' },
+    bottom: { ko: '달력에 하나만 있어도 한 주가 다릅니다.', en: 'One thing on the calendar changes the week.' },
+  },
 ];
+
+/**
+ * 첫 줄(STATEMENTS[0])이 뜨는 날.
+ *
+ * 이게 없으면 순서가 목록 길이에 딸려간다 — 문구를 하나 더하는 순간 나머지가 전부
+ * 다른 날로 밀린다. 기준 날짜를 박아 두면 목록이 길어져도 오늘 뜰 줄이 바뀌지 않는다.
+ */
+const ANCHOR = '2026-08-03';
+
+const dayNumber = (date: string) => Math.floor(Date.parse(`${date}T00:00:00Z`) / 86_400_000);
 
 /**
  * 그날의 문구.
  *
- * 날짜(YYYY-MM-DD)를 그대로 세어 고른다 — 무작위가 아니라서 같은 날 열면 누구나 같은 줄을 보고,
+ * 날짜를 세어 고른다 — 무작위가 아니라서 같은 날 열면 누구나 같은 줄을 보고,
  * 화면을 다시 그려도 문구가 바뀌지 않는다.
  */
 export function statementOfDay(today: string): Statement {
-  const days = Math.floor(Date.parse(`${today}T00:00:00Z`) / 86_400_000);
-  const i = ((days % STATEMENTS.length) + STATEMENTS.length) % STATEMENTS.length;
+  const n = STATEMENTS.length;
+  const i = (((dayNumber(today) - dayNumber(ANCHOR)) % n) + n) % n;
   return STATEMENTS[i]!;
 }
