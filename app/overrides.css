@@ -906,8 +906,14 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
   position: relative;
   /* 뒤에 숨은 버튼이 줄 밖으로 나오지 않게 */
   overflow: hidden;
-  margin-bottom: 10px;
+  /*
+   * 항목 사이 가로선은 여기에 긋는다.
+   * 시안은 .notif-item에 그었지만, 밀기 때문에 항목마다 이 래퍼가 하나씩 씌워져
+   * 모든 항목이 :last-of-type이 되어 선이 하나도 안 그려진다.
+   */
+  border-bottom: 1px solid var(--border-soft);
 }
+.notif-swipe:last-of-type { border-bottom: none; }
 /* 몸통이 밀려도 카드 사이 간격은 그대로 — 안쪽 알림 카드의 여백은 지운다 */
 .notif-swipe .notif-item { margin-bottom: 0; }
 .notif-swipe-body {
@@ -1240,3 +1246,16 @@ a.fm-row {
 
 /* 새 소식 알림으로 들어오면 그 항목으로 스크롤된다 — 상단 바에 가리지 않게 자리를 둔다 */
 .news-entry { scroll-margin-top: 76px; }
+
+/* ── 섹션 제목 ──────────────────────────────────────────────
+   타입 보정(type-tune.css)이 h2를 11.5px 라벨로 낮췄는데, 그건 h2가 흰 카드 위에
+   얹혀 있을 때 이야기다. 13c·13d로 카드 면이 사라지고 세로선만 남으면서
+   제목이 자기가 이끄는 내용(14~16px)보다 작고 흐려졌다 — 위계가 뒤집힌 셈이다.
+   내용보다 크고 진하게 되돌린다. 자기 크기를 가진 제목(.day-title·.news-title 등)은
+   각자 규칙이 있어 여기 영향을 받지 않는다. */
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}

@@ -1,0 +1,169 @@
+/* ============================================================
+   app/button-13d.css — 새 파일. (시안 13d · 옅은 초록 면 + 12b 세로선 그룹)
+
+   button-13c.css를 대신한다 — 13c는 import를 지우거나 파일을 지운다.
+   layout.tsx에서 맨 마지막(font-plex.css 다음)에 불러온다.
+   색·서체·크기 토큰은 건드리지 않는다.
+
+   원칙
+   1. 짙은 초록 면은 「새 일이 일어나는」 것에만 — 참가·보내기·저장·모임 만들기.
+   2. 나머지 동작은 같은 초록의 아주 옅은 면(--accent-soft) + 초록 글자, 테두리 없음.
+   3. 모서리는 8px — 세로선·입력칸과 같은 어휘로 맞춘다.
+   4. 목록·설정 카드는 왼쪽 세로선 한 줄로 묶고(12b), 알림만 가로선으로 나눈다.
+   ============================================================ */
+
+/* ── 1. primary — 면은 유지, 낮고 각지게 ─────────────────── */
+button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+button.big-cta {
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+/* ── 2. secondary — 옅은 초록 면, 테두리 없음 ────────────── */
+button.secondary {
+  background: var(--accent-soft);
+  border-color: transparent;
+  border-radius: 8px;
+  color: var(--accent);
+  min-height: 34px;
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 600;
+}
+@media (hover: hover) {
+  button.secondary:hover { background: var(--accent-soft); opacity: 0.8; }
+}
+button.secondary:disabled { opacity: 0.4; }
+
+/* 취소처럼 물러서는 동작은 글자를 회색으로 (면은 같게) */
+button.secondary.muted, .install-actions button.secondary { color: var(--text-mid); }
+
+button.danger {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 8px;
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+/* ── 3. 두 갈래 선택 — 짙은 초록 / 옅은 초록 ─────────────── */
+.segbar a, .segbar button, .seg,
+.cal-views button {
+  background: var(--accent-soft);
+  border: none;
+  border-radius: 8px;
+  min-height: 34px;
+  padding: 0 13px;
+  color: var(--text-mid);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.segbar a.active, .segbar button.on, .seg.on,
+.cal-views button.on {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ‹ › */
+.cal-nav {
+  background: var(--accent-soft);
+  border: none;
+  border-radius: 8px;
+  color: var(--accent);
+}
+@media (hover: hover) {
+  .cal-nav:hover:not(:disabled) { background: var(--accent-soft); opacity: 0.8; }
+}
+
+/* 사람 칩·날짜 칩도 같은 면으로 */
+.person-chip, .member-chip, .date-pill, .time-chip {
+  background: var(--accent-soft);
+  border-color: transparent;
+  border-radius: 8px;
+  color: var(--text);
+}
+.date-pill.on, .time-chip.selected {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.person-chip.open-seat { background: transparent; border: 1px dashed var(--border); }
+
+/* ── 4. 목록·설정 카드 → 왼쪽 세로선 (12b) ──────────────── */
+.card,
+.ticket-row {
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--border);
+  border-radius: 0;
+  padding: 0 0 0 14px;
+  margin-bottom: 20px;
+}
+
+/* 카드 안 입력칸은 배경이 없어지면 경계가 사라진다 — 옅은 면을 되돌린다 */
+.card input[type='text'], .card input[type='password'], .card input[type='date'],
+.card input[type='time'], .card input[type='number'], .card select, .card textarea {
+  background: var(--surface);
+}
+
+/* 카드 안에 또 카드가 있는 곳은 선을 겹치지 않게 */
+.card .card { border-left: none; padding-left: 0; }
+
+/* 친구 들어가기 줄은 카드가 아니라 한 줄로 */
+a.friend-entry {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 12px 0;
+  margin-bottom: 4px;
+}
+
+/* ── 5. 알림은 가로선으로 ────────────────────────────────── */
+.notif-item {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-soft);
+  border-radius: 0;
+  padding: 13px 0;
+  margin-bottom: 0;
+}
+.notif-item:last-of-type { border-bottom: none; }
+.notif-item.unread { border-left: none; }
+.notif-item.unread .notif-message::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  margin-right: 7px;
+  vertical-align: 2px;
+}
+
+/* ── 6. 피드의 .post-card와 입력 폼(.form-section)은 그대로 흰 면 ──
+   여러 개가 연달아 붙는 곳이라 면으로 서로 구분해야 한다. */
+
+/* ── 시안에 없던 한 곳 ───────────────────────────────────────
+   프로필의 「사진 고르기」는 파일 고르기라 <label class="secondary">다.
+   위 규칙이 button.secondary만 잡아서, 같은 .secondary인데 혼자 흰 알약으로 남는다.
+   바로 옆 「수정」과 같은 것으로 보여야 하므로 label도 같이 잡는다. */
+label.secondary {
+  background: var(--accent-soft);
+  border-color: transparent;
+  border-radius: 8px;
+  color: var(--accent);
+  min-height: 34px;
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 600;
+}
