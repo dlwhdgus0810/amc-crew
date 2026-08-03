@@ -46,7 +46,7 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const t = useT();
   // 카드 하단 「다음 일정」 한 줄
-  const summaryFor = useNextMeetups();
+  const { summaryFor } = useNextMeetups();
 
   useEffect(() => {
     Promise.all([

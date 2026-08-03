@@ -93,7 +93,7 @@ export default function HubPage() {
   const t = useT();
   const favs = useMemo(() => new Set(favList), [favList]);
   // 카드 하단 「다음 일정」 한 줄 — 늦게 도착해도 레이아웃이 흔들리지 않는다
-  const summaryFor = useNextMeetups();
+  const { summaryFor, settled: summariesReady } = useNextMeetups();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -300,10 +300,29 @@ export default function HubPage() {
     if (res.ok) setFavList((await res.json()).favorites ?? next);
   }
 
-  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
+  /*
+   * 즐겨찾기가 없으면 무엇을 띄울지가 요약(예정된 모임)에 달려 있다.
+   * 그 답이 오기 전에 그리면 열두 장이 깔렸다가 몇 장으로 접히는 게 눈에 보인다.
+   */
+  if (loading || (favList.length === 0 && !summariesReady)) return <p className="subtitle">{t(T.loading)}</p>;
 
-  // 즐겨찾기가 있으면 홈에는 그것만 — 사용자가 정한 순서대로. 나머지는 "전체 카테고리"에서 본다
-  const shown = favList.length > 0 ? favList.map(getCategory).filter((c) => c !== undefined) : CATEGORIES;
+  /*
+   * 홈에 뭘 띄울지.
+   *
+   *  1) 즐겨찾기가 있으면 그것만 — 사용자가 정한 순서대로.
+   *  2) 없으면 예정된 모임이 있는 카테고리만. 열두 장을 다 늘어놓으면 오늘 갈 곳이 어디인지
+   *     한눈에 안 들어오는데, 모임이 있는 카드만 남기면 그게 곧 오늘의 목록이 된다.
+   *  3) 그것도 없으면(아직 아무도 안 열었거나 요약을 불러오는 중) 예전처럼 전부.
+   *
+   * summaryFor는 예정된 모임이 있을 때만 when을 준다 (없으면 「예정된 모임 없음」 한 줄뿐).
+   */
+  const withUpcoming = CATEGORIES.filter((c) => summaryFor(c.slug, c.kind)?.when);
+  const shown =
+    favList.length > 0
+      ? favList.map(getCategory).filter((c) => c !== undefined)
+      : withUpcoming.length > 0
+        ? withUpcoming
+        : CATEGORIES;
   const canReorder = Boolean(user) && favList.length > 1;
   /*
    * 그날의 문구. todayLocal()은 앱 시간대(America/Chicago)로 날짜를 내므로

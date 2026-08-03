@@ -34,12 +34,23 @@ export interface CardSummary {
   detail?: string;
 }
 
-/**
- * 카드 하단 한 줄을 만드는 함수를 돌려준다.
- * 아직 불러오는 중이면 null을 주므로 줄이 나타나지 않고, 받은 뒤 조용히 채워진다.
- */
-export default function useNextMeetups(): (slug: string, kind?: 'movie' | 'posts') => CardSummary | null {
+export interface NextMeetups {
+  /** 카드 하단 한 줄. 아직 불러오는 중이면 null이라 줄이 나타나지 않고, 받은 뒤 조용히 채워진다 */
+  summaryFor: (slug: string, kind?: 'movie' | 'posts') => CardSummary | null;
+  /**
+   * 요청이 끝났는지 (성공이든 실패든).
+   *
+   * 홈은 「예정된 모임이 있는 카테고리만」을 고르는 데 이 답이 필요해서, 오기 전에 그리면
+   * 열두 장이 깔렸다가 두세 장으로 접히는 게 눈에 보인다. 실패해도 true가 되어야 한다 —
+   * 아니면 요약 서버가 조용히 죽었을 때 홈이 영영 「불러오는 중」에 머문다.
+   */
+  settled: boolean;
+}
+
+/** 카테고리별 다음 모임 요약 — 홈과 카테고리 목록이 같이 쓴다 */
+export default function useNextMeetups(): NextMeetups {
   const [data, setData] = useState<{ today: string; summaries: Record<string, NextMeetup> } | null>(null);
+  const [settled, setSettled] = useState(false);
   const t = useT();
   const locale = useLocale();
 
@@ -52,13 +63,16 @@ export default function useNextMeetups(): (slug: string, kind?: 'movie' | 'posts
       })
       .catch(() => {
         /* 요약은 부가 정보라 실패하면 줄을 그리지 않는다 */
+      })
+      .finally(() => {
+        if (alive) setSettled(true);
       });
     return () => {
       alive = false;
     };
   }, []);
 
-  return (slug: string, kind: 'movie' | 'posts' = 'posts') => {
+  const summaryFor = (slug: string, kind: 'movie' | 'posts' = 'posts') => {
     if (!data) return null;
     const next = data.summaries[slug];
     if (!next) return { detail: t(T.noUpcoming) };
@@ -80,4 +94,6 @@ export default function useNextMeetups(): (slug: string, kind?: 'movie' | 'posts
     const head = kind === 'movie' ? (next.title ?? next.location) : next.location;
     return { when, detail: `${head} · ${people}` };
   };
+
+  return { summaryFor, settled };
 }
