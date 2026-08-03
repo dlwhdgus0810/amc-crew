@@ -31,6 +31,24 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-03T18:05',
+    title: { ko: '홈 첫 줄이 날마다 바뀌어요', en: 'The line on the home screen changes daily' },
+    items: [
+      {
+        ko: '「취미로 모이는 크루」 자리에 날마다 다른 문구가 떠요. 열네 개를 돌리니 두 주에 한 바퀴예요.',
+        en: 'A different line greets you each day — fourteen of them, so it comes back around every two weeks.',
+      },
+      {
+        ko: '같은 날에는 모두 같은 문구를 봐요. 무작위가 아니라 날짜로 정해져 있어서, 새로고침해도 안 바뀌어요.',
+        en: 'Everyone sees the same line on the same day — it’s picked by the date, not at random.',
+      },
+      {
+        ko: '센스 있는 문구를 받습니다. 건의함에 남겨주시면 넣을게요. 채택되면 그날 홈에 뜹니다.',
+        en: 'Got a good one? Drop it in the suggestion box — if it lands, it goes up on the home screen.',
+      },
+    ],
+  },
+  {
     at: '2026-08-03T15:40',
     notable: true,
     title: { ko: '호스트 순위가 사람 수로 바뀌었어요', en: 'Host ranking now counts people' },
