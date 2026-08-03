@@ -116,6 +116,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     capacity = n;
   }
 
+  // 지난 모임을 고치는 건 바로잡는 일이지 알릴 일이 아니다 (고치기 전 기준으로 본다)
+  const editingPast = isPastSlot(post.date, post.startTime, post.endTime);
+
   await updatePost({
     postId: id,
     category: post.category,
@@ -134,6 +137,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       : {}),
     ...(coHostId !== undefined ? { coHostId } : {}),
     ...(typeof body?.allowNicknames === 'boolean' ? { allowNicknames: body.allowNicknames } : {}),
+    ...(editingPast ? { silent: true } : {}),
     origin: siteUrl(req.nextUrl.origin),
   });
   return NextResponse.json({ ok: true });

@@ -780,10 +780,17 @@ export async function updatePost(input: {
   coHostId?: string | null;
   /** 주지 않으면 지금 값을 그대로 둔다 */
   allowNicknames?: boolean;
+  /**
+   * 변경 알림을 보내지 않는다.
+   *
+   * 지난 모임을 손볼 때 쓴다 — 이미 끝난 모임의 장소나 명단을 바로잡는 일이라,
+   * 「모임 변경」이 날아가면 받는 사람은 다시 확인할 것이 있는 줄 안다.
+   */
+  silent?: boolean;
   origin?: string;
 }): Promise<void> {
   const db = await getDb();
-  const recipients = await participantIdsExcept(input.postId, input.actorId);
+  const recipients = input.silent ? [] : await participantIdsExcept(input.postId, input.actorId);
   const notice = await buildNotice(recipients, (locale) =>
     pick(locale, N.byActor, {
       text: describeForNotification(
