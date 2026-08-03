@@ -899,17 +899,47 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
 @media (hover: hover) { .poster-zoom-close:hover { background: rgba(255, 255, 255, 0.28); color: #fff; } }
 
 /* ── 알림 지우기 ────────────────────────────────────────────── */
-.notif-row { display: flex; align-items: stretch; gap: 6px; }
-/* min-width: 0 — 긴 알림 문구가 ✕ 버튼을 화면 밖으로 밀어내지 않게 */
-.notif-row > :first-child { min-width: 0; }
-.notif-del {
-  flex: none; align-self: center;
-  width: 32px; height: 32px; padding: 0; border-radius: 999px;
-  border: none; background: transparent; color: var(--text-dim);
-  font-size: 13px; line-height: 1; cursor: pointer;
+/* ── 알림 줄: 왼쪽으로 밀어 지우기 ──────────────────────────
+   ✕ 버튼을 줄 안에 두면 그만큼 문구 자리가 좁아져 한 줄이 두 줄이 된다.
+   버튼을 줄 뒤에 숨기고 밀었을 때만 꺼낸다 (app/notif-swipe.tsx). */
+.notif-swipe {
+  position: relative;
+  /* 뒤에 숨은 버튼이 카드 모서리 밖으로 나오지 않게 */
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 10px;
 }
-@media (hover: hover) { .notif-del:hover { background: var(--surface-2); color: var(--text); } }
-.notif-del:disabled { opacity: 0.4; }
+/* 몸통이 밀려도 카드 사이 간격은 그대로 — 안쪽 알림 카드의 여백은 지운다 */
+.notif-swipe .notif-item { margin-bottom: 0; }
+.notif-swipe-body {
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
+  will-change: transform;
+  /* 세로 스크롤은 브라우저에, 가로는 우리가 — 미는 동안 화면이 같이 흔들리지 않는다 */
+  touch-action: pan-y;
+}
+.notif-swipe-del {
+  position: absolute;
+  /* 1px 들여 놓는다 — 딱 맞추면 둥근 모서리와 몸통 사이로 빨간 선이 비친다 */
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: 88px;
+  border-radius: 0 var(--r) var(--r) 0;
+  border: none;
+  border-radius: 0;
+  background: var(--danger);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.notif-swipe-del:disabled { opacity: 0.6; }
+
+/* 지운 알림 목록 — 되돌릴 수 있게 흐리게 보여준다 */
+.notif-gone { opacity: 0.65; }
+.notif-gone .notif-message { text-decoration: line-through; text-decoration-color: var(--text-dim); }
 
 /* ── 정산 ───────────────────────────────────────────────────── */
 .settle-eyebrow { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--text-dim); }

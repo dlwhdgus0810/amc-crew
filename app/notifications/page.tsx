@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import { Locale, pick } from '@/lib/i18n';
 import { FRIEND_KINDS, NOTIF, POST_KINDS } from '@/lib/notif-kinds';
+import NotifSwipe from '../notif-swipe';
 
 const T = {
   friends: { ko: '친구', en: 'Friends' },
@@ -26,6 +27,15 @@ const T = {
   daysAgo: { ko: '{n}일 전', en: '{n}d ago' },
   del: { ko: '지우기', en: 'Delete' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t delete that.' },
+  swipeHint: {
+    ko: '알림을 왼쪽으로 밀면 지울 수 있어요.',
+    en: 'Swipe an alert left to delete it.',
+  },
+  trash: { ko: '지운 알림', en: 'Deleted' },
+  trashEmpty: { ko: '지운 알림이 없어요.', en: 'Nothing deleted yet.' },
+  restore: { ko: '되돌리기', en: 'Restore' },
+  restoreFailed: { ko: '되돌리지 못했어요.', en: 'Couldn’t restore that.' },
+  deletedAt: { ko: '{when} 지움', en: 'deleted {when}' },
 };
 
 interface Notification {
@@ -56,29 +66,35 @@ export default function NotificationsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingFriends, setPendingFriends] = useState(0);
+  /** 지운 알림 — 열어봤을 때만 불러온다 */
+  const [trash, setTrash] = useState<Notification[] | null>(null);
+  const [trashOpen, setTrashOpen] = useState(false);
   const t = useT();
   const locale = useLocale();
 
+  /** 되돌리기처럼 목록이 바뀌는 일이 있어서 따로 뺐다 (읽음 처리는 처음 볼 때만) */
+  async function load(markRead = false) {
+    const r = await fetch('/api/notifications', { cache: 'no-store' });
+    if (r.status === 401) {
+      setNeedLogin(true);
+      return;
+    }
+    const data = await r.json();
+    setItems(data.notifications ?? []);
+    setPendingFriends(data.pendingFriends ?? 0);
+    // 목록을 봤으면 전부 읽음 처리 (벨 배지 갱신은 다음 페이지 이동 시)
+    if (markRead && (data.unreadCount ?? 0) > 0) {
+      await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+    }
+  }
+
   useEffect(() => {
-    fetch('/api/notifications')
-      .then(async (r) => {
-        if (r.status === 401) {
-          setNeedLogin(true);
-          return;
-        }
-        const data = await r.json();
-        setItems(data.notifications ?? []);
-        setPendingFriends(data.pendingFriends ?? 0);
-        // 목록을 봤으면 전부 읽음 처리 (벨 배지 갱신은 다음 페이지 이동 시)
-        if ((data.unreadCount ?? 0) > 0) {
-          await fetch('/api/notifications/read', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-          });
-        }
-      })
-      .finally(() => setLoading(false));
+    load(true).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** 지우면 화면에서 먼저 없앤다 — 실패하면 문구를 띄우고 되돌린다 */
@@ -91,6 +107,29 @@ export default function NotificationsPage() {
     if (!res.ok) {
       setItems(before);
       setError(t(T.delFailed));
+    }
+    setBusy(null);
+    // 지운 목록을 열어 두고 있었다면 방금 지운 것이 거기 보여야 한다
+    if (trashOpen) void loadTrash();
+  }
+
+  async function loadTrash() {
+    const res = await fetch('/api/notifications/deleted', { cache: 'no-store' });
+    if (res.ok) setTrash((await res.json()).notifications ?? []);
+  }
+
+  async function restore(id: string) {
+    setBusy(id);
+    setError(null);
+    const res = await fetch('/api/notifications/deleted', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) setError(t(T.restoreFailed));
+    else {
+      setTrash((list) => (list ?? []).filter((n) => n.id !== id));
+      await load();
     }
     setBusy(null);
   }
@@ -154,25 +193,50 @@ export default function NotificationsPage() {
           </div>
         );
         return (
-          <div key={n.id} className="notif-row">
+          <NotifSwipe key={n.id} label={t(T.del)} disabled={busy === n.id} onDelete={() => remove(n.id)}>
             {href ? (
-              <Link href={href} style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}>
+              <Link href={href} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                 {inner}
               </Link>
             ) : (
-              <div style={{ flex: 1, minWidth: 0 }}>{inner}</div>
+              inner
             )}
-            <button
-              className="notif-del"
-              aria-label={t(T.del)}
-              disabled={busy === n.id}
-              onClick={() => remove(n.id)}
-            >
-              ✕
-            </button>
-          </div>
+          </NotifSwipe>
         );
       })}
+
+      {items.length > 0 && <p className="hint">{t(T.swipeHint)}</p>}
+
+      {/* 지운 알림 — 잘못 지웠을 때 찾아볼 자리 */}
+      <button
+        className="link-btn"
+        style={{ marginTop: 18 }}
+        onClick={() => {
+          const next = !trashOpen;
+          setTrashOpen(next);
+          if (next && trash === null) void loadTrash();
+        }}
+      >
+        {t(T.trash)} {trashOpen ? '▴' : '▾'}
+      </button>
+
+      {trashOpen &&
+        (trash === null ? (
+          <p className="hint">{t(T.loading)}</p>
+        ) : trash.length === 0 ? (
+          <p className="hint">{t(T.trashEmpty)}</p>
+        ) : (
+          trash.map((n) => (
+            <div key={n.id} className="notif-item notif-gone">
+              <span className="notif-message">{n.message}</span>
+              <span className="friend-actions">
+                <button className="link-btn" disabled={busy === n.id} onClick={() => restore(n.id)}>
+                  {t(T.restore)}
+                </button>
+              </span>
+            </div>
+          ))
+        ))}
     </>
   );
 }

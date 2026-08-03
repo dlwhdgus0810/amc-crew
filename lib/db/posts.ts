@@ -1144,6 +1144,48 @@ export async function softDeleteNotification(id: string, userId: string): Promis
   return rows.length > 0;
 }
 
+/**
+ * 내가 지운 알림 — 지운 사람 본인이 다시 모아 볼 수 있게.
+ *
+ * 지우는 건 되돌릴 수 없는 일처럼 느껴지지만 실제로는 표시만 하는 것이라(deleted_at),
+ * 잘못 지웠을 때 찾아볼 자리가 있어야 한다.
+ */
+export async function listMyDeletedNotifications(userId: string, limit = 100) {
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: notifications.id,
+      postId: notifications.postId,
+      kind: notifications.kind,
+      message: notifications.message,
+      createdAt: notifications.createdAt,
+      deletedAt: notifications.deletedAt,
+    })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), isNotNull(notifications.deletedAt)))
+    .orderBy(desc(notifications.deletedAt))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: r.id,
+    postId: r.postId,
+    kind: r.kind,
+    message: r.message,
+    createdAt: r.createdAt.toISOString(),
+    deletedAt: r.deletedAt!.toISOString(),
+  }));
+}
+
+/** 지운 알림을 되살린다 (본인 것만) */
+export async function restoreNotification(id: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  const rows = await db
+    .update(notifications)
+    .set({ deletedAt: null })
+    .where(and(eq(notifications.id, id), eq(notifications.userId, userId), isNotNull(notifications.deletedAt)))
+    .returning();
+  return rows.length > 0;
+}
+
 /** 관리자 화면용 — 지워진 알림 목록 (누가 무엇을 지웠는지) */
 export async function listDeletedNotifications(limit = 100) {
   const db = await getDb();
