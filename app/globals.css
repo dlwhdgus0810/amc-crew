@@ -6,14 +6,9 @@
    ============================================================ */
 
 /*
- * 웹폰트는 반드시 여기(첫 CSS 파일 맨 앞)에서 부른다.
- *
- * @import는 다른 규칙보다 앞에 있어야만 유효하다. 빌드가 여러 CSS 파일을 하나로 붙이는데,
- * 뒤쪽 파일(font-plex.css 등)에 적어 두면 합쳐진 결과에서는 규칙 한가운데에 놓여
- * 브라우저가 통째로 무시한다 — 개발 서버는 @import를 맨 위로 끌어올려 주기 때문에
- * 로컬에서는 멀쩡해 보이고 배포본에서만 글꼴이 빠진다.
+ * 웹폰트는 app/layout.tsx에서 next/font로 받는다 — 빌드 때 내려받아 우리 도메인에서 준다.
+ * CSS @import로 부르면 합쳐진 파일에서 규칙 뒤로 밀려 통째로 무시되는 일이 있었다.
  */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
 
 :root {
   --bg: #f7f6f2;
@@ -30,7 +25,7 @@
   --warn: #e9a300;
   --danger: #c81e1e;
   --danger-border: #e3b9b9;
-  --mono: 'IBM Plex Mono', monospace;
+  --mono: var(--font-mono), 'IBM Plex Mono', monospace;
   --r: 14px;
   --r-sm: 12px;
   /* 떠 있는 탭바가 차지하는 높이 (캡슐 64px + 아래 여백 14px + safe-area) */
@@ -470,7 +465,7 @@ button.big-cta .arrow { color: #fff; }
 /* ── 그룹 ───────────────────────────────────────────────── */
 .group-card { display: flex; gap: 14px; align-items: flex-start; }
 .group-card .g-count {
-  font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700;
+  font-family: var(--font-grotesk), 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700;
   color: #fff; background: var(--accent); border-radius: var(--r-sm);
   width: 44px; height: 44px; flex: none;
   display: flex; align-items: center; justify-content: center; line-height: 1;

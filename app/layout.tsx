@@ -5,6 +5,7 @@
    ============================================================ */
 
 import type { Metadata, Viewport } from 'next';
+import { IBM_Plex_Mono, IBM_Plex_Sans_KR, Space_Grotesk } from 'next/font/google';
 import Link from 'next/link';
 import NavLinks, { ContextTabs } from './nav';
 import ServiceWorkerRegistrar from './sw-register';
@@ -18,6 +19,41 @@ import { I18nProvider } from './i18n';
 import { getLocale } from '@/lib/locale';
 import { SITE_URL } from '@/lib/site';
 import { pick } from '@/lib/i18n';
+
+/*
+ * 글꼴은 빌드 때 받아 우리 도메인에서 준다.
+ *
+ * CSS의 @import로 구글에서 바로 받으면 두 가지가 문제였다:
+ *  - 합쳐진 CSS에서 규칙 뒤로 밀리면 브라우저가 통째로 무시한다 (배포본에서만 글꼴이 빠졌다)
+ *  - 글꼴을 받으러 구글까지 한 번 더 다녀오는 동안 시스템 글꼴로 그려졌다가 바뀐다
+ * next/font는 파일을 함께 배포한다.
+ *
+ * preload는 끈다. 한글은 글리프가 많아 글꼴 하나가 unicode-range로 백 조각쯤 쪼개져 있는데,
+ * preload를 켜두면 그 조각을 전부 미리 받는다 — 한 화면 여는 데 246개·2MB가 나갔다.
+ * 끄면 브라우저가 화면에 실제로 쓰인 글자의 조각만 가져온다.
+ */
+const sans = IBM_Plex_Sans_KR({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-sans',
+});
+const mono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-mono',
+});
+/** 그룹 카드의 숫자와 AMC 제목에만 쓴다 */
+const grotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['500', '700'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-grotesk',
+});
 import './globals.css';
 // 타입 보정 — 굵기·행간·자간·라벨 표기만 (구조·서체는 그대로)
 import './type-tune.css';
@@ -78,7 +114,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${sans.variable} ${mono.variable} ${grotesk.variable}`}>
       <body>
         <I18nProvider locale={locale}>
           <ServiceWorkerRegistrar />

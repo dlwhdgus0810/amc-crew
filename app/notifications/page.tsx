@@ -14,10 +14,6 @@ const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   title: { ko: '알림', en: 'Alerts' },
   loginPrompt: { ko: '카카오 로그인 후 알림을 볼 수 있어요.', en: 'Log in with Kakao to see your alerts.' },
-  subtitle: {
-    ko: '구독한 취미에 새 모임이 올라오면 여기에 표시돼요.',
-    en: 'New meetups in the hobbies you follow show up here.',
-  },
   empty: {
     ko: '아직 알림이 없어요. 홈에서 관심 있는 취미를 구독해보세요!',
     en: 'No alerts yet. Subscribe to a hobby on the home page!',
@@ -28,6 +24,7 @@ const T = {
   daysAgo: { ko: '{n}일 전', en: '{n}d ago' },
   del: { ko: '지우기', en: 'Delete' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t delete that.' },
+  /* 제목 바로 아래에 둔다 — 지우는 방법을 모르면 목록 끝까지 내려갈 이유가 없다 */
   swipeHint: {
     ko: '알림을 왼쪽으로 밀면 지울 수 있어요.',
     en: 'Swipe an alert left to delete it.',
@@ -149,7 +146,7 @@ export default function NotificationsPage() {
   return (
     <>
       <h1>{t(T.title)}</h1>
-      <p className="subtitle">{t(T.subtitle)}</p>
+      <p className="subtitle">{t(T.swipeHint)}</p>
 
       <Link href="/friends" className="card friend-entry">
         <span className="friend-entry-text">
@@ -216,8 +213,6 @@ export default function NotificationsPage() {
           </NotifSwipe>
         );
       })}
-
-      {items.length > 0 && <p className="hint">{t(T.swipeHint)}</p>}
 
       {/* 지운 알림 — 잘못 지웠을 때 찾아볼 자리 */}
       <button

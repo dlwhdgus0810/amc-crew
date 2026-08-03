@@ -255,7 +255,7 @@ export default function PickPage() {
 
   return (
     <>
-      <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", color: 'var(--accent)', fontWeight: 700 }}>
+      <h1 style={{ fontFamily: "var(--font-grotesk), 'Space Grotesk', sans-serif", color: 'var(--accent)', fontWeight: 700 }}>
         AMC
       </h1>
       <p className="subtitle">

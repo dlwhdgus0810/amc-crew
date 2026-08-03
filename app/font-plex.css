@@ -15,7 +15,7 @@
  */
 
 :root {
-  --sans: 'IBM Plex Sans KR', -apple-system, 'Malgun Gothic', sans-serif;
+  --sans: var(--font-sans), 'IBM Plex Sans KR', -apple-system, 'Malgun Gothic', sans-serif;
 }
 
 body,
