@@ -9,7 +9,10 @@
    3) type-tune.css가 Pretendard로 못 박아둔 라벨들을 --sans로 되돌린다
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+/*
+ * 글꼴 불러오기는 app/globals.css 맨 앞으로 옮겼다.
+ * 여기(마지막에 합쳐지는 파일)에 두면 합쳐진 CSS에서 규칙 뒤에 놓여 무시된다.
+ */
 
 :root {
   --sans: 'IBM Plex Sans KR', -apple-system, 'Malgun Gothic', sans-serif;
