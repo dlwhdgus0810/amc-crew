@@ -72,9 +72,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
    * 점수가 걸린 자리를 서로 뺏을 수 있다.
    */
   let coHostId: string | null | undefined;
-  if (body?.coHostId !== undefined && post.authorId === user.id) {
+  if (body?.coHostId !== undefined && (post.authorId === user.id || isAdmin(user))) {
     coHostId = typeof body.coHostId === 'string' && body.coHostId ? body.coHostId : null;
-    if (coHostId && (coHostId === user.id || !(await friendIds(user.id)).includes(coHostId))) {
+    /*
+     * 만든 사람은 자기 친구 중에서만 고른다. 관리자는 그 제한을 받지 않는다 —
+     * 명단을 바로잡는 사람이라 친구가 아닌 사람도 호스트로 세울 일이 있다.
+     * 다만 만든 사람 자신을 공동 호스트로 넣는 건 누구든 막는다 (한 사람이 두 몫을 가져간다).
+     */
+    if (coHostId && coHostId === post.authorId) {
+      return await errJson(E.coHostIsAuthor, 400);
+    }
+    if (coHostId && !isAdmin(user) && !(await friendIds(user.id)).includes(coHostId)) {
       return await errJson(E.coHostNotFriend, 400);
     }
   }

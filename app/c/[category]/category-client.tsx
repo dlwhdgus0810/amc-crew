@@ -307,6 +307,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
   const [tapped, setTapped] = useState<Person | null>(null);
   /** 친구를 넣을 모임 (＋친구 창) */
   const [addTo, setAddTo] = useState<PostView | null>(null);
+  /** 관리자만 — 친구가 아닌 사람도 넣을 수 있어야 해서 회원 전체를 받아둔다 */
+  const [members, setMembers] = useState<Person[]>([]);
 
   async function loadPosts() {
     const data = await fetch(`/api/posts?category=${slug}`).then((r) => r.json());
@@ -361,6 +363,13 @@ export default function CategoryClient({ slug }: { slug: string }) {
         setUser(auth.user ?? null);
         setIsAdmin(Boolean(auth.isAdmin));
         setSubscribed((sub.subscriptions ?? []).includes(slug));
+        // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
+        if (auth.isAdmin) {
+          fetch('/api/admin/members')
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => d && setMembers(d.members ?? []))
+            .catch(() => {});
+        }
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -714,7 +723,12 @@ export default function CategoryClient({ slug }: { slug: string }) {
       {addTo && (
         <AddFriendSheet
           postId={addTo.id}
-          candidates={friends.friends.filter((f) => !addTo.participants.some((p) => p.id === f.id))}
+          candidates={(isAdmin ? members : friends.friends).filter(
+            (f) => !addTo.participants.some((p) => p.id === f.id)
+          )}
+          {...(isAdmin
+            ? { roster: addTo.participants.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar })) }
+            : {})}
           onClose={() => setAddTo(null)}
           onDone={reloadAll}
         />
@@ -929,15 +943,16 @@ export default function CategoryClient({ slug }: { slug: string }) {
              * 점수를 나눠 갖는 자리라 "몇 명까지"가 규칙으로 분명해야 한다.
              * 수정에서는 만든 사람에게만 보인다 (공동 호스트가 자기를 갈아끼우지 못하게).
              */}
-            {(isCreate || editing?.authorId === user?.id) && (
+            {(isCreate || editing?.authorId === user?.id || isAdmin) && (
               <div className="invite-pick" style={{ marginTop: 12 }}>
                 <div className="field-label">{t(T.coHostLabel)}</div>
-                {friends.friends.length === 0 ? (
+                {(isAdmin ? members : friends.friends).length === 0 ? (
                   <p className="hint">{t(T.coHostNone)}</p>
                 ) : (
                   <>
                     <div className="people-list">
-                      {friends.friends.map((f) => (
+                      {/* 관리자는 친구가 아닌 사람도 세울 수 있다 (서버도 같은 예외를 둔다) */}
+                      {(isAdmin ? members : friends.friends).map((f) => (
                         <button
                           key={f.id}
                           className={`person-chip pick ${fCoHost === f.id ? 'on' : ''}`}
@@ -1143,8 +1158,9 @@ export default function CategoryClient({ slug }: { slug: string }) {
                 </button>
               );
             })}
-            {/* 대신 넣기 — 명단에 없는 친구를 부르는 입구라 참가자 칩과는 따로 둔다 */}
-            {user && !past && !full && (
+            {/* 대신 넣기 — 명단에 없는 친구를 부르는 입구라 참가자 칩과는 따로 둔다.
+                관리자는 명단을 고치는 사람이라 지난 모임·정원 초과에도 열린다 */}
+            {user && (isAdmin || (!past && !full)) && (
               <button className="person-chip add" onClick={() => setAddTo(post)}>
                 ＋ {t(T.friendChip)}
               </button>

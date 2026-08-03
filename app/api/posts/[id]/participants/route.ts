@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
-import { getSessionUser } from '@/lib/auth';
+import { getSessionUser, isAdmin } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
-import { getPost, isParticipant, joinPost, notifyAddedToPost, notifyFriendJoin } from '@/lib/db/posts';
+import { getPost, isParticipant, joinPost, leavePost, notifyAddedToPost, notifyFriendJoin } from '@/lib/db/posts';
 import { areFriends, friendIds } from '@/lib/db/friends';
 import { isPastSlot } from '@/lib/dates';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
@@ -37,15 +37,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!friendId) {
     return await errJson(E.badRequest, 400);
   }
-  if (isPastSlot(post.date, post.startTime, post.endTime)) {
-    return await errJson(E.friendAddPast, 400);
-  }
-  // 이 모임에 있는 사람만 남을 부를 수 있다 — 지나가던 사람이 남의 모임 명단을 채우면 안 된다
-  if (!(await isParticipant(id, user.id))) {
-    return await errJson(E.friendAddOnly, 403);
-  }
-  if (!(await areFriends(user.id, friendId))) {
-    return await errJson(E.friendNotFriend, 403);
+  /*
+   * 관리자는 명단을 고치는 사람이라 위 조건들을 지나간다.
+   * 지난 모임에 빠진 사람을 넣거나, 친구가 아닌 사람을 넣는 일이 실제로 생긴다 —
+   * 그걸 못 하면 명단이 틀린 채로 굳고, 호스트 점수까지 같이 틀어진다.
+   */
+  const asAdmin = isAdmin(user);
+  if (!asAdmin) {
+    if (isPastSlot(post.date, post.startTime, post.endTime)) {
+      return await errJson(E.friendAddPast, 400);
+    }
+    // 이 모임에 있는 사람만 남을 부를 수 있다 — 지나가던 사람이 남의 모임 명단을 채우면 안 된다
+    if (!(await isParticipant(id, user.id))) {
+      return await errJson(E.friendAddOnly, 403);
+    }
+    if (!(await areFriends(user.id, friendId))) {
+      return await errJson(E.friendNotFriend, 403);
+    }
   }
   // joinPost는 이미 참가 중이어도 true를 주므로, 중복 알림은 여기서 막는다
   if (await isParticipant(id, friendId)) {
@@ -53,7 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   await ensureUser(user);
-  if (!(await joinPost(id, friendId, post.capacity))) {
+  if (!(await joinPost(id, friendId, asAdmin ? null : post.capacity))) {
     return await errJson(E.postFull, 409);
   }
 
@@ -69,5 +77,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     console.error('[participants] notify failed:', e);
   }
 
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * 명단에서 뺀다 — 관리자만.
+ *
+ * 본인이 나가는 것은 /join의 DELETE가 맡는다. 이쪽은 "남을 뺀다"라서 따로 둔다.
+ * 뺀 사람에게는 알리지 않는다. 대개 잘못 올라간 이름을 바로잡는 일이라,
+ * 알림이 가면 오히려 무슨 일인가 싶어진다.
+ */
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) {
+    return await errJson(E.loginRequired, 401);
+  }
+  if (!isAdmin(user)) {
+    return await errJson(E.adminOnly, 403);
+  }
+  const { id } = await params;
+  const post = await getPost(id);
+  if (!post) {
+    return await errJson(E.postNotFound, 404);
+  }
+  const body = await req.json().catch(() => null);
+  const targetId = typeof body?.userId === 'string' ? body.userId : '';
+  if (!targetId) {
+    return await errJson(E.badRequest, 400);
+  }
+  if (!(await isParticipant(id, targetId))) {
+    return await errJson(E.notParticipant, 404);
+  }
+  await leavePost(id, targetId);
   return NextResponse.json({ ok: true });
 }

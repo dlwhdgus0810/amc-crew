@@ -35,6 +35,7 @@ export const E = {
   commentOwnerOnly: { ko: '본인 댓글만 삭제할 수 있어요.', en: 'You can only delete your own comments.' },
   ruleNotFound: { ko: '반복 설정을 찾을 수 없어요.', en: 'Repeat setting not found.' },
   ruleOwnerOnly: { ko: '만든 사람만 반복을 중단할 수 있어요.', en: 'Only the host can stop the repeat.' },
+  notParticipant: { ko: '그 사람은 이 모임 명단에 없어요.', en: 'They aren’t in this meetup.' },
   adminOnly: { ko: '관리자만 사용할 수 있어요.', en: 'Admins only.' },
   adminOnlyReview: { ko: '관리자만 검토할 수 있어요.', en: 'Only admins can review suggestions.' },
   requestNotFound: { ko: '제안을 찾을 수 없어요.', en: 'Suggestion not found.' },
@@ -70,6 +71,10 @@ export const E = {
   pastDelete: {
     ko: '이미 지난 모임은 지울 수 없어요. 기록으로 남겨둬요.',
     en: 'A meetup that already happened can’t be deleted — it stays as a record.',
+  },
+  coHostIsAuthor: {
+    ko: '모임을 만든 사람은 같이 여는 사람으로 넣을 수 없어요.',
+    en: 'The person who made the meetup is already a host.',
   },
   coHostNotFriend: {
     ko: '같이 여는 사람은 친구 중에서 고를 수 있어요.',
