@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Showtime, Selections } from '@/lib/types';
 import { useLocale, useT } from '../../i18n';
+import { useViewer } from '../../session';
 import { dateLabelShort, timeLabel } from '@/lib/datefmt';
 import { Locale } from '@/lib/i18n';
 
@@ -57,8 +58,10 @@ function describe(s: Showtime, locale: Locale): string {
 
 export default function GroupsPage() {
   const [selections, setSelections] = useState<Selections>({});
-  const [me, setMe] = useState<{ id: string; name: string } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // 레이아웃이 서버에서 읽어 둔 세션
+  const viewer = useViewer();
+  const me = viewer.user;
+  const isAdmin = viewer.isAdmin;
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
   // 회차 id → 이미 만들어진 모임 id
@@ -102,14 +105,9 @@ export default function GroupsPage() {
     }
   }
 
+  // 세션은 레이아웃이 서버에서 읽어 둔 것 — 여기서는 상영 선택만 받으면 된다
   useEffect(() => {
     load();
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((auth) => {
-        setMe(auth.user ?? null);
-        setIsAdmin(Boolean(auth.isAdmin));
-      });
   }, []);
 
   // 회차 정보는 각자의 선택에 스냅샷으로 들어 있어 상영표를 다시 부르지 않아도 된다

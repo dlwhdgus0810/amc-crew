@@ -16,6 +16,8 @@ import ChromeAutoHide from './chrome-autohide';
 import PresenceBeat from './presence-beat';
 import ViewingAs from './viewing-as';
 import { I18nProvider } from './i18n';
+import { SessionProvider } from './session';
+import { getViewer } from '@/lib/session';
 import { getLocale } from '@/lib/locale';
 import { SITE_URL } from '@/lib/site';
 import { pick } from '@/lib/i18n';
@@ -112,11 +114,16 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await getLocale();
+  /*
+   * 세션을 여기서 한 번 읽어 화면 전체가 나눠 쓴다 — 예전에는 탭바·정지 가리개·
+   * 대리 보기 띠·알림 권유가 각자 /api/auth/me를 불러 한 번 열 때 여섯 번이 나갔다.
+   */
+  const [locale, viewer] = await Promise.all([getLocale(), getViewer()]);
   return (
     <html lang={locale} className={`${sans.variable} ${mono.variable} ${grotesk.variable}`}>
       <body>
         <I18nProvider locale={locale}>
+          <SessionProvider value={viewer}>
           <ServiceWorkerRegistrar />
           <ChromeAutoHide />
           <PresenceBeat />
@@ -137,6 +144,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <PushNudge />
           {/* 정지된 회원에게는 이 화면이 전부를 덮는다 (실제 차단은 서버에서) */}
           <BanGate />
+          </SessionProvider>
         </I18nProvider>
       </body>
     </html>

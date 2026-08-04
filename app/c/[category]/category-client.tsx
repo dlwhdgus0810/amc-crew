@@ -31,6 +31,7 @@ import CommentThread, {CommentView} from '../../comment-thread';
 import {AddFriendSheet, FriendRequestSheet, Person, Tie} from '../../friend-sheet';
 import {siteUrl} from '@/lib/site';
 import {formatCents} from '@/lib/money';
+import {useViewer} from '../../session';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -230,8 +231,10 @@ function groupByDate(list: PostView[]) {
 }
 
 export default function CategoryClient({ slug }: { slug: string }) {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // 세션은 레이아웃이 서버에서 읽어 둔 것을 쓴다
+  const viewer = useViewer();
+  const user = viewer.user;
+  const isAdmin = viewer.isAdmin;
   const [posts, setPosts] = useState<PostView[]>([]);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -360,26 +363,27 @@ export default function CategoryClient({ slug }: { slug: string }) {
     return s;
   }
 
+  /*
+   * 세션은 레이아웃이 서버에서 읽어 둔 것이라, 관리자 명단도 답을 기다릴 필요 없이
+   * 처음부터 함께 받는다 (예전에는 /api/auth/me → isAdmin 확인 → 명단 순서였다).
+   */
   useEffect(() => {
     Promise.all([
       loadPosts(),
       // 탭 라벨에 개수를 바로 띄우려면 눌리기 전에 받아 둬야 한다 (최대 30개짜리 조회다)
       loadPast(),
-      fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
       loadFriends(),
-    ])
-      .then(([, , auth, sub]) => {
-        setUser(auth.user ?? null);
-        setIsAdmin(Boolean(auth.isAdmin));
-        setSubscribed((sub.subscriptions ?? []).includes(slug));
-        // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
-        if (auth.isAdmin) {
-          fetch('/api/admin/members')
+      // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
+      isAdmin
+        ? fetch('/api/admin/members')
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => d && setMembers(d.members ?? []))
-            .catch(() => {});
-        }
+            .catch(() => {})
+        : null,
+    ])
+      .then(([, , sub]) => {
+        setSubscribed((sub.subscriptions ?? []).includes(slug));
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CATEGORIES, catDisplayName, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../i18n';
 import { PROFILE_UPDATED } from '../nav';
+import { useViewer } from '../session';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
 import PushToggle from '../push-toggle';
 
@@ -197,22 +198,28 @@ function KakaoIcon() {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; name: string } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [nickname, setNickname] = useState<string | null>(null);
-  const [avatar, setAvatar] = useState<string | null>(null);
-  const [kakaoName, setKakaoName] = useState('');
-  const [birthday, setBirthday] = useState('');
-  const [gender, setGender] = useState<'male' | 'female' | ''>('');
+  /*
+   * 프로필 화면의 첫 값은 레이아웃이 서버에서 읽어 둔 세션에서 가져온다 —
+   * 예전에는 /api/auth/me를 다시 물어보고 답이 올 때까지 빈 화면이었다.
+   * 여기서부터는 사람이 고치는 값이므로 상태로 들고 있는다.
+   */
+  const viewer = useViewer();
+  const [user, setUser] = useState<{ id: string; name: string } | null>(viewer.user);
+  const isAdmin = viewer.isAdmin;
+  const [nickname, setNickname] = useState<string | null>(viewer.nickname);
+  const [avatar, setAvatar] = useState<string | null>(viewer.avatar);
+  const [kakaoName, setKakaoName] = useState(viewer.kakaoName);
+  const [birthday, setBirthday] = useState(viewer.birthday ?? '');
+  const [gender, setGender] = useState<'male' | 'female' | ''>((viewer.gender as 'male' | 'female') ?? '');
   const [subs, setSubs] = useState<Set<string>>(new Set());
   // 즐겨찾기는 순서가 의미를 가지므로 Set이 아니라 배열로 들고 있는다
   const [favs, setFavs] = useState<string[]>([]);
   const [newsAlerts, setNewsAlerts] = useState(false);
   const [newsBusy, setNewsBusy] = useState(false);
   const [testBusy, setTestBusy] = useState(false);
-  const [venmo, setVenmo] = useState('');
+  const [venmo, setVenmo] = useState(viewer.venmo ?? '');
   const [editingVenmo, setEditingVenmo] = useState(false);
-  const [zelle, setZelle] = useState('');
+  const [zelle, setZelle] = useState(viewer.zelle ?? '');
   const [editingZelle, setEditingZelle] = useState(false);
   const [favBusy, setFavBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -226,7 +233,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
 
   // 카카오톡 알림 동의: true=받는 중, false=받지 않음, null=확인 안 됨
-  const [talkMessage, setTalkMessage] = useState<boolean | null>(null);
+  const [talkMessage, setTalkMessage] = useState<boolean | null>(viewer.kakaoTalkMessage);
   const [talkBusy, setTalkBusy] = useState(false);
   const t = useT();
   const locale = useLocale();
@@ -234,25 +241,14 @@ export default function ProfilePage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
       fetch('/api/favorites').then((r) => r.json()),
       fetch('/api/news-alerts').then((r) => r.json()),
     ])
-      .then(([auth, sub, fav, news]) => {
-        setUser(auth.user ?? null);
-        setIsAdmin(Boolean(auth.isAdmin));
-        setNickname(auth.nickname ?? null);
-        setAvatar(auth.avatar ?? null);
-        setKakaoName(auth.kakaoName ?? '');
-        setBirthday(auth.birthday ?? '');
-        setGender(auth.gender ?? '');
-        setTalkMessage(auth.kakaoTalkMessage ?? null);
+      .then(([sub, fav, news]) => {
         setSubs(new Set(sub.subscriptions ?? []));
         setFavs(fav.favorites ?? []);
         setNewsAlerts(Boolean(news.newsAlerts));
-        setVenmo(auth.venmo ?? '');
-        setZelle(auth.zelle ?? '');
       })
       .finally(() => setLoading(false));
   }, []);

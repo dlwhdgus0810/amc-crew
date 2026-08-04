@@ -31,6 +31,7 @@ import { useT } from './i18n';
 import CategoryCard from './category-card';
 import SortableCategoryCard from './sortable-card';
 import useNextMeetups from './use-next-meetups';
+import { useViewer } from './session';
 import WhatsNewCard from './whats-new-card';
 
 const T = {
@@ -82,7 +83,6 @@ function KakaoIcon() {
 }
 
 export default function HubPage() {
-  const [user, setUser] = useState<SessionUser | null>(null);
   const [subs, setSubs] = useState<Set<string>>(new Set());
   // 즐겨찾기는 사용자가 정한 순서가 있으므로 배열로 들고 있는다
   const [favList, setFavList] = useState<string[]>([]);
@@ -104,14 +104,15 @@ export default function HubPage() {
     }
   }, []);
 
+  // 로그인한 사람은 레이아웃이 서버에서 읽어 둔 것을 쓴다 — 여기서는 구독·즐겨찾기만 받는다
+  const user = useViewer().user;
+
   useEffect(() => {
     Promise.all([
-      fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
       fetch('/api/favorites').then((r) => r.json()),
     ])
-      .then(([auth, sub, fav]) => {
-        setUser(auth.user ?? null);
+      .then(([sub, fav]) => {
         setSubs(new Set(sub.subscriptions ?? []));
         setFavList(fav.favorites ?? []);
       })

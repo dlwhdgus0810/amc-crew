@@ -3,6 +3,7 @@
 import {useEffect, useMemo, useState} from 'react';
 import {DaySchedule, Format, Selections, Showtime} from '@/lib/types';
 import { useLocale, useT } from '../i18n';
+import { useRefreshSession, useViewer } from '../session';
 import { timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
 import { Locale } from '@/lib/i18n';
 
@@ -104,7 +105,6 @@ export default function PickPage() {
   const [sample, setSample] = useState(false);
   const [loadingDay, setLoadingDay] = useState(false);
   const [selections, setSelections] = useState<Selections>({});
-  const [user, setUser] = useState<SessionUser | null>(null);
   // 고른 회차는 스냅샷째로 들고 있는다 — 저장할 때 영화·시간 정보를 함께 보내야 한다
   const [picked, setPicked] = useState<Map<string, Showtime>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -114,8 +114,6 @@ export default function PickPage() {
   // 크게 보고 있는 포스터 (null이면 닫힘)
   const [zoomed, setZoomed] = useState<{ src: string; name: string } | null>(null);
 
-  const [nickname, setNickname] = useState<string | null>(null);
-  const [kakaoName, setKakaoName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -156,14 +154,15 @@ export default function PickPage() {
     setAmcError(data.error ?? null);
   }
 
+  // 세션은 레이아웃이 서버에서 읽어 둔 것 — 상영표만 받으면 된다
+  const viewer = useViewer();
+  const refresh = useRefreshSession();
+  const user = viewer.user;
+  const nickname = viewer.nickname;
+  const kakaoName = viewer.kakaoName;
+
   useEffect(() => {
-    Promise.all([loadDay(), fetch('/api/auth/me').then((r) => r.json())])
-      .then(([, auth]) => {
-        setUser(auth.user ?? null);
-        setNickname(auth.nickname ?? null);
-        setKakaoName(auth.kakaoName ?? '');
-      })
-      .finally(() => setLoading(false));
+    loadDay().finally(() => setLoading(false));
   }, []);
 
   async function pickDate(next: string) {
@@ -223,9 +222,10 @@ export default function PickPage() {
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
     setPicked(new Map());
     setMsg(null);
+    // 세션은 서버가 들고 있다 — 다시 그리게 해서 로그아웃된 화면을 받는다
+    refresh();
   }
 
   async function saveNickname() {
@@ -239,10 +239,9 @@ export default function PickPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t(T.nicknameFailed));
-      setUser((u) => (u ? { ...u, name: data.name } : u));
-      setNickname(data.nickname ?? null);
-      setKakaoName(data.kakaoName ?? '');
       setEditingName(false);
+      // 이름·닉네임은 서버가 읽어 주는 값이라 다시 그려야 바뀐다
+      refresh();
       await loadDay(date);
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.nicknameFailed) });

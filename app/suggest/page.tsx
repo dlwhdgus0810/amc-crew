@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
+import { useViewer } from '../session';
 import type { Msg } from '@/lib/i18n';
 
 interface CategoryRequest {
@@ -82,7 +83,8 @@ function foregroundOf(hex: string): string {
 }
 
 export default function SuggestPage() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  // 로그인 여부는 레이아웃이 서버에서 읽어 둔 것 — 물어보고 기다릴 필요가 없다
+  const loggedIn = Boolean(useViewer().user);
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<CategoryRequest[]>([]);
   const [busy, setBusy] = useState(false);
@@ -102,15 +104,14 @@ export default function SuggestPage() {
     }
   }
 
+  // 예전에는 세션을 먼저 받고 그 답을 기다려 목록을 받았다 — 이제 곧바로 목록만 받는다
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then(async (auth) => {
-        setLoggedIn(Boolean(auth.user));
-        if (auth.user) await load();
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    if (!loggedIn) {
+      setLoading(false);
+      return;
+    }
+    load().finally(() => setLoading(false));
+  }, [loggedIn]);
 
   async function submit() {
     setBusy(true);

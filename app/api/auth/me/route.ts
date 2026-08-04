@@ -1,42 +1,15 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { getSessionUser, IMPERSONATOR_COOKIE, isAdmin, verifySessionToken } from '@/lib/auth';
-import { resolveDisplayName } from '@/lib/store';
-import { dbGetUser } from '@/lib/db/users';
-import { toState } from '@/lib/db/bans';
+import { getViewer } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * 내 정보.
+ *
+ * 내용은 lib/session.ts가 만든다 — 화면은 레이아웃이 서버에서 읽어 컨텍스트로 받으므로
+ * 이 라우트를 부르지 않는다. 프로필을 저장한 뒤처럼 바뀐 값을 그 자리에서 다시
+ * 확인해야 하는 곳만 남는다.
+ */
 export async function GET() {
-  const user = await getSessionUser();
-  // 관리자가 테스트 계정으로 보는 중이면 원래 세션이 쿠키에 남아 있다
-  const realUser = verifySessionToken((await cookies()).get(IMPERSONATOR_COOKIE)?.value);
-  if (!user) {
-    return NextResponse.json({ user: null, isAdmin: false, needsOnboarding: false });
-  }
-  const row = await dbGetUser(user.id);
-  const profile = row
-    ? { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] }
-    : undefined;
-  return NextResponse.json({
-    user: { id: user.id, name: resolveDisplayName(profile, user.name) },
-    nickname: row?.nickname ?? null,
-    avatar: row?.avatar ?? null,
-    venmo: row?.venmo ?? null,
-    zelle: row?.zelle ?? null,
-    kakaoName: row?.kakaoName || user.name,
-    birthday: row?.birthday ?? null,
-    gender: row?.gender ?? null,
-    needsOnboarding: !row?.birthday || !row?.gender,
-    // 카톡 알림 동의: true=동의, false=미동의, null=미확인 (외부 호출 없이 DB 값만 — nav가 전 페이지에서 호출하는 경로)
-    kakaoTalkMessage: row?.kakaoTalkMessage ?? null,
-    locale: row?.locale ?? null,
-    isAdmin: isAdmin(user),
-    /*
-     * 정지 중이면 남은 기간. 화면을 덮는 안내(app/ban-screen.tsx)가 이 값으로 타이머를 돌린다.
-     * 로그아웃 처리하지 않는 이유 — "로그인하세요"만 뜨면 왜 막혔는지 알 길이 없다.
-     */
-    ban: toState(row?.bannedUntil ?? null, row?.banReason ?? null),
-    ...(realUser ? { viewingAs: { backTo: realUser.name } } : {}),
-  });
+  return NextResponse.json(await getViewer());
 }

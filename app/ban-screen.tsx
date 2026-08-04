@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useT } from './i18n';
+import { useViewer } from './session';
 
 /**
  * 이용 정지 안내 — 화면 전체를 덮고 남은 시간을 센다.
@@ -42,21 +43,27 @@ function pad(n: number) {
 }
 
 export default function BanGate() {
-  const [ban, setBan] = useState<Ban | null>(null);
+  // 첫 값은 레이아웃이 서버에서 읽어 둔 것 — 화면이 뜨는 순간 이미 정해져 있다
+  const viewer = useViewer();
+  const [ban, setBan] = useState<Ban | null>(viewer.ban);
   const [left, setLeft] = useState(0);
   const t = useT();
 
+  /*
+   * 정지만 따로 물어보는 라우트를 쓴다. /api/auth/me를 부르면 매분 아바타(data URL)까지
+   * 딸려 오는데, 여기서 필요한 건 남은 시간과 사유 두 칸뿐이다.
+   */
   const load = useCallback(async () => {
     try {
-      const me = await fetch('/api/auth/me', { cache: 'no-store' }).then((r) => r.json());
-      setBan(me?.ban ?? null);
+      const data = await fetch('/api/session/ban', { cache: 'no-store' }).then((r) => r.json());
+      setBan(data?.ban ?? null);
     } catch {
       // 통신이 안 되면 그냥 두던 대로 둔다 — 못 불러왔다고 막을 이유는 없다
     }
   }, []);
 
   useEffect(() => {
-    load();
+    // 첫 값은 서버에서 왔으므로 바로 묻지 않는다 — 1분 뒤부터 따라간다
     const timer = setInterval(load, POLL_MS);
     return () => clearInterval(timer);
   }, [load]);

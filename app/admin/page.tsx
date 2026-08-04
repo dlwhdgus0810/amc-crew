@@ -5,6 +5,7 @@ import { useLocale, useT } from '../i18n';
 import type { Msg } from '@/lib/i18n';
 import { TEST_USERS } from '@/lib/test-users';
 import { entryLabel } from '@/lib/datefmt';
+import { useViewer } from '../session';
 
 interface CategoryRequest {
   id: string;
@@ -204,7 +205,7 @@ export default function AdminPage() {
   const [amcInfo, setAmcInfo] = useState<{ theatreId: string; theatres: { id: string; name: string; city?: string }[] } | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [isKakaoAdmin, setIsKakaoAdmin] = useState(false);
+  const isKakaoAdmin = useViewer().isAdmin;
   const [deleted, setDeleted] = useState<
     { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
   >(null);
@@ -347,22 +348,21 @@ export default function AdminPage() {
     return `${Math.floor(m / 60)}h ${m % 60}m`;
   }
 
+  /*
+   * 관리자인지는 레이아웃이 서버에서 읽어 둔 값으로 이미 안다 —
+   * 예전에는 /api/auth/me를 받고 그 답을 보고서야 네 가지를 받기 시작했다.
+   */
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((auth) => {
-        setIsKakaoAdmin(Boolean(auth.isAdmin));
-        if (auth.isAdmin) {
-          loadRequests();
-          loadTickets();
-          fetch('/api/admin/deleted-notifications')
-            .then((r) => (r.ok ? r.json() : null))
-            .then((d) => d && setDeleted(d.notifications ?? []))
-            .catch(() => {});
-          loadMembers();
-        }
-      });
-  }, []);
+    if (!isKakaoAdmin) return;
+    loadRequests();
+    loadTickets();
+    fetch('/api/admin/deleted-notifications')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setDeleted(d.notifications ?? []))
+      .catch(() => {});
+    loadMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isKakaoAdmin]);
 
   // 접속 현황은 계속 변하니 주기적으로 다시 받는다 (관리자 화면을 열어 둔 동안만)
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useViewer } from '../session';
 import { useLocale } from '../i18n';
 import { LOCALES, LOCALE_NAMES, Locale, Msg, pick } from '@/lib/i18n';
 
@@ -53,22 +54,23 @@ export default function WelcomePage() {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const t = (msg: Msg, vars?: Record<string, string | number>) => pick(locale, msg, vars);
 
+  /*
+   * 폼의 첫 값은 레이아웃이 서버에서 읽어 둔 세션에서 가져온다 —
+   * 물어보고 답을 기다리는 동안 빈 화면을 보여주지 않는다.
+   */
+  const viewer = useViewer();
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((auth) => {
-        if (!auth.user || !auth.needsOnboarding) {
-          router.replace(nextPath());
-          return;
-        }
-        setKakaoName(auth.kakaoName || auth.user.name);
-        setNickname(auth.nickname ?? '');
-        setBirthday(auth.birthday ?? '');
-        setGender(auth.gender ?? '');
-        if (auth.locale) setLocale(auth.locale);
-        setLoading(false);
-      });
-  }, [router]);
+    if (!viewer.user || !viewer.needsOnboarding) {
+      router.replace(nextPath());
+      return;
+    }
+    setKakaoName(viewer.kakaoName || viewer.user.name);
+    setNickname(viewer.nickname ?? '');
+    setBirthday(viewer.birthday ?? '');
+    setGender((viewer.gender as '' | 'male' | 'female') ?? '');
+    if (viewer.locale) setLocale(viewer.locale as Locale);
+    setLoading(false);
+  }, [viewer, router]);
 
   async function submit() {
     setSaving(true);

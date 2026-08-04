@@ -9,7 +9,8 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRefreshSession, useViewer } from './session';
 import { useT } from './i18n';
 
 /** 프로필이 바뀌었음을 탭바에 알리는 신호 */
@@ -57,38 +58,43 @@ const BellIcon = () => (
   </svg>
 );
 
-/** 로그인 상태·안 읽은 알림 수를 한 번만 읽어 두 컴포넌트가 함께 쓴다 */
+/** 로그인 상태·안 읽은 알림 수 — 세션은 레이아웃이 서버에서 읽어 둔 것을 쓴다 */
 function useSession() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [name, setName] = useState('');
-  const [avatar, setAvatar] = useState<string | null>(null);
-  const [unread, setUnread] = useState(0);
+  const viewer = useViewer();
+  const refresh = useRefreshSession();
+  const isAdmin = viewer.isAdmin;
+  const loggedIn = Boolean(viewer.user);
+  const name = viewer.user?.name ?? '';
+  const avatar = viewer.avatar;
+  /*
+   * 안 읽은 수는 서버가 읽어 둔 값에서 시작해, 탭을 옮길 때마다 다시 센다.
+   * 레이아웃은 클라이언트 내비게이션에서 다시 그려지지 않아서 배지가 멈춰 있게 된다.
+   */
+  const [unread, setUnread] = useState(viewer.unread);
+  const seeded = useRef(pathname);
 
   useEffect(() => {
-    const load = () =>
-      fetch('/api/auth/me')
-        .then((r) => r.json())
-        .then((auth) => {
-          setIsAdmin(Boolean(auth.isAdmin));
-          setLoggedIn(Boolean(auth.user));
-          setName(auth.user?.name ?? '');
-          setAvatar(auth.avatar ?? null);
-          if (auth.user && auth.needsOnboarding && pathname !== '/welcome') {
-            // 온보딩 후 원래 보던 페이지(공유 링크 등)로 복귀할 수 있게 경로를 넘긴다
-            router.replace(`/welcome?next=${encodeURIComponent(pathname)}`);
-          }
-        })
-        .catch(() => {});
-    load();
     // 프로필에서 사진·닉네임을 바꾸면 화면을 옮기지 않아도 탭바가 따라오도록
-    window.addEventListener(PROFILE_UPDATED, load);
-    return () => window.removeEventListener(PROFILE_UPDATED, load);
-  }, [pathname, router]);
+    const onProfile = () => refresh();
+    window.addEventListener(PROFILE_UPDATED, onProfile);
+    return () => window.removeEventListener(PROFILE_UPDATED, onProfile);
+  }, [refresh]);
 
   useEffect(() => {
+    if (loggedIn && viewer.needsOnboarding && pathname !== '/welcome') {
+      // 온보딩 후 원래 보던 페이지(공유 링크 등)로 복귀할 수 있게 경로를 넘긴다
+      router.replace(`/welcome?next=${encodeURIComponent(pathname)}`);
+    }
+  }, [loggedIn, viewer.needsOnboarding, pathname, router]);
+
+  useEffect(() => {
+    // 처음 그린 경로의 값은 서버에서 이미 받아 왔다 — 그때는 한 번 건너뛴다
+    if (seeded.current === pathname) {
+      seeded.current = '';
+      return;
+    }
     fetch('/api/notifications/count')
       .then((r) => r.json())
       .then((data) => setUnread(data.unreadCount ?? 0))
@@ -161,7 +167,12 @@ export default function NavLinks() {
 
 /** 화면 안 문맥 탭 — AMC의 회차/그룹, 관리자 진입 */
 export function ContextTabs() {
-  const { isAdmin, pathname } = useSession();
+  /*
+   * useSession()이 아니라 컨텍스트를 바로 읽는다 — 여기서 필요한 건 isAdmin뿐인데
+   * useSession을 부르면 안 읽은 알림 수까지 따라와서 경로마다 조회가 두 번씩 나갔다.
+   */
+  const { isAdmin } = useViewer();
+  const pathname = usePathname();
   const t = useT();
 
   const links: { href: string; label: string }[] = [];

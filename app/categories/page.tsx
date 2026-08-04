@@ -12,6 +12,7 @@ import { CATEGORIES } from '@/lib/categories';
 import { useT } from '../i18n';
 import CategoryCard from '../category-card';
 import useNextMeetups from '../use-next-meetups';
+import { useViewer } from '../session';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -40,7 +41,6 @@ function KakaoIcon() {
 }
 
 export default function CategoriesPage() {
-  const [loggedIn, setLoggedIn] = useState(false);
   const [subs, setSubs] = useState<Set<string>>(new Set());
   const [favs, setFavs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -48,14 +48,15 @@ export default function CategoriesPage() {
   // 카드 하단 「다음 일정」 한 줄
   const { summaryFor } = useNextMeetups();
 
+  // 로그인 여부는 레이아웃이 서버에서 읽어 둔 것 — 여기서는 구독·즐겨찾기만 받는다
+  const loggedIn = Boolean(useViewer().user);
+
   useEffect(() => {
     Promise.all([
-      fetch('/api/auth/me').then((r) => r.json()),
       fetch('/api/subscriptions').then((r) => r.json()),
       fetch('/api/favorites').then((r) => r.json()),
     ])
-      .then(([auth, sub, fav]) => {
-        setLoggedIn(Boolean(auth.user));
+      .then(([sub, fav]) => {
         setSubs(new Set(sub.subscriptions ?? []));
         setFavs(new Set(fav.favorites ?? []));
       })

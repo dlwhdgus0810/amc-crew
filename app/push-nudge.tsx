@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useT } from './i18n';
+import { useViewer } from './session';
 
 /**
  * 푸시 알림을 아직 켜지 않은 회원에게 한 번 띄우는 안내.
@@ -89,6 +90,10 @@ export default function PushNudge() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  // 세션은 레이아웃이 서버에서 읽어 둔 것 — 예전에는 여기서 /api/auth/me를 부르고
+  // 그 답을 기다려 다시 /api/push/subscribe를 물었다(줄줄이 두 번)
+  const viewer = useViewer();
+  const signedInReady = Boolean(viewer.user) && !viewer.needsOnboarding;
 
   useEffect(() => {
     if (!vapid) return;
@@ -111,14 +116,11 @@ export default function PushNudge() {
     // 아이폰은 홈 화면에 추가하기 전까지 지원 여부를 물어볼 수도 없다 — 그래서 따로 본다
     if (!supported && !isIOS) return;
 
+    // 로그인한 회원에게만 — 아직 가입도 안 한 사람에게 알림부터 권할 이유가 없다
+    if (!signedInReady) return;
+
     let alive = true;
     (async () => {
-      // 로그인한 회원에게만 — 아직 가입도 안 한 사람에게 알림부터 권할 이유가 없다
-      const me = await fetch('/api/auth/me')
-        .then((r) => r.json())
-        .catch(() => null);
-      if (!alive || !me?.user || me.needsOnboarding) return;
-
       const status = await fetch('/api/push/subscribe')
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null);
@@ -138,7 +140,7 @@ export default function PushNudge() {
     return () => {
       alive = false;
     };
-  }, [vapid]);
+  }, [vapid, signedInReady]);
 
   function snooze() {
     try {

@@ -52,6 +52,7 @@ import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread from '../../comment-thread';
 import SettlementPanel from '../../settlement-panel';
 import { siteUrl } from '@/lib/site';
+import { useViewer } from '../../session';
 
 interface SessionUser {
   id: string;
@@ -71,15 +72,17 @@ function KakaoIcon() {
 
 export default function PostClient({ id }: { id: string }) {
   const [post, setPost] = useState<PostView | null>(null);
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // 세션은 레이아웃이 서버에서 읽어 둔 것을 쓴다
+  const viewer = useViewer();
+  const user = viewer.user;
+  const isAdmin = viewer.isAdmin;
   /** 관리자만 — 회원 전체 (명단에 넣을 후보) */
   const [members, setMembers] = useState<Person[]>([]);
   /** 호스트가 지난 모임 명단을 고칠 때 고르는 후보 — 내 친구들 */
   const [friends, setFriends] = useState<Person[]>([]);
   const [rosterOpen, setRosterOpen] = useState(false);
-  const [myVenmo, setMyVenmo] = useState<string | null>(null);
-  const [myZelle, setMyZelle] = useState<string | null>(null);
+  const myVenmo = viewer.venmo;
+  const myZelle = viewer.zelle;
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -99,32 +102,28 @@ export default function PostClient({ id }: { id: string }) {
     setPost(data.post ?? null);
   }
 
+  /*
+   * 세션이 이미 있으므로 셋을 한꺼번에 받는다 —
+   * 예전에는 /api/auth/me를 받고 그 답을 보고서야 명단과 친구를 물었다(줄줄이 두 단).
+   */
   useEffect(() => {
     Promise.all([
       loadPost(),
-      fetch('/api/auth/me').then((r) => r.json()),
-    ])
-      .then(([, auth]) => {
-        setUser(auth.user ?? null);
-        setIsAdmin(Boolean(auth.isAdmin));
-        // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
-        if (auth.isAdmin) {
-          fetch('/api/admin/members')
+      // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
+      isAdmin
+        ? fetch('/api/admin/members')
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => d && setMembers(d.members ?? []))
-            .catch(() => {});
-        }
-        // 호스트는 친구 중에서만 넣는다
-        if (auth.user) {
-          fetch('/api/friends')
+            .catch(() => {})
+        : null,
+      // 호스트는 친구 중에서만 넣는다
+      user
+        ? fetch('/api/friends')
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => d && setFriends(d.friends ?? []))
-            .catch(() => {});
-        }
-        setMyVenmo(auth.venmo ?? null);
-        setMyZelle(auth.zelle ?? null);
-      })
-      .finally(() => setLoading(false));
+            .catch(() => {})
+        : null,
+    ]).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
