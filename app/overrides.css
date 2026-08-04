@@ -1311,3 +1311,23 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
   .sk-bar { animation: none; }
 }
+
+/* ── 모임 카드의 포스터 (무비나잇) ───────────────────────────
+   머리 부분만 가로로 나눈다 — 왼쪽 글, 오른쪽 포스터.
+   아래 참여자·댓글은 전폭을 쓴다. */
+.post-head.has-poster {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+/* 글이 포스터를 밀어내지 않게 (긴 제목이 들어와도 줄바꿈으로 처리) */
+.post-head-text { min-width: 0; flex: 1; }
+.post-poster {
+  flex: none;
+  width: 62px;
+  /* TMDB 포스터는 2:3이다 — 비율을 적어 두면 이미지가 늦게 와도 자리가 안 밀린다 */
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--border);
+}

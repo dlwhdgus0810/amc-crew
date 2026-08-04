@@ -1088,41 +1088,58 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
 
     return (
       <article key={post.id} className={`post-card ${past ? 'past' : ''}`}>
-        <div className="post-when">
-          {to12h(post.startTime)}
-          {post.endTime ? ` – ${to12h(post.endTime)}` : ''}
-          {post.visibility === 'link' && <span className="repeat-badge private">{t(T.privateBadge)}</span>}
-          {post.recurringRuleId && (
-            <span className="repeat-badge">{t(T.repeatBadge, { day: weekdayLabel(post.date) })}</span>
-          )}
-        </div>
+        {/*
+          * 포스터가 있으면 머리 부분만 가로로 나눈다 — 왼쪽에 글, 오른쪽에 포스터.
+          * 아래의 참여자·댓글은 전폭을 그대로 쓴다. 카드 전체를 둘로 쪼개면 댓글이
+          * 포스터 너비만큼 좁아진 채로 길게 이어진다.
+          */}
+        <div className={post.titleMeta?.posterPath ? 'post-head has-poster' : 'post-head'}>
+          <div className="post-head-text">
+            <div className="post-when">
+              {to12h(post.startTime)}
+              {post.endTime ? ` – ${to12h(post.endTime)}` : ''}
+              {post.visibility === 'link' && <span className="repeat-badge private">{t(T.privateBadge)}</span>}
+              {post.recurringRuleId && (
+                <span className="repeat-badge">{t(T.repeatBadge, { day: weekdayLabel(post.date) })}</span>
+              )}
+            </div>
 
-        {post.title && <div className="post-title">〈{post.title}〉</div>}
-        {post.titleMeta && (
-          <div className="post-titlemeta">
-            {[
-              post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
-              post.titleMeta.year,
-              post.titleMeta.director
-                ? `${post.titleMeta.mediaType === 'tv' ? t(T.creator) : t(T.director)} ${post.titleMeta.director}`
-                : null,
-              post.titleMeta.cast?.length ? post.titleMeta.cast.join(', ') : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
+            {post.title && <div className="post-title">〈{post.title}〉</div>}
+            {post.titleMeta && (
+              <div className="post-titlemeta">
+                {[
+                  post.titleMeta.rating ? `★ ${post.titleMeta.rating.toFixed(1)}` : null,
+                  post.titleMeta.year,
+                  post.titleMeta.director
+                    ? `${post.titleMeta.mediaType === 'tv' ? t(T.creator) : t(T.director)} ${post.titleMeta.director}`
+                    : null,
+                  post.titleMeta.cast?.length ? post.titleMeta.cast.join(', ') : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </div>
+            )}
+            <div className="post-meta">
+              <PlaceLink location={post.location} />
+              {post.authorName && (
+                <>
+                  {' '}
+                  · {post.authorName}
+                  {post.coHost && <>, {post.coHost.name}</>}
+                </>
+              )}
+            </div>
+            {post.description && <div className="post-desc">“{post.description}”</div>}
           </div>
-        )}
-        <div className="post-meta">
-          <PlaceLink location={post.location} />
-          {post.authorName && (
-            <>
-              {' '}
-              · {post.authorName}
-              {post.coHost && <>, {post.coHost.name}</>}
-            </>
+          {post.titleMeta?.posterPath && (
+            <img
+              className="post-poster"
+              src={`${TMDB_IMG}/w154${post.titleMeta.posterPath}`}
+              alt=""
+              loading="lazy"
+            />
           )}
         </div>
-        {post.description && <div className="post-desc">“{post.description}”</div>}
 
         {/* 참여자 — 눌러서 전체 명단을 펼친다 */}
         <button
