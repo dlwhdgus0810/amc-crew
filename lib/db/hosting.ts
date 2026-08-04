@@ -116,7 +116,7 @@ async function withProfiles(rows: { id: string; n: number }[], limit: number): P
 
   const db = await getDb();
   const profiles = await db
-    .select({ id: users.id, kakaoName: users.kakaoName, avatar: users.avatar })
+    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, avatar: users.avatar })
     .from(users)
     .where(inArray(users.id, kept.map((r) => r.id)));
   const byId = new Map(profiles.map((p) => [p.id, p]));
@@ -126,10 +126,18 @@ async function withProfiles(rows: { id: string; n: number }[], limit: number): P
     return {
       id: r.id,
       /*
-       * 순위표는 실명이다. 닉네임 허용은 모임마다 정하는 것인데, 이 표는 여러 모임을
-       * 합친 결과라 어느 모임의 규칙을 따를지가 없다.
+       * 순위표는 닉네임을 정해 둔 사람은 닉네임으로 부른다.
+       *
+       * 모임 안에서는 그 모임의 규칙(allowNicknames)을 따르지만, 이 표는 여러 모임을
+       * 합친 결과라 따를 규칙이 없다. 그래서 본인이 프로필에 적어 둔 이름을 쓴다 —
+       * 닉네임을 안 정한 사람은 그대로 실명이다.
        */
-      name: p ? resolveDisplayName({ kakaoName: p.kakaoName, kakaoNameHistory: [] }, '알 수 없음') : '알 수 없음',
+      name: p
+        ? resolveDisplayName(
+            { kakaoName: p.kakaoName, ...(p.nickname ? { nickname: p.nickname } : {}), kakaoNameHistory: [] },
+            '알 수 없음'
+          )
+        : '알 수 없음',
       avatar: p?.avatar ?? null,
       count: Number(r.n),
     };
