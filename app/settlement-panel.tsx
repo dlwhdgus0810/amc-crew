@@ -90,7 +90,8 @@ const T = {
   copyLink: { ko: '링크 복사', en: 'Copy link' },
   nothingToPay: { ko: '보낼 금액이 없어요.', en: 'You owe nothing here.' },
   total: { ko: '합계', en: 'Total' },
-  venmoGo: { ko: 'Venmo로 보내기', en: 'Pay with Venmo' },
+  // 아이디에 링크가 걸려 있다는 걸 알려주는 한마디 — 금액이 채워진다는 게 요점이다
+  venmoTapHint: { ko: '누르면 금액까지 채워져요', en: 'Tap — amount filled in' },
   venmoMine: {
     ko: '프로필 → 받을 계좌에 Venmo나 Zelle을 넣어두면 다른 사람이 바로 보낼 수 있어요.',
     en: 'Add Venmo or Zelle under Profile → How you get paid so people can send it.',
@@ -500,10 +501,12 @@ export default function SettlementPanel({
                   {t(T.payTo, { name: settlement.payee.name })}
                 </div>
                 {/*
-                  * Venmo도 Zelle과 같은 줄 모양으로 — 아이디를 눈으로 확인하고 복사할 수 있다.
-                  * 다만 아이디 자체가 링크다. 누르면 금액과 메모가 채워진 채로 Venmo가 열려서,
-                  * 「보내기」 버튼을 따로 두지 않아도 한 번에 간다.
-                  * 복사는 @를 뺀 아이디를 준다 — Venmo 검색창에 넣는 건 @ 없는 쪽이다.
+                  * Venmo도 Zelle과 같은 줄 모양이되, 아이디 자체가 링크다 —
+                  * 누르면 금액과 메모가 채워진 채로 Venmo가 열린다.
+                  *
+                  * 복사 버튼은 두지 않는다. 옮겨 적을 필요가 없는데 버튼이 있으면
+                  * 그게 이 줄에서 할 일처럼 보여서, 정작 한 번에 가는 길을 지나치게 된다.
+                  * 대신 누르면 어떻게 되는지 한마디로 적어 둔다.
                   */}
                 {settlement.payee.venmo && (
                   <div className="pay-zelle">
@@ -513,13 +516,10 @@ export default function SettlementPanel({
                       href={venmoLink(settlement.payee.venmo, mine.cents, noteLabel)}
                       target="_blank"
                       rel="noreferrer"
-                      aria-label={t(T.venmoGo)}
                     >
                       @{settlement.payee.venmo}
                     </a>
-                    <button className="link-btn" onClick={() => copyText(settlement.payee.venmo!)}>
-                      {copied === settlement.payee.venmo ? t(T.copied) : t(T.copy)}
-                    </button>
+                    <span style={{ color: 'var(--text-dim)', fontSize: 12.5 }}>{t(T.venmoTapHint)}</span>
                   </div>
                 )}
                 {/* Zelle은 열어줄 링크가 없어서 값을 보여주고 복사시킨다 */}
