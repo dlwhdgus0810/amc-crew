@@ -8,8 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from './i18n';
-import { dateLabelShort, timeLabel, weekdayLabel } from '@/lib/datefmt';
-import { addDays } from '@/lib/dates';
+import { dateLabelShort, timeLabel } from '@/lib/datefmt';
 
 const T = {
   people: { ko: '{n}명', en: '{n} joined' },
@@ -91,12 +90,9 @@ export default function useNextMeetups(seed?: NextMeetupsSeed): NextMeetups {
     const next = data.summaries[slug];
     if (!next) return { detail: t(T.noUpcoming) };
 
-    // 한 주 안이면 요일로("토 오후 3:00"), 그보다 멀면 날짜로("8/23(토) 오후 3:00")
-    const withinWeek = data.today ? next.date <= addDays(data.today, 6) : false;
-    const when = `${withinWeek ? weekdayLabel(next.date, locale) : dateLabelShort(next.date, locale)} ${timeLabel(
-      next.startTime,
-      locale
-    )}`;
+    // 언제나 날짜까지 적는다 — "토 오후 3:00"만 있으면 이번 주 토요일인지 다음 주인지
+    // 카드만 보고는 알 수 없다. 한 주 안일 때만 요일로 줄여 쓰던 것을 없앴다.
+    const when = `${dateLabelShort(next.date, locale)} ${timeLabel(next.startTime, locale)}`;
 
     const people =
       kind === 'movie'

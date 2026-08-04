@@ -74,13 +74,25 @@
     padding: 14px 15px;
     gap: 12px;
   }
-  /* 영문 코드(SOCCER)는 장식이라 먼저 접는다 — ★·🔔이 오른쪽에 남는다.
-     카테고리 아이콘은 제목(.car-name) 안에 이미 붙어 있어 그대로 보인다 */
+  /* 영문 코드(SOCCER)는 장식이라 먼저 접는다 — 그 자리에 카테고리 아이콘이 들어간다 */
   .cat-grid.tile .car-idx {
     display: none;
   }
   .cat-grid.tile .car-top {
     justify-content: flex-end;
+    min-height: 22px;
+  }
+  /* 카테고리 아이콘을 제목 옆에서 카드 왼쪽 위로 올린다.
+     제목 안(.car-name)에 있는 그대로를 자리만 옮기는 것이라 카드 컴포넌트는 손대지 않는다 —
+     .car-card가 position:relative라 카드 안쪽 여백 기준으로 붙는다. */
+  .cat-grid.tile .car-name .cat-icon {
+    position: absolute;
+    top: 14px;
+    left: 15px;
+    width: 22px;
+    height: 22px;
+    /* 제목 옆에 붙어 있을 때의 앞 여백 — 왼쪽 위로 오면 카드 여백과 겹친다 */
+    margin-left: 0;
   }
   .cat-grid.tile .car-name {
     font-size: 19px;
@@ -92,14 +104,42 @@
   .cat-grid.tile .car-desc {
     display: none;
   }
-  /* 다음 일정은 시간만 — 장소는 이 폭에서 두 글자만 보이고 말줄임이 된다 */
+  /* ★·🔔은 동그란 면을 벗고 아이콘만 남긴다 — 카드가 절반 폭이라 면까지 있으면
+     제목과 다툰다. 고른 상태는 면 대신 흰색으로 알린다.
+     padding/margin을 같은 값으로 맞물려 눈에 보이는 것만 줄이고 누를 자리는 남긴다. */
+  .cat-grid.tile .car-actions {
+    gap: 12px;
+  }
+  .cat-grid.tile .car-icon,
+  .cat-grid.tile .car-icon:hover,
+  .cat-grid.tile .car-icon.on {
+    width: auto;
+    height: auto;
+    padding: 6px;
+    margin: -6px;
+    border: none;
+    border-radius: 0;
+    background: none;
+    font-size: 16px;
+  }
+  .cat-grid.tile .car-icon.on {
+    color: #fff;
+    opacity: 1;
+  }
+
+  /* 다음 일정이 있으면 날짜·시간만 — 장소는 이 폭에서 두 글자만 보이고 말줄임이 된다.
+     없을 때는 반대로 「예정된 모임 없음」이 유일한 문구라 그건 남긴다
+     (그 경우 .car-foot-when 자체가 없다). */
   .cat-grid.tile .car-foot {
     gap: 8px;
     padding-top: 10px;
   }
-  .cat-grid.tile .car-foot-detail,
+  .cat-grid.tile .car-foot-when ~ .car-foot-detail,
   .cat-grid.tile .car-foot-sep {
     display: none;
+  }
+  .cat-grid.tile .car-foot-detail {
+    font-size: 12px;
   }
 }
 
