@@ -47,14 +47,26 @@ export interface NextMeetups {
   settled: boolean;
 }
 
-/** 카테고리별 다음 모임 요약 — 홈과 카테고리 목록이 같이 쓴다 */
-export default function useNextMeetups(): NextMeetups {
-  const [data, setData] = useState<{ today: string; summaries: Record<string, NextMeetup> } | null>(null);
-  const [settled, setSettled] = useState(false);
+/** 서버가 미리 읽어 넘겨준 요약 — 있으면 여기서는 아무것도 받아오지 않는다 */
+export interface NextMeetupsSeed {
+  today: string;
+  summaries: Record<string, NextMeetup>;
+}
+
+/**
+ * 카테고리별 다음 모임 요약 — 홈과 카테고리 목록이 같이 쓴다.
+ *
+ * seed를 주면 그 값으로 시작하고 요청을 아예 보내지 않는다. 서버가 페이지를 그리면서
+ * 이미 읽어 둔 것을 다시 물을 이유가 없다.
+ */
+export default function useNextMeetups(seed?: NextMeetupsSeed): NextMeetups {
+  const [data, setData] = useState<{ today: string; summaries: Record<string, NextMeetup> } | null>(seed ?? null);
+  const [settled, setSettled] = useState(Boolean(seed));
   const t = useT();
   const locale = useLocale();
 
   useEffect(() => {
+    if (seed) return;
     let alive = true;
     fetch('/api/next-meetups')
       .then((r) => r.json())
@@ -70,6 +82,8 @@ export default function useNextMeetups(): NextMeetups {
     return () => {
       alive = false;
     };
+    // seed는 서버가 준 값이라 이 화면이 사는 동안 바뀌지 않는다 (바뀌면 서버가 다시 그린다)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const summaryFor = (slug: string, kind: 'movie' | 'posts' = 'posts') => {
