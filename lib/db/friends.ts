@@ -38,6 +38,11 @@ export interface FriendView {
    * 상대가 나를 숨겼는지는 내보내지 않는다. 그걸 알려주면 숨기는 의미가 없다.
    */
   showsPresence: boolean;
+  /**
+   * 이 친구에게 내 모임을 어디까지 보여줄지 — 내가 정한다.
+   * (실제로 늘 내려보내고 있었는데 타입에만 빠져 있었다)
+   */
+  showsMeetups: MeetupScope;
   online: boolean;
   /** 접속 중이 아니면 null — 마지막 접속 시각 자체는 내보내지 않는다 */
   secondsAgo: number | null;
