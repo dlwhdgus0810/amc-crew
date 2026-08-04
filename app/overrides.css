@@ -865,12 +865,14 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
 }
 
 /* 포스터 눌러서 크게 보기 ------------------------------------------------ */
-/* 목록의 포스터는 버튼이지만 생김새는 그대로 이미지여야 한다 */
-.movie-poster-btn {
+/* 포스터는 버튼이지만 생김새는 그대로 이미지여야 한다 (상영표·모임 카드 공용) */
+.poster-btn {
   padding: 0; border: none; background: none; border-radius: 8px;
   flex: none; cursor: zoom-in; line-height: 0;
+  /* 버튼 기본 크기가 끼어들지 않게 — 안에 든 그림이 크기를 정한다 */
+  min-height: 0;
 }
-.movie-poster-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.poster-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
 .poster-zoom {
   position: fixed; inset: 0; z-index: 60;

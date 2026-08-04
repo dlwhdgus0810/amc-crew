@@ -32,6 +32,7 @@ import {AddFriendSheet, FriendRequestSheet, Person, Tie} from '../../friend-shee
 import {siteUrl} from '@/lib/site';
 import {formatCents} from '@/lib/money';
 import {useRefreshSession, useViewer} from '../../session';
+import {usePosterZoom} from '../../poster-zoom';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -254,6 +255,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   // 세션은 레이아웃이 서버에서 읽어 둔 것을 쓴다
   const viewer = useViewer();
   const refresh = useRefreshSession();
+  const zoom = usePosterZoom();
   const user = viewer.user;
   const isAdmin = viewer.isAdmin;
   const [posts, setPosts] = useState<PostView[]>(initial.posts);
@@ -756,6 +758,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           onDone={reloadAll}
         />
       )}
+
+      {/* 포스터를 크게 보는 창 — 화면 맨 위를 덮으므로 마지막에 둔다 */}
+      {zoom.overlay}
     </>
   );
 
@@ -1131,14 +1136,18 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             </div>
             {post.description && <div className="post-desc">“{post.description}”</div>}
           </div>
-          {post.titleMeta?.posterPath && (
-            <img
-              className="post-poster"
-              src={`${TMDB_IMG}/w154${post.titleMeta.posterPath}`}
-              alt=""
-              loading="lazy"
-            />
-          )}
+          {post.titleMeta?.posterPath &&
+            /* 눌러서 크게 볼 수 있다 — 카드에 실리는 건 62px짜리라 얼굴을 알아보기 어렵다 */
+            zoom.trigger(
+              `${TMDB_IMG}/w500${post.titleMeta.posterPath}`,
+              post.titleMeta.title || post.title || '',
+              <img
+                className="post-poster"
+                src={`${TMDB_IMG}/w154${post.titleMeta.posterPath}`}
+                alt=""
+                loading="lazy"
+              />
+            )}
         </div>
 
         {/* 참여자 — 눌러서 전체 명단을 펼친다 */}
