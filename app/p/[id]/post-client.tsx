@@ -52,7 +52,7 @@ import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread from '../../comment-thread';
 import SettlementPanel from '../../settlement-panel';
 import { siteUrl } from '@/lib/site';
-import { useViewer } from '../../session';
+import { useRefreshSession, useViewer } from '../../session';
 
 interface SessionUser {
   id: string;
@@ -103,21 +103,29 @@ function IcsIcon() {
   );
 }
 
-export default function PostClient({ id }: { id: string }) {
-  const [post, setPost] = useState<PostView | null>(null);
+/** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx) */
+export interface PostInitial {
+  post: PostView | null;
+  /** 관리자만 — 회원 전체 (명단에 넣을 후보) */
+  members: Person[];
+  /** 호스트가 지난 모임 명단을 고칠 때 고르는 후보 — 내 친구들 */
+  friends: Person[];
+  /** 밖으로 나가는 링크(캘린더·공유)에 쓸 공개 주소 — 서버가 정한다 */
+  origin: string;
+}
+
+export default function PostClient({ id, initial }: { id: string; initial: PostInitial }) {
+  const [post, setPost] = useState<PostView | null>(initial.post);
   // 세션은 레이아웃이 서버에서 읽어 둔 것을 쓴다
   const viewer = useViewer();
+  const refresh = useRefreshSession();
   const user = viewer.user;
   const isAdmin = viewer.isAdmin;
-  /** 관리자만 — 회원 전체 (명단에 넣을 후보) */
-  const [members, setMembers] = useState<Person[]>([]);
-  /** 호스트가 지난 모임 명단을 고칠 때 고르는 후보 — 내 친구들 */
-  const [friends, setFriends] = useState<Person[]>([]);
+  const members = initial.members;
+  const friends = initial.friends;
   const [rosterOpen, setRosterOpen] = useState(false);
   const myVenmo = viewer.venmo;
   const myZelle = viewer.zelle;
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const t = useT();
@@ -125,40 +133,19 @@ export default function PostClient({ id }: { id: string }) {
   const dateLabel = (d: string) => fmtDate(d, locale);
   const to12h = (time: string) => fmtTime(time, locale);
 
-  async function loadPost() {
-    const res = await fetch(`/api/posts/${id}`);
-    if (!res.ok) {
-      setNotFound(true);
-      return;
-    }
-    const data = await res.json();
-    setPost(data.post ?? null);
+  /**
+   * 모임을 다시 읽는다 — 서버 렌더를 다시 돌려 새 prop을 받는다.
+   *
+   * 서버가 이미 읽어 주므로 여기서 /api/posts/[id]를 또 부를 이유가 없다.
+   * 새 값은 아래 이펙트가 상태로 옮긴다 (useState의 첫 값은 처음 한 번만 쓰인다).
+   */
+  function loadPost() {
+    refresh();
   }
 
-  /*
-   * 세션이 이미 있으므로 셋을 한꺼번에 받는다 —
-   * 예전에는 /api/auth/me를 받고 그 답을 보고서야 명단과 친구를 물었다(줄줄이 두 단).
-   */
   useEffect(() => {
-    Promise.all([
-      loadPost(),
-      // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
-      isAdmin
-        ? fetch('/api/admin/members')
-            .then((r) => (r.ok ? r.json() : null))
-            .then((d) => d && setMembers(d.members ?? []))
-            .catch(() => {})
-        : null,
-      // 호스트는 친구 중에서만 넣는다
-      user
-        ? fetch('/api/friends')
-            .then((r) => (r.ok ? r.json() : null))
-            .then((d) => d && setFriends(d.friends ?? []))
-            .catch(() => {})
-        : null,
-    ]).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    setPost(initial.post);
+  }, [initial]);
 
   async function join() {
     if (!post || !user) return;
@@ -172,7 +159,7 @@ export default function PostClient({ id }: { id: string }) {
     } else if (!joined) {
       setMsg({ type: 'ok', text: t(T.joined) });
     }
-    await loadPost();
+    loadPost();
     setBusy(false);
   }
 
@@ -192,9 +179,7 @@ export default function PostClient({ id }: { id: string }) {
     }
   }
 
-  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
-
-  if (notFound || !post) {
+  if (!post) {
     return (
       <>
         <h1>{t(T.notFound)}</h1>
@@ -227,7 +212,7 @@ export default function PostClient({ id }: { id: string }) {
     `&dates=${gcalDates}&ctz=America/Chicago` +
     `&location=${encodeURIComponent(post.location)}` +
     `&details=${encodeURIComponent(
-      t(T.gcalDetails, { url: `${siteUrl(typeof window !== 'undefined' ? window.location.origin : '')}/p/${id}` })
+      t(T.gcalDetails, { url: `${initial.origin}/p/${id}` })
     )}`;
 
   return (
