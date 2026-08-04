@@ -31,12 +31,111 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-04T17:30',
+    notable: true,
+    title: { ko: '알림이 앱 푸시로 와요 (카톡 알림은 없앴어요)', en: 'Alerts come as app push now (KakaoTalk alerts are gone)' },
+    items: [
+      {
+        ko: '카카오톡으로 보내던 알림을 없앴어요. 이제 앱 푸시와 앱 안 알림함, 둘로 옵니다.',
+        en: 'We stopped sending alerts over KakaoTalk. They now come as app push and in the alerts tab.',
+      },
+      {
+        ko: '앱 푸시를 아직 안 켰다면 프로필 → 앱 푸시 알림에서 켜주세요. 안 켜면 앱을 열어야 알림을 볼 수 있어요.',
+        en: 'If you haven’t turned push on yet, do it in Profile → App push notifications. Without it you’ll only see alerts when you open the app.',
+      },
+      {
+        ko: '아이폰은 홈 화면에 추가한 다음에야 켤 수 있어요. 사파리 탭에서는 켤 수 없어요.',
+        en: 'On iPhone you have to add the app to your home screen first — a Safari tab can’t turn it on.',
+      },
+      {
+        ko: '로그인할 때 카카오에 「메시지 보내기」 권한도 이제 요청하지 않아요.',
+        en: 'Logging in no longer asks Kakao for permission to message you.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-04T16:40',
+    title: { ko: '캠핑이 생겼어요', en: 'Camping is here' },
+    items: [
+      {
+        ko: '정재호 님이 제안한 캠핑 카테고리를 넣었어요. 「불멍 5분, 먹방 5시간」',
+        en: 'Camping, suggested by 정재호. “Five minutes of fire, five hours of food.”',
+      },
+      {
+        ko: '캠핑 모임에는 사이트 번호를 적을 수 있어요(선택). 어디로 가면 되는지 한 줄로 알려줄 수 있어요.',
+        en: 'Camping meetups can carry a site number (optional) — one line that tells everyone where to go.',
+      },
+      {
+        ko: '열세 장이 되면서 카드 색을 조금씩 다시 벌렸어요. 비슷해 보이던 색들이 갈라져요.',
+        en: 'With thirteen cards, the colours were re-spaced a little so the close ones pull apart.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-04T15:20',
+    title: { ko: '여기저기 다듬었어요', en: 'A handful of smaller things' },
+    items: [
+      {
+        ko: '익명으로 쓴 댓글이 나에게는 「이름(익명)」으로 보여요. 익명으로 단 걸 잊지 않도록요. 남에게는 그대로 「익명」이에요.',
+        en: 'Your own anonymous comments now read “name (anonymous)” to you, so you don’t forget. Others still just see “Anonymous”.',
+      },
+      {
+        ko: '정산에서 받을 사람 Venmo 아이디가 보이고, 누르면 금액까지 채워진 채로 Venmo가 열려요.',
+        en: 'Settle-up shows the payee’s Venmo handle — tap it and Venmo opens with the amount filled in.',
+      },
+      {
+        ko: '지난 비공개 모임은 캘린더와 지난 모임 목록에서 안 보여요. 보고 싶으면 프로필 → 지난 비공개 모임에서 켜세요.',
+        en: 'Private meetups drop out of your calendar and past lists once they’re over. Turn them back on in Profile → Past private meetups.',
+      },
+      {
+        ko: '리더보드는 닉네임을 정해 둔 사람은 닉네임으로 불러요.',
+        en: 'The leaderboard now calls you by your nickname if you set one.',
+      },
+      {
+        ko: '모임 화면의 「Google 캘린더」·「캘린더 파일」은 아이콘이 됐어요. 프로필의 즐겨찾기 순서 칸은 없앴어요 — 홈에서 카드를 끌어서 바꾸면 돼요.',
+        en: 'The two calendar links became icons. The favourite-order list left the profile — drag the cards on the home screen instead.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-04T13:00',
+    title: { ko: '관리자가 지난 모임을 손볼 수 있어요', en: 'Admins can fix up past meetups' },
+    items: [
+      {
+        ko: '앱을 쓰기 전에 있었던 모임이나 아무도 안 올린 모임을 관리자가 나중에 채워 넣을 수 있어요. 지난 날짜로도 만들 수 있게 됐어요.',
+        en: 'Admins can fill in meetups that happened before the app, or that nobody posted — past dates are allowed for them now.',
+      },
+      {
+        ko: '지난 모임을 채워 넣거나 고쳐도 아무에게도 알림이 가지 않아요. 이미 끝난 일이니까요.',
+        en: 'Filling in or fixing a past meetup sends no alerts — it already happened.',
+      },
+      {
+        ko: '지난 모임의 참가자 명단도 관리자가 고칠 수 있어요. 호스트 점수가 여기서 나오니 기록을 맞춰두려고요.',
+        en: 'Admins can also fix the roster on a past meetup — host points come from there, so the record should be right.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-04T11:00',
+    title: { ko: '화면이 빨라졌어요', en: 'Screens open faster' },
+    items: [
+      {
+        ko: '한 화면을 열 때 서버에 묻는 횟수를 열 번대에서 네 번으로 줄였어요. 모임 목록은 받아오는 양도 4분의 1로 줄었어요.',
+        en: 'Opening a screen went from a dozen server round trips to four, and meetup lists now pull a quarter of the data.',
+      },
+      {
+        ko: '보이는 건 그대로예요. 기다리는 시간만 짧아져요.',
+        en: 'Nothing looks different — there’s just less waiting.',
+      },
+    ],
+  },
+  {
     at: '2026-08-03T18:05',
     title: { ko: '홈 첫 줄이 날마다 바뀌어요', en: 'The line on the home screen changes daily' },
     items: [
       {
-        ko: '「취미로 모이는 크루」 자리에 날마다 다른 문구가 떠요. 열네 개를 돌리니 두 주에 한 바퀴예요.',
-        en: 'A different line greets you each day — fourteen of them, so it comes back around every two weeks.',
+        ko: '「취미로 모이는 크루」 자리에 날마다 다른 문구가 떠요. 열다섯 개를 돌리니 보름에 한 바퀴예요.',
+        en: 'A different line greets you each day — fifteen of them, so it comes back around every two weeks.',
       },
       {
         ko: '같은 날에는 모두 같은 문구를 봐요. 무작위가 아니라 날짜로 정해져 있어서, 새로고침해도 안 바뀌어요.',
@@ -45,6 +144,10 @@ const ENTRIES: ChangelogEntry[] = [
       {
         ko: '센스 있는 문구를 받습니다. 건의함에 남겨주시면 넣을게요. 채택되면 그날 홈에 뜹니다.',
         en: 'Got a good one? Drop it in the suggestion box — if it lands, it goes up on the home screen.',
+      },
+      {
+        ko: '카테고리 카드 밑줄도 종목마다 다른 말로 바꿨어요(축구 「숨차면 걸어도 됩니다」). 이것도 추천받습니다.',
+        en: 'Category cards got their own lines too — “Walk when you need to.” for soccer. Suggestions welcome for these as well.',
       },
     ],
   },
@@ -80,8 +183,8 @@ const ENTRIES: ChangelogEntry[] = [
     title: { ko: '지난 모임은 지울 수 없어요', en: 'Past meetups can’t be deleted' },
     items: [
       {
-        ko: '이미 끝난 모임은 아무도 지울 수 없어요. 만든 사람도, 관리자도요.',
-        en: 'Once a meetup has happened, nobody can delete it — not even the person who made it.',
+        ko: '이미 끝난 모임은 만든 사람도 지울 수 없어요. (관리자는 지울 수 있어요 — 잘못 올라온 것을 치우려고요)',
+        en: 'Once a meetup has happened, even the person who made it can’t delete it. (Admins can, to clear out mistakes.)',
       },
       {
         ko: '지난 모임은 기록이에요. 누가 언제 뭘 했는지, 호스트 점수가 어디서 왔는지가 거기 남아 있어요.',
