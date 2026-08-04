@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { commentLikes, favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
@@ -93,7 +94,7 @@ function displayNameOf(
  * 기준은 날짜가 아니라 (종료 시각 + 유예)이므로, 오늘 낮에 끝난 모임도 그날 바로 지난 모임이 된다.
  * past=false: 아직 안 끝난 모임, 가까운 순. past=true: 끝난 모임, 최근 순 최대 30개.
  */
-export async function listPosts(category: string, past = false, viewerId?: string): Promise<PostView[]> {
+export const listPosts = cache(async (category: string, past = false, viewerId?: string): Promise<PostView[]> => {
   const db = await getDb();
   const { date: cutDate, time: cutTime } = pastCutoff();
   /*
@@ -137,26 +138,86 @@ export async function listPosts(category: string, past = false, viewerId?: strin
         .where(and(eq(posts.category, category), upcoming, visible))
         .orderBy(posts.date, posts.startTime);
   return buildViews(postRows, viewerId);
-}
+});
 
-/** 공유 링크(/p/[id])용 단건 뷰 조회 */
-export async function getPostView(postId: string, viewerId?: string): Promise<PostView | null> {
+/**
+ * 공유 링크(/p/[id])용 단건 뷰 조회.
+ *
+ * generateMetadata와 페이지가 같은 요청 안에서 각각 부른다 — cache가 그걸 하나로 묶는다.
+ * 다만 **인자가 같아야** 묶인다. 한쪽이 viewerId를 빼고 부르면 두 번 읽는다.
+ */
+export const getPostView = cache(async (postId: string, viewerId?: string): Promise<PostView | null> => {
   // 외부에서 들어오는 id이므로 uuid 형태가 아니면 캐스팅 에러 대신 404 처리
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) return null;
   const db = await getDb();
   const row = (await db.select().from(posts).where(eq(posts.id, postId)))[0];
   if (!row) return null;
   return (await buildViews([row], viewerId))[0];
-}
+});
+
+/*
+ * 뷰를 만들 때 사람에 대해 필요한 칸.
+ *
+ * 예전에는 users를 통째로(select *) 읽었는데, avatar가 256px data URL이라
+ * 회원 한 명이 수십 KB다. 한 사람 이름을 붙이려고 안 나온 사람의 사진까지
+ * 전부 끌고 오던 셈이다. kakao_name_history(jsonb)와 카카오 토큰도 함께 딸려왔다.
+ */
+const NAME_COLS = {
+  id: users.id,
+  kakaoName: users.kakaoName,
+  nickname: users.nickname,
+  avatar: users.avatar,
+};
 
 async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: string): Promise<PostView[]> {
   if (postRows.length === 0) return [];
   const db = await getDb();
   const postIds = postRows.map((p) => p.id);
-  const userRows = await db.select().from(users);
-  const userById = new Map(userRows.map((u) => [u.id, u]));
-  const participantRows = await db.select().from(postParticipants).where(inArray(postParticipants.postId, postIds));
-  const hostCounts = await hostCountsFor([...new Set(participantRows.map((p) => p.userId))]);
+
+  /*
+   * neon-http는 쿼리 하나에 왕복 하나다(파이프라이닝이 없다). 그래서 순서가 곧 지연이다 —
+   * 서로를 안 기다리는 것끼리 묶어 두 파로 나눈다. 예전에는 여섯 번을 줄줄이 기다렸다.
+   */
+  const [participantRows, commentRows] = await Promise.all([
+    db.select().from(postParticipants).where(inArray(postParticipants.postId, postIds)),
+    db.select().from(postComments).where(inArray(postComments.postId, postIds)).orderBy(asc(postComments.createdAt)),
+  ]);
+
+  /*
+   * 로그인하지 않은 사람에게는 사람에 관한 것을 내려보내지 않는다 —
+   * 시간·장소·인원수까지만. 화면에서 가리는 게 아니라 응답에서 뺀다.
+   */
+  const signedIn = Boolean(viewerId);
+
+  const countOf = (m: Map<string, unknown[]>, id: string) => (m.get(id) ?? []).length;
+  const partByPostId = new Map<string, { userId: string }[]>();
+  for (const p of participantRows) {
+    if (!partByPostId.has(p.postId)) partByPostId.set(p.postId, []);
+    partByPostId.get(p.postId)!.push(p);
+  }
+  const cmtByPostId = new Map<string, unknown[]>();
+  for (const c of commentRows) {
+    if (!cmtByPostId.has(c.postId)) cmtByPostId.set(c.postId, []);
+    cmtByPostId.get(c.postId)!.push(c);
+  }
+
+  /*
+   * 로그아웃 상태에서는 이름·사진·호스트 횟수·댓글을 다 만들어 놓고 마지막에 버렸다.
+   * 여기서 끊으면 남은 네 질의가 통째로 사라진다 — 카톡 링크를 받은 사람이 밟는 바로 그 길이다.
+   */
+  if (!signedIn) {
+    return postRows.map((p) => ({
+      ...shellOf(p),
+      authorName: null,
+      coHost: null,
+      participants: [],
+      participantCount: countOf(partByPostId as Map<string, unknown[]>, p.id),
+      settle: null,
+      comments: [],
+      commentCount: countOf(cmtByPostId, p.id),
+    }));
+  }
+
   /*
    * 정산은 같이 낸 사람들 사이의 일이다 — 참가자(와 관리자)에게만 요약을 붙인다.
    * 그 밖에는 settle이 null이라, 정산이 있다는 사실조차 응답에 나가지 않는다.
@@ -164,10 +225,25 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const viewerIsAdmin = Boolean(viewerId && adminIds().includes(viewerId));
   const myPostIds = viewerIsAdmin
     ? postIds
-    : viewerId
-      ? [...new Set(participantRows.filter((p) => p.userId === viewerId).map((p) => p.postId))]
-      : [];
-  const settleByPost = await settlementSummaries(myPostIds, viewerId);
+    : [...new Set(participantRows.filter((p) => p.userId === viewerId).map((p) => p.postId))];
+  // 이름이 필요한 사람만 모은다 — 참가자, 댓글 쓴 사람, 주최자, 같이 여는 사람
+  const nameIds = new Set<string>();
+  for (const p of participantRows) nameIds.add(p.userId);
+  for (const c of commentRows) nameIds.add(c.userId);
+  for (const p of postRows) {
+    nameIds.add(p.authorId);
+    if (p.coHostId) nameIds.add(p.coHostId);
+  }
+  const commentIds = commentRows.map((c) => c.id);
+
+  const [userRows, hostCounts, settleByPost, likeRows] = await Promise.all([
+    nameIds.size ? db.select(NAME_COLS).from(users).where(inArray(users.id, [...nameIds])) : [],
+    hostCountsFor([...new Set(participantRows.map((p) => p.userId))]),
+    settlementSummaries(myPostIds, viewerId),
+    commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
+  ]);
+  const userById = new Map(userRows.map((u) => [u.id, u]));
+
   // 모임마다 닉네임 허용 여부가 다르다 — 참가자 이름은 그 모임의 규칙으로 만든다
   const nickOk = new Map(postRows.map((p) => [p.id, p.allowNicknames]));
   const byPost = new Map<string, { id: string; name: string; avatar: string | null; hostCount: number }[]>();
@@ -181,16 +257,6 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     });
   }
 
-  const commentRows = await db
-    .select()
-    .from(postComments)
-    .where(inArray(postComments.postId, postIds))
-    .orderBy(asc(postComments.createdAt));
-  // 좋아요는 댓글 수만큼 나오므로 한 번에 모아 집계한다
-  const commentIds = commentRows.map((c) => c.id);
-  const likeRows = commentIds.length
-    ? await db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds))
-    : [];
   const likeCount = new Map<string, number>();
   const likedByViewer = new Set<string>();
   for (const l of likeRows) {
@@ -216,25 +282,34 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     });
   }
 
-  /*
-   * 로그인하지 않은 사람에게는 사람에 관한 것을 내려보내지 않는다 —
-   * 시간·장소·인원수까지만. 화면에서 가리는 게 아니라 응답에서 뺀다.
-   */
-  const signedIn = Boolean(viewerId);
-
   return postRows.map((p) => ({
+    ...shellOf(p),
+    authorName: displayNameOf(userById.get(p.authorId), '알 수 없음', p.allowNicknames),
+    coHost: p.coHostId
+      ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), '알 수 없음', p.allowNicknames) }
+      : null,
+    participants: byPost.get(p.id) ?? [],
+    participantCount: (byPost.get(p.id) ?? []).length,
+    settle: settleByPost.get(p.id) ?? null,
+    comments: commentsByPost.get(p.id) ?? [],
+    commentCount: (commentsByPost.get(p.id) ?? []).length,
+  }));
+}
+
+/**
+ * 사람과 무관한 칸들 — 로그인 여부와 상관없이 똑같이 나간다.
+ *
+ * 로그아웃 뷰어용 응답과 로그인 뷰어용 응답이 같은 모양이어야 해서 한 군데서 만든다.
+ * 두 군데에 적어 두면 칸을 하나 더할 때 한쪽만 고치게 된다.
+ */
+function shellOf(p: typeof posts.$inferSelect) {
+  return {
     id: p.id,
     category: p.category,
     authorId: p.authorId,
-    authorName: signedIn ? displayNameOf(userById.get(p.authorId), '알 수 없음', p.allowNicknames) : null,
     title: p.title,
     titleMeta: p.titleMeta ?? null,
     recurringRuleId: p.recurringRuleId ?? null,
-    // 로그인한 사람에게만 이름을 준다 — 주최자 이름과 같은 기준이다
-    coHost:
-      p.coHostId && signedIn
-        ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), '알 수 없음', p.allowNicknames) }
-        : null,
     allowNicknames: p.allowNicknames,
     date: p.date,
     startTime: p.startTime,
@@ -242,15 +317,10 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     location: p.location,
     description: p.description,
     capacity: p.capacity,
-    visibility: p.visibility === 'link' ? 'link' : 'public',
+    visibility: (p.visibility === 'link' ? 'link' : 'public') as 'link' | 'public',
     isPast: isPastSlot(p.date, p.startTime, p.endTime),
     createdAt: p.createdAt.toISOString(),
-    participants: signedIn ? (byPost.get(p.id) ?? []) : [],
-    participantCount: (byPost.get(p.id) ?? []).length,
-    settle: settleByPost.get(p.id) ?? null,
-    comments: signedIn ? (commentsByPost.get(p.id) ?? []) : [],
-    commentCount: (commentsByPost.get(p.id) ?? []).length,
-  }));
+  };
 }
 
 export async function addComment(

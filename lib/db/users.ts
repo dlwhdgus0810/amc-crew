@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { users } from './schema';
@@ -5,25 +6,37 @@ import { Profiles, UserProfile } from '../types';
 
 const KAKAO_NAME_HISTORY_MAX = 50;
 
-export async function dbGetProfiles(): Promise<Profiles> {
+/**
+ * 이름을 붙이는 데 쓰는 회원 명부.
+ *
+ * 세 칸만 읽는다. 예전에는 select *였는데, 소비자인 resolveDisplayName은 nickname과
+ * kakaoName만 보면서 아바타(256px data URL)와 카카오 토큰까지 매번 끌고 왔다.
+ * kakaoNameHistory는 보관용이라 화면에 쓰는 곳이 없다 — 이력이 필요한 dbUpdateProfile은
+ * 자기 행을 따로 읽으므로 여기서 빠져도 이력은 그대로 쌓인다.
+ *
+ * 같은 요청 안에서 여러 번 불려도 한 번만 읽는다 (cache).
+ */
+export const dbGetProfiles = cache(async (): Promise<Profiles> => {
   const db = await getDb();
-  const rows = await db.select().from(users);
+  const rows = await db
+    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname })
+    .from(users);
   const out: Profiles = {};
   for (const row of rows) {
     out[row.id] = {
       kakaoName: row.kakaoName,
       ...(row.nickname ? { nickname: row.nickname } : {}),
-      kakaoNameHistory: row.kakaoNameHistory ?? [],
+      kakaoNameHistory: [],
     };
   }
   return out;
-}
+});
 
-/** me 라우트용 단건 조회 */
-export async function dbGetUser(userId: string) {
+/** me 라우트용 단건 조회 — 같은 요청 안에서는 한 번만 읽는다 */
+export const dbGetUser = cache(async (userId: string) => {
   const db = await getDb();
   return (await db.select().from(users).where(eq(users.id, userId)))[0];
-}
+});
 
 /**
  * 프로필 upsert. nickname: null 이면 커스텀 닉네임 해제(카카오 닉네임 폴백 복귀).

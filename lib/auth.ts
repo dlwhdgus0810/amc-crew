@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { cookies } from 'next/headers';
 
@@ -54,10 +55,16 @@ export function verifySessionToken(token: string | undefined): SessionUser | nul
   }
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+/**
+ * 지금 요청을 보낸 사람. DB는 안 본다 — 토큰 서명만 확인한다.
+ *
+ * 라우트 하나가 이걸 여러 번 부르고(가드, 본문, 응답 만들기) 서버 렌더에서는 레이아웃과
+ * 페이지가 각각 부른다. cache로 감싸 쿠키 읽기와 HMAC 검증을 한 번만 한다.
+ */
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   return verifySessionToken(token);
-}
+});
 
 /** ADMIN_KAKAO_ID(쉼표로 여러 명 가능)에 등록된 카카오 회원번호만 관리자로 인정 */
 export function isAdmin(user: SessionUser | null): boolean {
