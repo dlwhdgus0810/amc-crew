@@ -31,8 +31,7 @@ import CommentThread, {CommentView} from '../../comment-thread';
 import {AddFriendSheet, FriendRequestSheet, Person, Tie} from '../../friend-sheet';
 import {siteUrl} from '@/lib/site';
 import {formatCents} from '@/lib/money';
-import {useViewer} from '../../session';
-import {PostCardsSkeleton} from '../../skeleton';
+import {useRefreshSession, useViewer} from '../../session';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -231,14 +230,34 @@ function groupByDate(list: PostView[]) {
   return out;
 }
 
-export default function CategoryClient({ slug }: { slug: string }) {
+/** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx) */
+export interface CategoryInitial {
+  posts: PostView[];
+  pastPosts: PostView[];
+  subscribed: boolean;
+  friends: Person[];
+  incoming: Person[];
+  outgoing: Person[];
+  members: Person[];
+}
+
+/** 친구 목록 세 갈래를 화면이 쓰는 모양(관계 표)으로 */
+function tiesOf(initial: CategoryInitial): { friends: Person[]; ties: Record<string, Tie> } {
+  const ties: Record<string, Tie> = {};
+  for (const f of initial.friends) ties[f.id] = 'friends';
+  for (const f of initial.incoming) ties[f.id] = 'incoming';
+  for (const f of initial.outgoing) ties[f.id] = 'outgoing';
+  return { friends: initial.friends, ties };
+}
+
+export default function CategoryClient({ slug, initial }: { slug: string; initial: CategoryInitial }) {
   // 세션은 레이아웃이 서버에서 읽어 둔 것을 쓴다
   const viewer = useViewer();
+  const refresh = useRefreshSession();
   const user = viewer.user;
   const isAdmin = viewer.isAdmin;
-  const [posts, setPosts] = useState<PostView[]>([]);
-  const [subscribed, setSubscribed] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<PostView[]>(initial.posts);
+  const [subscribed, setSubscribed] = useState(initial.subscribed);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const t = useT();
@@ -308,42 +327,47 @@ export default function CategoryClient({ slug }: { slug: string }) {
   }
 
   // 지난 모임
-  const [pastPosts, setPastPosts] = useState<PostView[] | null>(null);
+  const [pastPosts, setPastPosts] = useState<PostView[] | null>(initial.pastPosts);
   const [showPast, setShowPast] = useState(false);
-  const [loadingPast, setLoadingPast] = useState(false);
 
   // 펼침 상태 — 댓글, 참여자 명단
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [openPeople, setOpenPeople] = useState<Set<string>>(new Set());
   /** 친구 관계 — 참가자를 눌렀을 때 무엇을 보여줄지 정한다 */
-  const [friends, setFriends] = useState<{ friends: Person[]; ties: Record<string, Tie> }>({ friends: [], ties: {} });
+  const [friends, setFriends] = useState<{ friends: Person[]; ties: Record<string, Tie> }>(() => tiesOf(initial));
   /** 눌린 참가자 (친구 창) */
   const [tapped, setTapped] = useState<Person | null>(null);
   /** 친구를 넣을 모임 (＋친구 창) */
   const [addTo, setAddTo] = useState<PostView | null>(null);
   /** 관리자만 — 친구가 아닌 사람도 넣을 수 있어야 해서 회원 전체를 받아둔다 */
-  const [members, setMembers] = useState<Person[]>([]);
-
-  async function loadPosts() {
-    const data = await fetch(`/api/posts?category=${slug}`).then((r) => r.json());
-    setPosts(data.posts ?? []);
-  }
-
-  async function loadPast() {
-    setLoadingPast(true);
-    const data = await fetch(`/api/posts?category=${slug}&past=1`).then((r) => r.json());
-    setPastPosts(data.posts ?? []);
-    setLoadingPast(false);
-  }
+  const [members, setMembers] = useState<Person[]>(initial.members);
 
   async function togglePast() {
     setShowPast(!showPast);
   }
 
-  async function reloadAll() {
-    await loadPosts();
-    if (pastPosts !== null) await loadPast();
+  /**
+   * 목록을 다시 받아온다.
+   *
+   * 이제 서버가 페이지를 그리면서 읽어 주므로, 여기서 따로 부르지 않고 서버 렌더를
+   * 다시 돌린다. 새 값은 아래 이펙트가 상태로 옮긴다 — 열어 둔 패널이나 펼쳐 둔 댓글은
+   * 그대로 남는다(다시 마운트하는 게 아니라 prop만 바뀐다).
+   */
+  function reloadAll() {
+    refresh();
   }
+
+  /*
+   * 서버가 다시 그려 새 prop이 오면 상태로 옮긴다.
+   * useState의 첫 값은 처음 한 번만 쓰이므로, 이게 없으면 refresh()가 화면에 안 보인다.
+   */
+  useEffect(() => {
+    setPosts(initial.posts);
+    setPastPosts(initial.pastPosts);
+    setSubscribed(initial.subscribed);
+    setMembers(initial.members);
+    setFriends(tiesOf(initial));
+  }, [initial]);
 
   /** 친구 목록과 요청 상태를 한 번에 — 참가자 칩이 무엇을 보여줄지 여기서 갈린다 */
   async function loadFriends() {
@@ -363,32 +387,6 @@ export default function CategoryClient({ slug }: { slug: string }) {
     else s.add(id);
     return s;
   }
-
-  /*
-   * 세션은 레이아웃이 서버에서 읽어 둔 것이라, 관리자 명단도 답을 기다릴 필요 없이
-   * 처음부터 함께 받는다 (예전에는 /api/auth/me → isAdmin 확인 → 명단 순서였다).
-   */
-  useEffect(() => {
-    Promise.all([
-      loadPosts(),
-      // 탭 라벨에 개수를 바로 띄우려면 눌리기 전에 받아 둬야 한다 (최대 30개짜리 조회다)
-      loadPast(),
-      fetch('/api/subscriptions').then((r) => r.json()),
-      loadFriends(),
-      // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
-      isAdmin
-        ? fetch('/api/admin/members')
-            .then((r) => (r.ok ? r.json() : null))
-            .then((d) => d && setMembers(d.members ?? []))
-            .catch(() => {})
-        : null,
-    ])
-      .then(([, , sub]) => {
-        setSubscribed((sub.subscriptions ?? []).includes(slug));
-      })
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
 
   // 만들기 패널이 열려 있는 동안은 뒤 페이지가 스크롤되지 않게 잠근다
   const panelOpen = showForm || editId !== null;
@@ -414,6 +412,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
       body: JSON.stringify({ category: slug, subscribed: next }),
     });
     if (!res.ok) setSubscribed(!next);
+    // 구독 여부도 서버가 읽어 주는 값이라, 다시 그려 두지 않으면 탭을 옮겼다 오면 옛 값이 온다
+    else refresh();
   }
 
   /** 날짜 헤더의 ＋ — 그 날짜를 미리 채운 채로 만들기 패널을 연다 */
@@ -647,8 +647,6 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setBusy(false);
   }
 
-  if (loading) return <PostCardsSkeleton n={3} label={t(T.loading)} />;
-
   return (
     <>
       <div className="feed-head">
@@ -723,10 +721,9 @@ export default function CategoryClient({ slug }: { slug: string }) {
         </>
       )}
 
+      {/* 지난 목록도 서버가 함께 읽어 오므로 따로 기다리는 상태가 없다 */}
       {showPast &&
-        (loadingPast ? (
-          <p className="subtitle">{t(T.loading)}</p>
-        ) : (pastPosts ?? []).length === 0 ? (
+        ((pastPosts ?? []).length === 0 ? (
           <div className="feed-empty">{t(T.emptyPast)}</div>
         ) : (
           groupByDate(pastPosts ?? []).map((group) => renderGroup(group, true))
