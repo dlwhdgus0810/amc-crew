@@ -31,6 +31,28 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-04T19:10',
+    title: { ko: '순위는 모임이 끝난 뒤에 올라가요', en: 'Points land after the meetup' },
+    items: [
+      {
+        ko: '예정된 모임을 미리 세고 있었어요. 아직 일어나지 않은 일로 점수가 오르고, 취소하면 다시 내려갔어요.',
+        en: 'Upcoming meetups were being counted — points went up for something that hadn’t happened, and back down if it was cancelled.',
+      },
+      {
+        ko: '참여 순위는 더했어요. 참가 버튼만 눌러 둬도 순위가 올랐는데, 이제 다녀와야 올라가요.',
+        en: 'The join ranking was worse — tapping Join was enough. Now you have to actually go.',
+      },
+      {
+        ko: '그래서 지금 점수가 예전보다 내려가 보일 수 있어요. 빠진 건 아직 안 끝난 모임뿐이고, 끝나면 그대로 올라와요.',
+        en: 'Your number may look lower for now. Nothing was removed — the upcoming ones just haven’t landed yet.',
+      },
+      {
+        ko: '모임 카드에서 이름 옆에 붙는 호스트 등급도 같은 기준이에요.',
+        en: 'The host badge next to names on meetup cards follows the same rule.',
+      },
+    ],
+  },
+  {
     at: '2026-08-04T17:30',
     notable: true,
     title: { ko: '알림이 앱 푸시로 와요 (카톡 알림은 없앴어요)', en: 'Alerts come as app push now (KakaoTalk alerts are gone)' },

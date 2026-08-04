@@ -14,8 +14,13 @@ interface HostRank {
 const T = {
   title: { ko: '리더보드', en: 'Leaderboard' },
   subtitle: {
-    ko: '호스팅은 연 모임에 몇 명이 모였는지로 셉니다 (같이 연 모임은 나눠 가져요). 카테고리를 가리지 않고 공개 모임만 세요. 모임이 끝난 뒤에 올라가요.',
-    en: 'Hosting counts how many people showed up — co-hosts split it. All categories together, public meetups only, and it counts once the meetup is over.',
+    ko: '호스팅은 연 모임에 몇 명이 모였는지로 셉니다 (같이 연 모임은 나눠 가져요). 카테고리를 가리지 않고 공개 모임만 세요.',
+    en: 'Hosting counts how many people showed up — co-hosts split it. All categories together, public meetups only.',
+  },
+  // 예정된 모임이 안 보이는 이유 — 안 적어 두면 「내 점수가 왜 안 올랐지」가 된다
+  afterOnly: {
+    ko: '점수는 모임이 끝난 뒤에 올라가요. 예정된 모임은 아직 세지 않아요.',
+    en: 'Points land once a meetup is over — upcoming ones aren’t counted yet.',
   },
   tabHosts: { ko: '호스팅 순위', en: 'Hosted' },
   tabJoiners: { ko: '참여 순위', en: 'Joined' },
@@ -63,6 +68,7 @@ export default function LeaderboardPage() {
     <>
       <h1>{t(T.title)}</h1>
       <p className="subtitle">{t(T.subtitle)}</p>
+      <p className="hint" style={{ marginTop: -6, marginBottom: 4 }}>{t(T.afterOnly)}</p>
 
       {hosts === null ? (
         <p className="hint">{t(T.loading)}</p>
