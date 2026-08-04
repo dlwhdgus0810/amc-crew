@@ -67,6 +67,8 @@ import './calendar.css';
 import './font-plex.css';
 // 시안 13d — 옅은 초록 면과 목록 세로선 (반드시 맨 마지막)
 import './button-13d.css';
+// 둘러보기 2열 바둑판 배열 + 배열 토글 (반드시 맨 마지막)
+import './cat-tile.css';
 
 const META = {
   title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?' },

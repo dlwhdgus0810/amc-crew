@@ -17,7 +17,10 @@ import { useRefreshSession, useViewer } from '../session';
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
   title: { ko: '카테고리', en: 'Categories' },
-  leaderboard: { ko: '🏆 리더보드', en: '🏆 Leaderboard' },
+  leaderboard: { ko: '리더보드', en: 'Leaderboard' },
+  layoutA11y: { ko: '카드 배열', en: 'Card layout' },
+  layoutRows: { ko: '한 줄로 보기', en: 'One per row' },
+  layoutTile: { ko: '바둑판으로 보기', en: 'Grid of two' },
   subtitle: {
     ko: '★ 즐겨찾기는 홈에 먼저 띄우는 용도이고, 구독은 새 모임과 내가 참가한 모임의 댓글 알림을 받는 용도예요.',
     en: '★ Favourites show up first on the home screen; subscriptions alert you to new meetups and to comments on ones you joined.',
@@ -40,6 +43,58 @@ function KakaoIcon() {
   );
 }
 
+/*
+ * 배열 선택 — 좁은 화면(폰·PWA)에서만 쓴다. 700px 이상은 이미 2열, 1024px 이상은 3열이라
+ * 고를 것이 없어서 cat-tile.css가 토글 자체를 숨긴다.
+ * 값은 localStorage에 남긴다. 서버가 알 필요가 없고(취향이라 계정에 묶지 않는다),
+ * 첫 렌더는 서버와 같은 'rows'로 그린 뒤 마운트 후에 바꿔 하이드레이션 불일치를 피한다.
+ */
+type Layout = 'rows' | 'tile';
+const LAYOUT_KEY = 'kk-cat-layout';
+
+/* 아이콘은 카테고리 아이콘(app/cat-icon.tsx)·탭바와 같은 규격 — 24 격자, 굵기 1.8, 둥근 끝 */
+const iconBase = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.8,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': true,
+};
+
+/** 리더보드 — 이모지(🏆) 대신 선 아이콘. 기기마다 그림이 달라지지 않는다 */
+const TrophyIcon = () => (
+  <svg {...iconBase} width="15" height="15">
+    <path d="M8 4.6h8v4.1a4 4 0 0 1-8 0z" />
+    <path d="M8 5.8H6.2a2.3 2.3 0 0 0 2.3 3.4M16 5.8h1.8a2.3 2.3 0 0 1-2.3 3.4" />
+    <path d="M12 12.8v3.3" />
+    <path d="M9.4 19.4c.3-2 1.2-3.3 2.6-3.3s2.3 1.3 2.6 3.3z" />
+    <path d="M8.4 19.4h7.2" />
+  </svg>
+);
+const RowsIcon = () => (
+  <svg {...iconBase} width="15" height="15">
+    <path d="M4 6.5h16M4 12h16M4 17.5h16" />
+  </svg>
+);
+const TileIcon = () => (
+  <svg {...iconBase} width="15" height="15">
+    <rect x="4" y="4" width="7" height="7" rx="1.6" />
+    <rect x="13" y="4" width="7" height="7" rx="1.6" />
+    <rect x="4" y="13" width="7" height="7" rx="1.6" />
+    <rect x="13" y="13" width="7" height="7" rx="1.6" />
+  </svg>
+);
+
+
+/** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx) */
+export interface CategoriesInitial {
+  subs: string[];
+  favs: string[];
+  summaries: NextMeetupsSeed;
+}
+
 /** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx) */
 export interface CategoriesInitial {
   subs: string[];
@@ -54,8 +109,20 @@ export default function CategoriesPage({ initial }: { initial: CategoriesInitial
   // 카드 하단 「다음 일정」 한 줄 — 서버가 읽어 둔 것을 그대로 쓴다
   const { summaryFor } = useNextMeetups(initial.summaries);
 
+  const [layout, setLayoutState] = useState<Layout>('rows');
   const loggedIn = Boolean(useViewer().user);
   const refresh = useRefreshSession();
+
+  // 지난번에 고른 배열
+  useEffect(() => {
+    const saved = localStorage.getItem(LAYOUT_KEY);
+    if (saved === 'tile' || saved === 'rows') setLayoutState(saved);
+  }, []);
+
+  function chooseLayout(next: Layout) {
+    setLayoutState(next);
+    localStorage.setItem(LAYOUT_KEY, next);
+  }
 
   // 서버가 다시 그려 새 prop이 오면 상태로 옮긴다 (useState의 첫 값은 처음 한 번만 쓰인다)
   useEffect(() => {
@@ -91,9 +158,35 @@ export default function CategoriesPage({ initial }: { initial: CategoriesInitial
     <>
       <div className="page-head">
         <h1>{t(T.title)}</h1>
-        <Link href="/leaderboard" className="leaderboard-link">
-          {t(T.leaderboard)}
-        </Link>
+        <div className="cat-head-right">
+          <Link href="/leaderboard" className="leaderboard-link">
+            <TrophyIcon />
+            {t(T.leaderboard)}
+          </Link>
+          {/* 글자가 없는 버튼이라 이름은 aria-label로, 고른 상태는 aria-pressed로 알린다 */}
+          <div className="cat-layout-toggle" role="group" aria-label={t(T.layoutA11y)}>
+            <button
+              type="button"
+              className={layout === 'rows' ? 'on' : ''}
+              aria-pressed={layout === 'rows'}
+              aria-label={t(T.layoutRows)}
+              title={t(T.layoutRows)}
+              onClick={() => chooseLayout('rows')}
+            >
+              <RowsIcon />
+            </button>
+            <button
+              type="button"
+              className={layout === 'tile' ? 'on' : ''}
+              aria-pressed={layout === 'tile'}
+              aria-label={t(T.layoutTile)}
+              title={t(T.layoutTile)}
+              onClick={() => chooseLayout('tile')}
+            >
+              <TileIcon />
+            </button>
+          </div>
+        </div>
       </div>
       <p className="subtitle">{t(T.subtitle)}</p>
 
@@ -109,7 +202,7 @@ export default function CategoriesPage({ initial }: { initial: CategoriesInitial
         </div>
       )}
 
-      <div className="cat-grid">
+      <div className={layout === 'tile' ? 'cat-grid tile' : 'cat-grid'}>
         {CATEGORIES.map((c) => (
           <CategoryCard
             key={c.slug}
