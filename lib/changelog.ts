@@ -98,24 +98,6 @@ const ENTRIES: ChangelogEntry[] = [
     ],
   },
   {
-    at: '2026-08-04T13:00',
-    title: { ko: '관리자가 지난 모임을 손볼 수 있어요', en: 'Admins can fix up past meetups' },
-    items: [
-      {
-        ko: '앱을 쓰기 전에 있었던 모임이나 아무도 안 올린 모임을 관리자가 나중에 채워 넣을 수 있어요. 지난 날짜로도 만들 수 있게 됐어요.',
-        en: 'Admins can fill in meetups that happened before the app, or that nobody posted — past dates are allowed for them now.',
-      },
-      {
-        ko: '지난 모임을 채워 넣거나 고쳐도 아무에게도 알림이 가지 않아요. 이미 끝난 일이니까요.',
-        en: 'Filling in or fixing a past meetup sends no alerts — it already happened.',
-      },
-      {
-        ko: '지난 모임의 참가자 명단도 관리자가 고칠 수 있어요. 호스트 점수가 여기서 나오니 기록을 맞춰두려고요.',
-        en: 'Admins can also fix the roster on a past meetup — host points come from there, so the record should be right.',
-      },
-    ],
-  },
-  {
     at: '2026-08-04T11:00',
     title: { ko: '화면이 빨라졌어요', en: 'Screens open faster' },
     items: [
@@ -183,8 +165,8 @@ const ENTRIES: ChangelogEntry[] = [
     title: { ko: '지난 모임은 지울 수 없어요', en: 'Past meetups can’t be deleted' },
     items: [
       {
-        ko: '이미 끝난 모임은 만든 사람도 지울 수 없어요. (관리자는 지울 수 있어요 — 잘못 올라온 것을 치우려고요)',
-        en: 'Once a meetup has happened, even the person who made it can’t delete it. (Admins can, to clear out mistakes.)',
+        ko: '이미 끝난 모임은 만든 사람도 지울 수 없어요.',
+        en: 'Once a meetup has happened, even the person who made it can’t delete it.',
       },
       {
         ko: '지난 모임은 기록이에요. 누가 언제 뭘 했는지, 호스트 점수가 어디서 왔는지가 거기 남아 있어요.',
