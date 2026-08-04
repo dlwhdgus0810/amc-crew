@@ -140,7 +140,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '러닝 크루', en: 'Running Crew' },
-    description: { ko: '혼자면 안 나가게 되니까요', en: 'Alone, you’d skip it.' },
+    description: { ko: '이 날씨에 러닝 크루 제안은 좀..', en: 'Who suggested this category in this weather?' },
     locationHint: { ko: '예: Indian Creek Trail', en: 'e.g. Indian Creek Trail' },
     proposedBy: '지유',
   },
