@@ -4,6 +4,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {DaySchedule, Format, Selections, Showtime} from '@/lib/types';
 import { useLocale, useT } from '../i18n';
 import { useRefreshSession, useViewer } from '../session';
+import { PostCardsSkeleton } from '../skeleton';
 import { timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
 import { Locale } from '@/lib/i18n';
 
@@ -250,7 +251,7 @@ export default function PickPage() {
     }
   }
 
-  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
+  if (loading) return <PostCardsSkeleton n={4} label={t(T.loading)} />;
 
   return (
     <>

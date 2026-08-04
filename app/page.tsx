@@ -33,6 +33,7 @@ import SortableCategoryCard from './sortable-card';
 import useNextMeetups from './use-next-meetups';
 import { useViewer } from './session';
 import WhatsNewCard from './whats-new-card';
+import { CategoryCardsSkeleton } from './skeleton';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -305,7 +306,10 @@ export default function HubPage() {
    * 즐겨찾기가 없으면 무엇을 띄울지가 요약(예정된 모임)에 달려 있다.
    * 그 답이 오기 전에 그리면 열두 장이 깔렸다가 몇 장으로 접히는 게 눈에 보인다.
    */
-  if (loading || (favList.length === 0 && !summariesReady)) return <p className="subtitle">{t(T.loading)}</p>;
+  if (loading || (favList.length === 0 && !summariesReady)) {
+    // 「불러오는 중…」 한 줄 대신 카드 자리를 잡아 둔다 (Stage 4에서 서버가 그리면 이 자리는 사라진다)
+    return <CategoryCardsSkeleton n={3} label={t(T.loading)} />;
+  }
 
   /*
    * 홈에 뭘 띄울지.

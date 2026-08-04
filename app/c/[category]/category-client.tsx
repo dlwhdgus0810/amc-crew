@@ -32,6 +32,7 @@ import {AddFriendSheet, FriendRequestSheet, Person, Tie} from '../../friend-shee
 import {siteUrl} from '@/lib/site';
 import {formatCents} from '@/lib/money';
 import {useViewer} from '../../session';
+import {PostCardsSkeleton} from '../../skeleton';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…' },
@@ -646,7 +647,7 @@ export default function CategoryClient({ slug }: { slug: string }) {
     setBusy(false);
   }
 
-  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
+  if (loading) return <PostCardsSkeleton n={3} label={t(T.loading)} />;
 
   return (
     <>

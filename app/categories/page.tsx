@@ -12,6 +12,7 @@ import { CATEGORIES } from '@/lib/categories';
 import { useT } from '../i18n';
 import CategoryCard from '../category-card';
 import useNextMeetups from '../use-next-meetups';
+import { CategoryCardsSkeleton } from '../skeleton';
 import { useViewer } from '../session';
 
 const T = {
@@ -85,7 +86,7 @@ export default function CategoriesPage() {
     }
   }
 
-  if (loading) return <p className="subtitle">{t(T.loading)}</p>;
+  if (loading) return <CategoryCardsSkeleton n={4} label={t(T.loading)} />;
 
   return (
     <>

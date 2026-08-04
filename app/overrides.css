@@ -1273,3 +1273,41 @@ h2 {
   /* 색은 글자색을 따른다 — 카드가 이미 색을 갖고 있어 단색으로도 구분된다 */
   opacity: 0.9;
 }
+
+/* ── 뼈대 화면 (app/skeleton.tsx) ─────────────────────────────
+   데이터를 기다리는 동안 실제와 같은 크기의 회색 덩어리를 깔아 둔다.
+   자리를 미리 잡는 게 목적이라, 치수는 진짜 카드에서 그대로 가져온다. */
+.sk { margin-top: 14px; }
+.sk-block {
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+/* 모임 카드는 .post-card와 같은 모양 */
+.sk-post {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 15px;
+  margin-bottom: 10px;
+}
+.sk-bar {
+  display: block;
+  border-radius: 6px;
+  background: var(--border);
+  /* 숨 쉬듯 아주 옅게 — 눈길을 끌면 안 된다. 기다리는 걸 알리는 정도면 된다 */
+  animation: sk-pulse 1.5s ease-in-out infinite;
+}
+@keyframes sk-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+/* 움직임을 줄여 달라고 한 사람에게는 깜빡이지 않는다 */
+@media (prefers-reduced-motion: reduce) {
+  .sk-bar { animation: none; }
+}
