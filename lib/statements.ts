@@ -24,6 +24,10 @@ export const STATEMENTS: Statement[] = [
         bottom: {ko: '초보도 낄 자리를 만들어 둡니다.', en: 'There’s room for beginners here.'},
     },
     {
+        top: {ko: '드루와,', en: 'Come on in,'},
+        bottom: {ko: '드루와!', en: 'Come on in!'},
+    },
+    {
         top: {ko: '오늘 뭐 하지?', en: 'What should we do today?'},
         bottom: {ko: '그 질문을 여기서 같이 풉니다.', en: 'That’s the question we answer here.'},
     },
