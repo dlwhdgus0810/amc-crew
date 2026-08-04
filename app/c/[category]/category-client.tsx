@@ -133,6 +133,11 @@ const T = {
     ko: '모임을 만들었어요! 구독자들에게 알림이 갔어요.',
     en: 'Meetup created — subscribers have been notified.',
   },
+  // 지난 모임을 채워 넣은 것도 알림이 안 나간다 — 같은 이유로 문구를 달리한다
+  createdPast: {
+    ko: '지난 모임으로 기록했어요. 알림은 가지 않았어요.',
+    en: 'Recorded as a past meetup — nobody was notified.',
+  },
   // 비공개 모임은 구독자에게 알리지 않는다 — 갔다고 적으면 거짓말이 된다
   createdPrivate: {
     ko: '비공개 모임을 만들었어요! 링크를 아는 사람만 볼 수 있어요.',
@@ -446,15 +451,19 @@ export default function CategoryClient({ slug }: { slug: string }) {
         type: 'ok',
         text: data.repeatWeekly
           ? t(T.createdWeekly, { day: weekdayLabel(fDate) })
-          : !fPrivate
-            ? t(T.createdOnce)
-            : fInvite.size > 0
-              ? t(T.createdInvite, { n: fInvite.size })
-              : t(T.createdPrivate),
+          : // 지난 모임으로 들어간 경우가 먼저다 — 알림이 안 나갔다는 게 제일 중요한 사실이다
+            data.past
+            ? t(T.createdPast)
+            : !fPrivate
+              ? t(T.createdOnce)
+              : fInvite.size > 0
+                ? t(T.createdInvite, { n: fInvite.size })
+                : t(T.createdPrivate),
       });
       setShowForm(false);
       resetForm();
-      await loadPosts();
+      // 지난 날짜로 만들면 예정 목록에는 안 뜬다 — 지난 목록까지 같이 다시 받는다
+      await reloadAll();
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.createFailed) });
     } finally {
@@ -507,7 +516,8 @@ export default function CategoryClient({ slug }: { slug: string }) {
       setMsg({ type: 'ok', text: t(T.edited) });
       setEditId(null);
       resetForm();
-      await loadPosts();
+      // 날짜를 옮기면 예정↔지난 사이를 건너간다 — 두 목록을 같이 다시 받는다
+      await reloadAll();
     } catch (e) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.editFailed) });
     } finally {

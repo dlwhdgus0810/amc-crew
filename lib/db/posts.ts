@@ -667,6 +667,11 @@ export async function createPost(input: {
   recurringRuleId?: string; // 정기 모임 규칙에서 생성된 회차면 규칙 id
   amcShowtimeId?: string; // AMC 회차에서 만든 모임이면 그 회차 id
   visibility?: 'public' | 'link'; // 'link'면 구독자 알림을 보내지 않는다
+  /**
+   * 아무에게도 알리지 않고 넣는다 — 관리자가 이미 끝난 모임을 기록으로 채워 넣을 때.
+   * 어제 있었던 일에 「새 모임」 알림이 가면 그건 안내가 아니라 오해다.
+   */
+  silent?: boolean;
   /** 비공개 모임을 알릴 친구들 — 라우트에서 이미 "내 친구"로 걸러 온다 */
   inviteFriendIds?: string[];
   label?: Msg; // 알림 문구 (기본 '새 모임', 정기 모임은 '이번 주 모임')
@@ -680,7 +685,7 @@ export async function createPost(input: {
    * 링크를 받지 않은 사람에게 내용이 새는 통로가 된다.
    */
   const subscriberRows =
-    input.visibility === 'link'
+    input.visibility === 'link' || input.silent
       ? []
       : await db
           .select({ userId: subscriptions.userId })
@@ -735,7 +740,7 @@ export async function createPost(input: {
    * 모임만 생기고 초대는 안 가는 어중간한 상태가 생기지 않는다.
    */
   const inviteNotice =
-    input.visibility === 'link' && (input.inviteFriendIds?.length ?? 0) > 0
+    input.visibility === 'link' && !input.silent && (input.inviteFriendIds?.length ?? 0) > 0
       ? await buildNotice(input.inviteFriendIds!, (locale) =>
           `🤝 ${pick(locale, N.inviteLine, {
             name: input.authorName,

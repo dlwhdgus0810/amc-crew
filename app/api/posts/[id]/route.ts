@@ -86,8 +86,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return await errJson(E.coHostNotFriend, 400);
     }
   }
-  // 지난 날짜로 옮기는 것만 막는다 — 이미 끝난 모임의 메모·장소를 고치는 건 그대로 허용
-  if (date < todayLocal() && date !== post.date) {
+  /*
+   * 지난 날짜로 옮기는 것만 막는다 — 이미 끝난 모임의 메모·장소를 고치는 건 그대로 허용.
+   * 관리자는 옮길 수도 있다 (날짜를 잘못 적어 둔 기록을 바로잡는 경우).
+   */
+  if (date < todayLocal() && date !== post.date && !isAdmin(user)) {
     return await errJson(E.pastMove, 400);
   }
   if (!location || location.length > 100) {

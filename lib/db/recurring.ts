@@ -30,6 +30,8 @@ export interface RuleInput {
   title?: string;
   titleMeta?: TitleMeta;
   visibility?: 'public' | 'link';
+  /** 아무에게도 알리지 않고 넣는다 — 관리자가 지난 모임을 기록으로 채워 넣을 때 */
+  silent?: boolean;
   origin?: string;
 }
 
@@ -75,6 +77,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
     ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
     ...(input.visibility ? { visibility: input.visibility } : {}),
     recurringRuleId: ruleId,
+    ...(input.silent ? { silent: true as const } : {}),
     ...(input.origin ? { origin: input.origin } : {}),
   });
 

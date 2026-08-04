@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
-import { getSessionUser } from '@/lib/auth';
+import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { ensureUser } from '@/lib/db/users';
 import { createPost, listPosts } from '@/lib/db/posts';
@@ -56,9 +56,15 @@ export async function POST(req: NextRequest) {
   if (endTime !== null && startTime >= endTime) {
     return await errJson(E.endBeforeStart, 400);
   }
-  // 날짜·시간 오타 방어 — 만들자마자 "지난 모임"으로 들어가는 걸 막는다
-  // (목록 분류와 같은 기준이라 종료 후 유예 시간까지는 허용된다)
-  if (isPastSlot(date, startTime, endTime)) {
+  /*
+   * 날짜·시간 오타 방어 — 만들자마자 "지난 모임"으로 들어가는 걸 막는다.
+   * (목록 분류와 같은 기준이라 종료 후 유예 시간까지는 허용된다)
+   *
+   * 관리자는 예외다. 앱을 쓰기 전에 있었던 모임이나 누가 올리는 걸 잊은 모임을
+   * 나중에 채워 넣어야 하는데, 그건 오타가 아니라 기록을 맞추는 일이다.
+   */
+  const backfilling = isPastSlot(date, startTime, endTime);
+  if (backfilling && !isAdmin(user)) {
     return await errJson(E.pastSlot, 400);
   }
   if (!location || location.length > 100) {
@@ -112,6 +118,11 @@ export async function POST(req: NextRequest) {
     ...(askedCoHost ? { coHostId: askedCoHost } : {}),
     // 닉네임 허용은 명시적으로 켤 때만 — 기본은 실명 모임이다
     ...(body?.allowNicknames === true ? { allowNicknames: true } : {}),
+    /*
+     * 이미 지난 모임을 채워 넣는 것은 기록이지 안내가 아니다 — 아무에게도 알리지 않는다.
+     * 지난 모임을 고칠 때 알림을 안 보내는 것과 같은 기준이다.
+     */
+    ...(backfilling ? { silent: true as const } : {}),
   };
 
   // 매주 반복이면 규칙을 만들고 첫 회차를 생성한다 (이후 회차는 크론이 매일 채운다)
@@ -133,5 +144,6 @@ export async function POST(req: NextRequest) {
       : [];
 
   const postId = await createPost({ ...common, date, ...(invited.length > 0 ? { inviteFriendIds: invited } : {}) });
-  return NextResponse.json({ ok: true, postId });
+  // past를 화면에 알려준다 — 알림이 갔다고 적을지 말지를 서버 판정으로 정하게(기준이 둘이면 어긋난다)
+  return NextResponse.json({ ok: true, postId, past: backfilling });
 }
