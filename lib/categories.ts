@@ -45,22 +45,26 @@ export const DEFAULT_LOCATION_HINT: Msg = {
 // 배열 순서가 곧 홈 캐러셀 노출 순서다 (카드 번호 01·02…도 여기서 나온다)
 export const CATEGORIES: Category[] = [
   /*
-   * 카드 색은 밝기·채도를 하나로 맞추고 색상(hue)만 다르게 둔다 —
-   * OKLCH L .55 · C ≤ .17. HSL로 맞추면 같은 숫자라도 노랑이 파랑보다 밝아 보여 따로 논다.
+   * 카드 색은 밝기만 하나로 맞추고(OKLCH L .55) 색상과 채도는 낼 수 있는 만큼 낸다.
+   * 밝기를 맞추는 이유 — HSL로 맞추면 같은 숫자라도 노랑이 파랑보다 밝아 보여 따로 논다.
+   * 밝기가 같으면 크림색 글씨 대비도 함께 잡힌다(지금 4.1~5.0:1).
    *
-   * 색상은 각도가 아니라 「눈에 보이는 거리」로 벌린다. 각도를 똑같이 벌리면 안 된다 —
-   * 청록 쪽은 sRGB에서 채도가 .095까지밖에 안 올라가서, 같은 30°라도 색상환 위의 호가 짧다.
-   * 실제로 베이킹과 러닝이 25° 떨어져 있었는데도 열두 색 중 가장 붙어 보였다(다른 쌍의 절반).
-   * 그래서 채도가 낮은 구간은 각도를 더 벌려, 어느 두 색을 집어도 OKLab 거리가 .065 이상이다.
-   * (열셋을 같은 밝기·채도로 두면 여기가 한계다 — 캠핑을 넣으며 전체를 1~4°씩 다시 벌렸다)
-   * 카테고리를 더할 때는 각도만 보지 말고 이 거리를 재 볼 것.
-   * 글씨는 전부 크림색이고 대비는 4.1~4.9:1이다.
+   * 채도는 예전에 .17로 눌러 뒀는데, 그게 전체를 탁하게 만들고 있었다 —
+   * 빨강은 .22, 보라는 .29까지 낼 수 있는데 전부 깎아 내던 셈이다. 지금은 .21까지 열어 둔다.
+   * 청록(180~220°)만은 sRGB에서 .09가 한계라 어쩔 수 없이 차분하다. 밝기를 올리든 내리든
+   * 그 구간은 채도가 더 안 오른다 — 확인해 봤다.
+   *
+   * 색상은 각도가 아니라 「눈에 보이는 거리」로 벌린다. 청록 쪽은 채도가 낮아 같은 각도라도
+   * 색상환 위의 호가 짧기 때문이다. 어느 두 색을 집어도 OKLab 거리가 .077 이상이다.
+   *
+   * 배열 순서가 곧 색상환 순서다(빨강에서 시작해 한 바퀴 돌아 분홍으로 돌아온다).
+   * 카테고리를 더할 때는 그 자리를 지키고, 각도만 보지 말고 위의 거리를 재 볼 것.
    */
   {
     slug: 'soccer',
     emoji: '⚽',
     en: 'SOCCER',
-    color: '#C13C3B',
+    color: '#D02200',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '축구', en: 'Soccer' },
@@ -70,7 +74,7 @@ export const CATEGORIES: Category[] = [
     slug: 'tennis',
     emoji: '🎾',
     en: 'TENNIS',
-    color: '#6B7B00',
+    color: '#677C00',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '테니스', en: 'Tennis' },
@@ -82,7 +86,7 @@ export const CATEGORIES: Category[] = [
     slug: 'camping',
     emoji: '🏕️',
     en: 'CAMPING',
-    color: '#358700',
+    color: '#008A0A',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '캠핑', en: 'Camping' },
@@ -97,7 +101,7 @@ export const CATEGORIES: Category[] = [
     slug: 'movienight',
     emoji: '🍿',
     en: 'MOVIE NIGHT',
-    color: '#008753',
+    color: '#008759',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '무비나잇', en: 'Movie Night' },
@@ -119,7 +123,7 @@ export const CATEGORIES: Category[] = [
     slug: 'baking',
     emoji: '🧁',
     en: 'BAKING',
-    color: '#00837C',
+    color: '#008189',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '베이킹 클래스', en: 'Baking Class' },
@@ -132,7 +136,7 @@ export const CATEGORIES: Category[] = [
     slug: 'running',
     emoji: '🏃',
     en: 'RUNNING',
-    color: '#007DA0',
+    color: '#0079B5',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '러닝 크루', en: 'Running Crew' },
@@ -144,7 +148,7 @@ export const CATEGORIES: Category[] = [
     slug: 'pickleball',
     emoji: '🥒',
     en: 'PICKLEBALL',
-    color: '#0075C4',
+    color: '#1368E9',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '피클볼', en: 'Pickleball' },
@@ -154,7 +158,7 @@ export const CATEGORIES: Category[] = [
     slug: 'game',
     emoji: '🎮',
     en: 'GAME',
-    color: '#5165D3',
+    color: '#6555E6',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '게임', en: 'Game' },
@@ -173,7 +177,7 @@ export const CATEGORIES: Category[] = [
     slug: 'bowling',
     emoji: '🎳',
     en: 'BOWLING',
-    color: '#7D56C8',
+    color: '#9540CC',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '볼링', en: 'Bowling' },
@@ -183,7 +187,7 @@ export const CATEGORIES: Category[] = [
     slug: 'birthday',
     emoji: '🎂',
     en: 'BIRTHDAY',
-    color: '#9B49AE',
+    color: '#B72B9D',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '생일파티', en: 'Birthday Party' },
@@ -197,7 +201,7 @@ export const CATEGORIES: Category[] = [
     slug: 'meal',
     emoji: '🍚',
     en: 'MEAL',
-    color: '#B53C7F',
+    color: '#CB1861',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '밥친구', en: 'Meal Buddy' },
@@ -210,7 +214,7 @@ export const CATEGORIES: Category[] = [
     slug: 'cafe',
     emoji: '☕',
     en: 'CAFE',
-    color: '#AA5900',
+    color: '#B15300',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '카페 메이트', en: 'Café Mate' },
@@ -222,7 +226,7 @@ export const CATEGORIES: Category[] = [
     slug: 'gym',
     emoji: '🏋️',
     en: 'GYM',
-    color: '#8E6C00',
+    color: '#906B00',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '헬스장', en: 'Gym' },
