@@ -14,8 +14,8 @@ interface HostRank {
 const T = {
   title: { ko: '리더보드', en: 'Leaderboard' },
   subtitle: {
-    ko: '호스팅은 연 모임에 몇 명이 모였는지로 셉니다 (같이 연 모임은 나눠 가져요). 카테고리를 가리지 않고 공개 모임만 세요.',
-    en: 'Hosting counts how many people showed up — co-hosts split it. All categories together, public meetups only.',
+    ko: '호스팅은 연 모임에 몇 명이 모였는지로 셉니다 (같이 연 모임은 나눠 가져요). 카테고리를 가리지 않고 공개 모임만 세요. 모임이 끝난 뒤에 올라가요.',
+    en: 'Hosting counts how many people showed up — co-hosts split it. All categories together, public meetups only, and it counts once the meetup is over.',
   },
   tabHosts: { ko: '호스팅 순위', en: 'Hosted' },
   tabJoiners: { ko: '참여 순위', en: 'Joined' },

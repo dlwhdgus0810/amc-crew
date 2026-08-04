@@ -1,8 +1,10 @@
-import { asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
 import { postParticipants, posts, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { adminIds } from '../auth';
+import { openEndCutoffTime, pastCutoff } from '../dates';
 
 /**
  * 모임 주최 점수.
@@ -14,7 +16,9 @@ import { adminIds } from '../auth';
  * 10명 모임을 둘이 열었으면 각각 5점. 호스트는 최대 둘이라 소수점은 .5까지만 나온다.
  *
  * 공개 모임만 센다 — 비공개(link) 모임을 랭킹에 올리면 "무언가 열었다"는 사실이 샌다.
- * 날짜 제한은 두지 않는다: 등급은 쌓아 온 기록에 대한 훈장이지, 이번 주 성적표가 아니다.
+ * 그리고 **이미 끝난 모임만** 센다. 예정된 모임을 미리 세면 아직 일어나지 않은 일로 점수가
+ * 오르고, 취소하거나 아무도 안 오면 다시 내려간다. 등급은 쌓아 온 기록에 대한 훈장이라
+ * 오르내리면 안 된다. 오래된 것을 덜어내지는 않는다 — 이번 주 성적표가 아니다.
  *
  * 관리자는 어느 집계에도 넣지 않는다. 운영하느라 시험 삼아 여는 모임이 섞여 있어서
  * 숫자가 실제 참여를 나타내지 않고, 관리자가 1등인 순위표는 순위표가 아니다.
@@ -26,12 +30,31 @@ function resultRows(res: unknown): Record<string, unknown>[] {
 }
 
 /**
+ * 「이미 끝난 모임」을 고르는 조건 — 목록 화면(listPosts)과 같은 기준이다.
+ *
+ * 날짜가 지났거나, 같은 날인데 종료 시각이 기준을 넘겼을 때. 종료 시각을 안 적은 모임은
+ * 시작 시각을 당겨 둔 기준(openCut)과 견준다. openCut이 null이면 오늘은 아직 아무것도
+ * 안 넘어갔다는 뜻이라 그 갈래를 아예 뺀다.
+ *
+ * 시각이 걸려 있어서 함수다 — 모듈을 읽을 때 한 번 굳으면 자정을 넘겨도 어제 기준을 쓴다.
+ */
+function endedSql() {
+  const { date: cutDate, time: cutTime } = pastCutoff();
+  const openCut = openEndCutoffTime();
+  const endedToday = openCut
+    ? sql`(p.end_time <= ${cutTime} OR (p.end_time IS NULL AND p.start_time <= ${openCut}))`
+    : sql`p.end_time <= ${cutTime}`;
+  return sql`(p.date < ${cutDate} OR (p.date = ${cutDate} AND ${endedToday}))`;
+}
+
+/**
  * 사람마다의 주최 점수를 구하는 한 문장.
  *
  * 모임 하나가 호스트 수만큼의 줄로 펼쳐지고(UNION ALL), 각 줄이 인원 ÷ 호스트 수를 갖는다.
  * 행마다 나누므로 모임 크기가 제각각이어도 합이 맞는다.
  */
-const POINTS = sql`
+function points() {
+  return sql`
   WITH hosted AS (
     SELECT
       p.author_id,
@@ -39,7 +62,7 @@ const POINTS = sql`
       (SELECT count(*) FROM post_participants pp WHERE pp.post_id = p.id)::numeric AS people,
       CASE WHEN p.co_host_id IS NULL THEN 1 ELSE 2 END AS hosts
     FROM posts p
-    WHERE p.visibility = 'public'
+    WHERE p.visibility = 'public' AND ${endedSql()}
   ), shares AS (
     SELECT author_id AS user_id, people / hosts AS pts FROM hosted
     UNION ALL
@@ -49,6 +72,7 @@ const POINTS = sql`
   FROM shares
   GROUP BY user_id
 `;
+}
 
 /** 주어진 사람들의 주최 점수 (한 번도 안 열었으면 빠진다 — 호출부에서 ?? 0) */
 export async function hostCountsFor(userIds: string[]): Promise<Map<string, number>> {
@@ -60,7 +84,7 @@ export async function hostCountsFor(userIds: string[]): Promise<Map<string, numb
     targets.map((id) => sql`${id}`),
     sql`, `
   );
-  const rows = resultRows(await db.execute(sql`SELECT user_id, points FROM (${POINTS}) s WHERE user_id IN (${list})`));
+  const rows = resultRows(await db.execute(sql`SELECT user_id, points FROM (${points()}) s WHERE user_id IN (${list})`));
   return new Map(rows.map((r) => [String(r.user_id), Number(r.points)]));
 }
 
@@ -77,7 +101,7 @@ export async function hostRanking(limit = 50): Promise<HostRank[]> {
   const db = await getDb();
   const rows = resultRows(
     await db.execute(sql`
-      SELECT user_id, points FROM (${POINTS}) s
+      SELECT user_id, points FROM (${points()}) s
       WHERE points > 0
       -- 동률일 때 순서가 흔들리면 새로고침마다 금·은메달이 서로 바뀐다 — id로 고정한다
       ORDER BY points DESC, user_id ASC
@@ -95,14 +119,19 @@ export async function hostRanking(limit = 50): Promise<HostRank[]> {
  *
  * 자기가 연 모임도 센다. 만든 사람은 참가자로 들어가고, 여는 것도 나가는 일이라
  * 빼면 "많이 여는 사람"이 참가 순위에서 사라지는 이상한 표가 된다.
+ *
+ * 주최 점수와 같이 끝난 모임만 센다 — 참가 버튼을 눌러 두기만 해도 점수가 오르면
+ * 가지 않은 모임으로 순위가 오른다.
  */
 export async function joinRanking(limit = 50): Promise<HostRank[]> {
   const db = await getDb();
+  // endedSql()이 posts를 p로 부르므로 여기서도 같은 별칭으로 조인한다
+  const p = alias(posts, 'p');
   const rows = await db
     .select({ id: postParticipants.userId, n: sql<number>`count(*)::int` })
     .from(postParticipants)
-    .innerJoin(posts, eq(posts.id, postParticipants.postId))
-    .where(eq(posts.visibility, 'public'))
+    .innerJoin(p, eq(p.id, postParticipants.postId))
+    .where(and(eq(p.visibility, 'public'), endedSql()))
     .groupBy(postParticipants.userId)
     .orderBy(desc(sql`count(*)`), asc(postParticipants.userId));
   return withProfiles(rows, limit);
