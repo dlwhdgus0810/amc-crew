@@ -91,10 +91,6 @@ const T = {
   nothingToPay: { ko: '보낼 금액이 없어요.', en: 'You owe nothing here.' },
   total: { ko: '합계', en: 'Total' },
   venmoGo: { ko: 'Venmo로 보내기', en: 'Pay with Venmo' },
-  venmoMissing: {
-    ko: '{name}님이 아직 Venmo 아이디를 등록하지 않았어요.',
-    en: '{name} hasn’t added a Venmo username yet.',
-  },
   venmoMine: {
     ko: '프로필 → 받을 계좌에 Venmo나 Zelle을 넣어두면 다른 사람이 바로 보낼 수 있어요.',
     en: 'Add Venmo or Zelle under Profile → How you get paid so people can send it.',
@@ -503,16 +499,28 @@ export default function SettlementPanel({
                 <div style={{ color: 'var(--text-dim)', fontSize: 13.5, marginTop: 2 }}>
                   {t(T.payTo, { name: settlement.payee.name })}
                 </div>
+                {/*
+                  * Venmo도 Zelle과 같은 줄 모양으로 — 아이디를 눈으로 확인하고 복사할 수 있다.
+                  * 다만 아이디 자체가 링크다. 누르면 금액과 메모가 채워진 채로 Venmo가 열려서,
+                  * 「보내기」 버튼을 따로 두지 않아도 한 번에 간다.
+                  * 복사는 @를 뺀 아이디를 준다 — Venmo 검색창에 넣는 건 @ 없는 쪽이다.
+                  */}
                 {settlement.payee.venmo && (
-                  <a
-                    className="link-btn strong"
-                    style={{ marginTop: 10, display: 'inline-block' }}
-                    href={venmoLink(settlement.payee.venmo, mine.cents, noteLabel)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {t(T.venmoGo)}
-                  </a>
+                  <div className="pay-zelle">
+                    <span className="pay-zelle-label">Venmo</span>
+                    <a
+                      className="pay-zelle-value"
+                      href={venmoLink(settlement.payee.venmo, mine.cents, noteLabel)}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={t(T.venmoGo)}
+                    >
+                      @{settlement.payee.venmo}
+                    </a>
+                    <button className="link-btn" onClick={() => copyText(settlement.payee.venmo!)}>
+                      {copied === settlement.payee.venmo ? t(T.copied) : t(T.copy)}
+                    </button>
+                  </div>
                 )}
                 {/* Zelle은 열어줄 링크가 없어서 값을 보여주고 복사시킨다 */}
                 {settlement.payee.zelle && (
