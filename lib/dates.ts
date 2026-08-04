@@ -131,6 +131,32 @@ export function nextWeekdayOnOrAfter(from: string, weekday: number): string {
   return addDays(from, (weekday - weekdayOf(from) + 7) % 7);
 }
 
+/** 그 날짜가 속한 주의 일요일 */
+export function weekStartOf(date: string): string {
+  return addDays(date, -weekdayOf(date));
+}
+
+/** 그 달의 마지막 날 (다음 달 0일 = 이번 달 말일) */
+export function monthEndOf(date: string): string {
+  const [y, m] = date.split('-').map(Number);
+  return `${date.slice(0, 7)}-${String(new Date(Date.UTC(y!, m!, 0)).getUTCDate()).padStart(2, '0')}`;
+}
+
+/**
+ * 달력 격자에 그릴 기간.
+ *
+ * 월 보기는 첫 주·마지막 주를 채우는 앞뒤 달 날짜까지 포함한다.
+ * 서버(첫 화면을 미리 읽을 때)와 화면(달을 넘길 때)이 같은 답을 내야 해서 여기 둔다 —
+ * 한 칸이라도 어긋나면 서버가 읽어 둔 것을 못 쓰고 다시 받아온다.
+ */
+export function calendarRange(view: 'week' | 'month', anchor: string): { from: string; to: string } {
+  if (view === 'week') {
+    const from = weekStartOf(anchor);
+    return { from, to: addDays(from, 6) };
+  }
+  return { from: weekStartOf(`${anchor.slice(0, 7)}-01`), to: addDays(weekStartOf(monthEndOf(anchor)), 6) };
+}
+
 /**
  * 앱 시간대의 벽시계 시각(날짜 + 'HH:mm')이 가리키는 실제 순간.
  *

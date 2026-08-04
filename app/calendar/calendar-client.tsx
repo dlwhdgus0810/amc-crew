@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { catDisplayName, getCategory } from '@/lib/categories';
-import { addDays, weekdayOf } from '@/lib/dates';
+import { addDays, calendarRange, monthEndOf, weekStartOf, weekdayOf } from '@/lib/dates';
 import { dateLabel, timeLabel } from '@/lib/datefmt';
 import { useLocale, useT } from '../i18n';
 
@@ -60,47 +60,44 @@ const WEEKDAY_HEAD = {
 };
 const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-/** 그 날짜가 속한 주의 일요일 */
-function weekStart(date: string): string {
-  return addDays(date, -weekdayOf(date));
-}
-
-/** 그 달의 마지막 날 (다음 달 0일 = 이번 달 말일) */
-function monthEnd(date: string): string {
-  const [y, m] = date.split('-').map(Number);
-  return `${date.slice(0, 7)}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
-}
-
-/** 격자에 그릴 기간 — 월 보기는 첫 주·마지막 주를 채우는 앞뒤 달 날짜까지 포함한다 */
-function rangeOf(view: View, anchor: string): { from: string; to: string } {
-  if (view === 'week') {
-    const from = weekStart(anchor);
-    return { from, to: addDays(from, 6) };
-  }
-  return { from: weekStart(`${anchor.slice(0, 7)}-01`), to: addDays(weekStart(monthEnd(anchor)), 6) };
-}
-
 /**
  * 날짜별 모임 달력 — 월 보기와 주 보기.
  *
  * 월 보기는 격자에서 고른 하루만 아래에 펼친다.
  * 주 보기는 7일치를 통째로 나열한다 — 한 주쯤은 눌러보지 않고 한 번에 읽는 게 낫다.
  */
-export default function CalendarClient({ today }: { today: string }) {
+/** 서버가 첫 화면 몫으로 미리 읽어 둔 것 (page.tsx) */
+export interface CalendarInitial {
+  from: string;
+  to: string;
+  meetups: CalendarMeetup[];
+}
+
+export default function CalendarClient({ today, initial }: { today: string; initial: CalendarInitial }) {
   // 기본은 주 보기 — 대부분 "이번 주에 뭐 있지?"를 보러 온다
   const [view, setView] = useState<View>('week');
   /** 지금 보고 있는 기간 안의 아무 날짜 — 달/주를 이 날짜에서 계산한다 */
   const [anchor, setAnchor] = useState(today);
-  const [meetups, setMeetups] = useState<CalendarMeetup[]>([]);
+  const [meetups, setMeetups] = useState<CalendarMeetup[]>(initial.meetups);
   const [selected, setSelected] = useState(today);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const t = useT();
   const locale = useLocale();
 
-  const { from, to } = useMemo(() => rangeOf(view, anchor), [view, anchor]);
+  const { from, to } = useMemo(() => calendarRange(view, anchor), [view, anchor]);
+
+  /*
+   * 첫 화면 몫은 서버가 이미 읽어 줬다 — 그 범위일 때는 받아오지 않는다.
+   * 달을 넘기거나 월 보기로 바꾸면 범위가 달라지므로 그때부터 받아온다.
+   */
+  const seedUsed = useRef(false);
 
   useEffect(() => {
+    if (!seedUsed.current && from === initial.from && to === initial.to) {
+      seedUsed.current = true;
+      return;
+    }
     let alive = true;
     setLoading(true);
     fetch(`/api/calendar?from=${from}&to=${to}`)
@@ -115,6 +112,8 @@ export default function CalendarClient({ today }: { today: string }) {
     return () => {
       alive = false;
     };
+    // initial은 서버가 준 값이라 이 화면이 사는 동안 바뀌지 않는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to]);
 
   const byDate = useMemo(() => {
