@@ -16,7 +16,6 @@ import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
 import { adminIds } from '../auth';
 import { formatCents, shortCode, splitWithExtras, venmoLink } from '../money';
-import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
 import { dateLabelShort, timeLabel } from '../datefmt';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
@@ -448,7 +447,6 @@ export async function notifySettlement(postId: string, origin: string): Promise<
 
   if (rows.length > 0) await db.insert(notifications).values(rows);
   for (const [userId, { plain, kakao, locale }] of messages) {
-    await sendKakaoMemos([userId], kakao, linkUrl, pick(locale, N.btn));
     await sendPush([userId], { title: 'Kansas Korean', body: plain, url: linkUrl, tag: `settle:${postId}` });
   }
   return { sent: targets.length };

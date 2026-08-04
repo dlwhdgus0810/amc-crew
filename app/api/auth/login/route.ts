@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   LOGIN_NEXT_COOKIE,
-  LOGIN_PURPOSE_COOKIE,
   safeNextPath,
   STATE_COOKIE,
-  TALK_MESSAGE_PURPOSE,
 } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -26,9 +24,8 @@ export async function GET(req: NextRequest) {
   url.searchParams.set('redirect_uri', `${origin}/api/auth/callback`);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('state', state);
-  // 명시적 scope 요청: 이미 로그인했던 사용자도 아직 동의 안 한 항목(talk_message)의
-  // 추가 동의 화면을 보게 된다 (모두 동의된 상태면 화면 없이 통과)
-  url.searchParams.set('scope', 'profile_nickname,talk_message');
+  // 닉네임만 받는다 — 카톡으로 알림을 보내지 않으므로 talk_message 동의를 구할 이유가 없다
+  url.searchParams.set('scope', 'profile_nickname');
 
   const res = NextResponse.redirect(url);
   const cookieOpts = {
@@ -41,9 +38,5 @@ export async function GET(req: NextRequest) {
   res.cookies.set(STATE_COOKIE, state, cookieOpts);
   // 로그인 완료 후 복귀할 경로 (예: 공유받은 모임 링크)
   res.cookies.set(LOGIN_NEXT_COOKIE, safeNextPath(req.nextUrl.searchParams.get('next')), cookieOpts);
-  // 프로필의 "카톡 알림 켜기"로 들어온 재동의 요청이면 콜백이 결과를 안내하도록 표시
-  if (req.nextUrl.searchParams.get('consent') === TALK_MESSAGE_PURPOSE) {
-    res.cookies.set(LOGIN_PURPOSE_COOKIE, TALK_MESSAGE_PURPOSE, cookieOpts);
-  }
   return res;
 }

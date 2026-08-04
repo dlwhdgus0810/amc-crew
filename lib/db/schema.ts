@@ -11,11 +11,15 @@ export const users = pgTable('users', {
   birthday: text('birthday'), // YYYY-MM-DD, null이면 온보딩 미완료
   gender: text('gender'), // 'male' | 'female', null이면 온보딩 미완료
   locale: text('locale'), // 'ko' | 'en', null이면 기본(한국어) — 알림 문구도 이 언어로 만든다
-  // 카카오톡 "나에게 보내기" 알림용 토큰 (로그인마다 갱신)
+  /*
+   * ⚠️ 아래 넷은 더 이상 쓰지 않는다 — 카카오톡 알림을 걷어내면서 읽는 곳도 쓰는 곳도 없어졌다.
+   * 새 로그인은 토큰을 아예 받아 두지 않는다. 예전 값이 행에 남아 있어서 칸만 남겨 뒀다.
+   * 지울 때는 db:push가 DROP COLUMN을 돌리므로 남은 값도 함께 사라진다 — 그래도 괜찮을 때 지울 것.
+   */
   kakaoAccessToken: text('kakao_access_token'),
   kakaoTokenExpiresAt: timestamp('kakao_token_expires_at', { withTimezone: true }),
   kakaoRefreshToken: text('kakao_refresh_token'),
-  kakaoTalkMessage: boolean('kakao_talk_message'), // talk_message 동의 여부 (null=미확인, false=미동의)
+  kakaoTalkMessage: boolean('kakao_talk_message'),
   /**
    * 마지막으로 앱을 보고 있던 시각 — 관리자 화면의 "지금 접속 중"에만 쓴다.
    * 일부러 최신 시각 하나만 덮어쓴다. 이력을 쌓으면 "누가 언제 들어왔나" 기록이 되어버린다.

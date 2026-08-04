@@ -27,8 +27,6 @@ export interface Viewer {
   gender: string | null;
   /** 생일이나 성별이 비어 있으면 온보딩(/welcome)으로 보낸다 */
   needsOnboarding: boolean;
-  /** 카톡 알림 동의: true=동의, false=미동의, null=미확인 (외부 호출 없이 DB 값만) */
-  kakaoTalkMessage: boolean | null;
   locale: string | null;
   isAdmin: boolean;
   /** 정지 중이면 남은 기간 — app/ban-screen.tsx가 이 값으로 타이머를 돌린다 */
@@ -49,7 +47,6 @@ const EMPTY: Viewer = {
   birthday: null,
   gender: null,
   needsOnboarding: false,
-  kakaoTalkMessage: null,
   locale: null,
   isAdmin: false,
   ban: null,
@@ -82,7 +79,6 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,
     needsOnboarding: !row?.birthday || !row?.gender,
-    kakaoTalkMessage: row?.kakaoTalkMessage ?? null,
     locale: row?.locale ?? null,
     isAdmin: isAdmin(user),
     ban: toState(row?.bannedUntil ?? null, row?.banReason ?? null),

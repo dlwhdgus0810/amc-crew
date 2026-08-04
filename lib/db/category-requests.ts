@@ -2,8 +2,8 @@ import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { categoryRequests, notifications, users } from './schema';
 import { resolveDisplayName } from '../store';
-import { sendKakaoMemos } from '../kakao';
 import { notifyAdmins } from './admin-notify';
+import { sendPush } from '../push';
 import { pick, toLocale } from '../i18n';
 
 const N = {
@@ -138,7 +138,13 @@ export async function reviewCategoryRequest(input: {
     await db
       .insert(notifications)
       .values({ id: crypto.randomUUID(), userId: input.requesterId, postId: null, message });
-    await sendKakaoMemos([input.requesterId], message, `${input.origin}/suggest`, pick(locale, N.btnMine));
+    // 인앱만 남기면 앱을 열어보기 전까지 결과를 모른다 (예전에는 카톡이 그 역할을 했다)
+    await sendPush([input.requesterId], {
+      title: 'Kansas Korean',
+      body: message,
+      url: `${input.origin}/suggest`,
+      tag: 'category-request',
+    });
   } catch (e) {
     console.error('[category-request] requester notify failed:', e);
   }

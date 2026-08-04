@@ -2,8 +2,8 @@ import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { notifications, tickets, users } from './schema';
 import { resolveDisplayName } from '../store';
-import { sendKakaoMemos } from '../kakao';
 import { notifyAdmins } from './admin-notify';
+import { sendPush } from '../push';
 import { Msg, pick, toLocale } from '../i18n';
 
 export type TicketKind = 'feature' | 'improve' | 'bug' | 'other' | 'cheer';
@@ -156,7 +156,13 @@ export async function reviewTicket(input: {
     await db
       .insert(notifications)
       .values({ id: crypto.randomUUID(), userId: input.requesterId, postId: null, message });
-    await sendKakaoMemos([input.requesterId], message, `${input.origin}/tickets`, pick(locale, N.btnMine));
+    // 인앱만 남기면 앱을 열어보기 전까지 결과를 모른다 (예전에는 카톡이 그 역할을 했다)
+    await sendPush([input.requesterId], {
+      title: 'Kansas Korean',
+      body: message,
+      url: `${input.origin}/tickets`,
+      tag: 'ticket',
+    });
   } catch (e) {
     console.error('[ticket] requester notify failed:', e);
   }

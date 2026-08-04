@@ -89,8 +89,8 @@ const T = {
   newsSend: { ko: '지금 보내기', en: 'Send now' },
   newsSending: { ko: '보내는 중…', en: 'Sending…' },
   newsConfirm: {
-    ko: '가장 최근 소식을 알림 켠 회원들에게 보낼까요? 카카오톡으로도 갑니다.',
-    en: 'Send the latest entry to members with alerts on? It also goes out on KakaoTalk.',
+    ko: '가장 최근 소식을 알림 켠 회원들에게 보낼까요? 앱 푸시로도 갑니다.',
+    en: 'Send the latest entry to members with alerts on? It also goes out as a push.',
   },
   newsSent: { ko: '{n}명에게 보냈어요. ({skipped}명은 이미 받아서 건너뛰었어요)', en: 'Sent to {n}. ({skipped} already had it)' },
   banTitle: { ko: '이용 정지', en: 'Suspensions' },
@@ -123,8 +123,8 @@ const T = {
   statsPushOn: { ko: '켜짐', en: 'On' },
   statsPushOff: { ko: '꺼짐', en: 'Off' },
   statsPushNote: {
-    ko: '앱 푸시는 홈 화면에 추가한 앱으로 오는 알림이에요 (인앱 알림·카카오톡과 별개). 켜 둔 기기가 하나라도 있으면 켜짐이에요.',
-    en: 'App push is the notification that reaches the home-screen app — separate from in-app alerts and KakaoTalk. On means at least one device has it.',
+    ko: '앱 푸시는 홈 화면에 추가한 앱으로 오는 알림이에요 (앱 안 알림함과 별개). 켜 둔 기기가 하나라도 있으면 켜짐이에요.',
+    en: 'App push is the notification that reaches the home-screen app — separate from the in-app alerts tab. On means at least one device has it.',
   },
   statsActiveNote: {
     ko: '활동시간은 캔자스 시간 오전 7시부터 다음날 새벽 1시까지 머문 시간이에요. 새벽 1시를 넘기면 그날 것으로 묶여요.',

@@ -103,51 +103,6 @@ const T = {
     ko: '구독한 취미에 새 모임이 올라오면 알림을 받아요.',
     en: 'Get notified when a new meetup is posted in these hobbies.',
   },
-  kakaoTalk: { ko: '카카오톡 알림', en: 'KakaoTalk alerts' },
-  kakaoTalkDesc: {
-    ko: '구독한 취미의 새 모임·변경·취소·댓글 알림을 카카오톡 "나와의 채팅"으로도 받아요.',
-    en: 'Also receive new/updated/cancelled meetup and comment alerts in your KakaoTalk chat with yourself.',
-  },
-  talkOn: { ko: '받는 중', en: 'On' },
-  talkOff: { ko: '받지 않음', en: 'Off' },
-  talkUnknown: { ko: '확인 안 됨', en: 'Unknown' },
-  talkEnable: { ko: '카카오톡 알림 켜기', en: 'Turn on KakaoTalk alerts' },
-  talkCheck: { ko: '상태 확인', en: 'Check status' },
-  talkChecking: { ko: '확인 중…', en: 'Checking…' },
-  talkDisable: { ko: '알림 끄기', en: 'Turn off' },
-  talkUnknownHint: {
-    ko: '카카오톡 알림 동의 여부를 아직 확인하지 못했어요. 켜기를 누르거나 상태를 확인해주세요.',
-    en: 'We haven’t confirmed your KakaoTalk consent yet. Turn it on or check the status.',
-  },
-  talkConfirmOff: {
-    ko: '카카오톡 알림을 끌까요? 다시 켜려면 카카오 동의를 새로 받아야 해요.',
-    en: 'Turn off KakaoTalk alerts? You’ll have to grant Kakao consent again to turn them back on.',
-  },
-  talkTurnedOff: {
-    ko: '카카오톡 알림을 껐어요. 앱 안 알림은 계속 받아요.',
-    en: 'KakaoTalk alerts are off. You’ll still get in-app alerts.',
-  },
-  talkOnMsg: { ko: '카카오톡 알림을 받는 중이에요.', en: 'KakaoTalk alerts are on.' },
-  talkOffMsg: { ko: '카카오톡 알림을 받지 않고 있어요.', en: 'KakaoTalk alerts are off.' },
-  talkCheckFailed: {
-    ko: '동의 상태를 확인하지 못했어요. 카카오 로그인을 다시 하면 복구돼요.',
-    en: 'Couldn’t confirm consent. Logging in with Kakao again will fix it.',
-  },
-  talkCheckError: { ko: '상태 확인 실패', en: 'Status check failed' },
-  talkOffError: { ko: '알림 끄기 실패', en: 'Couldn’t turn alerts off' },
-  resultOn: { ko: '카카오톡 알림을 켰어요.', en: 'KakaoTalk alerts are on.' },
-  resultOff: {
-    ko: '카카오톡 메시지 전송에 동의하지 않아서 알림을 켜지 못했어요. 동의 화면이 뜨지 않았다면 카카오톡 → 더보기 → 설정 → 개인/보안 → 카카오 계정 → 연결된 서비스 관리에서 동의 항목을 정리한 뒤 다시 시도해주세요.',
-    en: 'You didn’t consent to KakaoTalk messages, so alerts stay off. If the consent screen never appeared, clear the app’s consent items in KakaoTalk → More → Settings → Privacy → Kakao Account → Linked Services, then try again.',
-  },
-  resultDenied: {
-    ko: '카카오 화면에서 취소했어요. 언제든 다시 켤 수 있어요.',
-    en: 'You cancelled on the Kakao screen. You can turn it on anytime.',
-  },
-  resultUnknown: {
-    ko: '동의 상태를 확인하지 못했어요. 아래 "상태 확인"을 눌러주세요.',
-    en: 'Couldn’t confirm consent. Tap “Check status” below.',
-  },
   edit: { ko: '수정', en: 'Edit' },
   save: { ko: '저장', en: 'Save' },
   saving: { ko: '저장 중…', en: 'Saving…' },
@@ -162,8 +117,8 @@ const T = {
   testNotify: { ko: '테스트 알림 보내기', en: 'Send a test alert' },
   testSending: { ko: '보내는 중…', en: 'Sending…' },
   testNotifyDesc: {
-    ko: '관리자에게만 갑니다. 인앱·카카오톡·앱 푸시를 한 번에 태워 어디가 막혔는지 확인하는 용도예요.',
-    en: 'Goes to admins only — fires the in-app, KakaoTalk and push channels at once so you can see which one arrives.',
+    ko: '관리자에게만 갑니다. 인앱 알림과 앱 푸시를 한 번에 태워 어디가 막혔는지 확인하는 용도예요.',
+    en: 'Goes to admins only — fires the in-app and push channels at once so you can see which one arrives.',
   },
   testSent: {
     ko: '보냈어요 ({time}) — 관리자 {admins}명 · 푸시 기기 {devices}대',
@@ -230,9 +185,6 @@ export default function ProfilePage() {
   const [gInput, setGInput] = useState<'male' | 'female' | ''>('');
   const [saving, setSaving] = useState(false);
 
-  // 카카오톡 알림 동의: true=받는 중, false=받지 않음, null=확인 안 됨
-  const [talkMessage, setTalkMessage] = useState<boolean | null>(viewer.kakaoTalkMessage);
-  const [talkBusy, setTalkBusy] = useState(false);
   const t = useT();
   const locale = useLocale();
   const genderLabel = (g: string) => (g === 'male' ? t(T.male) : g === 'female' ? t(T.female) : '');
@@ -251,21 +203,6 @@ export default function ProfilePage() {
         setPastPrivate(Boolean(priv.showPastPrivate));
       })
       .finally(() => setLoading(false));
-  }, []);
-
-  // 카카오 재동의에서 돌아왔을 때 결과 안내 (?kakao_talk=) 후 URL 정리
-  useEffect(() => {
-    const flag = new URLSearchParams(window.location.search).get('kakao_talk');
-    if (!flag) return;
-    const results: Record<string, { type: 'ok' | 'err'; text: string }> = {
-      on: { type: 'ok', text: t(T.resultOn) },
-      off: { type: 'err', text: t(T.resultOff) },
-      denied: { type: 'err', text: t(T.resultDenied) },
-      unknown: { type: 'err', text: t(T.resultUnknown) },
-    };
-    const result = results[flag];
-    if (result) setMsg(result);
-    window.history.replaceState(null, '', '/profile');
   }, []);
 
   /** 고른 사진을 정사각형으로 잘라 256px JPEG data URL로 줄인다 (원본을 그대로 담지 않기 위해) */
@@ -410,45 +347,6 @@ export default function ProfilePage() {
     if (res.ok) {
       const data = await res.json();
       setSubs(new Set(data.subscriptions ?? []));
-    }
-  }
-
-  /** 카카오에 실제 동의 상태를 물어 화면을 정정한다 */
-  async function verifyTalk() {
-    setTalkBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch('/api/profile/kakao-talk?verify=1');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t(T.talkCheckError));
-      setTalkMessage(data.status === 'on' ? true : data.status === 'off' ? false : null);
-      setMsg(
-        data.status === 'unknown'
-          ? { type: 'err', text: t(T.talkCheckFailed) }
-          : { type: 'ok', text: data.status === 'on' ? t(T.talkOnMsg) : t(T.talkOffMsg) }
-      );
-    } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.talkCheckError) });
-    } finally {
-      setTalkBusy(false);
-    }
-  }
-
-  /** 카카오에서 talk_message 동의를 철회한다 (다시 켜려면 카카오 동의를 새로 받아야 함) */
-  async function disableTalk() {
-    if (!confirm(t(T.talkConfirmOff))) return;
-    setTalkBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch('/api/profile/kakao-talk', { method: 'DELETE' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t(T.talkOffError));
-      setTalkMessage(false);
-      setMsg({ type: 'ok', text: t(T.talkTurnedOff) });
-    } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.talkOffError) });
-    } finally {
-      setTalkBusy(false);
     }
   }
 
@@ -741,41 +639,6 @@ export default function ProfilePage() {
             </button>
           ))}
         </div>
-      </div>
-
-      <h2>{t(T.kakaoTalk)}</h2>
-      <div className="card">
-        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
-          {t(T.kakaoTalkDesc)}
-        </p>
-        <div className="field-row" style={{ justifyContent: 'space-between' }}>
-          <span style={{ fontWeight: 500, color: talkMessage ? undefined : 'var(--text-dim)' }}>
-            {talkMessage === true ? t(T.talkOn) : talkMessage === false ? t(T.talkOff) : t(T.talkUnknown)}
-          </span>
-          <span className="field-row">
-            {talkMessage !== true && (
-              <a className="kakao-btn" href="/api/auth/login?consent=talk_message&next=/profile">
-                <KakaoIcon />
-                {t(T.talkEnable)}
-              </a>
-            )}
-            {talkMessage !== false && (
-              <button className="secondary" disabled={talkBusy} onClick={verifyTalk}>
-                {talkBusy ? t(T.talkChecking) : t(T.talkCheck)}
-              </button>
-            )}
-            {talkMessage === true && (
-              <button className="danger" disabled={talkBusy} onClick={disableTalk}>
-                {t(T.talkDisable)}
-              </button>
-            )}
-          </span>
-        </div>
-        {talkMessage === null && (
-          <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '12px 2px 0' }}>
-            {t(T.talkUnknownHint)}
-          </p>
-        )}
       </div>
 
       <PushToggle />

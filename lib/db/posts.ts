@@ -5,7 +5,6 @@ import { commentLikes, favorites, notifications, postComments, postParticipants,
 import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
-import { sendKakaoMemos } from '../kakao';
 import { sendPush } from '../push';
 import { isPastSlot, openEndCutoffTime, pastCutoff, todayLocal } from '../dates';
 import { adminIds } from '../auth';
@@ -525,7 +524,6 @@ async function buildNotice(
  */
 async function sendNotice(notice: Notice, linkUrl: string): Promise<void> {
   for (const g of notice.groups) {
-    await sendKakaoMemos(g.userIds, g.message, linkUrl, g.button);
     await sendPush(g.userIds, {
       title: APP_NAME,
       body: g.message,
