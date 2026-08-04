@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
@@ -5,6 +6,7 @@ import { postParticipants, posts, users } from './schema';
 import { resolveDisplayName } from '../store';
 import { adminIds } from '../auth';
 import { openEndCutoffTime, pastCutoff } from '../dates';
+import { POSTS_TAG } from '../cache-tags';
 
 /**
  * 모임 주최 점수.
@@ -97,7 +99,7 @@ export interface HostRank {
 }
 
 /** 종합 주최 랭킹 — 카테고리를 가리지 않고 연 공개 모임 전부를 센다 */
-export async function hostRanking(limit = 50): Promise<HostRank[]> {
+async function hostQuery(limit: number): Promise<HostRank[]> {
   const db = await getDb();
   const rows = resultRows(
     await db.execute(sql`
@@ -123,7 +125,7 @@ export async function hostRanking(limit = 50): Promise<HostRank[]> {
  * 주최 점수와 같이 끝난 모임만 센다 — 참가 버튼을 눌러 두기만 해도 점수가 오르면
  * 가지 않은 모임으로 순위가 오른다.
  */
-export async function joinRanking(limit = 50): Promise<HostRank[]> {
+async function joinQuery(limit: number): Promise<HostRank[]> {
   const db = await getDb();
   // endedSql()이 posts를 p로 부르므로 여기서도 같은 별칭으로 조인한다
   const p = alias(posts, 'p');
@@ -136,6 +138,22 @@ export async function joinRanking(limit = 50): Promise<HostRank[]> {
     .orderBy(desc(sql`count(*)`), asc(postParticipants.userId));
   return withProfiles(rows, limit);
 }
+
+/*
+ * 두 순위표는 요청 사이에도 남겨 둔다.
+ *
+ * 회원 전체의 모임을 통째로 세는 것이라 보는 사람이 누구든 같은 답이고, 그만큼 무겁다.
+ * 모임·참가자가 바뀌면 태그로 지우고(revalidateTag), 그 사이에도 5분마다 스스로 다시
+ * 읽는다 — 점수는 모임이 끝나야 오르는데, 끝나는 것은 아무도 누르지 않아도 일어난다.
+ */
+export const hostRanking = unstable_cache(hostQuery, ['host-ranking'], {
+  tags: [POSTS_TAG],
+  revalidate: 300,
+});
+export const joinRanking = unstable_cache(joinQuery, ['join-ranking'], {
+  tags: [POSTS_TAG],
+  revalidate: 300,
+});
 
 /** 집계 결과에 이름·사진을 붙이고 관리자를 뺀다 (두 랭킹이 같은 규칙을 쓰게) */
 async function withProfiles(rows: { id: string; n: number }[], limit: number): Promise<HostRank[]> {

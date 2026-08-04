@@ -4,10 +4,12 @@
    쿼리 2번(예정 모임 + 참가자)으로 전체 카테고리를 한꺼번에 처리합니다.
    ============================================================ */
 
+import { unstable_cache } from 'next/cache';
 import { and, asc, eq, gt, inArray, isNull, or } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, posts } from './schema';
 import { openEndCutoffTime, pastCutoff } from '../dates';
+import { POSTS_TAG } from '../cache-tags';
 
 export interface NextMeetup {
   postId: string;
@@ -19,18 +21,16 @@ export interface NextMeetup {
   title: string | null;
   count: number;
   capacity: number | null;
-  /** 보는 사람이 이미 참가 중인지 (비로그인이면 false) */
-  joined: boolean;
 }
 
 /**
  * 카테고리별 가장 가까운 예정 모임.
  * "지난 모임" 판정은 목록 화면과 같은 기준(종료 시각 + 유예)을 쓴다.
+ *
+ * 보는 사람이 누구든 같은 답이다 — 비공개 모임은 애초에 빼고 세므로 여기에 개인적인 것이
+ * 하나도 없다. 그래서 아래에서 요청 사이에도 캐시할 수 있다.
  */
-export async function nextMeetupByCategory(
-  categories: string[],
-  viewerId?: string
-): Promise<Record<string, NextMeetup>> {
+async function query(categories: string[]): Promise<Record<string, NextMeetup>> {
   if (categories.length === 0) return {};
   const db = await getDb();
   const { date: cutDate, time: cutTime } = pastCutoff();
@@ -70,10 +70,8 @@ export async function nextMeetupByCategory(
     .where(inArray(postParticipants.postId, ids));
 
   const count = new Map<string, number>();
-  const joined = new Set<string>();
   for (const p of participantRows) {
     count.set(p.postId, (count.get(p.postId) ?? 0) + 1);
-    if (viewerId && p.userId === viewerId) joined.add(p.postId);
   }
 
   const out: Record<string, NextMeetup> = {};
@@ -86,8 +84,20 @@ export async function nextMeetupByCategory(
       title: r.title,
       count: count.get(r.id) ?? 0,
       capacity: r.capacity,
-      joined: joined.has(r.id),
     };
   }
   return out;
 }
+
+/*
+ * 홈과 둘러보기가 매번 부르는 두 질의를 요청 사이에도 남긴다.
+ *
+ * 열두 카테고리를 한 번에 훑는 것이라 사람마다 다르지 않고, 모임을 만들거나
+ * 참가자가 바뀌기 전에는 답도 그대로다. 그래서 그 일이 있을 때 태그로 지우고
+ * (revalidateTag('posts')), 그 사이에도 60초마다 스스로 한 번 다시 읽는다 —
+ * 아무도 아무것도 안 해도 「다음 모임」은 시간이 지나면 지난 모임이 되기 때문이다.
+ */
+export const nextMeetupByCategory = unstable_cache(query, ['next-meetups'], {
+  tags: [POSTS_TAG],
+  revalidate: 60,
+});

@@ -1,3 +1,4 @@
+import { revalidateTag } from 'next/cache';
 import { cache } from 'react';
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
@@ -8,6 +9,7 @@ import type { TitleMeta } from '../tmdb';
 import { sendPush } from '../push';
 import { isPastSlot, openEndCutoffTime, pastCutoff, todayLocal } from '../dates';
 import { adminIds } from '../auth';
+import { POSTS_TAG } from '../cache-tags';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
@@ -654,6 +656,18 @@ function noticeTag(linkUrl: string): string | undefined {
  * 포스트 생성 + 작성자 자동 참가 + 구독자(작성자 제외) 알림을 하나의 batch(단일 트랜잭션)로 실행.
  * neon-http는 인터랙티브 트랜잭션을 지원하지 않으므로 id를 앱에서 생성해 batch를 쓴다.
  */
+/**
+ * 모임·참가자가 바뀌었다고 알린다.
+ *
+ * 여러 모임을 가로질러 세어 둔 것들(카테고리별 다음 모임, 주최·참가 순위)이 태그로 걸려
+ * 있어서, 하나라도 바뀌면 같이 버려야 한다. 라우트마다 부르지 않고 바꾸는 함수 안에서
+ * 부른다 — 새 라우트를 만들면서 한 줄을 빠뜨리면 화면이 옛날 값을 들고 있게 되는데,
+ * 그건 눈에 잘 안 띈다.
+ */
+function postsChanged(): void {
+  revalidateTag(POSTS_TAG);
+}
+
 export async function createPost(input: {
   category: string;
   authorId: string;
@@ -795,6 +809,9 @@ export async function createPost(input: {
     });
   }
 
+  // 알림 발송보다 먼저 — 발송이 실패해도 모임은 이미 생겼다
+  postsChanged();
+
   // 구독자에게 카카오톡 "나에게 보내기" 발송 (토큰 없는 사용자는 인앱 알림만)
   if (input.origin && notificationValues.length > 0) {
     await sendNotice(notice, `${input.origin}/p/${postId}`);
@@ -832,6 +849,7 @@ export async function addParticipants(postId: string, userIds: string[]): Promis
     .insert(postParticipants)
     .values(userIds.map((userId) => ({ postId, userId })))
     .onConflictDoNothing();
+  postsChanged();
 }
 
 export async function getPost(postId: string) {
@@ -969,6 +987,7 @@ export async function updatePost(input: {
   if (input.origin && recipients.length > 0) {
     await sendNotice(notice, `${input.origin}/p/${input.postId}`);
   }
+  postsChanged();
 }
 
 /**
@@ -1017,6 +1036,8 @@ export async function deletePost(
       await tx.delete(posts).where(eq(posts.id, post.id));
     });
   }
+
+  postsChanged();
 
   // 취소된 모임은 상세 페이지가 사라지므로 카테고리 피드로 링크
   if (origin && recipients.length > 0) {
@@ -1104,12 +1125,14 @@ export async function joinPost(postId: string, userId: string, capacity: number 
     if ((row?.count ?? 0) >= capacity) return false;
   }
   await db.insert(postParticipants).values({ postId, userId }).onConflictDoNothing();
+  postsChanged();
   return true;
 }
 
 export async function leavePost(postId: string, userId: string): Promise<void> {
   const db = await getDb();
   await db.delete(postParticipants).where(and(eq(postParticipants.postId, postId), eq(postParticipants.userId, userId)));
+  postsChanged();
 }
 
 export async function getSubscriptions(userId: string): Promise<string[]> {

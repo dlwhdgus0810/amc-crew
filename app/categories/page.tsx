@@ -20,7 +20,7 @@ async function CategoriesData() {
   const [subs, favs, summaries] = await Promise.all([
     user ? getSubscriptions(user.id) : [],
     user ? getFavorites(user.id) : [],
-    nextMeetupByCategory(POST_CATEGORY_SLUGS, user?.id),
+    nextMeetupByCategory(POST_CATEGORY_SLUGS),
   ]);
   return <CategoriesClient initial={{ subs, favs, summaries: { today: todayLocal(), summaries } }} />;
 }

@@ -127,15 +127,24 @@ export default function PickPage({ initial }: { initial: ScheduleDay }) {
     return () => document.removeEventListener('click', close);
   }, [openTip]);
 
-  /** 하루치 상영표를 받아온다 (선택 현황도 같이 갱신) */
+  /**
+   * 하루치 상영표를 받아온다 (선택 현황도 같이 갱신).
+   *
+   * 둘로 나눠 부른다 — 상영표는 브라우저가 5분 들고 있어서 날짜를 앞뒤로 넘길 때
+   * 두 번째부터는 아예 나가지 않고, 선택 현황만 매번 새로 받는다.
+   */
   async function loadDay(target?: string) {
-    const data = await fetch(`/api/schedule${target ? `?date=${target}` : ''}`).then((r) => r.json());
-    setDate(data.date);
-    setDates(data.dates ?? []);
-    setMovies(data.movies ?? []);
-    setSelections(data.selections ?? {});
-    setSample(Boolean(data.sample));
-    setAmcError(data.error ?? null);
+    const q = target ? `?date=${target}` : '';
+    const [day, picks] = await Promise.all([
+      fetch(`/api/schedule/movies${q}`).then((r) => r.json()),
+      fetch(`/api/schedule${q}`, { cache: 'no-store' }).then((r) => r.json()),
+    ]);
+    setDate(day.date);
+    setDates(day.dates ?? []);
+    setMovies(day.movies ?? []);
+    setSelections(picks.selections ?? {});
+    setSample(Boolean(day.sample));
+    setAmcError(day.error ?? null);
   }
 
   // 세션은 레이아웃이 서버에서 읽어 둔 것 — 상영표만 받으면 된다
