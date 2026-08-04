@@ -152,7 +152,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '피클볼', en: 'Pickleball' },
-    description: { ko: '다들 그렇게 시작했습니다', en: 'Everyone started that way.' },
+    description: { ko: '다들 그렇게 시작했답니다', en: 'Everyone started that way.' },
   },
   {
     slug: 'game',
