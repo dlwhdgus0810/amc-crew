@@ -119,8 +119,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     capacity = n;
   }
 
-  // 지난 모임을 고치는 건 바로잡는 일이지 알릴 일이 아니다 (고치기 전 기준으로 본다)
-  const editingPast = isPastSlot(post.date, post.startTime, post.endTime);
+  /*
+   * 지난 모임을 고치는 건 바로잡는 일이지 알릴 일이 아니다.
+   *
+   * 고치기 전과 후를 둘 다 본다. 앞날 모임을 지난 날짜로 옮기는 것도 기록을 맞추는
+   * 일이라서다 — 7/1에 한 모임을 누가 9/25로 잘못 올려놨을 때 관리자가 되돌리는 경우다.
+   * 고치기 전만 보면 그때 「모임 변경 · 7/1」이 나가는데, 이미 끝난 일을 알리는 셈이 된다.
+   */
+  const editingPast =
+    isPastSlot(post.date, post.startTime, post.endTime) || isPastSlot(date, startTime, endTime);
 
   /*
    * 같이 여는 사람만 바뀐 경우.
