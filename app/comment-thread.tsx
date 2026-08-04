@@ -38,6 +38,8 @@ const T = {
   loginToComment: { ko: '카카오 로그인 후 댓글을 남길 수 있어요.', en: 'Log in with Kakao to comment.' },
   likeA11y: { ko: '좋아요', en: 'Like' },
   anonName: { ko: '익명', en: 'Anonymous' },
+  // 익명으로 쓴 본인에게만 — 남에게 어떻게 보이는지 알려준다
+  anonMine: { ko: '{name}(익명)', en: '{name} (anonymous)' },
   anonToggle: { ko: '익명으로', en: 'Anonymously' },
   anonHint: { ko: '다른 사람에게 닉네임이 안 보여요', en: 'Others won’t see your nickname' },
   failed: { ko: '요청 실패', en: 'Something went wrong' },
@@ -163,7 +165,17 @@ export default function CommentThread({
         }
       >
         <div className="comment-head">
-          <span className={`comment-author${c.name === null ? ' anon' : ''}`}>{c.name ?? t(T.anonName)}</span>
+          {/*
+            * 익명으로 쓴 본인에게는 이름을 그대로 보여주되 (익명)을 덧붙인다.
+            * 이름만 보이면 익명으로 달았다는 걸 잊고 남들도 이름을 본다고 여기게 된다.
+            */}
+          <span className={`comment-author${c.name === null ? ' anon' : ''}`}>
+            {c.name === null
+              ? t(T.anonName)
+              : mine && c.anonymous
+                ? t(T.anonMine, { name: c.name })
+                : c.name}
+          </span>
           <span className="comment-time">{ago(c.createdAt)}</span>
           <button
             className={`heart ${like.liked ? 'on' : ''}`}

@@ -31,6 +31,14 @@ export const users = pgTable('users', {
   /** 새 소식(업데이트)을 카카오톡으로 받을지 — 기본은 꺼짐, 프로필에서 켠다 */
   newsAlerts: boolean('news_alerts').notNull().default(false),
   /**
+   * 이미 끝난 비공개 모임을 캘린더·지난 모임 목록에 띄울지 — 기본은 꺼짐.
+   *
+   * 비공개 모임은 끝나고 나면 대개 남에게 보일 이유가 없는 기록이다. 그런데 캘린더는
+   * 지난 날짜도 함께 그리는 화면이라, 켜 두지 않으면 옆 사람 화면에 지난 비공개 모임이
+   * 그대로 남는다. 보고 싶은 사람만 켠다.
+   */
+  showPastPrivate: boolean('show_past_private').notNull().default(false),
+  /**
    * 이 시각까지 앱을 쓸 수 없다 (관리자가 정한 정지 기간).
    * 지나간 시각이면 정지가 아니다 — 풀어줄 때 따로 지우지 않아도 저절로 풀린다.
    */

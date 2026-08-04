@@ -94,23 +94,30 @@ function displayNameOf(
  * 기준은 날짜가 아니라 (종료 시각 + 유예)이므로, 오늘 낮에 끝난 모임도 그날 바로 지난 모임이 된다.
  * past=false: 아직 안 끝난 모임, 가까운 순. past=true: 끝난 모임, 최근 순 최대 30개.
  */
-export const listPosts = cache(async (category: string, past = false, viewerId?: string): Promise<PostView[]> => {
+export const listPosts = cache(
+  async (category: string, past = false, viewerId?: string, showPastPrivate = false): Promise<PostView[]> => {
   const db = await getDb();
   const { date: cutDate, time: cutTime } = pastCutoff();
   /*
    * 비공개(link) 모임은 목록에서 뺀다. 단, 만든 사람과 이미 참가한 사람은 계속 봐야 한다 —
    * 그러지 않으면 링크를 잃어버린 순간 자기 모임을 찾을 길이 없다.
    */
-  const visible = viewerId
-    ? or(
-        eq(posts.visibility, 'public'),
-        eq(posts.authorId, viewerId),
-        inArray(
-          posts.id,
-          db.select({ id: postParticipants.postId }).from(postParticipants).where(eq(postParticipants.userId, viewerId))
+  /*
+   * 지난 모임을 볼 때는 비공개를 뺀다 — 끝난 뒤에는 대개 남길 이유가 없는 기록이라
+   * 기본이 「안 보임」이다. 프로필에서 켠 사람에게만 예전처럼 보인다.
+   */
+  const hidePastPrivate = past && !showPastPrivate;
+  const visible =
+    viewerId && !hidePastPrivate
+      ? or(
+          eq(posts.visibility, 'public'),
+          eq(posts.authorId, viewerId),
+          inArray(
+            posts.id,
+            db.select({ id: postParticipants.postId }).from(postParticipants).where(eq(postParticipants.userId, viewerId))
+          )
         )
-      )
-    : eq(posts.visibility, 'public');
+      : eq(posts.visibility, 'public');
   /*
    * 끝난 모임: 날짜가 지났거나, 같은 날인데 종료 시각이 기준 시각을 넘겼을 때.
    * 종료 시각을 안 적은 모임은 시작 시각을 당겨 둔 기준(openCut)과 견준다 —
@@ -137,8 +144,9 @@ export const listPosts = cache(async (category: string, past = false, viewerId?:
         .from(posts)
         .where(and(eq(posts.category, category), upcoming, visible))
         .orderBy(posts.date, posts.startTime);
-  return buildViews(postRows, viewerId);
-});
+    return buildViews(postRows, viewerId);
+  }
+);
 
 /**
  * 공유 링크(/p/[id])용 단건 뷰 조회.

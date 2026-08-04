@@ -172,22 +172,7 @@ const T = {
   },
   clearFailed: { ko: '삭제 실패', en: 'Couldn’t delete' },
   cleared: { ko: '모든 선택을 삭제했어요.', en: 'All picks deleted.' },
-  scheduleTitle: { ko: '관리자 — AMC 상영표', en: 'Admin — AMC showtimes' },
-  scheduleDesc2: {
-    ko: '상영표는 AMC에서 실시간으로 가져와 30분간 캐시해요. "AMC에서 새로고침"을 누르면 캐시를 비우고 다시 받습니다.',
-    en: 'Showtimes come live from AMC and are cached for 30 minutes. “Refresh from AMC” clears the cache and refetches.',
-  },
-  theatres: { ko: '극장 찾기', en: 'Theatres' },
-  theatresDesc: {
-    ko: '지금 쓰는 극장 ID는 {id}이에요. 바꾸려면 AMC_THEATRE_ID 환경변수에 아래 ID를 넣으세요.',
-    en: 'Current theatre ID is {id}. To change it, set AMC_THEATRE_ID to one of these.',
-  },
-  colTheatre: { ko: '극장', en: 'Theatre' },
-  colCity: { ko: '도시', en: 'City' },
-  refreshFailed: { ko: 'AMC 새로고침 실패', en: 'Couldn’t refresh from AMC' },
   refreshed: { ko: '오늘 상영표를 다시 받았어요 (영화 {m}편 · 회차 {n}개).', en: 'Reloaded today’s showtimes ({m} movies, {n} showtimes).' },
-  adminKeyPh: { ko: '관리자 키 (ADMIN_KEY)', en: 'Admin key (ADMIN_KEY)' },
-  amcRefresh: { ko: '🔄 AMC에서 새로고침', en: '🔄 Refresh from AMC' },
   dataTitle: { ko: '선택 데이터 관리', en: 'Pick data' },
   dataDesc: {
     ko: '카카오 관리자 계정으로 로그인되어 있어요. 모든 사람의 회차 선택을 삭제할 수 있어요.',
@@ -198,11 +183,9 @@ const T = {
 };
 
 export default function AdminPage() {
-  const [adminKey, setAdminKey] = useState('');
   const [requests, setRequests] = useState<CategoryRequest[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const [amcInfo, setAmcInfo] = useState<{ theatreId: string; theatres: { id: string; name: string; city?: string }[] } | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const isKakaoAdmin = useViewer().isAdmin;
@@ -473,23 +456,6 @@ export default function AdminPage() {
 
 
   /** 캐시를 비우고 AMC에서 다시 받아온 뒤, 극장 목록도 함께 조회한다 */
-  async function refreshFromAmc() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch('/api/admin/refresh', { method: 'POST', headers: { 'x-admin-key': adminKey } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t(T.refreshFailed));
-      setMsg({ type: 'ok', text: t(T.refreshed, { n: data.showtimes, m: data.movies }) });
-      const info = await fetch('/api/admin/refresh?name=town-center', { headers: { 'x-admin-key': adminKey } });
-      if (info.ok) setAmcInfo(await info.json());
-    } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.refreshFailed) });
-    } finally {
-      setBusy(false);
-    }
-  }
-
 
   return (
     <>
@@ -626,51 +592,6 @@ export default function AdminPage() {
             ))
           )}
         </>
-      )}
-
-      <h1 style={{ marginTop: isKakaoAdmin ? 80 : 0 }}>{t(T.scheduleTitle)}</h1>
-      <p className="subtitle">
-        {t(T.scheduleDesc2)}
-      </p>
-
-      <div className="card">
-        <div className="field-row">
-          <input
-            type="password"
-            placeholder={t(T.adminKeyPh)}
-            value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
-            style={{ maxWidth: 260 }}
-          />
-          <button className="secondary" disabled={busy || !adminKey} onClick={refreshFromAmc}>
-            {t(T.amcRefresh)}
-          </button>
-        </div>
-      </div>
-
-      {amcInfo && (
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>{t(T.theatres)}</h2>
-          <p className="subtitle" style={{ marginBottom: 14 }}>{t(T.theatresDesc, { id: amcInfo.theatreId })}</p>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>{t(T.colTheatre)}</th>
-                <th>{t(T.colCity)}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {amcInfo.theatres.map((th) => (
-                <tr key={th.id}>
-                  <td>{th.id}</td>
-                  <td>{th.name}</td>
-                  <td>{th.city ?? ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
 
       {isKakaoAdmin && (

@@ -3,7 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
-import { ensureUser } from '@/lib/db/users';
+import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { createPost, listPosts } from '@/lib/db/posts';
 import { friendIds } from '@/lib/db/friends';
 import { createRecurringRule } from '@/lib/db/recurring';
@@ -22,7 +22,9 @@ export async function GET(req: NextRequest) {
   }
   // 좋아요 표시는 보는 사람마다 다르므로 세션을 넘긴다 (비로그인도 목록은 볼 수 있다)
   const viewer = await getSessionUser();
-  return NextResponse.json({ posts: await listPosts(category, past, viewer?.id) });
+  // 지난 비공개 모임을 볼지는 사람마다 다르다 (프로필 설정, 기본은 안 보임)
+  const showPastPrivate = viewer ? ((await dbGetUser(viewer.id))?.showPastPrivate ?? false) : false;
+  return NextResponse.json({ posts: await listPosts(category, past, viewer?.id, showPastPrivate) });
 }
 
 export async function POST(req: NextRequest) {

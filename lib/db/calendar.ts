@@ -1,7 +1,7 @@
 import { and, asc, eq, gte, inArray, lte, or } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, posts } from './schema';
-import { isPastSlot } from '../dates';
+import { isPastSlot, todayLocal } from '../dates';
 
 /**
  * 달력 한 칸에 필요한 만큼만 담은 모임.
@@ -32,21 +32,33 @@ export interface CalendarMeetup {
  * 목록 화면과 달리 지난 모임도 함께 준다 — 달력은 "그날 무슨 일이 있었나"를 보는 화면이라
  * 지난 날짜가 빈칸이면 오히려 고장처럼 보인다.
  */
-export async function listMeetupsBetween(from: string, to: string, viewerId?: string): Promise<CalendarMeetup[]> {
+export async function listMeetupsBetween(
+  from: string,
+  to: string,
+  viewerId?: string,
+  showPastPrivate = false
+): Promise<CalendarMeetup[]> {
   const db = await getDb();
 
   // YYYY-MM-DD는 사전순 비교가 곧 날짜순 비교라 문자열 그대로 범위를 잡을 수 있다
   const inRange = and(gte(posts.date, from), lte(posts.date, to));
-  // 비공개(link) 모임은 만든 사람과 참가자에게만 보인다 — 목록 화면과 같은 규칙
-  const visible = viewerId
+  /*
+   * 비공개(link) 모임은 만든 사람과 참가자에게만 보인다 — 목록 화면과 같은 규칙.
+   * 다만 이미 지난 날의 비공개는 기본으로 가린다. 캘린더는 지난 날짜도 함께 그리는
+   * 화면이라, 안 가리면 옆 사람이 볼 때 지난 비공개 모임이 그대로 남는다.
+   * 경계는 「오늘」이다 — 오늘 낮에 끝난 모임까지 그날 안에서 지우면 오히려 어리둥절하다.
+   */
+  const mine = viewerId
     ? or(
-        eq(posts.visibility, 'public'),
         eq(posts.authorId, viewerId),
         inArray(
           posts.id,
           db.select({ id: postParticipants.postId }).from(postParticipants).where(eq(postParticipants.userId, viewerId))
         )
       )
+    : undefined;
+  const visible = mine
+    ? or(eq(posts.visibility, 'public'), showPastPrivate ? mine : and(mine, gte(posts.date, todayLocal())))
     : eq(posts.visibility, 'public');
 
   const rows = await db

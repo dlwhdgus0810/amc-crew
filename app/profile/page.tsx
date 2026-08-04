@@ -85,22 +85,19 @@ const T = {
   },
   newsGo: { ko: '새 소식 보기 →', en: 'See what’s new →' },
   // 카톡·앱 푸시 어느 쪽으로 갈지는 각자 켜 둔 것에 달렸다 — 채널 이름을 넣지 않는다
+  privacyTitle: { ko: '지난 비공개 모임', en: 'Past private meetups' },
+  privacyDesc: {
+    ko: '비공개 모임은 끝나고 나면 캘린더와 지난 모임 목록에서 사라져요. 내가 만들었거나 참가했던 것도요. 켜면 다시 보여요.',
+    en: 'Private meetups disappear from your calendar and past lists once they’re over — even ones you made or joined. Turn this on to keep seeing them.',
+  },
+  privacyOn: { ko: '지난 비공개 모임 보임', en: 'Showing past private meetups' },
+  privacyOff: { ko: '지난 비공개 모임 숨김', en: 'Past private meetups hidden' },
+  privacyShow: { ko: '보이기', en: 'Show' },
+  privacyHide: { ko: '숨기기', en: 'Hide' },
   newsAlertsOn: { ko: '새 소식 알림 받는 중', en: 'Getting update alerts' },
   newsAlertsOff: { ko: '새 소식 알림 꺼짐', en: 'Update alerts off' },
   newsAlertsEnable: { ko: '알림 켜기', en: 'Turn on' },
   newsAlertsDisable: { ko: '알림 끄기', en: 'Turn off' },
-  favOrder: { ko: '즐겨찾기 순서', en: 'Favourite order' },
-  favOrderDesc: {
-    ko: '홈에 뜨는 차례예요. 홈에서 카드를 끌어 옮겨도 되고, 여기서 위아래로 옮겨도 돼요.',
-    en: 'The order they appear on the home screen. Drag the cards there, or move them here.',
-  },
-  favOrderEmpty: {
-    ko: '★를 눌러 즐겨찾기한 카테고리가 여기 순서대로 나와요.',
-    en: 'Categories you star with ★ show up here in order.',
-  },
-  moveUp: { ko: '위로', en: 'Move up' },
-  moveDown: { ko: '아래로', en: 'Move down' },
-  favOrderSaved: { ko: '즐겨찾기 순서를 저장했어요.', en: 'Favourite order saved.' },
   subs: { ko: '구독 중인 취미', en: 'Subscribed hobbies' },
   subsDesc: {
     ko: '구독한 취미에 새 모임이 올라오면 알림을 받아요.',
@@ -215,13 +212,14 @@ export default function ProfilePage() {
   // 즐겨찾기는 순서가 의미를 가지므로 Set이 아니라 배열로 들고 있는다
   const [favs, setFavs] = useState<string[]>([]);
   const [newsAlerts, setNewsAlerts] = useState(false);
+  const [pastPrivate, setPastPrivate] = useState(false);
+  const [pastPrivateBusy, setPastPrivateBusy] = useState(false);
   const [newsBusy, setNewsBusy] = useState(false);
   const [testBusy, setTestBusy] = useState(false);
   const [venmo, setVenmo] = useState(viewer.venmo ?? '');
   const [editingVenmo, setEditingVenmo] = useState(false);
   const [zelle, setZelle] = useState(viewer.zelle ?? '');
   const [editingZelle, setEditingZelle] = useState(false);
-  const [favBusy, setFavBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
@@ -244,11 +242,13 @@ export default function ProfilePage() {
       fetch('/api/subscriptions').then((r) => r.json()),
       fetch('/api/favorites').then((r) => r.json()),
       fetch('/api/news-alerts').then((r) => r.json()),
+      fetch('/api/past-private').then((r) => r.json()),
     ])
-      .then(([sub, fav, news]) => {
+      .then(([sub, fav, news, priv]) => {
         setSubs(new Set(sub.subscriptions ?? []));
         setFavs(fav.favorites ?? []);
         setNewsAlerts(Boolean(news.newsAlerts));
+        setPastPrivate(Boolean(priv.showPastPrivate));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -376,29 +376,21 @@ export default function ProfilePage() {
     }
   }
 
-  /** 즐겨찾기 순서 바꾸기 — 화면을 먼저 옮기고 저장한다 (실패하면 서버 값으로 되돌린다) */
-  async function moveFav(index: number, delta: number) {
-    const to = index + delta;
-    if (to < 0 || to >= favs.length) return;
-    const next = [...favs];
-    [next[index], next[to]] = [next[to], next[index]];
-    setFavs(next);
-    setFavBusy(true);
+  async function togglePastPrivate() {
+    const next = !pastPrivate;
+    setPastPrivateBusy(true);
     try {
-      const res = await fetch('/api/favorites', {
-        method: 'PATCH',
+      const res = await fetch('/api/past-private', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order: next }),
+        body: JSON.stringify({ on: next }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t(T.failed));
-      setFavs(data.favorites ?? next);
-      setMsg({ type: 'ok', text: t(T.favOrderSaved) });
+      if (!res.ok) throw new Error(t(T.failed));
+      setPastPrivate(next);
     } catch (e) {
-      setFavs(favs);
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
     } finally {
-      setFavBusy(false);
+      setPastPrivateBusy(false);
     }
   }
 
@@ -732,44 +724,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <h2>{t(T.favOrder)}</h2>
-      <div className="card">
-        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
-          {t(T.favOrderDesc)}
-        </p>
-        {favs.length === 0 ? (
-          <p className="hint">{t(T.favOrderEmpty)}</p>
-        ) : (
-          <ol className="fav-order">
-            {favs.map((slug, i) => {
-              const cat = getCategory(slug);
-              return (
-                <li key={slug}>
-                  <span className="fav-dot" style={{ background: cat?.color ?? 'var(--text-dim)' }} aria-hidden />
-                  <span className="fav-name">{cat ? t(catDisplayName(cat.slug)) : slug}</span>
-                  <button
-                    className="fav-move"
-                    aria-label={t(T.moveUp)}
-                    disabled={favBusy || i === 0}
-                    onClick={() => moveFav(i, -1)}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    className="fav-move"
-                    aria-label={t(T.moveDown)}
-                    disabled={favBusy || i === favs.length - 1}
-                    onClick={() => moveFav(i, 1)}
-                  >
-                    ↓
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-      </div>
-
       <h2>{t(T.subs)}</h2>
       <div className="card">
         <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
@@ -825,6 +779,25 @@ export default function ProfilePage() {
       </div>
 
       <PushToggle />
+
+      <h2>{t(T.privacyTitle)}</h2>
+      <div className="card">
+        <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
+          {t(T.privacyDesc)}
+        </p>
+        <div className="field-row" style={{ justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 500, color: pastPrivate ? undefined : 'var(--text-dim)' }}>
+            {pastPrivate ? t(T.privacyOn) : t(T.privacyOff)}
+          </span>
+          <button
+            className={pastPrivate ? 'danger' : 'secondary'}
+            disabled={pastPrivateBusy}
+            onClick={togglePastPrivate}
+          >
+            {pastPrivate ? t(T.privacyHide) : t(T.privacyShow)}
+          </button>
+        </div>
+      </div>
 
       <h2>{t(T.news)}</h2>
       <div className="card">

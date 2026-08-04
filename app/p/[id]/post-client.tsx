@@ -70,6 +70,39 @@ function KakaoIcon() {
   );
 }
 
+/* 캘린더로 보내는 두 아이콘 — 탭바와 같은 규격(24 격자, 굵기 1.8, 둥근 끝) */
+const calIcon = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.8,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': true,
+};
+
+/** 구글 캘린더 — 달력에 + */
+function GoogleCalIcon() {
+  return (
+    <svg {...calIcon} width="20" height="20">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+      <path d="M12 13v5M9.5 15.5h5" />
+    </svg>
+  );
+}
+
+/** .ics 파일 — 달력에서 내려받기 */
+function IcsIcon() {
+  return (
+    <svg {...calIcon} width="20" height="20">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+      <path d="M12 13v5M9.7 16.3 12 18.5l2.3-2.2" />
+    </svg>
+  );
+}
+
 export default function PostClient({ id }: { id: string }) {
   const [post, setPost] = useState<PostView | null>(null);
   // 세션은 레이아웃이 서버에서 읽어 둔 것을 쓴다
@@ -293,15 +326,28 @@ export default function PostClient({ id }: { id: string }) {
             </a>
           )}
           <button className="secondary" onClick={copyLink}>{t(T.shareLink)}</button>
+          {/*
+            * 캘린더에 넣는 두 길은 글자보다 그림이 빠르다 — 줄에서 자리도 덜 먹는다.
+            * 무엇인지는 aria-label과 title에 남긴다(화면 읽어주는 기기·데스크톱 툴팁).
+            * 둘을 한 묶음으로 두는 이유 — 좁은 폰에서 줄이 바뀔 때 하나만 떨어져 나가면
+            * 남은 아이콘이 무슨 짝인지 알 수 없다.
+            */}
           {!past && (
-            <>
-              <a className="profile-link" href={gcalUrl} target="_blank" rel="noreferrer">
-                {t(T.gcal)}
+            <span style={{ display: 'inline-flex' }}>
+              <a
+                className="icon-link"
+                href={gcalUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={t(T.gcal)}
+                title={t(T.gcal)}
+              >
+                <GoogleCalIcon />
               </a>
-              <a className="profile-link" href={`/api/posts/${id}/ics`}>
-                {t(T.ics)}
+              <a className="icon-link" href={`/api/posts/${id}/ics`} aria-label={t(T.ics)} title={t(T.ics)}>
+                <IcsIcon />
               </a>
-            </>
+            </span>
           )}
         </div>
       </div>

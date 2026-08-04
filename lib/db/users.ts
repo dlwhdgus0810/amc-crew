@@ -38,6 +38,12 @@ export const dbGetUser = cache(async (userId: string) => {
   return (await db.select().from(users).where(eq(users.id, userId)))[0];
 });
 
+/** 지난 비공개 모임을 캘린더·지난 모임 목록에 띄울지 (기본 꺼짐) */
+export async function setShowPastPrivate(userId: string, on: boolean): Promise<void> {
+  const db = await getDb();
+  await db.update(users).set({ showPastPrivate: on }).where(eq(users.id, userId));
+}
+
 /**
  * 프로필 upsert. nickname: null 이면 커스텀 닉네임 해제(카카오 닉네임 폴백 복귀).
  * kakaoName이 직전 이력과 다르면 kakaoNameHistory에 스냅샷을 쌓는다.

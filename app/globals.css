@@ -231,6 +231,14 @@ button.big-cta .arrow { color: #fff; }
 }
 @media (hover: hover) { .profile-link:hover { color: var(--accent); } }
 
+/* 글자 없이 그림만 있는 링크 — 손가락으로 누를 자리는 44px로 지킨다 */
+.icon-link {
+  color: var(--text-mid); text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px;
+}
+@media (hover: hover) { .icon-link:hover { color: var(--accent); } }
+
 .kakao-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   background: #fee500; color: #191919;

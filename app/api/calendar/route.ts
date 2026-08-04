@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { getSessionUser } from '@/lib/auth';
 import { listMeetupsBetween } from '@/lib/db/calendar';
+import { dbGetUser } from '@/lib/db/users';
 import { todayLocal } from '@/lib/dates';
 
 export const dynamic = 'force-dynamic';
@@ -28,5 +29,12 @@ export async function GET(req: NextRequest) {
   }
 
   const viewer = await getSessionUser();
-  return NextResponse.json({ from, to, today, meetups: await listMeetupsBetween(from, to, viewer?.id) });
+  // 지난 비공개 모임을 볼지는 사람마다 다르다 (프로필 설정, 기본은 안 보임)
+  const showPastPrivate = viewer ? ((await dbGetUser(viewer.id))?.showPastPrivate ?? false) : false;
+  return NextResponse.json({
+    from,
+    to,
+    today,
+    meetups: await listMeetupsBetween(from, to, viewer?.id, showPastPrivate),
+  });
 }

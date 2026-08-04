@@ -51,7 +51,8 @@ export const CATEGORIES: Category[] = [
    * 색상은 각도가 아니라 「눈에 보이는 거리」로 벌린다. 각도를 똑같이 벌리면 안 된다 —
    * 청록 쪽은 sRGB에서 채도가 .095까지밖에 안 올라가서, 같은 30°라도 색상환 위의 호가 짧다.
    * 실제로 베이킹과 러닝이 25° 떨어져 있었는데도 열두 색 중 가장 붙어 보였다(다른 쌍의 절반).
-   * 그래서 채도가 낮은 구간은 각도를 더 벌려, 어느 두 색을 집어도 OKLab 거리가 .069 이상이다.
+   * 그래서 채도가 낮은 구간은 각도를 더 벌려, 어느 두 색을 집어도 OKLab 거리가 .065 이상이다.
+   * (열셋을 같은 밝기·채도로 두면 여기가 한계다 — 캠핑을 넣으며 전체를 1~4°씩 다시 벌렸다)
    * 카테고리를 더할 때는 각도만 보지 말고 이 거리를 재 볼 것.
    * 글씨는 전부 크림색이고 대비는 4.1~4.9:1이다.
    */
@@ -69,7 +70,7 @@ export const CATEGORIES: Category[] = [
     slug: 'tennis',
     emoji: '🎾',
     en: 'TENNIS',
-    color: '#657D00',
+    color: '#6B7B00',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '테니스', en: 'Tennis' },
@@ -78,10 +79,25 @@ export const CATEGORIES: Category[] = [
     proposedBy: 'sarah 예지 park',
   },
   {
+    slug: 'camping',
+    emoji: '🏕️',
+    en: 'CAMPING',
+    color: '#358700',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '캠핑', en: 'Camping' },
+    description: { ko: '불멍 5분, 먹방 5시간', en: 'Five minutes of fire, five hours of food' },
+    // 캠핑장은 자리를 잡아 두고 만나므로, 사이트 번호가 곧 「어디로 오면 되는지」다
+    titleLabel: { ko: '사이트 번호 (선택)', en: 'Site number (optional)' },
+    locationLabel: { ko: '캠핑장', en: 'Campground' },
+    locationHint: { ko: '예: Clinton State Park', en: 'e.g. Clinton State Park' },
+    proposedBy: '정재호',
+  },
+  {
     slug: 'movienight',
     emoji: '🍿',
     en: 'MOVIE NIGHT',
-    color: '#00884A',
+    color: '#008753',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '무비나잇', en: 'Movie Night' },
@@ -103,7 +119,7 @@ export const CATEGORIES: Category[] = [
     slug: 'baking',
     emoji: '🧁',
     en: 'BAKING',
-    color: '#008478',
+    color: '#00837C',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '베이킹 클래스', en: 'Baking Class' },
@@ -116,7 +132,7 @@ export const CATEGORIES: Category[] = [
     slug: 'running',
     emoji: '🏃',
     en: 'RUNNING',
-    color: '#007E9E',
+    color: '#007DA0',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '러닝 크루', en: 'Running Crew' },
@@ -128,7 +144,7 @@ export const CATEGORIES: Category[] = [
     slug: 'pickleball',
     emoji: '🥒',
     en: 'PICKLEBALL',
-    color: '#0075C3',
+    color: '#0075C4',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '피클볼', en: 'Pickleball' },
@@ -194,7 +210,7 @@ export const CATEGORIES: Category[] = [
     slug: 'cafe',
     emoji: '☕',
     en: 'CAFE',
-    color: '#A95A00',
+    color: '#AA5900',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '카페 메이트', en: 'Café Mate' },
@@ -206,7 +222,7 @@ export const CATEGORIES: Category[] = [
     slug: 'gym',
     emoji: '🏋️',
     en: 'GYM',
-    color: '#8A6E00',
+    color: '#8E6C00',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '헬스장', en: 'Gym' },
