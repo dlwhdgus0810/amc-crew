@@ -6,6 +6,7 @@ import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { createPost, listPosts } from '@/lib/db/posts';
 import { pathAllowed } from '@/lib/photos';
+import { addPhoto } from '@/lib/db/photos';
 import { friendIds } from '@/lib/db/friends';
 import { createRecurringRule } from '@/lib/db/recurring';
 import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
@@ -115,10 +116,6 @@ export async function POST(req: NextRequest) {
     location,
     ...(description ? { description } : {}),
     ...(capacity !== undefined ? { capacity } : {}),
-    // 자기가 올린 자리의 경로만 받는다 — 그대로 믿으면 남의 파일을 자기 모임에 걸 수 있다
-    ...(typeof body?.flyerPath === 'string' && pathAllowed(body.flyerPath, 'flyer', user.id)
-      ? { flyerPath: body.flyerPath as string }
-      : {}),
     // 비공개면 링크를 아는 사람만 볼 수 있다 (목록·구독 알림·홈 요약에서 빠진다)
     ...(body?.visibility === 'link' ? { visibility: 'link' as const } : {}),
     origin: siteUrl(req.nextUrl.origin),
@@ -135,6 +132,10 @@ export async function POST(req: NextRequest) {
   // 매주 반복이면 규칙을 만들고 첫 회차를 생성한다 (이후 회차는 크론이 매일 채운다)
   if (body?.repeatWeekly === true) {
     const { ruleId, postId } = await createRecurringRule({ ...common, startDate: date });
+    // 첫 회차에만 붙인다 — 다음 주 회차는 그 주의 사진을 각자 올리면 된다
+    if (typeof body?.photoPath === 'string' && pathAllowed(body.photoPath, user.id)) {
+      await addPhoto({ postId, userId: user.id, pathname: body.photoPath, width: null, height: null });
+    }
     return NextResponse.json({ ok: true, postId, ruleId, repeatWeekly: true });
   }
 
@@ -151,6 +152,17 @@ export async function POST(req: NextRequest) {
       : [];
 
   const postId = await createPost({ ...common, date, ...(invited.length > 0 ? { inviteFriendIds: invited } : {}) });
+
+  /*
+   * 만들면서 고른 사진을 그 모임의 첫 사진으로 붙인다.
+   *
+   * 고를 때는 모임이 아직 없어서 「이 모임의 사진」으로 올릴 수가 없다. 그래서 올린 사람
+   * 자리에 먼저 두고, 모임이 생긴 지금 매단다. 자기가 올린 자리인지 여기서 다시 본다 —
+   * 브라우저가 보내는 값이라 그대로 믿으면 남의 파일을 자기 모임에 걸 수 있다.
+   */
+  if (typeof body?.photoPath === 'string' && pathAllowed(body.photoPath, user.id)) {
+    await addPhoto({ postId, userId: user.id, pathname: body.photoPath, width: null, height: null });
+  }
   // past를 화면에 알려준다 — 알림이 갔다고 적을지 말지를 서버 판정으로 정하게(기준이 둘이면 어긋난다)
   return NextResponse.json({ ok: true, postId, past: backfilling });
 }

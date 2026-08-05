@@ -3,7 +3,6 @@ import { list } from '@vercel/blob';
 import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { allPhotoPaths } from '@/lib/db/photos';
-import { allFlyerPaths } from '@/lib/db/posts';
 import { deleteBlobs } from '@/lib/blob';
 
 export const dynamic = 'force-dynamic';
@@ -27,8 +26,8 @@ export async function POST() {
   if (!user) return await errJson(E.loginRequired, 401);
   if (!isAdmin(user)) return await errJson(E.adminOnly, 403);
 
-  const [stored, photos, flyers] = await Promise.all([list(), allPhotoPaths(), allFlyerPaths()]);
-  const owned = new Set([...photos, ...flyers]);
+  const [stored, photos] = await Promise.all([list(), allPhotoPaths()]);
+  const owned = new Set(photos);
 
   const cutoff = Date.now() - GRACE_MS;
   const orphans = stored.blobs.filter(
@@ -36,13 +35,13 @@ export async function POST() {
       !owned.has(b.pathname) && new Date(b.uploadedAt).getTime() < cutoff
   );
 
-  await deleteBlobs(orphans.map((b) => b.pathname));
+  await deleteBlobs(orphans.map((b: { pathname: string }) => b.pathname));
   return NextResponse.json({
     ok: true,
     checked: stored.blobs.length,
     owned: owned.size,
     deleted: orphans.length,
     // 무엇을 지웠는지 남긴다 — 잘못 지웠을 때 어디를 봐야 하는지 알 수 있어야 한다
-    paths: orphans.map((b) => b.pathname),
+    paths: orphans.map((b: { pathname: string }) => b.pathname),
   });
 }

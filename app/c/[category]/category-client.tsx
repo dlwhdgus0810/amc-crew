@@ -34,7 +34,7 @@ import {formatCents} from '@/lib/money';
 import { formatScore } from '@/lib/ratings';
 import { upload } from '@vercel/blob/client';
 import { shrinkToJpeg, UnreadableImageError } from '@/lib/photo-client';
-import { flyerPath } from '@/lib/photos';
+import { photoPath } from '@/lib/photos';
 import {useRefreshSession, useViewer} from '../../session';
 import {usePosterZoom} from '../../poster-zoom';
 
@@ -105,16 +105,16 @@ const T = {
   emptyPast: { ko: '아직 지난 모임이 없어요.', en: 'No past meetups yet.' },
   secWhen: { ko: '언제', en: 'When' },
   secWhere: { ko: '어디서', en: 'Where' },
-  secFlyer: { ko: '포스터 (선택)', en: 'Poster (optional)' },
-  flyerPick: { ko: '사진 고르기', en: 'Choose a photo' },
-  flyerBusy: { ko: '올리는 중…', en: 'Uploading…' },
-  flyerClear: { ko: '떼기', en: 'Remove' },
-  flyerHint: {
-    ko: '안내문이나 쿠폰 한 장. 모임 카드에 같이 보여요.',
-    en: 'One flyer or coupon — it shows on the meetup card.',
+  secPhoto: { ko: '사진 (선택)', en: 'Photo (optional)' },
+  photoPick: { ko: '사진 고르기', en: 'Choose a photo' },
+  photoBusy: { ko: '올리는 중…', en: 'Uploading…' },
+  photoClear: { ko: '떼기', en: 'Remove' },
+  photoHint: {
+    ko: '안내문이든 쿠폰이든 한 장. 모임 카드에 보여요. 나머지는 만든 뒤에 모임 화면에서 더 올릴 수 있어요.',
+    en: 'A flyer, a coupon, anything — it shows on the meetup card. Add the rest from the meetup page afterwards.',
   },
-  flyerFailed: { ko: '올리지 못했어요.', en: 'Couldn’t upload that.' },
-  flyerHeic: {
+  photoFailed: { ko: '올리지 못했어요.', en: 'Couldn’t upload that.' },
+  photoHeic: {
     ko: '이 사진 형식(HEIC)은 못 읽어요. 아이폰 설정 › 카메라 › 포맷을 「높은 호환성」으로 바꿔주세요.',
     en: 'That photo format (HEIC) can’t be read. Switch iPhone Settings › Camera › Formats to “Most Compatible”.',
   },
@@ -238,9 +238,7 @@ interface PostView {
   settle: { exists: boolean; myCents: number | null; iAmPayee: boolean } | null;
   /** 우리 평점 요약 — 끝난 무비나잇에만 붙는다 */
   rating: { average: number | null; count: number; mine: number | null } | null;
-  /** 만들 때 올린 포스터 한 장 (Blob URL) */
-  flyerUrl: string | null;
-  /** 끝난 모임에 올라온 사진 — 넘겨 볼 몇 장과 실제 전체 장수 */
+  /** 이 모임의 사진 — 넘겨 볼 몇 장과 실제 전체 장수 */
   photos: { urls: string[]; count: number } | null;
   comments: CommentView[];
 }
@@ -344,32 +342,31 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
    * 미리보기는 따로 둔다: 새로 올린 것은 방금 고른 파일로, 수정 화면에서는 서버가 서명해
    * 준 주소로 그린다. 저장 전에는 경로만으로 그림을 띄울 수 없다(비공개 스토어라서).
    */
-  const [fFlyer, setFFlyer] = useState<string | null | undefined>(undefined);
-  const [fFlyerPreview, setFFlyerPreview] = useState<string | null>(null);
-  const [fFlyerBusy, setFFlyerBusy] = useState(false);
+  const [fPhoto, setFPhoto] = useState<string | null | undefined>(undefined);
+  const [fPhotoPreview, setFPhotoPreview] = useState<string | null>(null);
+  const [fPhotoBusy, setFPhotoBusy] = useState(false);
 
   /** 포스터 한 장 올리기 — 바이트는 저장소로 곧장 가고, 주소만 폼이 들고 있는다 */
-  async function pickFlyer(file: File | undefined) {
+  async function pickPhoto(file: File | undefined) {
     if (!file) return;
-    setFFlyerBusy(true);
+    setFPhotoBusy(true);
     setMsg(null);
     try {
       const { blob } = await shrinkToJpeg(file);
-      const put = await upload(flyerPath(user!.id, crypto.randomUUID()), blob, {
+      const put = await upload(photoPath(user!.id, crypto.randomUUID()), blob, {
         access: 'private',
         handleUploadUrl: '/api/blob/upload',
         contentType: 'image/jpeg',
-        clientPayload: JSON.stringify({ kind: 'flyer' }),
       });
-      setFFlyer(put.pathname);
-      setFFlyerPreview(URL.createObjectURL(blob));
+      setFPhoto(put.pathname);
+      setFPhotoPreview(URL.createObjectURL(blob));
     } catch (e) {
       setMsg({
         type: 'err',
-        text: e instanceof UnreadableImageError ? t(T.flyerHeic) : e instanceof Error ? e.message : t(T.flyerFailed),
+        text: e instanceof UnreadableImageError ? t(T.photoHeic) : e instanceof Error ? e.message : t(T.photoFailed),
       });
     }
-    setFFlyerBusy(false);
+    setFPhotoBusy(false);
   }
 
   function resetForm() {
@@ -387,8 +384,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFInvite(new Set());
     setFCoHost(null);
     setFNick(false);
-    setFFlyer(undefined);
-    setFFlyerPreview(null);
+    setFPhoto(undefined);
+    setFPhotoPreview(null);
   }
 
   // 지난 모임
@@ -510,7 +507,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           capacity: fCapacity || undefined,
           ...(fCoHost ? { coHostId: fCoHost } : {}),
           allowNicknames: fNick,
-          ...(fFlyer ? { flyerPath: fFlyer } : {}),
+          ...(fPhoto ? { photoPath: fPhoto } : {}),
           repeatWeekly: fRepeat,
           visibility: fPrivate ? 'link' : 'public',
           ...(fPrivate && !fRepeat ? { inviteFriendIds: [...fInvite] } : {}),
@@ -557,9 +554,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFCapacity(post.capacity != null ? String(post.capacity) : '');
     setFCoHost(post.coHost?.id ?? null);
     setFNick(post.allowNicknames);
-    // 안 건드리면 그대로 둔다 — 미리보기만 서버가 서명해 준 주소로 채운다
-    setFFlyer(undefined);
-    setFFlyerPreview(post.flyerUrl);
+    // 사진은 여기서 안 다룬다 — 모임 상세의 「사진」에서 넣고 뺀다 (관리할 자리는 하나여야 한다)
+    setFPhoto(undefined);
+    setFPhotoPreview(null);
     setFPrivate(post.visibility === 'link');
   }
 
@@ -582,7 +579,6 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           capacity: fCapacity || undefined,
           coHostId: fCoHost,
           allowNicknames: fNick,
-          ...(fFlyer !== undefined ? { flyerPath: fFlyer } : {}),
           visibility: fPrivate ? 'link' : 'public',
         }),
       });
@@ -1017,44 +1013,50 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           </div>
 
           {/*
-            * 포스터 한 장. 저장 버튼을 누르기 전에 올려 두고 주소만 들고 있는다 —
-            * 만들기 전에는 postId가 없어서 「이 모임의 사진」으로 매달 수가 없다.
+            * 사진 한 장 — 만들 때만 보여준다.
+            *
+            * 저장을 누르기 전에 올려 두고 경로만 들고 있다가, 모임이 생기면 서버가 그 모임의
+            * 첫 사진으로 매단다(만들기 전에는 postId가 없어서 바로 매달 수가 없다).
             * 저장을 취소하면 주인 없는 파일이 하나 남고, 그건 청소가 걷어간다.
+            *
+            * 수정할 때는 안 보여준다 — 사진을 넣고 빼는 자리는 모임 상세 하나여야 한다.
             */}
+          {isCreate && (
           <div className="form-section">
-            <div className="field-label">{t(T.secFlyer)}</div>
-            {fFlyerPreview ? (
+            <div className="field-label">{t(T.secPhoto)}</div>
+            {fPhotoPreview ? (
               <div className="title-meta-box">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={fFlyerPreview} alt="" style={{ width: 54, borderRadius: 8 }} />
+                <img src={fPhotoPreview} alt="" style={{ width: 54, borderRadius: 8 }} />
                 <button
                   className="link-btn danger-text"
                   style={{ marginLeft: 'auto' }}
                   onClick={() => {
-                    setFFlyer(null);
-                    setFFlyerPreview(null);
+                    setFPhoto(null);
+                    setFPhotoPreview(null);
                   }}
                 >
-                  {t(T.flyerClear)}
+                  {t(T.photoClear)}
                 </button>
               </div>
             ) : (
               <label className="secondary photo-pick">
-                {fFlyerBusy ? t(T.flyerBusy) : t(T.flyerPick)}
+                {fPhotoBusy ? t(T.photoBusy) : t(T.photoPick)}
                 <input
                   type="file"
                   accept="image/*"
                   hidden
-                  disabled={fFlyerBusy}
+                  disabled={fPhotoBusy}
                   onChange={(e) => {
-                    void pickFlyer(e.target.files?.[0]);
+                    void pickPhoto(e.target.files?.[0]);
                     e.target.value = '';
                   }}
                 />
               </label>
             )}
-            <div className="hint" style={{ marginTop: 6 }}>{t(T.flyerHint)}</div>
+            <div className="hint" style={{ marginTop: 6 }}>{t(T.photoHint)}</div>
           </div>
+          )}
 
           <div className="form-section">
             <div className="field-label">{t(T.secWho)}</div>
@@ -1201,7 +1203,6 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
      */
     const label = post.title ? `〈${post.title}〉` : category ? t(category.name) : "";
     const extras: { src: string; name: string }[] = [
-      ...(post.flyerUrl ? [{ src: post.flyerUrl, name: label }] : []),
       ...(post.titleMeta?.posterPath
         ? [{ src: `${TMDB_IMG}/w500${post.titleMeta.posterPath}`, name: post.titleMeta.title || label }]
         : []),

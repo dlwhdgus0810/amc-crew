@@ -5,8 +5,6 @@ import { friendIds } from '@/lib/db/friends';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, notifyCoHost, updatePost } from '@/lib/db/posts';
-import { pathAllowed } from '@/lib/photos';
-import { deleteBlobs } from '@/lib/blob';
 import { getCategory } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
 import { isPastSlot, todayLocal } from '@/lib/dates';
@@ -137,17 +135,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
    * 그때는 참가자들에게 「모임 변경」을 보내지 않는다 — 시간도 장소도 그대로인데
    * 변경 알림이 오면 뭐가 달라졌나 다시 열어보게 된다. 대신 새로 세워진 사람에게만 알린다.
    */
-  /*
-   * 플라이어: 아예 안 보내면 그대로 두고, null이면 뗀다.
-   * 그래서 undefined와 null을 구분해야 한다 — 셋을 뭉뚱그리면 딴 데를 고칠 때마다 사진이 사라진다.
-   */
-  const flyerPath =
-    body?.flyerPath === undefined
-      ? undefined
-      : typeof body.flyerPath === 'string' && pathAllowed(body.flyerPath, 'flyer', user.id)
-        ? body.flyerPath
-        : null;
-
   const newCoHost = coHostId !== undefined && coHostId !== post.coHostId ? coHostId : null;
   const onlyCoHostChanged =
     newCoHost !== null &&
@@ -161,10 +148,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     (body?.visibility === undefined || body.visibility === post.visibility) &&
     (typeof body?.allowNicknames !== 'boolean' || body.allowNicknames === post.allowNicknames) &&
     // 플라이어만 바꾼 것도 「변경 알림」이 나갈 일이 아니다 — 시간도 장소도 그대로다
-    (flyerPath === undefined || flyerPath === post.flyerPath);
+    true;
 
   await updatePost({
-    ...(flyerPath !== undefined ? { flyerPath } : {}),
     postId: id,
     category: post.category,
     actorId: user.id,
@@ -186,13 +172,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     origin: siteUrl(req.nextUrl.origin),
   });
 
-  /*
-   * 갈아치운 옛 플라이어는 저장소에서도 지운다. 반드시 저장이 끝난 **뒤**에 —
-   * 먼저 지웠다가 저장이 실패하면 화면에 아직 걸려 있는 사진을 없앤 꼴이 된다.
-   */
-  if (flyerPath !== undefined && post.flyerPath && post.flyerPath !== flyerPath) {
-    await deleteBlobs([post.flyerPath]);
-  }
+
 
   /*
    * 새로 세워진 공동 호스트에게만 따로 알린다. 지난 모임은 알리지 않는다 —

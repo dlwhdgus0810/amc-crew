@@ -111,14 +111,6 @@ export const posts = pgTable(
     location: text('location').notNull(),
     description: text('description'),
     capacity: integer('capacity'), // 정원. null이면 무제한
-    /**
-     * 모임 포스터 한 장 (쿠폰·안내문). 저장소 안의 경로다.
-     *
-     * 주소가 아니라 경로를 담는다 — 스토어가 비공개라 주소는 서명해야 열리고, 서명은
-     * 유효기간이 있어 담아 둘 수가 없다. 화면에 그릴 때마다 이 경로로 새로 서명한다.
-     * 지울 때도 경로를 그대로 쓴다(del은 경로를 받는다).
-     */
-    flyerPath: text('flyer_path'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('posts_category_date_idx').on(t.category, t.date)]
@@ -180,7 +172,10 @@ export const commentLikes = pgTable(
 );
 
 /**
- * 모임 끝나고 올리는 사진 — 한 모임에 여러 장, 여러 사람이.
+ * 모임 사진 — 한 모임에 여러 장, 여러 사람이, 언제든.
+ *
+ * 안내문 한 장과 다녀와서 찍은 사진을 따로 두지 않는다. 만들면서 고른 것도 그냥 첫 사진이고,
+ * 카드에 실리는 것도 그 첫 장이다 — 나눠 두면 「어느 쪽에 올려야 하나」를 매번 묻게 된다.
  *
  * 사진은 Vercel Blob에 있고 여기에는 주소만 있다. 아바타를 data URL로 담았다가 겪은 일이
  * lib/db/posts.ts:171에 적혀 있다 — 이건 그 교훈을 지킨 것이다.

@@ -115,11 +115,8 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
    * 요약(post.rating)은 목록도 쓰지만 사람별 점수는 이 화면에서만 쓴다.
    */
   const ratings = post?.rating ? await listRatings(id) : [];
-  /*
-   * 사진은 끝난 모임에만 있고, 회원에게만 내려간다.
-   * post.photos(요약)가 null이어도 「아직 한 장도 없다」일 수 있으므로 isPast로 판단한다.
-   */
-  const photos = user && post?.isPast ? await listPhotos(id) : [];
+  // 사진은 회원에게만 내려간다 (모임이 끝났는지와 무관하다)
+  const photos = user ? await listPhotos(id) : [];
 
   return (
     <PostClient

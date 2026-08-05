@@ -9,10 +9,13 @@ import { shrinkToJpeg, UnreadableImageError } from '@/lib/photo-client';
 import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST, photoPath } from '@/lib/photos';
 
 /**
- * 모임 사진 — 끝난 모임에만 붙는다.
+ * 모임 사진 — 가기 전 안내문도, 다녀와서 찍은 것도 여기 같이 쌓인다.
  *
- * 카드에서는 한 장만 보이고 눌러서 넘겨 보지만, 여기서는 격자로 늘어놓는다.
- * 올리고 지우는 것은 결국 「어느 것을」 골라야 하는 일이라 한 장씩 보여선 안 된다.
+ * 둘을 나누지 않는 이유: 나눠 두면 올릴 때마다 「어느 쪽에 넣어야 하나」를 묻게 된다.
+ * 카드에는 첫 장만 실리고, 나머지는 눌러서 넘겨 본다.
+ *
+ * 카드와 달리 여기서는 격자로 늘어놓는다 — 올리고 지우는 것은 결국 「어느 것을」 골라야
+ * 하는 일이라 한 장씩 보여선 안 된다.
  */
 
 const T = {
@@ -22,7 +25,7 @@ const T = {
   uploading: { ko: '{done}/{total} 올리는 중…', en: 'Uploading {done}/{total}…' },
   onlyThere: {
     ko: '이 모임에 참가한 사람만 사진을 올릴 수 있어요.',
-    en: 'Only people who were there can add photos.',
+    en: 'Only people in the meetup can add photos.',
   },
   full: { ko: '사진은 {n}장까지 올릴 수 있어요.', en: 'Up to {n} photos per meetup.' },
   tooMany: { ko: '한 번에 {n}장까지 고를 수 있어요.', en: 'Pick up to {n} at a time.' },
@@ -68,8 +71,8 @@ export default function PhotoPanel({
   const zoom = usePosterZoom();
   const t = useT();
 
-  const iWasThere = Boolean(currentUserId && participants.some((p) => p.id === currentUserId));
-  const canAdd = iWasThere || isAdmin;
+  const inMeetup = Boolean(currentUserId && participants.some((p) => p.id === currentUserId));
+  const canAdd = inMeetup || isAdmin;
   const nameOf = (userId: string) => participants.find((p) => p.id === userId)?.name ?? '알 수 없음';
 
   // 확대 창에 넘길 목록 — 격자 순서 그대로다
@@ -93,7 +96,7 @@ export default function PhotoPanel({
     for (let i = 0; i < list.length; i++) {
       try {
         const { blob, width, height } = await shrinkToJpeg(list[i]!);
-        const path = photoPath(postId, crypto.randomUUID());
+        const path = photoPath(currentUserId!, crypto.randomUUID());
         const put = await upload(path, blob, {
           access: 'private',
           handleUploadUrl: '/api/blob/upload',

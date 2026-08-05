@@ -367,8 +367,8 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         />
       )}
 
-      {/* 사진은 끝난 모임에만 — 판정은 서버가 한다 */}
-      {post.isPast && user && (
+      {/* 사진은 아무 때나 — 가기 전 안내문도, 다녀와서 찍은 것도 같은 자리에 쌓인다 */}
+      {user && (
         <PhotoPanel
           postId={post.id}
           photos={initial.photos}

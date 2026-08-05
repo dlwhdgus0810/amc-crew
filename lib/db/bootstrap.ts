@@ -61,7 +61,6 @@ CREATE TABLE IF NOT EXISTS posts (
   location text NOT NULL,
   description text,
   capacity integer,
-  flyer_path text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS posts_category_date_idx ON posts (category, date);

@@ -4,7 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView, isParticipant } from '@/lib/db/posts';
 import { addPhoto, countPhotos } from '@/lib/db/photos';
-import { canAddPhotos, MAX_PHOTOS_PER_POST, pathAllowed } from '@/lib/photos';
+import { MAX_PHOTOS_PER_POST, pathAllowed } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +27,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const post = await getPostView(id, user.id);
   if (!post) return await errJson(E.postNotFound, 404);
-  if (!canAddPhotos(post)) return await errJson(E.photoClosed, 403);
   if (!(await isParticipant(id, user.id)) && !isAdmin(user)) {
     return await errJson(E.photoParticipantOnly, 403);
   }
@@ -35,10 +34,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const body = await req.json().catch(() => null);
   /*
-   * 경로가 이 모임 자리인지 다시 본다. 토큰을 내줄 때 한 번 봤지만, 여기 오는 값은
-   * 브라우저가 보내는 것이라 그대로 믿으면 남의 모임 사진을 이 모임에 매달 수 있다.
+   * 자기가 올린 자리의 경로인지 다시 본다. 토큰을 내줄 때 한 번 봤지만, 여기 오는 값은
+   * 브라우저가 보내는 것이라 그대로 믿으면 남이 올린 파일을 자기 모임에 매달 수 있다.
    */
-  if (typeof body?.pathname !== 'string' || !pathAllowed(body.pathname, 'photo', id)) {
+  if (typeof body?.pathname !== 'string' || !pathAllowed(body.pathname, user.id)) {
     return await errJson(E.photoBadUrl, 400);
   }
   const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : null);

@@ -98,10 +98,6 @@ export const E = {
   },
   friendAlreadyIn: { ko: '이미 이 모임에 참가하고 있어요.', en: 'They’re already in this meetup.' },
   friendAddPast: { ko: '지난 모임에는 넣을 수 없어요.', en: 'You can’t add anyone to a past meetup.' },
-  photoClosed: {
-    ko: '모임이 끝난 뒤에 사진을 올릴 수 있어요.',
-    en: 'You can add photos once the meetup is over.',
-  },
   photoParticipantOnly: {
     ko: '이 모임에 참가한 사람만 사진을 올릴 수 있어요.',
     en: 'Only someone who was at the meetup can add photos.',
