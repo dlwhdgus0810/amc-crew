@@ -23,14 +23,18 @@ export function canAddPhotos(post: { isPast: boolean }): boolean {
 /*
  * 저장 경로.
  *
- * dev/를 앞에 붙이는 이유: 개발 중에는 DB가 인메모리(PGlite)인데 저장소는 진짜다
- * (lib/db/index.ts:33 참고). 그래서 개발 중 올린 것은 전부 주인 없는 파일이 된다 —
- * 청소가 그것만 골라 지울 수 있게 자리를 나눠 둔다.
+ * 여기서 **환경을 보지 않는다.** 한때 개발 중 올린 것을 dev/ 아래로 나누려고
+ * process.env.VERCEL_ENV를 봤는데, 그 값은 서버에만 있다 — Next는 NEXT_PUBLIC_* 만
+ * 브라우저 번들에 넣는다. 그래서 브라우저는 dev/를 붙이고 서버는 안 붙인 것을 기대해,
+ * 로컬에서는 멀쩡하다가 프로덕션에서만 403이 났다.
+ *
+ * 경로는 브라우저가 만들고 서버가 검사한다 — **양쪽이 똑같이 계산할 수 있는 것만**으로
+ * 만들어야 한다. 개발 중 올린 파일은 어차피 주인이 없으므로(개발 DB는 인메모리다)
+ * 청소가 하루 뒤에 걷어간다. 자리를 나누지 않아도 그 일은 그대로 된다.
  */
-const devPrefix = () => (process.env.VERCEL_ENV === 'production' ? '' : 'dev/');
 
 export function photoPath(postId: string, uuid: string): string {
-  return `${devPrefix()}photos/${postId}/${uuid}.jpg`;
+  return `photos/${postId}/${uuid}.jpg`;
 }
 
 /**
@@ -38,7 +42,7 @@ export function photoPath(postId: string, uuid: string): string {
  * 그래서 올린 사람 아래에 두고, 모임에 매다는 것은 저장할 때 따로 확인한다.
  */
 export function flyerPath(userId: string, uuid: string): string {
-  return `${devPrefix()}flyers/${userId}/${uuid}.jpg`;
+  return `flyers/${userId}/${uuid}.jpg`;
 }
 
 /**
@@ -52,7 +56,6 @@ export function flyerPath(userId: string, uuid: string): string {
 export function pathAllowed(pathname: string, kind: 'photo' | 'flyer', ownerId: string): boolean {
   const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
   const suffix = '(-[A-Za-z0-9]+)?';
-  const prefix = devPrefix().replace('/', '\\/');
   const folder = kind === 'photo' ? 'photos' : 'flyers';
-  return new RegExp(`^${prefix}${folder}\\/${ownerId}\\/${uuid}${suffix}\\.jpg$`).test(pathname);
+  return new RegExp(`^${folder}\\/${ownerId}\\/${uuid}${suffix}\\.jpg$`).test(pathname);
 }
