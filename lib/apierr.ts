@@ -98,6 +98,18 @@ export const E = {
   },
   friendAlreadyIn: { ko: '이미 이 모임에 참가하고 있어요.', en: 'They’re already in this meetup.' },
   friendAddPast: { ko: '지난 모임에는 넣을 수 없어요.', en: 'You can’t add anyone to a past meetup.' },
+  ratingClosed: {
+    ko: '모임이 끝난 뒤에 평점을 매길 수 있어요.',
+    en: 'You can rate this once the meetup is over.',
+  },
+  ratingParticipantOnly: {
+    ko: '이 모임에 참가한 사람만 평점을 매길 수 있어요.',
+    en: 'Only someone who was at the meetup can rate it.',
+  },
+  ratingScore: {
+    ko: '평점은 0.0~10.0 사이, 0.1 단위로 매겨주세요.',
+    en: 'Ratings run 0.0–10.0 in steps of 0.1.',
+  },
   settleNotFound: { ko: '정산을 찾을 수 없어요.', en: 'No settle-up found.' },
   settleParticipantOnly: {
     ko: '모임에 참가한 사람만 정산을 만들 수 있어요.',

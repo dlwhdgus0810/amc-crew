@@ -171,6 +171,31 @@ export const commentLikes = pgTable(
   (t) => [primaryKey({ columns: [t.commentId, t.userId] })]
 );
 
+/**
+ * 무비나잇 평점 — 한 사람이 한 모임에 한 번, 끝난 뒤에만.
+ *
+ * 점수는 0~100 정수다. 화면에서는 10점 만점 0.1 단위로 보여주는데(8.4 → 84), 실수로
+ * 담아 두면 평균에서 소수점 오차가 붙고 "8.299999"가 새어 나온다. 정수로 담고 나눌 때만
+ * 소수로 바꾼다.
+ *
+ * 모임에 붙는 점수지 영화에 붙는 점수가 아니다 — 같은 영화를 두 번 보면 각각 따로 매긴다.
+ */
+export const postRatings = pgTable(
+  'post_ratings',
+  {
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    /** 0~100 (= 0.0~10.0) */
+    score: integer('score').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.postId, t.userId] })]
+);
+
 export const subscriptions = pgTable(
   'subscriptions',
   {

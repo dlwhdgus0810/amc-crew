@@ -90,6 +90,14 @@ CREATE TABLE IF NOT EXISTS comment_likes (
   PRIMARY KEY (comment_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS post_ratings (
+  post_id uuid NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id text NOT NULL REFERENCES users(id),
+  score integer NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (post_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS subscriptions (
   user_id text NOT NULL REFERENCES users(id),
   category text NOT NULL,

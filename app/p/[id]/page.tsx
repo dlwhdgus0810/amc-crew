@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { asc } from 'drizzle-orm';
 import { getPostView } from '@/lib/db/posts';
+import { listRatings } from '@/lib/db/ratings';
 import { getViewer } from '@/lib/session';
 import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
@@ -108,5 +109,16 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
     user ? listFriendships(user.id) : ([] as Awaited<ReturnType<typeof listFriendships>>),
   ]);
 
-  return <PostClient id={id} initial={{ post, members, friends: friendsOf(friendships), origin }} />;
+  /*
+   * 누가 몇 점 줬는지 — 평점을 매길 수 있는 모임일 때만 읽는다.
+   * 요약(post.rating)은 목록도 쓰지만 사람별 점수는 이 화면에서만 쓴다.
+   */
+  const ratings = post?.rating ? await listRatings(id) : [];
+
+  return (
+    <PostClient
+      id={id}
+      initial={{ post, members, friends: friendsOf(friendships), origin, ratings }}
+    />
+  );
 }

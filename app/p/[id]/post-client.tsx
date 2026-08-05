@@ -51,6 +51,7 @@ import type { PostView } from '@/lib/db/posts';
 import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread from '../../comment-thread';
 import SettlementPanel from '../../settlement-panel';
+import RatingPanel from '../../rating-panel';
 import { siteUrl } from '@/lib/site';
 import { useRefreshSession, useViewer } from '../../session';
 
@@ -112,6 +113,8 @@ export interface PostInitial {
   friends: Person[];
   /** 밖으로 나가는 링크(캘린더·공유)에 쓸 공개 주소 — 서버가 정한다 */
   origin: string;
+  /** 누가 몇 점 줬는지 (무비나잇이고 끝난 모임일 때만 채워진다) */
+  ratings: { userId: string; score: number }[];
 }
 
 export default function PostClient({ id, initial }: { id: string; initial: PostInitial }) {
@@ -349,6 +352,17 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
       )}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
+
+      {/* 평점은 끝난 무비나잇에만 붙는다 — post.rating이 있는지가 곧 그 판정이다(서버가 정한다) */}
+      {post.rating && (
+        <RatingPanel
+          postId={post.id}
+          summary={post.rating}
+          scores={initial.ratings}
+          participants={post.participants.map((p) => ({ id: p.id, name: p.name }))}
+          {...(user ? { currentUserId: user.id } : {})}
+        />
+      )}
 
       <SettlementPanel
         postId={post.id}

@@ -31,6 +31,7 @@ import CommentThread, {CommentView} from '../../comment-thread';
 import {AddFriendSheet, FriendRequestSheet, Person, Tie} from '../../friend-sheet';
 import {siteUrl} from '@/lib/site';
 import {formatCents} from '@/lib/money';
+import { formatScore } from '@/lib/ratings';
 import {useRefreshSession, useViewer} from '../../session';
 import {usePosterZoom} from '../../poster-zoom';
 
@@ -76,6 +77,8 @@ const T = {
     ko: '— 링크를 받은 사람만 볼 수 있어요. 목록·구독 알림에 나오지 않아요',
     en: '— only people with the link can see it. It stays out of the feed and subscriber alerts',
   },
+  ourRating: { ko: '우리 평점 {score}', en: 'Our rating {score}' },
+  rateIt: { ko: '평점 매기기', en: 'Rate it' },
   settleOwe: { ko: '정산 {amount}', en: 'Settle {amount}' },
   settleSee: { ko: '정산 보기', en: 'Settle-up' },
   settleStart: { ko: '정산하기', en: 'Settle up' },
@@ -217,6 +220,8 @@ interface PostView {
   commentCount: number;
   /** 정산 요약 — 없으면 null (서버 PostView와 같은 모양) */
   settle: { exists: boolean; myCents: number | null; iAmPayee: boolean } | null;
+  /** 우리 평점 요약 — 끝난 무비나잇에만 붙는다 */
+  rating: { average: number | null; count: number; mine: number | null } | null;
   comments: CommentView[];
 }
 
@@ -1244,6 +1249,20 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
               {t(T.edit)}
             </button>
           )}
+          {/* 끝난 무비나잇 — 우리 평점 한 줄. 아직 아무도 안 매겼으면 참가자에게만 권한다 */}
+          {post.rating &&
+            (post.rating.average != null ? (
+              <Link className="link-btn post-rating" href={`/p/${post.id}#rating`}>
+                {t(T.ourRating, { score: formatScore(post.rating.average) })}
+                <b> ({post.rating.count})</b>
+              </Link>
+            ) : (
+              joined && (
+                <Link className="link-btn" href={`/p/${post.id}#rating`}>
+                  {t(T.rateIt)}
+                </Link>
+              )
+            ))}
           {/* 참가한 사람에게만 — 정산은 같이 낸 사람들 사이의 일이다 */}
           {joined && (
             <Link className={`link-btn ${post.settle?.myCents ? 'strong' : ''}`} href={`/p/${post.id}#settle`}>

@@ -12,6 +12,8 @@ import { adminIds } from '../auth';
 import { POSTS_TAG } from '../cache-tags';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
+import { ratingSummaries, type RatingSummary } from './ratings';
+import { ratable } from '../ratings';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 import { NOTIF } from '../notif-kinds';
 import { dateLabelShort, timeLabel } from '../datefmt';
@@ -52,6 +54,8 @@ export interface PostView {
   commentCount: number;
   /** 정산이 있으면 카드에 바로 보여줄 요약 (없으면 null) */
   settle: SettlementSummary | null;
+  /** 무비나잇이고 끝난 모임일 때만 — 우리 평점 요약 (그 밖에는 null) */
+  rating: RatingSummary | null;
   comments: CommentView[];
 }
 
@@ -222,6 +226,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
       participants: [],
       participantCount: countOf(partByPostId as Map<string, unknown[]>, p.id),
       settle: null,
+      rating: null,
       comments: [],
       commentCount: countOf(cmtByPostId, p.id),
     }));
@@ -244,12 +249,15 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     if (p.coHostId) nameIds.add(p.coHostId);
   }
   const commentIds = commentRows.map((c) => c.id);
+  // 평점은 끝난 무비나잇에만 붙는다 — 나머지 모임까지 세면 대부분 빈 답을 받으러 가는 셈이다
+  const ratableIds = postRows.filter((p) => ratable(shellOf(p))).map((p) => p.id);
 
-  const [userRows, hostCounts, settleByPost, likeRows] = await Promise.all([
+  const [userRows, hostCounts, settleByPost, likeRows, ratingByPost] = await Promise.all([
     nameIds.size ? db.select(NAME_COLS).from(users).where(inArray(users.id, [...nameIds])) : [],
     hostCountsFor([...new Set(participantRows.map((p) => p.userId))]),
     settlementSummaries(myPostIds, viewerId),
     commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
+    ratingSummaries(ratableIds, viewerId),
   ]);
   const userById = new Map(userRows.map((u) => [u.id, u]));
 
@@ -300,6 +308,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     participants: byPost.get(p.id) ?? [],
     participantCount: (byPost.get(p.id) ?? []).length,
     settle: settleByPost.get(p.id) ?? null,
+    rating: ratingByPost.get(p.id) ?? null,
     comments: commentsByPost.get(p.id) ?? [],
     commentCount: (commentsByPost.get(p.id) ?? []).length,
   }));

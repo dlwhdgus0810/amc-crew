@@ -1333,3 +1333,38 @@ h2 {
   border-radius: 8px;
   background: var(--border);
 }
+
+/* ── 무비나잇 평점 (app/rating-panel.tsx) ─────────────────────
+   끝난 무비나잇 모임에만 붙는다. 평균 한 줄 + 사람별 막대 + 내 점수 고르기.
+   막대는 장식이라 aria-hidden — 숫자를 바로 옆에 같이 적는다. */
+.rating-card { display: flex; flex-direction: column; gap: 14px; }
+
+.rating-avg { display: flex; align-items: baseline; gap: 6px; }
+.rating-avg-num { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.rating-avg-of { font-size: 14px; color: var(--text-dim); }
+.rating-avg-n { margin-left: auto; font-size: 13px; color: var(--text-dim); }
+
+.rating-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rating-list li { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.rating-who { flex: none; width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 내가 준 점수는 이름을 진하게 — 목록에서 내 줄을 먼저 찾게 된다 */
+.rating-list li.me .rating-who { font-weight: 700; }
+.rating-bar { flex: 1; height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.rating-bar > span { display: block; height: 100%; background: var(--text); border-radius: 999px; }
+.rating-num { flex: none; width: 32px; text-align: right; font-family: var(--mono); font-size: 12px; }
+
+.rating-input { border-top: 1px solid var(--border); padding-top: 14px; }
+.rating-row { display: flex; align-items: center; gap: 10px; }
+.rating-row input[type='range'] { flex: 1; min-width: 0; accent-color: var(--text); }
+/* ±는 0.1을 맞추는 버튼이라 손가락이 닿을 만큼은 키운다 */
+.rating-step {
+  width: 34px; height: 34px; min-height: 0; padding: 0; flex: none;
+  border-radius: 999px; border: 1px solid var(--border); background: transparent;
+  font-size: 17px; line-height: 1; cursor: pointer;
+}
+.rating-step:disabled { opacity: 0.4; cursor: default; }
+.rating-draft { flex: none; width: 42px; text-align: right; font-family: var(--mono); font-size: 16px; font-weight: 700; }
+
+/* 모임 카드 한 줄 — 지난 무비나잇에만 */
+.post-rating { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+.post-rating b { font-weight: 700; color: var(--text); }
