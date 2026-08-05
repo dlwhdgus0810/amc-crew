@@ -1,7 +1,7 @@
 // 모임 날짜·시간 표기. 화면과 알림 문구가 같은 포맷을 쓰도록 한곳에 모아둔다.
 // YYYY-MM-DD / HH:mm 문자열만 다루므로 시간대 변환은 하지 않는다 (UTC 기준으로 파싱해 날짜 밀림 방지).
 
-import { Locale } from './i18n';
+import { Locale, pick } from './i18n';
 
 const WEEKDAYS: Record<Locale, string[]> = {
   ko: ['일', '월', '화', '수', '목', '금', '토'],
@@ -71,4 +71,22 @@ export function timeLabel(time: string, locale: Locale): string {
   return locale === 'en'
     ? `${h12}:${mm} ${h < 12 ? 'AM' : 'PM'}`
     : `${h < 12 ? '오전' : '오후'} ${h12}:${mm}`;
+}
+
+/** "얼마나 지났나" 한 마디 — 알림함과 정산 다시 알리기가 같이 쓴다 */
+const AGO = {
+  justNow: { ko: '방금', en: 'just now' },
+  minutesAgo: { ko: '{n}분 전', en: '{n}m ago' },
+  hoursAgo: { ko: '{n}시간 전', en: '{n}h ago' },
+  daysAgo: { ko: '{n}일 전', en: '{n}d ago' },
+};
+
+export function timeAgo(iso: string, locale: Locale): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return pick(locale, AGO.justNow);
+  if (min < 60) return pick(locale, AGO.minutesAgo, { n: min });
+  const hours = Math.floor(min / 60);
+  if (hours < 24) return pick(locale, AGO.hoursAgo, { n: hours });
+  return pick(locale, AGO.daysAgo, { n: Math.floor(hours / 24) });
 }

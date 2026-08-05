@@ -1,6 +1,6 @@
 // 모임 정산 — 한 모임에 하나. 돈을 받을 사람이 항목을 적으면 각자 낼 금액이 계산되고 알림이 나간다.
 
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { getDb } from './index';
 import {
   notifications,
@@ -19,6 +19,7 @@ import { formatCents, shortCode, splitWithExtras, venmoLink } from '../money';
 import { sendPush } from '../push';
 import { dateLabelShort, timeLabel } from '../datefmt';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
+import { NOTIF } from '../notif-kinds';
 
 /** 한 항목을 누가 나눠 내는지 */
 export type ItemScope = 'all' | 'some';
@@ -321,7 +322,18 @@ export async function settlementPayee(postId: string): Promise<string | null> {
  * 금액이 사람마다 달라 문구를 한 번에 만들 수 없다 — 다른 알림들과 달리 사람 단위로 돈다.
  * 받을 사람 본인에게는 보내지 않는다.
  */
-export async function notifySettlement(postId: string, origin: string): Promise<{ sent: number }> {
+/**
+ * 정산 알림.
+ *
+ * onlyUserIds를 주면 그 사람들에게만 다시 보낸다 — 「다시 알리기」다. 문구를 만드는 자리는
+ * 하나뿐이어야 한다. 재발송용 함수를 따로 두면 금액 표시나 보낼 수단이 바뀔 때 한쪽만
+ * 고치게 되고, 그건 받는 사람에게 서로 다른 두 문구가 도착한다는 뜻이다.
+ */
+export async function notifySettlement(
+  postId: string,
+  origin: string,
+  onlyUserIds?: string[]
+): Promise<{ sent: number }> {
   const view = await getSettlement(postId);
   if (!view) return { sent: 0 };
 
@@ -329,9 +341,14 @@ export async function notifySettlement(postId: string, origin: string): Promise<
   const [post] = await db.select().from(posts).where(eq(posts.id, postId));
   if (!post) return { sent: 0 };
 
-  const targets = view.shares.filter((s) => s.userId !== view.payee.id);
+  // 다시 보내는 것이면 받을 사람 사본은 안 나간다 — 처음 저장했을 때 이미 받았다
+  const reminder = onlyUserIds !== undefined;
+  const pick_ = reminder ? new Set(onlyUserIds) : null;
+  const targets = view.shares.filter(
+    (s) => s.userId !== view.payee.id && (!pick_ || pick_.has(s.userId))
+  );
   // 알릴 사람이 없어도 여기서 멈추지 않는다 — 관리자 사본은 그때도 나가야 한다
-  const payeeIsAdmin = adminIds().includes(view.payee.id);
+  const payeeIsAdmin = !reminder && adminIds().includes(view.payee.id);
   if (targets.length === 0 && !payeeIsAdmin) return { sent: 0 };
 
   const localeRows = targets.length
@@ -450,6 +467,29 @@ export async function notifySettlement(postId: string, origin: string): Promise<
     await sendPush([userId], { title: 'Kansas Korean', body: plain, url: linkUrl, tag: `settle:${postId}` });
   }
   return { sent: targets.length };
+}
+
+/**
+ * 이 정산으로 누구에게 언제 마지막으로 알렸는지.
+ *
+ * 새 칸을 두지 않고 알림 기록에서 뽑는다 — 알림을 보냈다는 사실은 이미 notifications에
+ * 남아 있고, 같은 것을 두 곳에 적어 두면 언젠가 서로 어긋난다.
+ *
+ * 「다시 알리기」 화면이 사람마다 이 시각을 보여준다. 하루에 세 번 찌르는 일을 막는 건
+ * 규칙이 아니라 이 한 줄이다 — 방금 보냈다는 게 보이면 대개 안 누른다.
+ */
+export async function settlementNotifiedAt(postId: string): Promise<Record<string, string>> {
+  const db = await getDb();
+  const rows = await db
+    .select({ userId: notifications.userId, at: notifications.createdAt })
+    .from(notifications)
+    .where(and(eq(notifications.postId, postId), eq(notifications.kind, NOTIF.settle)))
+    .orderBy(desc(notifications.createdAt));
+
+  const out: Record<string, string> = {};
+  // 최신순이라 처음 만난 것이 곧 마지막으로 보낸 것이다
+  for (const r of rows) if (!out[r.userId]) out[r.userId] = r.at.toISOString();
+  return out;
 }
 
 /** 목록 화면(카드)에서 쓰는 요약 */

@@ -9,6 +9,7 @@ import {
   notifySettlement,
   saveSettlement,
   settlementPayee,
+  settlementNotifiedAt,
   settlementViewers,
   type ItemScope,
   type SettlementItemInput,
@@ -39,7 +40,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const allowed = (await settlementViewers(id)).includes(viewer.id);
   if (!allowed && !isAdmin(viewer)) return await errJson(E.settleNotFound, 404);
 
-  return NextResponse.json({ settlement: await getSettlement(id) });
+  const settlement = await getSettlement(id);
+  /*
+   * 「마지막으로 언제 알렸는지」는 받을 사람에게만 내려준다.
+   * 다시 알리기 화면에서만 쓰는 값이고, 남이 언제 알림을 받았는지는 남의 일이다.
+   */
+  const canRemind = Boolean(settlement) && (settlement!.payee.id === viewer.id || isAdmin(viewer));
+  return NextResponse.json({
+    settlement,
+    ...(canRemind ? { notifiedAt: await settlementNotifiedAt(id) } : {}),
+  });
 }
 
 /** 정산 저장 + 각자에게 알림. 참가자만 만들 수 있고, 만든 사람이 받는 사람이 된다. */

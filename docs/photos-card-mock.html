@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>모임 카드 — 사진은 포스터 자리에 한 장</title>
+<style>
+  :root{
+    --bg:#f4f6f2; --surface:#fff; --surface-2:#edf1eb; --border:#e2e7df; --border-soft:#edf1eb;
+    --text:#1e241f; --text-mid:#5c635b; --text-dim:#8d958c;
+    --secondary-text:#a0522d; --danger:#a8342a;
+    --r:14px; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:840px;margin:0 auto;padding:24px 16px 60px}
+  h1{font-size:20px;letter-spacing:-.02em;margin:0 0 4px}
+  h1.small{font-size:16px;margin-top:0}
+  .sub{color:var(--text-mid);font-size:13.5px;margin:0 0 22px;line-height:1.55}
+  .cols{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+  .col{flex:1 1 330px;min-width:0}
+  .col h2{font-size:12px;letter-spacing:.04em;margin:0 0 3px;text-transform:uppercase;color:var(--text-dim);font-family:var(--mono)}
+  .col .lede{font-size:13px;color:var(--text-mid);margin:0 0 12px;min-height:36px;line-height:1.45}
+  .phone{width:339px;max-width:100%}
+
+  .post-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:10px}
+  .post-card.past{opacity:.72}
+  .post-when{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:17.5px;font-weight:600;letter-spacing:-.02em}
+  .post-title{font-size:15px;font-weight:700;margin-top:5px}
+  .post-meta{color:var(--text-mid);font-size:13.5px;margin-top:4px}
+  .post-meta u{text-decoration-color:var(--border)}
+  .post-desc{color:var(--text-dim);font-size:13px;margin-top:4px}
+
+  .people-row{width:100%;display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 0;
+    border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);min-height:44px}
+  .ava-stack{display:flex;flex:none}
+  .ava{width:24px;height:24px;border-radius:999px;background:var(--surface-2);border:1.5px solid var(--surface);
+    font-size:10.5px;font-weight:700;color:var(--text-mid);display:flex;align-items:center;justify-content:center;flex:none}
+  .ava.me{background:var(--text);color:#fff}
+  .ava+.ava{margin-left:-7px}
+  .people-names{flex:1;min-width:0}
+  .people-count{flex:none;font-family:var(--mono);font-size:10.5px;color:var(--text-dim)}
+
+  .post-actions{display:flex;align-items:center;gap:16px;margin-top:10px;flex-wrap:wrap}
+  .link-btn{min-height:40px;display:inline-flex;align-items:center;gap:5px;color:var(--text-mid);font-size:13px;font-weight:600}
+  .link-btn.on{color:var(--secondary-text);text-decoration:underline;text-underline-offset:3px}
+
+  /* 머리 부분 — 지금 무비나잇 포스터가 쓰는 그 구조 그대로 */
+  .head{display:flex;gap:12px;align-items:flex-start}
+  .head-text{flex:1;min-width:0}
+  .art{flex:none;position:relative;width:62px}
+  .art .box{width:62px;aspect-ratio:2/3;border-radius:8px;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:9px;font-family:var(--mono);color:#9a8f79}
+  .art .box.poster{background:linear-gradient(150deg,#4a6c8c,#8fb0c9);color:#e8f0f6;border-color:transparent}
+  .art .box.flyer{background:linear-gradient(135deg,#e3d9c8,#f2ece0)}
+  .art .box.shot{background:linear-gradient(140deg,#b9c7ad,#dfe7d6);color:#5d6b52;border-color:transparent}
+  /* 여러 장이라는 표시 — 모서리 배지, 폭을 안 먹는다 */
+  .count{position:absolute;right:4px;bottom:4px;min-width:20px;height:18px;padding:0 5px;border-radius:999px;
+    background:rgba(20,24,20,.72);color:#fff;font-family:var(--mono);font-size:10px;
+    display:inline-flex;align-items:center;justify-content:center;gap:3px;backdrop-filter:blur(2px)}
+  .count svg{width:9px;height:9px;display:block}
+
+  /* 확대 화면 스케치 */
+  .zoom{width:260px;max-width:100%;aspect-ratio:3/4;border-radius:var(--r);background:#141714;
+    position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .zoom .pic{width:88%;aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#b9c7ad,#dfe7d6)}
+  .zoom .nav{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:999px;
+    background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px}
+  .zoom .nav.l{left:10px} .zoom .nav.r{right:10px}
+  .zoom .idx{position:absolute;top:14px;left:0;right:0;text-align:center;color:#e8ece7;font-family:var(--mono);font-size:12px}
+  .zoom .who{position:absolute;left:0;right:0;bottom:16px;text-align:center;color:#c7cec5;font-size:12px}
+  .zoom .x{position:absolute;top:10px;right:12px;color:#e8ece7;font-size:17px}
+
+  .note{font-size:12.5px;color:var(--text-mid);line-height:1.6;margin-top:12px;padding-left:11px;border-left:2px solid var(--border)}
+  .note b{color:var(--text)}
+  .w{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:6px}
+  .ok{color:#2f6b46}
+  hr.sep{border:none;border-top:1px solid var(--border);margin:32px 0 24px}
+  table{border-collapse:collapse;font-size:13px;margin-top:10px;width:100%}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:11.5px;color:var(--text-dim);font-weight:600;font-family:var(--mono);text-transform:uppercase}
+  td.mono{font-family:var(--mono);font-size:12px;color:var(--text-mid)}
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#141714;--surface:#1c201c;--surface-2:#252a25;--border:#2f352f;--border-soft:#262b26;
+      --text:#eef1ec;--text-mid:#b4bbb2;--text-dim:#8b938a}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>모임 카드 — 사진은 포스터 자리에 한 장</h1>
+  <p class="sub">여러 장이어도 카드에는 한 장만. 누르면 확대해서 좌우로 넘긴다.
+    <b>지금 무비나잇 포스터가 하는 것과 똑같은 동작</b>이고, 확대 장치(<span class="w" style="display:inline">usePosterZoom</span>)도 이미 있는 것을 늘려 쓴다.<br>
+    <span class="ok">카드 높이·폭 변화 없음 — 액션 줄은 지금 그대로 둬도 된다.</span></p>
+
+  <div class="cols">
+    <div class="col">
+      <h2>사진 없음</h2>
+      <p class="lede">지금과 완전히 같다. 자리를 비워 두지 않는다.</p>
+      <div class="phone">
+        <div class="post-card past">
+          <div class="head">
+            <div class="head-text">
+              <div class="post-when">오후 6:00 – 오후 8:00</div>
+              <div class="post-meta"><u>Wichita Park</u> ⊙ · 이종현</div>
+              <div class="post-desc">“가벼운 풋살이에요”</div>
+            </div>
+          </div>
+          <div class="people-row">
+            <span class="ava-stack"><span class="ava me">이</span><span class="ava">정</span></span>
+            <span class="people-names"></span><span class="people-count">2/10명 ▾</span>
+          </div>
+          <div class="post-actions">
+            <span class="link-btn">댓글 ▾</span><span class="link-btn">수정</span><span class="link-btn on">정산 $24.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <h2>사진 12장</h2>
+      <p class="lede">첫 장이 포스터 자리에. 모서리 배지로 “더 있다”를 알린다.</p>
+      <div class="phone">
+        <div class="post-card past">
+          <div class="head">
+            <div class="head-text">
+              <div class="post-when">오후 7:00 – 오후 9:30</div>
+              <div class="post-title">〈Boyhood 12th Anniversary〉</div>
+              <div class="post-meta"><u>AMC Town Center 20</u> ⊙ · 이종현</div>
+              <div class="post-desc">“팝콘은 각자 사와요”</div>
+            </div>
+            <div class="art">
+              <div class="box shot">단체사진</div>
+              <span class="count">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="7" width="14" height="12" rx="2"/><path d="M8 4h12v12"/></svg>
+                12
+              </span>
+            </div>
+          </div>
+          <div class="people-row">
+            <span class="ava-stack"><span class="ava me">이</span><span class="ava">정</span></span>
+            <span class="people-names"></span><span class="people-count">2/6명 ▾</span>
+          </div>
+          <div class="post-actions">
+            <span class="link-btn">댓글 1 ▾</span><span class="link-btn">수정</span>
+            <span class="link-btn on">우리 평점 8.8 (2)</span><span class="link-btn on">정산 $24.00</span>
+          </div>
+        </div>
+        <div class="w">액션 줄은 손대지 않았다 — 278px 그대로, 사진이 폭을 안 먹으므로</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sep">
+  <h1 class="small">눌렀을 때</h1>
+  <p class="sub">지금 포스터 확대와 같은 창. 좌우로 넘기는 것과 <span class="w" style="display:inline">1 / 12</span>만 더한다.
+    배경 아무 데나 누르면 닫히고, Esc도 그대로 된다.</p>
+  <div class="zoom">
+    <span class="x">✕</span>
+    <span class="idx">3 / 12</span>
+    <span class="nav l">‹</span>
+    <div class="pic"></div>
+    <span class="nav r">›</span>
+    <span class="who">정재호 올림</span>
+  </div>
+
+  <hr class="sep">
+  <h1 class="small">그 자리에 무엇이 오나</h1>
+  <p class="sub">후보가 셋(TMDB 포스터 · 플라이어 · 단체사진)이라 순서를 정해 둬야 한다.
+    모임이 끝나기 전에는 “뭘 하러 가나”, 끝난 뒤에는 “뭘 했나”가 궁금하다.</p>
+  <table>
+    <tr><th>모임 상태</th><th>카드에 보이는 한 장</th><th>넘기면 나오는 것</th></tr>
+    <tr><td>예정</td><td>플라이어 → 없으면 TMDB 포스터</td><td class="mono">한 장뿐 (지금과 같음)</td></tr>
+    <tr><td>끝남 · 사진 없음</td><td>플라이어 → 없으면 TMDB 포스터</td><td class="mono">한 장뿐</td></tr>
+    <tr><td>끝남 · 사진 있음</td><td><b>단체사진 첫 장</b></td><td class="mono">사진 12장 + 맨 끝에 플라이어</td></tr>
+  </table>
+  <div class="note">
+    끝난 모임에서 단체사진이 플라이어를 <b>덮는다</b>. 안내문은 가기 전에 필요한 것이고,
+    끝난 뒤 목록에서 찾는 것은 “그때 뭐 했더라”다. 플라이어는 넘기면 맨 끝에 그대로 있다.<br>
+    무비나잇도 같다 — 끝나면 TMDB 포스터보다 우리가 찍은 사진이 그 모임을 더 잘 가리킨다.
+  </div>
+
+  <hr class="sep">
+  <h1 class="small">정할 것 하나 — 썸네일 비율</h1>
+  <p class="sub">포스터 칸은 세로로 긴 <span class="w" style="display:inline">2 / 3</span>인데 단체사진은 대개 가로로 넓다.
+    같은 칸에 넣으면 좌우가 잘려 끝에 선 사람이 사라진다.</p>
+  <div class="cols">
+    <div class="col" style="flex:0 0 auto">
+      <h2>2 / 3 (지금 칸 그대로)</h2>
+      <div class="art" style="width:62px">
+        <div class="box shot" style="background:linear-gradient(140deg,#b9c7ad,#dfe7d6)">잘림</div>
+      </div>
+      <div class="w">칸 크기가 안 변해 목록이 안 흔들림</div>
+    </div>
+    <div class="col" style="flex:0 0 auto">
+      <h2>4 / 5 (사진일 때만)</h2>
+      <div class="art" style="width:62px">
+        <div class="box shot" style="aspect-ratio:4/5">덜 잘림</div>
+      </div>
+      <div class="w">덜 잘리지만 카드마다 높이가 조금 달라짐</div>
+    </div>
+  </div>
+  <div class="note">
+    어느 쪽이든 <b>확대하면 원본 전체</b>가 보인다. 자르는 건 썸네일뿐이다.
+    무비나잇에서 포스터와 사진이 번갈아 나오면 <b>2 / 3</b>이 목록을 덜 흔든다 — 이쪽을 권한다.
+  </div>
+</div>
+</body>
+</html>

@@ -1368,3 +1368,19 @@ h2 {
 /* 모임 카드 한 줄 — 지난 무비나잇에만 */
 .post-rating { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
 .post-rating b { font-weight: 700; color: var(--text); }
+
+/* ── 정산 다시 알리기 (app/settlement-panel.tsx) ──────────────
+   받을 사람에게만 보인다. 사람마다 마지막으로 보낸 시각을 옆에 적어 두는 게 핵심 —
+   방금 보냈다는 게 보이면 대개 다시 안 누른다. 하루 세 번 찌르는 걸 규칙 대신 이걸로 막는다. */
+.remind-box { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+.remind-list { list-style: none; margin: 6px 0 4px; padding: 0; }
+.remind-list li + li { border-top: 1px solid var(--border-soft); }
+.remind-list label {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 44px; cursor: pointer; font-size: 13.5px;
+}
+.remind-list input[type='checkbox'] { flex: none; width: 18px; height: 18px; accent-color: var(--text); }
+.remind-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.remind-amount { flex: none; font-family: var(--mono); font-size: 12px; color: var(--text-mid); }
+/* 마지막으로 보낸 시각 — 읽는 값이라 가장 여리게 */
+.remind-when { flex: none; font-size: 11px; color: var(--text-dim); min-width: 62px; text-align: right; }

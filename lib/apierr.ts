@@ -119,6 +119,10 @@ export const E = {
     ko: '정산을 만든 사람만 고칠 수 있어요.',
     en: 'Only whoever started the settle-up can change it.',
   },
+  remindNobody: {
+    ko: '다시 알릴 사람을 한 명 이상 골라주세요.',
+    en: 'Pick at least one person to remind.',
+  },
   settleItems: { ko: '정산 항목을 1~10개로 입력해주세요.', en: 'Add between 1 and 10 items.' },
   settleLabel: { ko: '항목 이름을 1~40자로 입력해주세요.', en: 'Each item needs a name of 1–40 characters.' },
   settleAmount: {

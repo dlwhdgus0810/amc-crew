@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useT } from '../i18n';
-import { Locale, pick } from '@/lib/i18n';
+import { pick } from '@/lib/i18n';
 import { FRIEND_KINDS, NOTIF, POST_KINDS } from '@/lib/notif-kinds';
+import { timeAgo } from '@/lib/datefmt';
 import { CHANGELOG } from '@/lib/changelog';
 import NotifSwipe from '../notif-swipe';
 
@@ -27,10 +28,6 @@ const T = {
     ko: '아직 알림이 없어요. 홈에서 관심 있는 취미를 구독해보세요!',
     en: 'No alerts yet. Subscribe to a hobby on the home page!',
   },
-  justNow: { ko: '방금', en: 'just now' },
-  minutesAgo: { ko: '{n}분 전', en: '{n}m ago' },
-  hoursAgo: { ko: '{n}시간 전', en: '{n}h ago' },
-  daysAgo: { ko: '{n}일 전', en: '{n}d ago' },
   del: { ko: '지우기', en: 'Delete' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t delete that.' },
   /* 제목 바로 아래에 둔다 — 지우는 방법을 모르면 목록 끝까지 내려갈 이유가 없다 */
@@ -54,16 +51,6 @@ interface Notification {
   read: boolean;
   createdAt: string;
   category: string | null;
-}
-
-function timeAgo(iso: string, locale: Locale): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return pick(locale, T.justNow);
-  if (min < 60) return pick(locale, T.minutesAgo, { n: min });
-  const hours = Math.floor(min / 60);
-  if (hours < 24) return pick(locale, T.hoursAgo, { n: hours });
-  return pick(locale, T.daysAgo, { n: Math.floor(hours / 24) });
 }
 
 export default function NotificationsClient({ initial }: { initial: NotificationsInitial | null }) {

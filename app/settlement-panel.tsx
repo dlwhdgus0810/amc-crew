@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useT } from './i18n';
+import { useLocale, useT } from './i18n';
 import { formatCents, parseAmountCents, splitWithExtras, venmoLink } from '@/lib/money';
+import { timeAgo } from '@/lib/datefmt';
 
 const T = {
   title: { ko: '정산', en: 'Settle up' },
@@ -92,6 +93,19 @@ const T = {
   total: { ko: '합계', en: 'Total' },
   // 아이디에 링크가 걸려 있다는 걸 알려주는 한마디 — 금액이 채워진다는 게 요점이다
   venmoTapHint: { ko: '누르면 금액까지 채워져요', en: 'Tap — amount filled in' },
+  remindOpen: { ko: '다시 알리기', en: 'Send a reminder' },
+  remindWho: { ko: '누구에게 다시 알릴까요?', en: 'Who should get a reminder?' },
+  remindSend: { ko: '{n}명에게 알리기', en: 'Remind {n}' },
+  remindSending: { ko: '보내는 중…', en: 'Sending…' },
+  remindDone: { ko: '{n}명에게 다시 알렸어요.', en: 'Reminded {n} people.' },
+  remindFailed: { ko: '알림을 보내지 못했어요.', en: 'Couldn’t send that.' },
+  remindNever: { ko: '아직 안 보냄', en: 'not sent yet' },
+  remindAgo: { ko: '{when} 보냄', en: 'sent {when}' },
+  remindCancel: { ko: '그만두기', en: 'Cancel' },
+  remindNote: {
+    ko: '처음과 같은 문구가 갑니다. 잠금화면 알림은 쌓이지 않고 이전 것을 대신해요.',
+    en: 'The same message goes out. On the lock screen it replaces the earlier one instead of stacking.',
+  },
   venmoMine: {
     ko: '프로필 → 받을 계좌에 Venmo나 Zelle을 넣어두면 다른 사람이 바로 보낼 수 있어요.',
     en: 'Add Venmo or Zelle under Profile → How you get paid so people can send it.',
@@ -191,6 +205,7 @@ export default function SettlementPanel({
   noteLabel: string;
 }) {
   const t = useT();
+  const locale = useLocale();
   const [settlement, setSettlement] = useState<Settlement | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -212,6 +227,10 @@ export default function SettlementPanel({
   const [confirming, setConfirming] = useState(false);
   const [venmoInput, setVenmoInput] = useState('');
   const [zelleInput, setZelleInput] = useState('');
+  /* 다시 알리기 — 마지막으로 보낸 시각(사람별)과 지금 고른 사람들 */
+  const [notifiedAt, setNotifiedAt] = useState<Record<string, string>>({});
+  const [remindOpen, setRemindOpen] = useState(false);
+  const [remindPick, setRemindPick] = useState<Set<string>>(new Set());
 
   async function copyText(value: string) {
     try {
@@ -225,7 +244,33 @@ export default function SettlementPanel({
 
   async function load() {
     const res = await fetch(`/api/posts/${postId}/settlement`);
-    if (res.ok) setSettlement((await res.json()).settlement ?? null);
+    if (!res.ok) return;
+    const data = await res.json();
+    setSettlement(data.settlement ?? null);
+    // 받을 사람에게만 내려온다 (없으면 빈 객체)
+    setNotifiedAt(data.notifiedAt ?? {});
+  }
+
+  /** 고른 사람들에게 같은 알림을 다시 보낸다 */
+  async function sendRemind() {
+    setBusy(true);
+    setMsg(null);
+    const res = await fetch(`/api/posts/${postId}/settlement/remind`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userIds: [...remindPick] }),
+    });
+    const data = await res.json().catch(() => null);
+    setBusy(false);
+    if (!res.ok) {
+      setMsg({ type: 'err', text: data?.error ?? t(T.remindFailed) });
+      return;
+    }
+    setMsg({ type: 'ok', text: t(T.remindDone, { n: data?.sent ?? remindPick.size }) });
+    setRemindOpen(false);
+    setRemindPick(new Set());
+    // 마지막으로 보낸 시각이 사람마다 바뀌었다
+    void load();
   }
 
   useEffect(() => {
@@ -419,6 +464,9 @@ export default function SettlementPanel({
   const mine = settlement?.shares.find((s) => s.userId === currentUserId);
   const isPayee = settlement?.payee.id === currentUserId;
   const canEdit = Boolean(currentUserId) && (!settlement || isPayee);
+  /* 다시 알릴 수 있는 사람 = 받을 사람(또는 관리자), 대상 = 낼 금액이 있는 사람들 */
+  const canRemind = Boolean(settlement) && (isPayee || isAdmin);
+  const remindTargets = (settlement?.shares ?? []).filter((sh) => sh.userId !== settlement?.payee.id);
 
   return (
     <>
@@ -588,6 +636,64 @@ export default function SettlementPanel({
 
             {isPayee && !settlement.payee.venmo && !settlement.payee.zelle && (
               <p style={{ color: 'var(--text-dim)', fontSize: 12.5, margin: '12px 2px 0' }}>{t(T.venmoMine)}</p>
+            )}
+
+            {/*
+              * 다시 알리기 — 한 번 간 알림은 못 보고 지나치기 쉽다.
+              * 받을 사람에게만 보이고, 낼 금액이 있는 사람만 고를 수 있다.
+              */}
+            {canRemind && remindTargets.length > 0 && !remindOpen && (
+              <button className="link-btn" style={{ marginTop: 10 }} onClick={() => {
+                setRemindPick(new Set(remindTargets.map((r) => r.userId)));
+                setRemindOpen(true);
+              }}>
+                {t(T.remindOpen)}
+              </button>
+            )}
+
+            {canRemind && remindOpen && (
+              <div className="remind-box">
+                <div className="field-label">{t(T.remindWho)}</div>
+                <ul className="remind-list">
+                  {remindTargets.map((r) => {
+                    const on = remindPick.has(r.userId);
+                    const at = notifiedAt[r.userId];
+                    return (
+                      <li key={r.userId}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={() =>
+                              setRemindPick((prev) => {
+                                const next = new Set(prev);
+                                if (on) next.delete(r.userId);
+                                else next.add(r.userId);
+                                return next;
+                              })
+                            }
+                          />
+                          <span className="remind-name">{r.name}</span>
+                          <span className="remind-amount">{formatCents(r.cents)}</span>
+                          {/* 방금 보냈다는 게 보이면 대개 다시 안 누른다 — 규칙 대신 이 한 줄로 막는다 */}
+                          <span className="remind-when">
+                            {at ? t(T.remindAgo, { when: timeAgo(at, locale) }) : t(T.remindNever)}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="hint" style={{ margin: '2px 2px 10px' }}>{t(T.remindNote)}</p>
+                <div className="field-row">
+                  <button className="secondary" disabled={busy || remindPick.size === 0} onClick={sendRemind}>
+                    {busy ? t(T.remindSending) : t(T.remindSend, { n: remindPick.size })}
+                  </button>
+                  <button className="link-btn" disabled={busy} onClick={() => setRemindOpen(false)}>
+                    {t(T.remindCancel)}
+                  </button>
+                </div>
+              </div>
             )}
 
             {canEdit && (
