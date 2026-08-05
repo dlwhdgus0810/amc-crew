@@ -13,6 +13,8 @@ import { POSTS_TAG } from '../cache-tags';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
 import { ratingSummaries, type RatingSummary } from './ratings';
+import { photoCovers, photoUrlsForPost } from './photos';
+import { deleteBlobs } from '../blob';
 import { ratable } from '../ratings';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 import { NOTIF } from '../notif-kinds';
@@ -56,6 +58,13 @@ export interface PostView {
   settle: SettlementSummary | null;
   /** 무비나잇이고 끝난 모임일 때만 — 우리 평점 요약 (그 밖에는 null) */
   rating: RatingSummary | null;
+  /**
+   * 모임 포스터 한 장 — 만들 때 올린 것. 비로그인에게는 null.
+   * 사람에 관한 것과 같은 기준으로 막는다: 링크만 알면 열리는 주소라 함부로 내보내지 않는다.
+   */
+  flyerUrl: string | null;
+  /** 끝난 모임에 올라온 사진 — 첫 장과 전체 수. 없으면 null, 비로그인에게도 null */
+  photos: { cover: string; count: number } | null;
   comments: CommentView[];
 }
 
@@ -227,6 +236,8 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
       participantCount: countOf(partByPostId as Map<string, unknown[]>, p.id),
       settle: null,
       rating: null,
+      flyerUrl: null,
+      photos: null,
       comments: [],
       commentCount: countOf(cmtByPostId, p.id),
     }));
@@ -251,13 +262,16 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const commentIds = commentRows.map((c) => c.id);
   // 평점은 끝난 무비나잇에만 붙는다 — 나머지 모임까지 세면 대부분 빈 답을 받으러 가는 셈이다
   const ratableIds = postRows.filter((p) => ratable(shellOf(p))).map((p) => p.id);
+  // 사진도 끝난 모임에만 붙는다 — 예정 모임까지 세면 대부분 빈 답을 받으러 가는 셈이다
+  const pastIds = postRows.filter((p) => shellOf(p).isPast).map((p) => p.id);
 
-  const [userRows, hostCounts, settleByPost, likeRows, ratingByPost] = await Promise.all([
+  const [userRows, hostCounts, settleByPost, likeRows, ratingByPost, photoByPost] = await Promise.all([
     nameIds.size ? db.select(NAME_COLS).from(users).where(inArray(users.id, [...nameIds])) : [],
     hostCountsFor([...new Set(participantRows.map((p) => p.userId))]),
     settlementSummaries(myPostIds, viewerId),
     commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
     ratingSummaries(ratableIds, viewerId),
+    photoCovers(pastIds),
   ]);
   const userById = new Map(userRows.map((u) => [u.id, u]));
 
@@ -309,6 +323,8 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     participantCount: (byPost.get(p.id) ?? []).length,
     settle: settleByPost.get(p.id) ?? null,
     rating: ratingByPost.get(p.id) ?? null,
+    flyerUrl: p.flyerUrl ?? null,
+    photos: photoByPost.get(p.id) ?? null,
     comments: commentsByPost.get(p.id) ?? [],
     commentCount: (commentsByPost.get(p.id) ?? []).length,
   }));
@@ -693,6 +709,8 @@ export async function createPost(input: {
   location: string;
   description?: string;
   capacity?: number;
+  /** 모임 포스터 한 장 (Blob URL). 없으면 null */
+  flyerUrl?: string | null;
   recurringRuleId?: string; // 정기 모임 규칙에서 생성된 회차면 규칙 id
   amcShowtimeId?: string; // AMC 회차에서 만든 모임이면 그 회차 id
   visibility?: 'public' | 'link'; // 'link'면 구독자 알림을 보내지 않는다
@@ -754,6 +772,7 @@ export async function createPost(input: {
     location: input.location,
     description: input.description ?? null,
     capacity: input.capacity ?? null,
+    flyerUrl: input.flyerUrl ?? null,
     visibility: input.visibility ?? 'public',
   };
   const notificationValues = notice.rows.map((r) => ({
@@ -909,6 +928,8 @@ export async function updatePost(input: {
   location: string;
   description: string | null;
   capacity: number | null;
+  /** 모임 포스터 — 안 주면 그대로 둔다 (null이면 뗀다) */
+  flyerUrl?: string | null;
   /** 주지 않으면 지금 값을 그대로 둔다 */
   visibility?: 'public' | 'link';
   /** undefined면 그대로 두고, null이면 같이 여는 사람을 뗀다 */
@@ -953,6 +974,8 @@ export async function updatePost(input: {
     ...(input.allowNicknames !== undefined ? { allowNicknames: input.allowNicknames } : {}),
     description: input.description,
     capacity: input.capacity,
+    // 안 주면 그대로 둔다 — 플라이어를 안 건드리는 수정에서 사진이 사라지면 안 된다
+    ...(input.flyerUrl !== undefined ? { flyerUrl: input.flyerUrl } : {}),
   };
   const notificationValues = notice.rows.map((r) => ({
     id: crypto.randomUUID(),
@@ -1017,6 +1040,13 @@ export async function deletePost(
   silent = false
 ): Promise<void> {
   const db = await getDb();
+  /*
+   * 지울 파일 주소를 행이 사라지기 전에 모아 둔다.
+   * 플라이어는 posts 행에, 사진은 post_photos에 있고 둘 다 곧 CASCADE로 없어진다.
+   */
+  const [flyerRow] = await db.select({ flyerUrl: posts.flyerUrl }).from(posts).where(eq(posts.id, post.id));
+  const urls = [...(flyerRow?.flyerUrl ? [flyerRow.flyerUrl] : []), ...(await photoUrlsForPost(post.id))];
+
   const recipients = silent ? [] : await participantIdsExcept(post.id, actorId);
   const notice = await buildNotice(
     recipients,
@@ -1047,6 +1077,12 @@ export async function deletePost(
   }
 
   postsChanged();
+
+  /*
+   * 저장소에 있는 파일은 CASCADE가 모른다 — 행만 지워지고 파일은 남는다.
+   * 지울 목록은 행이 사라지기 전에 모아 뒀다 (아래 urls).
+   */
+  await deleteBlobs(urls);
 
   // 취소된 모임은 상세 페이지가 사라지므로 카테고리 피드로 링크
   if (origin && recipients.length > 0) {

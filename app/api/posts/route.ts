@@ -5,6 +5,7 @@ import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { createPost, listPosts } from '@/lib/db/posts';
+import { isOurBlobUrl } from '@/lib/photos';
 import { friendIds } from '@/lib/db/friends';
 import { createRecurringRule } from '@/lib/db/recurring';
 import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
@@ -114,6 +115,8 @@ export async function POST(req: NextRequest) {
     location,
     ...(description ? { description } : {}),
     ...(capacity !== undefined ? { capacity } : {}),
+    // 우리 저장소에서 나온 주소만 받는다 — 그대로 믿으면 남의 서버 그림을 모임에 걸 수 있다
+    ...(isOurBlobUrl(body?.flyerUrl) ? { flyerUrl: body.flyerUrl as string } : {}),
     // 비공개면 링크를 아는 사람만 볼 수 있다 (목록·구독 알림·홈 요약에서 빠진다)
     ...(body?.visibility === 'link' ? { visibility: 'link' as const } : {}),
     origin: siteUrl(req.nextUrl.origin),

@@ -16,6 +16,7 @@
     "@electric-sql/pglite": "^0.5.4",
     "@neondatabase/serverless": "^1.1.0",
     "@upstash/redis": "^1.38.0",
+    "@vercel/blob": "^2.6.1",
     "drizzle-orm": "^0.45.2",
     "next": "^15.3.0",
     "react": "^19.0.0",

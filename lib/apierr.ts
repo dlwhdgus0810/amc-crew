@@ -98,6 +98,21 @@ export const E = {
   },
   friendAlreadyIn: { ko: '이미 이 모임에 참가하고 있어요.', en: 'They’re already in this meetup.' },
   friendAddPast: { ko: '지난 모임에는 넣을 수 없어요.', en: 'You can’t add anyone to a past meetup.' },
+  photoClosed: {
+    ko: '모임이 끝난 뒤에 사진을 올릴 수 있어요.',
+    en: 'You can add photos once the meetup is over.',
+  },
+  photoParticipantOnly: {
+    ko: '이 모임에 참가한 사람만 사진을 올릴 수 있어요.',
+    en: 'Only someone who was at the meetup can add photos.',
+  },
+  photoOwnerOnly: {
+    ko: '올린 사람과 호스트만 지울 수 있어요.',
+    en: 'Only whoever added it, or a host, can remove it.',
+  },
+  photoNotFound: { ko: '사진을 찾을 수 없어요.', en: 'Photo not found.' },
+  photoFull: { ko: '사진이 가득 찼어요.', en: 'This meetup has all the photos it can hold.' },
+  photoBadUrl: { ko: '사진 주소가 올바르지 않아요.', en: 'That photo address isn’t valid.' },
   ratingClosed: {
     ko: '모임이 끝난 뒤에 평점을 매길 수 있어요.',
     en: 'You can rate this once the meetup is over.',

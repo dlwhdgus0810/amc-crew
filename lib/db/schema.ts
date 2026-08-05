@@ -111,6 +111,11 @@ export const posts = pgTable(
     location: text('location').notNull(),
     description: text('description'),
     capacity: integer('capacity'), // 정원. null이면 무제한
+    /**
+     * 모임 포스터 한 장 (쿠폰·안내문). Vercel Blob의 공개 URL이다.
+     * 회원에게만 내려간다 — buildViews의 로그인 분기에서만 채운다.
+     */
+    flyerUrl: text('flyer_url'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('posts_category_date_idx').on(t.category, t.date)]
@@ -169,6 +174,35 @@ export const commentLikes = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.commentId, t.userId] })]
+);
+
+/**
+ * 모임 끝나고 올리는 사진 — 한 모임에 여러 장, 여러 사람이.
+ *
+ * 사진은 Vercel Blob에 있고 여기에는 주소만 있다. 아바타를 data URL로 담았다가 겪은 일이
+ * lib/db/posts.ts:171에 적혀 있다 — 이건 그 교훈을 지킨 것이다.
+ *
+ * pathname을 따로 두는 이유: 지울 때 URL에서 다시 파싱하지 않기 위해서다.
+ * 파싱 규칙이 바뀌면 지울 수 없는 사진이 생긴다.
+ */
+export const postPhotos = pgTable(
+  'post_photos',
+  {
+    id: uuid('id').primaryKey(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    /** 올린 사람 */
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    url: text('url').notNull(),
+    pathname: text('pathname').notNull(),
+    width: integer('width'),
+    height: integer('height'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('post_photos_post_idx').on(t.postId, t.createdAt)]
 );
 
 /**

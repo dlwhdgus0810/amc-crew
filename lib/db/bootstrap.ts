@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS posts (
   location text NOT NULL,
   description text,
   capacity integer,
+  flyer_url text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS posts_category_date_idx ON posts (category, date);
@@ -89,6 +90,18 @@ CREATE TABLE IF NOT EXISTS comment_likes (
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (comment_id, user_id)
 );
+
+CREATE TABLE IF NOT EXISTS post_photos (
+  id uuid PRIMARY KEY,
+  post_id uuid NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id text NOT NULL REFERENCES users(id),
+  url text NOT NULL,
+  pathname text NOT NULL,
+  width integer,
+  height integer,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS post_photos_post_idx ON post_photos (post_id, created_at);
 
 CREATE TABLE IF NOT EXISTS post_ratings (
   post_id uuid NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
