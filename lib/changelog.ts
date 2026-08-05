@@ -31,6 +31,60 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-04T20:20',
+    title: { ko: '화면이 또 빨라졌어요', en: 'Screens got faster again' },
+    items: [
+      {
+        ko: '이제 모든 화면이 서버에서 다 그려진 채로 와요. 「불러오는 중…」을 보고 기다렸다가 내용이 뜨던 게 없어졌어요. 알림함이 마지막이었어요.',
+        en: 'Every screen now arrives fully drawn from the server — no more “Loading…” followed by the content popping in. Alerts was the last one.',
+      },
+      {
+        ko: '다 같이 보는 것(카테고리별 다음 모임, 주최·참가 순위)은 서버가 잠시 기억해 뒀다가 그대로 내줘요. 누가 모임을 만들거나 참가하면 그 자리에서 다시 세요.',
+        en: 'The things everyone sees the same way — each category’s next meetup, the two rankings — are held for a short while and reused. They’re recounted the moment someone creates or joins a meetup.',
+      },
+      {
+        ko: '무비나잇에서 날짜를 앞뒤로 넘길 때 상영표를 매번 다시 받지 않아요.',
+        en: 'Flipping between dates on Movie Night no longer re-downloads the showtimes each time.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-04T20:00',
+    title: { ko: '둘러보기를 2열로 볼 수 있어요', en: 'Browse in two columns' },
+    items: [
+      {
+        ko: '제목 줄 오른쪽 버튼으로 「한 줄」과 「바둑판(2열)」을 골라요. 고른 배열은 기억해 둬요.',
+        en: 'Two buttons at the right of the heading switch between one-per-row and a two-column grid. Your choice is remembered.',
+      },
+      {
+        ko: '2열에서는 카드가 좁아서, 카테고리 그림이 왼쪽 위로 올라가고 ★·🔔은 동그란 테두리 없이 아이콘만 보여요. 켜 둔 것은 하얗게 채워져요.',
+        en: 'In the grid the cards are half as wide, so the category icon moves to the top left and ★/🔔 lose their round outlines — just the icons, filled white when they’re on.',
+      },
+      {
+        ko: '카드 열세 장의 색을 같은 밝기로 맞췄어요. 빨강·파랑·보라·분홍만 유독 튀던 게 가라앉아요.',
+        en: 'All thirteen cards were levelled to the same brightness — the reds, blues, purples and pinks no longer jump out on their own.',
+      },
+      {
+        ko: '카드 아래 다음 일정에 날짜가 붙어요. 「토 오후 6:00」이 「8/8(토) 오후 6:00」이 됐어요 — 이번 주 토요일인지 다음 주인지 헷갈리지 않아요.',
+        en: 'The next-meetup line now carries the date: “Sat 6:00 PM” became “Sat Aug 8 6:00 PM”, so you can tell this Saturday from next.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-04T19:40',
+    title: { ko: '무비나잇 모임 카드에 포스터가 붙어요', en: 'Posters on Movie Night meetup cards' },
+    items: [
+      {
+        ko: '무비나잇 모임 카드 오른쪽에 그 영화 포스터가 보여요.',
+        en: 'Movie Night meetup cards now show the film’s poster on the right.',
+      },
+      {
+        ko: '포스터를 누르면 크게 볼 수 있어요. 상영표에서와 똑같아요.',
+        en: 'Tap it to see it full size — same as in the showtimes list.',
+      },
+    ],
+  },
+  {
     at: '2026-08-04T19:10',
     title: { ko: '순위는 모임이 끝난 뒤에 올라가요', en: 'Points land after the meetup' },
     items: [
