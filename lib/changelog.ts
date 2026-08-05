@@ -31,6 +31,33 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-05T15:20',
+    notable: true,
+    title: { ko: '모임에 사진을 올릴 수 있어요', en: 'Photos on meetups' },
+    items: [
+      {
+        ko: '정재호 님이 건의한 기능이에요. 모임을 만들 때 안내문이나 쿠폰 같은 포스터를 한 장 올릴 수 있어요.',
+        en: 'Suggested by 정재호. When you create a meetup you can attach one poster — a flyer, a coupon, whatever.',
+      },
+      {
+        ko: '모임이 끝나면 그날 찍은 사진을 올릴 수 있어요. 그 모임에 있던 사람이면 누구나요.',
+        en: 'Once a meetup is over, anyone who was there can add the photos from that day.',
+      },
+      {
+        ko: '모임 카드에는 한 장만 보여요. 누르면 크게 뜨고 좌우로 넘겨서 나머지를 봐요. 사진이 없는 모임은 지금과 똑같이 보여요.',
+        en: 'The card shows just one. Tap it to open it big and swipe through the rest. Meetups without photos look exactly as they do now.',
+      },
+      {
+        ko: '사진은 로그인한 회원에게만 보여요. 주소를 알아도 로그인 없이는 열리지 않으니, 비공개 모임 사진도 밖으로 새지 않아요.',
+        en: 'Photos are for logged-in members only. Knowing the address isn’t enough to open one, so photos from private meetups stay in.',
+      },
+      {
+        ko: '올린 사람과 호스트는 언제든 지울 수 있어요. 아이폰 사진이 안 올라가면 설정 › 카메라 › 포맷을 「높은 호환성」으로 바꿔주세요.',
+        en: 'Whoever added a photo — and the host — can remove it any time. If an iPhone photo won’t upload, switch Settings › Camera › Formats to “Most Compatible”.',
+      },
+    ],
+  },
+  {
     at: '2026-08-05T01:30',
     notable: true,
     title: { ko: '영화 보고 나서 우리끼리 평점을 매겨요', en: 'Rate the film once you’ve seen it' },
