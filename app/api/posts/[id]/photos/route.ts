@@ -4,7 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView, isParticipant } from '@/lib/db/posts';
 import { addPhoto, countPhotos } from '@/lib/db/photos';
-import { canAddPhotos, isOurBlobUrl, MAX_PHOTOS_PER_POST } from '@/lib/photos';
+import { canAddPhotos, MAX_PHOTOS_PER_POST, pathAllowed } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +34,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if ((await countPhotos(id)) >= MAX_PHOTOS_PER_POST) return await errJson(E.photoFull, 400);
 
   const body = await req.json().catch(() => null);
-  if (!isOurBlobUrl(body?.url) || typeof body?.pathname !== 'string') {
+  /*
+   * 경로가 이 모임 자리인지 다시 본다. 토큰을 내줄 때 한 번 봤지만, 여기 오는 값은
+   * 브라우저가 보내는 것이라 그대로 믿으면 남의 모임 사진을 이 모임에 매달 수 있다.
+   */
+  if (typeof body?.pathname !== 'string' || !pathAllowed(body.pathname, 'photo', id)) {
     return await errJson(E.photoBadUrl, 400);
   }
   const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : null);
@@ -42,7 +46,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const photoId = await addPhoto({
     postId: id,
     userId: user.id,
-    url: body.url,
     pathname: body.pathname,
     width: num(body.width),
     height: num(body.height),

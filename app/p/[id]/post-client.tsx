@@ -52,6 +52,7 @@ import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread from '../../comment-thread';
 import SettlementPanel from '../../settlement-panel';
 import RatingPanel from '../../rating-panel';
+import PhotoPanel from '../../photo-panel';
 import { siteUrl } from '@/lib/site';
 import { useRefreshSession, useViewer } from '../../session';
 
@@ -115,6 +116,8 @@ export interface PostInitial {
   origin: string;
   /** 누가 몇 점 줬는지 (무비나잇이고 끝난 모임일 때만 채워진다) */
   ratings: { userId: string; score: number }[];
+  /** 모임 사진 (끝난 모임 + 로그인일 때만) */
+  photos: { id: string; userId: string; url: string }[];
 }
 
 export default function PostClient({ id, initial }: { id: string; initial: PostInitial }) {
@@ -361,6 +364,19 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           scores={initial.ratings}
           participants={post.participants.map((p) => ({ id: p.id, name: p.name }))}
           {...(user ? { currentUserId: user.id } : {})}
+        />
+      )}
+
+      {/* 사진은 끝난 모임에만 — 판정은 서버가 한다 */}
+      {post.isPast && user && (
+        <PhotoPanel
+          postId={post.id}
+          photos={initial.photos}
+          participants={post.participants.map((p) => ({ id: p.id, name: p.name }))}
+          isHost={post.authorId === user.id || post.coHost?.id === user.id}
+          isAdmin={isAdmin}
+          currentUserId={user.id}
+          label={`${catLabel}${post.title ? ` 〈${post.title}〉` : ''}`}
         />
       )}
 

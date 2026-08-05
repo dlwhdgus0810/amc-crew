@@ -32,6 +32,9 @@ import {AddFriendSheet, FriendRequestSheet, Person, Tie} from '../../friend-shee
 import {siteUrl} from '@/lib/site';
 import {formatCents} from '@/lib/money';
 import { formatScore } from '@/lib/ratings';
+import { upload } from '@vercel/blob/client';
+import { shrinkToJpeg, UnreadableImageError } from '@/lib/photo-client';
+import { flyerPath } from '@/lib/photos';
 import {useRefreshSession, useViewer} from '../../session';
 import {usePosterZoom} from '../../poster-zoom';
 
@@ -102,6 +105,19 @@ const T = {
   emptyPast: { ko: '아직 지난 모임이 없어요.', en: 'No past meetups yet.' },
   secWhen: { ko: '언제', en: 'When' },
   secWhere: { ko: '어디서', en: 'Where' },
+  secFlyer: { ko: '포스터 (선택)', en: 'Poster (optional)' },
+  flyerPick: { ko: '사진 고르기', en: 'Choose a photo' },
+  flyerBusy: { ko: '올리는 중…', en: 'Uploading…' },
+  flyerClear: { ko: '떼기', en: 'Remove' },
+  flyerHint: {
+    ko: '안내문이나 쿠폰 한 장. 모임 카드에 같이 보여요.',
+    en: 'One flyer or coupon — it shows on the meetup card.',
+  },
+  flyerFailed: { ko: '올리지 못했어요.', en: 'Couldn’t upload that.' },
+  flyerHeic: {
+    ko: '이 사진 형식(HEIC)은 못 읽어요. 아이폰 설정 › 카메라 › 포맷을 「높은 호환성」으로 바꿔주세요.',
+    en: 'That photo format (HEIC) can’t be read. Switch iPhone Settings › Camera › Formats to “Most Compatible”.',
+  },
   secWho: { ko: '함께', en: 'Who' },
   secTitle: { ko: '무엇을', en: 'What' },
   fieldDate: { ko: '날짜', en: 'Date' },
@@ -222,6 +238,10 @@ interface PostView {
   settle: { exists: boolean; myCents: number | null; iAmPayee: boolean } | null;
   /** 우리 평점 요약 — 끝난 무비나잇에만 붙는다 */
   rating: { average: number | null; count: number; mine: number | null } | null;
+  /** 만들 때 올린 포스터 한 장 (Blob URL) */
+  flyerUrl: string | null;
+  /** 끝난 모임에 올라온 사진 — 넘겨 볼 몇 장과 실제 전체 장수 */
+  photos: { urls: string[]; count: number } | null;
   comments: CommentView[];
 }
 
@@ -315,6 +335,42 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const [fCoHost, setFCoHost] = useState<string | null>(null);
   /** 이 모임에서 닉네임을 허용할지 (기본 실명) */
   const [fNick, setFNick] = useState(false);
+  /**
+   * 모임 포스터. 만들기 전에 올려 두고 저장할 때 **경로**를 넘긴다.
+   *
+   * 값이 셋이다 — undefined는 「그대로 둔다」(수정할 때 안 건드린 경우), 문자열은 새로 올린
+   * 경로, null은 「뗀다」. 이 셋을 뭉뜨그리면 딴 데를 고칠 때마다 포스터가 사라진다.
+   *
+   * 미리보기는 따로 둔다: 새로 올린 것은 방금 고른 파일로, 수정 화면에서는 서버가 서명해
+   * 준 주소로 그린다. 저장 전에는 경로만으로 그림을 띄울 수 없다(비공개 스토어라서).
+   */
+  const [fFlyer, setFFlyer] = useState<string | null | undefined>(undefined);
+  const [fFlyerPreview, setFFlyerPreview] = useState<string | null>(null);
+  const [fFlyerBusy, setFFlyerBusy] = useState(false);
+
+  /** 포스터 한 장 올리기 — 바이트는 저장소로 곧장 가고, 주소만 폼이 들고 있는다 */
+  async function pickFlyer(file: File | undefined) {
+    if (!file) return;
+    setFFlyerBusy(true);
+    setMsg(null);
+    try {
+      const { blob } = await shrinkToJpeg(file);
+      const put = await upload(flyerPath(user!.id, crypto.randomUUID()), blob, {
+        access: 'private',
+        handleUploadUrl: '/api/blob/upload',
+        contentType: 'image/jpeg',
+        clientPayload: JSON.stringify({ kind: 'flyer' }),
+      });
+      setFFlyer(put.pathname);
+      setFFlyerPreview(URL.createObjectURL(blob));
+    } catch (e) {
+      setMsg({
+        type: 'err',
+        text: e instanceof UnreadableImageError ? t(T.flyerHeic) : e instanceof Error ? e.message : t(T.flyerFailed),
+      });
+    }
+    setFFlyerBusy(false);
+  }
 
   function resetForm() {
     setFTitle('');
@@ -331,6 +387,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFInvite(new Set());
     setFCoHost(null);
     setFNick(false);
+    setFFlyer(undefined);
+    setFFlyerPreview(null);
   }
 
   // 지난 모임
@@ -452,6 +510,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           capacity: fCapacity || undefined,
           ...(fCoHost ? { coHostId: fCoHost } : {}),
           allowNicknames: fNick,
+          ...(fFlyer ? { flyerPath: fFlyer } : {}),
           repeatWeekly: fRepeat,
           visibility: fPrivate ? 'link' : 'public',
           ...(fPrivate && !fRepeat ? { inviteFriendIds: [...fInvite] } : {}),
@@ -498,6 +557,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFCapacity(post.capacity != null ? String(post.capacity) : '');
     setFCoHost(post.coHost?.id ?? null);
     setFNick(post.allowNicknames);
+    // 안 건드리면 그대로 둔다 — 미리보기만 서버가 서명해 준 주소로 채운다
+    setFFlyer(undefined);
+    setFFlyerPreview(post.flyerUrl);
     setFPrivate(post.visibility === 'link');
   }
 
@@ -520,6 +582,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           capacity: fCapacity || undefined,
           coHostId: fCoHost,
           allowNicknames: fNick,
+          ...(fFlyer !== undefined ? { flyerPath: fFlyer } : {}),
           visibility: fPrivate ? 'link' : 'public',
         }),
       });
@@ -953,6 +1016,46 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             />
           </div>
 
+          {/*
+            * 포스터 한 장. 저장 버튼을 누르기 전에 올려 두고 주소만 들고 있는다 —
+            * 만들기 전에는 postId가 없어서 「이 모임의 사진」으로 매달 수가 없다.
+            * 저장을 취소하면 주인 없는 파일이 하나 남고, 그건 청소가 걷어간다.
+            */}
+          <div className="form-section">
+            <div className="field-label">{t(T.secFlyer)}</div>
+            {fFlyerPreview ? (
+              <div className="title-meta-box">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={fFlyerPreview} alt="" style={{ width: 54, borderRadius: 8 }} />
+                <button
+                  className="link-btn danger-text"
+                  style={{ marginLeft: 'auto' }}
+                  onClick={() => {
+                    setFFlyer(null);
+                    setFFlyerPreview(null);
+                  }}
+                >
+                  {t(T.flyerClear)}
+                </button>
+              </div>
+            ) : (
+              <label className="secondary photo-pick">
+                {fFlyerBusy ? t(T.flyerBusy) : t(T.flyerPick)}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  disabled={fFlyerBusy}
+                  onChange={(e) => {
+                    void pickFlyer(e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            )}
+            <div className="hint" style={{ marginTop: 6 }}>{t(T.flyerHint)}</div>
+          </div>
+
           <div className="form-section">
             <div className="field-label">{t(T.secWho)}</div>
             <input
@@ -1088,6 +1191,32 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     const commentsOpen = openComments.has(post.id);
     const peopleOpen = openPeople.has(post.id);
     const canJoin = !past && (!mine || post.recurringRuleId);
+
+    /*
+     * 카드에 실을 그림 한 장과, 눌렀을 때 넘겨 볼 목록.
+     *
+     * 끝난 모임에 사진이 있으면 사진이 앞선다 — 플라이어는 가기 전에 보는 안내문이고,
+     * 끝난 뒤 목록에서 찾는 것은 「그때 뭐 했더라」다. 플라이어는 목록 맨 끝에 그대로 남는다.
+     * 목록 화면은 사진을 한 장(cover)만 들고 있어서, 나머지는 상세에서 본다.
+     */
+    const label = post.title ? `〈${post.title}〉` : category ? t(category.name) : "";
+    const extras: { src: string; name: string }[] = [
+      ...(post.flyerUrl ? [{ src: post.flyerUrl, name: label }] : []),
+      ...(post.titleMeta?.posterPath
+        ? [{ src: `${TMDB_IMG}/w500${post.titleMeta.posterPath}`, name: post.titleMeta.title || label }]
+        : []),
+    ];
+    const art =
+      past && post.photos
+        ? {
+            thumb: post.photos.urls[0]!,
+            items: [...post.photos.urls.map((src) => ({ src, name: label })), ...extras],
+            // 배지는 실제 전체 장수다 — 카드가 들고 온 것보다 많을 수 있다
+            count: post.photos.count,
+          }
+        : extras.length > 0
+          ? { thumb: extras[0]!.src, items: extras, count: extras.length }
+          : null;
     // 이름 줄을 얼굴로 바꾼 만큼 자리가 넉넉해져 10명까지 보여준다 (겹쳐 놓아서 폭은 얼마 안 든다)
     const shown = post.participants.slice(0, 10);
     const left = post.capacity != null ? post.capacity - post.participantCount : null;
@@ -1103,7 +1232,13 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           * 아래의 참여자·댓글은 전폭을 그대로 쓴다. 카드 전체를 둘로 쪼개면 댓글이
           * 포스터 너비만큼 좁아진 채로 길게 이어진다.
           */}
-        <div className={post.titleMeta?.posterPath ? 'post-head has-poster' : 'post-head'}>
+        {/*
+          * 카드에 실리는 그림은 한 장뿐이다. 후보가 셋이라 순서를 정해 둔다 —
+          * 모임이 끝나기 전에는 「뭘 하러 가나」(플라이어·영화 포스터), 끝난 뒤에는
+          * 「뭘 했나」(단체사진)가 궁금하다. 그래서 끝난 모임에서는 사진이 앞선다.
+          * 자리는 그대로라 카드 높이도 폭도 안 변한다.
+          */}
+        <div className={art ? 'post-head has-poster' : 'post-head'}>
           <div className="post-head-text">
             <div className="post-when">
               {to12h(post.startTime)}
@@ -1141,18 +1276,19 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             </div>
             {post.description && <div className="post-desc">“{post.description}”</div>}
           </div>
-          {post.titleMeta?.posterPath &&
+          {art && (
             /* 눌러서 크게 볼 수 있다 — 카드에 실리는 건 62px짜리라 얼굴을 알아보기 어렵다 */
-            zoom.trigger(
-              `${TMDB_IMG}/w500${post.titleMeta.posterPath}`,
-              post.titleMeta.title || post.title || '',
-              <img
-                className="post-poster"
-                src={`${TMDB_IMG}/w154${post.titleMeta.posterPath}`}
-                alt=""
-                loading="lazy"
-              />
-            )}
+            <span className="post-art">
+              {zoom.triggerAt(
+                art.items,
+                0,
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="post-poster" src={art.thumb} alt="" loading="lazy" />
+              )}
+              {/* 더 있다는 표시 — 사진 위에 겹쳐서 폭을 안 먹는다 */}
+              {art.count > 1 && <span className="post-shot-count">{art.count}</span>}
+            </span>
+          )}
         </div>
 
         {/* 참여자 — 눌러서 전체 명단을 펼친다 */}

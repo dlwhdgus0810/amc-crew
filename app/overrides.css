@@ -1384,3 +1384,50 @@ h2 {
 .remind-amount { flex: none; font-family: var(--mono); font-size: 12px; color: var(--text-mid); }
 /* 마지막으로 보낸 시각 — 읽는 값이라 가장 여리게 */
 .remind-when { flex: none; font-size: 11px; color: var(--text-dim); min-width: 62px; text-align: right; }
+
+/* ── 여러 장 넘겨 보기 (app/poster-zoom.tsx) ─────────────────
+   한 장짜리 확대는 예전 그대로고, 두 장 이상일 때만 좌우 버튼과 장수가 나온다. */
+.poster-zoom-count {
+  position: absolute; top: 14px; left: 0; right: 0; text-align: center;
+  color: #e8ece7; font-family: var(--mono); font-size: 12px; pointer-events: none;
+}
+.poster-zoom-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; min-height: 0; padding: 0; border: none;
+  border-radius: 999px; background: rgba(255, 255, 255, 0.16); color: #fff;
+  font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(2px); cursor: pointer;
+}
+.poster-zoom-nav.prev { left: 10px; }
+.poster-zoom-nav.next { right: 10px; }
+.poster-zoom-nav:disabled { opacity: 0.25; cursor: default; }
+
+/* ── 모임 사진 (app/photo-panel.tsx, 카드의 사진 자리) ────────
+   카드에는 한 장만 — 포스터가 쓰던 자리를 그대로 쓴다. 여러 장이면 모서리에 장수를 얹는다.
+   자리가 안 늘어나는 게 이 방식의 핵심이라, 배지는 폭을 먹지 않게 사진 위에 겹친다. */
+.post-art { position: relative; flex: none; width: 62px; }
+.post-shot-count {
+  position: absolute; right: 4px; bottom: 4px;
+  min-width: 20px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: rgba(20, 24, 20, 0.72); color: #fff;
+  font-family: var(--mono); font-size: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(2px); pointer-events: none;
+}
+
+/* 모임 상세의 사진 패널 — 여기서는 격자로 관리한다 (올리기·지우기) */
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
+.photo-cell { position: relative; }
+.photo-cell .poster-btn { display: block; width: 100%; }
+.photo-cell img {
+  width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px;
+  background: var(--border); display: block;
+}
+.photo-del {
+  position: absolute; top: 4px; right: 4px;
+  width: 24px; height: 24px; min-height: 0; padding: 0; border: none;
+  border-radius: 999px; background: rgba(20, 24, 20, 0.62); color: #fff;
+  font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.photo-pending { opacity: 0.45; }

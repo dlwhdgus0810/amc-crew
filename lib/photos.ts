@@ -20,22 +20,6 @@ export function canAddPhotos(post: { isPast: boolean }): boolean {
   return post.isPast;
 }
 
-/**
- * 우리 저장소에서 나온 주소인지.
- *
- * 브라우저가 올린 뒤 「이 주소를 붙여 주세요」라고 알려주는 구조라, 주소를 그대로 믿으면
- * 남의 서버 그림을 모임에 걸 수 있다. 저장할 때 이걸로 한 번 거른다.
- */
-export function isOurBlobUrl(url: unknown): url is string {
-  if (typeof url !== 'string') return false;
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' && u.hostname.endsWith('.public.blob.vercel-storage.com');
-  } catch {
-    return false;
-  }
-}
-
 /*
  * 저장 경로.
  *
@@ -57,13 +41,18 @@ export function flyerPath(userId: string, uuid: string): string {
   return `${devPrefix()}flyers/${userId}/${uuid}.jpg`;
 }
 
-/** 토큰을 내주기 전에 경로를 다시 확인한다 — 토큰이 그 경로에 묶이므로 여기가 관문이다 */
+/**
+ * 경로가 제자리인지 확인한다. 두 번 쓴다 — 토큰을 내주기 전(그 경로에 토큰이 묶인다)과
+ * 「이 사진을 이 모임에 붙여 주세요」를 받을 때. 뒤쪽은 브라우저가 보내는 값이라 꼭 다시 본다.
+ *
+ * 끝의 `-xxxxx`는 저장소가 붙이는 무작위 접미사다(addRandomSuffix). 우리가 이미 uuid를
+ * 넣으므로 겹칠 일은 없지만, 실수로 같은 경로에 두 번 올려 덮어쓰는 것을 막아 준다.
+ * 그래서 켜 두고 여기서 받아들인다 — 빼면 이 검사가 전부 실패한다.
+ */
 export function pathAllowed(pathname: string, kind: 'photo' | 'flyer', ownerId: string): boolean {
   const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+  const suffix = '(-[A-Za-z0-9]+)?';
   const prefix = devPrefix().replace('/', '\\/');
-  const re =
-    kind === 'photo'
-      ? new RegExp(`^${prefix}photos\\/${ownerId}\\/${uuid}\\.jpg$`)
-      : new RegExp(`^${prefix}flyers\\/${ownerId}\\/${uuid}\\.jpg$`);
-  return re.test(pathname);
+  const folder = kind === 'photo' ? 'photos' : 'flyers';
+  return new RegExp(`^${prefix}${folder}\\/${ownerId}\\/${uuid}${suffix}\\.jpg$`).test(pathname);
 }

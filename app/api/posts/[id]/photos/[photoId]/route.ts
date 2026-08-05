@@ -32,6 +32,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
 
   await deletePhotoRow(photoId);
-  await deleteBlobs([photo.url]);
+  await deleteBlobs([photo.pathname]);
   return NextResponse.json({ ok: true });
 }

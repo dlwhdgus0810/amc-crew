@@ -1,12 +1,15 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { getDb } from './index';
 import { postPhotos } from './schema';
+import { signedUrls } from '../blob';
 
 /**
  * 모임 사진 — DB 쪽.
  *
- * 사진 자체는 Vercel Blob에 있고 여기에는 주소만 있다.
- * 지우는 것은 두 곳(행과 파일)이라 부르는 쪽이 순서를 지켜야 한다 — 아래 deletePhoto 참고.
+ * 사진 자체는 Vercel Blob에 있고 여기에는 경로만 있다. 스토어가 비공개라 주소는 서명해야
+ * 열리고 유효기간이 있어서, 밖으로 내보낼 때 그때그때 서명해 준다.
+ *
+ * 지우는 것은 두 곳(행과 파일)이라 부르는 쪽이 순서를 지켜야 한다 — 행 먼저, 파일 나중.
  */
 
 export interface PhotoView {
@@ -19,42 +22,41 @@ export interface PhotoView {
 }
 
 /**
- * 여러 모임의 사진 수를 한 번에.
- * 목록 화면이 모임마다 따로 묻지 않도록 정산·평점 요약과 같은 모양으로 둔다.
+ * 카드가 쓰는 사진 묶음 — 첫 장(카드에 실리는 것)과 넘겨 볼 나머지.
+ *
+ * 카드에는 한 장만 보이지만 누르면 넘겨 봐야 하므로 주소를 여러 개 들고 간다.
+ * 다만 무한정은 아니다: 서명 주소 한 줄이 500자 남짓이라, 지난 모임 30개에 60장씩이면
+ * 목록 응답이 통째로 무거워진다. 그래서 앞의 몇 장만 싣고 나머지는 상세에서 본다.
+ * count는 자른 수가 아니라 **실제 전체 장수**다 — 카드 배지가 그걸 보여줘야 한다.
  */
-export async function photoCounts(postIds: string[]): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
+const STRIP_LIMIT = 10;
+
+export async function photoStrips(postIds: string[]): Promise<Map<string, { urls: string[]; count: number }>> {
+  const out = new Map<string, { urls: string[]; count: number }>();
   if (postIds.length === 0) return out;
 
   const db = await getDb();
   const rows = await db
-    .select({ postId: postPhotos.postId, url: postPhotos.url })
-    .from(postPhotos)
-    .where(inArray(postPhotos.postId, postIds));
-  for (const r of rows) out.set(r.postId, (out.get(r.postId) ?? 0) + 1);
-  return out;
-}
-
-/**
- * 카드에 한 장만 띄우기 위한 「첫 사진」 — 모임마다 가장 먼저 올라온 것.
- * 수와 함께 필요해서 같은 질의에서 뽑는다.
- */
-export async function photoCovers(postIds: string[]): Promise<Map<string, { cover: string; count: number }>> {
-  const out = new Map<string, { cover: string; count: number }>();
-  if (postIds.length === 0) return out;
-
-  const db = await getDb();
-  const rows = await db
-    .select({ postId: postPhotos.postId, url: postPhotos.url })
+    .select({ postId: postPhotos.postId, pathname: postPhotos.pathname })
     .from(postPhotos)
     .where(inArray(postPhotos.postId, postIds))
     .orderBy(asc(postPhotos.createdAt));
 
+  const byPost = new Map<string, string[]>();
   for (const r of rows) {
-    const prev = out.get(r.postId);
-    // 올라온 순서라 처음 만난 것이 곧 첫 장이다
-    if (!prev) out.set(r.postId, { cover: r.url, count: 1 });
-    else prev.count += 1;
+    const list = byPost.get(r.postId) ?? [];
+    list.push(r.pathname);
+    byPost.set(r.postId, list);
+  }
+
+  // 서명은 실을 것만 — 자른 뒤의 것까지 서명하면 그만큼이 그대로 낭비다
+  const toSign = [...byPost.values()].flatMap((list) => list.slice(0, STRIP_LIMIT));
+  const signed = await signedUrls(toSign);
+
+  for (const [postId, list] of byPost) {
+    const urls = list.slice(0, STRIP_LIMIT).map((p) => signed.get(p)).filter((u): u is string => Boolean(u));
+    // 한 장도 서명을 못 만들었으면 아예 안 내보낸다 — 깨진 그림을 띄우는 것보다 낫다
+    if (urls.length) out.set(postId, { urls, count: list.length });
   }
   return out;
 }
@@ -67,14 +69,17 @@ export async function listPhotos(postId: string): Promise<PhotoView[]> {
     .from(postPhotos)
     .where(eq(postPhotos.postId, postId))
     .orderBy(asc(postPhotos.createdAt));
-  return rows.map((r) => ({
-    id: r.id,
-    userId: r.userId,
-    url: r.url,
-    width: r.width,
-    height: r.height,
-    createdAt: r.createdAt.toISOString(),
-  }));
+  const signed = await signedUrls(rows.map((r) => r.pathname));
+  return rows
+    .map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      url: signed.get(r.pathname) ?? '',
+      width: r.width,
+      height: r.height,
+      createdAt: r.createdAt.toISOString(),
+    }))
+    .filter((p) => p.url);
 }
 
 export async function countPhotos(postId: string): Promise<number> {
@@ -86,7 +91,6 @@ export async function countPhotos(postId: string): Promise<number> {
 export async function addPhoto(input: {
   postId: string;
   userId: string;
-  url: string;
   pathname: string;
   width: number | null;
   height: number | null;
@@ -106,7 +110,8 @@ export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: 
     id: r.id,
     postId: r.postId,
     userId: r.userId,
-    url: r.url,
+    // 지울 때 쓰는 값이라 서명하지 않는다 (del은 경로를 받는다)
+    url: '',
     pathname: r.pathname,
     width: r.width,
     height: r.height,
@@ -119,16 +124,16 @@ export async function deletePhotoRow(photoId: string): Promise<void> {
   await db.delete(postPhotos).where(and(eq(postPhotos.id, photoId)));
 }
 
-/** 모임을 지울 때 같이 지울 파일 주소들 — CASCADE는 행만 지우고 저장소는 모른다 */
-export async function photoUrlsForPost(postId: string): Promise<string[]> {
+/** 모임을 지울 때 같이 지울 파일 경로들 — CASCADE는 행만 지우고 저장소는 모른다 */
+export async function photoPathsForPost(postId: string): Promise<string[]> {
   const db = await getDb();
-  const rows = await db.select({ url: postPhotos.url }).from(postPhotos).where(eq(postPhotos.postId, postId));
-  return rows.map((r) => r.url);
+  const rows = await db.select({ pathname: postPhotos.pathname }).from(postPhotos).where(eq(postPhotos.postId, postId));
+  return rows.map((r) => r.pathname);
 }
 
 /** 청소가 「주인 있는 파일」을 가려내는 데 쓴다 */
-export async function allPhotoUrls(): Promise<string[]> {
+export async function allPhotoPaths(): Promise<string[]> {
   const db = await getDb();
-  const rows = await db.select({ url: postPhotos.url }).from(postPhotos);
-  return rows.map((r) => r.url);
+  const rows = await db.select({ pathname: postPhotos.pathname }).from(postPhotos);
+  return rows.map((r) => r.pathname);
 }

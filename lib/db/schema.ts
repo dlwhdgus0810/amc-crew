@@ -112,10 +112,13 @@ export const posts = pgTable(
     description: text('description'),
     capacity: integer('capacity'), // 정원. null이면 무제한
     /**
-     * 모임 포스터 한 장 (쿠폰·안내문). Vercel Blob의 공개 URL이다.
-     * 회원에게만 내려간다 — buildViews의 로그인 분기에서만 채운다.
+     * 모임 포스터 한 장 (쿠폰·안내문). 저장소 안의 경로다.
+     *
+     * 주소가 아니라 경로를 담는다 — 스토어가 비공개라 주소는 서명해야 열리고, 서명은
+     * 유효기간이 있어 담아 둘 수가 없다. 화면에 그릴 때마다 이 경로로 새로 서명한다.
+     * 지울 때도 경로를 그대로 쓴다(del은 경로를 받는다).
      */
-    flyerUrl: text('flyer_url'),
+    flyerPath: text('flyer_path'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('posts_category_date_idx').on(t.category, t.date)]
@@ -182,8 +185,7 @@ export const commentLikes = pgTable(
  * 사진은 Vercel Blob에 있고 여기에는 주소만 있다. 아바타를 data URL로 담았다가 겪은 일이
  * lib/db/posts.ts:171에 적혀 있다 — 이건 그 교훈을 지킨 것이다.
  *
- * pathname을 따로 두는 이유: 지울 때 URL에서 다시 파싱하지 않기 위해서다.
- * 파싱 규칙이 바뀌면 지울 수 없는 사진이 생긴다.
+ * 담는 것은 주소가 아니라 경로다 — 스토어가 비공개라 주소는 서명해야 열리고 유효기간이 있다.
  */
 export const postPhotos = pgTable(
   'post_photos',
@@ -196,7 +198,7 @@ export const postPhotos = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id),
-    url: text('url').notNull(),
+    /** 저장소 안의 경로. 서명(읽기)과 삭제 둘 다 이걸 쓴다 */
     pathname: text('pathname').notNull(),
     width: integer('width'),
     height: integer('height'),

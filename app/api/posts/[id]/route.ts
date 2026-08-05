@@ -5,7 +5,7 @@ import { friendIds } from '@/lib/db/friends';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, notifyCoHost, updatePost } from '@/lib/db/posts';
-import { isOurBlobUrl } from '@/lib/photos';
+import { pathAllowed } from '@/lib/photos';
 import { deleteBlobs } from '@/lib/blob';
 import { getCategory } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
@@ -141,11 +141,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
    * 플라이어: 아예 안 보내면 그대로 두고, null이면 뗀다.
    * 그래서 undefined와 null을 구분해야 한다 — 셋을 뭉뚱그리면 딴 데를 고칠 때마다 사진이 사라진다.
    */
-  const flyerUrl =
-    body?.flyerUrl === undefined
+  const flyerPath =
+    body?.flyerPath === undefined
       ? undefined
-      : isOurBlobUrl(body.flyerUrl)
-        ? (body.flyerUrl as string)
+      : typeof body.flyerPath === 'string' && pathAllowed(body.flyerPath, 'flyer', user.id)
+        ? body.flyerPath
         : null;
 
   const newCoHost = coHostId !== undefined && coHostId !== post.coHostId ? coHostId : null;
@@ -161,10 +161,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     (body?.visibility === undefined || body.visibility === post.visibility) &&
     (typeof body?.allowNicknames !== 'boolean' || body.allowNicknames === post.allowNicknames) &&
     // 플라이어만 바꾼 것도 「변경 알림」이 나갈 일이 아니다 — 시간도 장소도 그대로다
-    (flyerUrl === undefined || flyerUrl === post.flyerUrl);
+    (flyerPath === undefined || flyerPath === post.flyerPath);
 
   await updatePost({
-    ...(flyerUrl !== undefined ? { flyerUrl } : {}),
+    ...(flyerPath !== undefined ? { flyerPath } : {}),
     postId: id,
     category: post.category,
     actorId: user.id,
@@ -190,8 +190,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
    * 갈아치운 옛 플라이어는 저장소에서도 지운다. 반드시 저장이 끝난 **뒤**에 —
    * 먼저 지웠다가 저장이 실패하면 화면에 아직 걸려 있는 사진을 없앤 꼴이 된다.
    */
-  if (flyerUrl !== undefined && post.flyerUrl && post.flyerUrl !== flyerUrl) {
-    await deleteBlobs([post.flyerUrl]);
+  if (flyerPath !== undefined && post.flyerPath && post.flyerPath !== flyerPath) {
+    await deleteBlobs([post.flyerPath]);
   }
 
   /*

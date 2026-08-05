@@ -60,6 +60,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
 
         return {
+          /*
+           * 비공개 스토어다 — 주소를 알아도 서명 없이는 403이다.
+           * 그래서 비공개 모임 사진이 링크만으로 열리는 일이 없다. 대신 화면에 그릴 때마다
+           * 서버가 서명해 준다 (lib/blob.ts).
+           */
+          access: 'private' as const,
           // 브라우저가 canvas로 항상 다시 굽는다 — 고른 파일이 그대로 올라가는 일은 없다
           allowedContentTypes: ['image/jpeg'],
           maximumSizeInBytes: MAX_UPLOAD_BYTES,
