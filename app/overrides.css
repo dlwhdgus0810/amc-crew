@@ -1318,20 +1318,46 @@ h2 {
    머리 부분만 가로로 나눈다 — 왼쪽 글, 오른쪽 포스터.
    아래 참여자·댓글은 전폭을 쓴다. */
 .post-head.has-poster {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  /*
+   * 그림이 카드 높이를 **정하지 못하게** 한다.
+   *
+   * 예전에는 flex-start에 2:3(62×93)을 박아 둬서, 글이 두 줄뿐인 카드(시각 + 장소)에서는
+   * 그림 쪽이 더 길어 카드가 40px 가까이 늘어났다. stretch로 바꿔도 안 됐다 — 그림이
+   * 자기 비율로 높이를 내고 그게 다시 줄 높이가 되어서, 세로로 긴 사진이면 또 늘어난다.
+   *
+   * 그래서 아예 흐름에서 뺐다. 오른쪽에 그림 자리만큼 여백을 주고 그 위에 띄운다.
+   * 높이는 글만 정하고, 그림은 남는 자리를 채우고 넘치는 부분은 잘라낸다.
+   * 폰에서는 어차피 눌러서 크게 보므로 썸네일은 「뭐가 있다」만 알리면 된다.
+   *
+   * min-height도 두지 않는다. 그림을 조금 키우려고 56px을 줬더니 딱 그만큼(7px) 카드가
+   * 늘어났다 — 「안 늘어난다」가 요구였으므로 그림이 작아지는 쪽을 택한다.
+   */
+  position: relative;
+  padding-right: 74px; /* 그림 62 + 사이 12 */
 }
-/* 글이 포스터를 밀어내지 않게 (긴 제목이 들어와도 줄바꿈으로 처리) */
-.post-head-text { min-width: 0; flex: 1; }
-.post-poster {
-  flex: none;
+.post-head-text { min-width: 0; }
+.post-art {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: 62px;
-  /* TMDB 포스터는 2:3이다 — 비율을 적어 두면 이미지가 늦게 와도 자리가 안 밀린다 */
-  aspect-ratio: 2 / 3;
+  /*
+   * 위아래를 다 붙여 놨으니 높이는 글을 따라간다. 다만 62의 2:3인 93px에서 멈춘다 —
+   * 안 막으면 글이 긴 무비나잇 카드에서 그림 자리가 62×145처럼 길쭉해지고,
+   * cover가 그 모양을 채우느라 영화 포스터의 좌우를 잘라낸다(제목이 잘린다).
+   * 짧은 카드에서는 이 상한에 닿지 않으므로 카드는 여전히 안 늘어난다.
+   */
+  max-height: 93px;
+}
+.post-art > .poster-btn { display: block; width: 100%; height: 100%; }
+.post-poster {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 8px;
   background: var(--border);
+  display: block;
 }
 
 /* ── 무비나잇 평점 (app/rating-panel.tsx) ─────────────────────
@@ -1405,7 +1431,6 @@ h2 {
 /* ── 모임 사진 (app/photo-panel.tsx, 카드의 사진 자리) ────────
    카드에는 한 장만 — 포스터가 쓰던 자리를 그대로 쓴다. 여러 장이면 모서리에 장수를 얹는다.
    자리가 안 늘어나는 게 이 방식의 핵심이라, 배지는 폭을 먹지 않게 사진 위에 겹친다. */
-.post-art { position: relative; flex: none; width: 62px; }
 .post-shot-count {
   position: absolute; right: 4px; bottom: 4px;
   min-width: 20px; height: 18px; padding: 0 5px; border-radius: 999px;
