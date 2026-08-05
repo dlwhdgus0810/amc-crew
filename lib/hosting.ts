@@ -38,3 +38,20 @@ export function hostTier(count: number): HostTier | null {
 export function formatPoints(points: number): string {
   return Number.isInteger(points) ? String(points) : points.toFixed(1);
 }
+
+/**
+ * 공동 순위.
+ *
+ * 점수가 같으면 같은 등수를 주고, 다음 등수는 앞사람 수만큼 건너뛴다.
+ * 8, 8, 6, 6, 5 → 1, 1, 3, 3, 5 — 8점 둘이 1등이므로 6점은 2등이 아니라 3등이고,
+ * 그 둘 뒤의 5점은 5등이다. 은메달을 받는 사람이 아무도 없는 경우가 생기는데, 그게 맞다.
+ *
+ * 내림차순으로 정렬된 목록을 전제한다 (주최·참가 랭킹 둘 다 그렇게 온다).
+ */
+export function ranksOf(counts: number[]): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < counts.length; i++) {
+    out.push(i > 0 && counts[i] === counts[i - 1] ? out[i - 1]! : i + 1);
+  }
+  return out;
+}

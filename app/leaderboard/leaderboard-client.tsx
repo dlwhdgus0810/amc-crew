@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatPoints, hostTier, HOST_TIERS } from '@/lib/hosting';
+import { formatPoints, hostTier, HOST_TIERS, ranksOf } from '@/lib/hosting';
 import { useT } from '../i18n';
 
 interface HostRank {
@@ -44,17 +44,18 @@ const T = {
 
 /** 종합 주최 랭킹 — 둘러보기에서 들어온다 */
 export default function LeaderboardClient({ initial }: { initial: LeaderboardInitial | null }) {
-  const [ranks, setRanks] = useState<LeaderboardInitial>(initial ?? { hosts: [], joiners: [] });
+  const [board, setBoard] = useState<LeaderboardInitial>(initial ?? { hosts: [], joiners: [] });
   const [tab, setTab] = useState<'hosts' | 'joiners'>('hosts');
   const t = useT();
 
   // 서버가 다시 그려 새 prop이 오면 상태로 옮긴다 (useState의 첫 값은 처음 한 번만 쓰인다)
   useEffect(() => {
-    if (initial) setRanks(initial);
+    if (initial) setBoard(initial);
   }, [initial]);
 
   /* 스티커는 주최 횟수로만 붙는다 — 참가 순위에서는 등급을 보여주지 않는다 */
-  const list = tab === 'hosts' ? ranks.hosts : ranks.joiners;
+  const list = tab === 'hosts' ? board.hosts : board.joiners;
+  const ranks = ranksOf(list.map((h) => h.count));
 
   return (
     <>
@@ -81,11 +82,13 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
             <div className="host-rank board">
               <ol>
                 {list.map((h, i) => {
+                  // 점수가 같으면 같은 등수 — 메달도 등수를 따라간다 (lib/hosting.ts)
+                  const rank = ranks[i]!;
                   // 등급 스티커는 주최에 붙는 훈장이라 참가 순위에서는 달지 않는다
                   const tier = tab === 'hosts' ? hostTier(h.count) : null;
                   return (
                     <li key={h.id}>
-                      <span className="host-rank-no">{['🥇', '🥈', '🥉'][i] ?? `${i + 1}`}</span>
+                      <span className="host-rank-no">{['🥇', '🥈', '🥉'][rank - 1] ?? `${rank}`}</span>
                       <span className="ava">
                         {h.avatar ? <img src={h.avatar} alt="" /> : h.name.slice(0, 1)}
                         {tier && <span className="host-sticker">{tier.sticker}</span>}
