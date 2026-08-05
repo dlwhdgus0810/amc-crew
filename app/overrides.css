@@ -717,6 +717,15 @@ body[data-chrome='hidden'] nav.tabbar {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 접속 표시를 꺼 둔 사람 — 이 표에는 나오지만 친구들에게는 안 보인다 */
+.online-tag {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+}
 /* 마지막 신호 시각은 오른쪽 끝에 */
 .online-ago {
   margin-left: auto;

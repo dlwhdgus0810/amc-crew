@@ -80,6 +80,14 @@ const T = {
   onlineJustNow: { ko: '방금', en: 'just now' },
   onlineMins: { ko: '{n}분 전', en: '{n}m ago' },
   onlineRefresh: { ko: '15초마다 자동으로 갱신돼요.', en: 'Refreshes every 15 seconds.' },
+  onlineHidden: { ko: '숨김', en: 'Hidden' },
+  minePresence: { ko: '내 접속 표시', en: 'Show me as online' },
+  minePresenceOn: { ko: '보임', en: 'Visible' },
+  minePresenceOff: { ko: '숨김', en: 'Hidden' },
+  minePresenceNote: {
+    ko: '숨기면 친구들 화면에서 접속 중으로 보이지 않아요. 위 목록과 접속 기록에는 그대로 남고, 친구별로 감춘 설정도 그대로예요.',
+    en: 'Hidden means friends never see you online. The list above and your time in the app stay as they are, and your per-friend settings are untouched.',
+  },
   failed: { ko: '요청에 실패했어요.', en: 'Something went wrong.' },
   newsTitle: { ko: '새 소식 알리기', en: 'Announce what’s new' },
   newsDesc: {
@@ -193,9 +201,11 @@ export default function AdminPage() {
     { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
   >(null);
   const [presence, setPresence] = useState<{
-    online: { id: string; name: string; avatar: string | null; secondsAgo: number }[];
+    online: { id: string; name: string; avatar: string | null; secondsAgo: number; hidden: boolean }[];
     total: number;
     windowMinutes: number;
+    /** 내가 친구들에게 접속 중으로 보이는지 */
+    myPresence: boolean;
     stats: {
       id: string;
       name: string;
@@ -229,8 +239,33 @@ export default function AdminPage() {
   >(null);
   const [durations, setDurations] = useState<number[]>([]);
   const [newsBusy, setNewsBusy] = useState(false);
+  const [presenceBusy, setPresenceBusy] = useState(false);
   const t = useT();
   const locale = useLocale();
+
+  /**
+   * 내 접속 표시를 켜고 끈다.
+   *
+   * 답을 기다렸다가 화면을 고친다 — 15초마다 도는 폴링이 곧 진짜 값을 덮어쓰므로,
+   * 미리 눌러 둔 모양으로 바꿔 놓았다가 실패하면 그게 되돌아오는 것처럼 보인다.
+   */
+  async function setMyPresence(on: boolean) {
+    setPresenceBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/presence', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ on }),
+      });
+      if (!res.ok) throw new Error(t(T.failed));
+      setPresence((p) => (p ? { ...p, myPresence: on } : p));
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setPresenceBusy(false);
+    }
+  }
 
   /** 최신 소식을 알림 켠 회원에게 발송 — 되돌릴 수 없어서 한 번 묻는다 */
   async function sendNews() {
@@ -753,6 +788,7 @@ export default function AdminPage() {
                         {u.avatar ? <img src={u.avatar} alt="" /> : u.name.slice(0, 1)}
                       </span>
                       <span className="online-name">{u.name}</span>
+                      {u.hidden && <span className="online-tag">{t(T.onlineHidden)}</span>}
                       <span className="online-ago">
                         {u.secondsAgo < 60 ? t(T.onlineJustNow) : t(T.onlineMins, { n: Math.floor(u.secondsAgo / 60) })}
                       </span>
@@ -762,6 +798,26 @@ export default function AdminPage() {
               </>
             )}
             <p className="hint" style={{ marginTop: 12 }}>{t(T.onlineRefresh)}</p>
+          </div>
+
+          {/* 방향이 반대다 — 위는 남이 보이는 것, 여기는 내가 남에게 보이는 것 */}
+          <div className="card" style={{ marginTop: 12 }}>
+            <div className="field-label">{t(T.minePresence)}</div>
+            <div className="seg-group">
+              {[true, false].map((v) => (
+                <button
+                  key={String(v)}
+                  className={`seg ${(presence?.myPresence ?? true) === v ? 'on' : ''}`}
+                  disabled={presence === null || presenceBusy}
+                  onClick={() => setMyPresence(v)}
+                >
+                  {v ? t(T.minePresenceOn) : t(T.minePresenceOff)}
+                </button>
+              ))}
+            </div>
+            <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
+              {t(T.minePresenceNote)}
+            </p>
           </div>
 
           <h1 style={{ marginTop: 80 }}>

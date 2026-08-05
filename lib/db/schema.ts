@@ -34,6 +34,16 @@ export const users = pgTable('users', {
    */
   showPastPrivate: boolean('show_past_private').notNull().default(false),
   /**
+   * 친구들에게 "접속 중"으로 보일지 — 기본은 보임.
+   *
+   * 친구별 스위치(friendships.a/b_shows_presence)와는 층이 다르다. 저건 "이 사람에게만
+   * 감추기"고, 이건 한 번에 전부 끄는 것이다. 둘 중 하나라도 꺼져 있으면 안 보인다.
+   *
+   * 신호(lastSeen·presence_sessions)는 이 값과 무관하게 그대로 쌓인다 — 끄는 것은
+   * 남에게 보이는 표시일 뿐이라, 껐다고 접속 기록까지 비면 관리자 표가 거짓말이 된다.
+   */
+  showPresence: boolean('show_presence').notNull().default(true),
+  /**
    * 이 시각까지 앱을 쓸 수 없다 (관리자가 정한 정지 기간).
    * 지나간 시각이면 정지가 아니다 — 풀어줄 때 따로 지우지 않아도 저절로 풀린다.
    */

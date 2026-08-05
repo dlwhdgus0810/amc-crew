@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { listOnline, listPresenceStats, ONLINE_WINDOW_MINUTES, totalUsers, touchPresence } from '@/lib/db/presence';
+import { dbGetUser, ensureUser, setShowPresence } from '@/lib/db/users';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,42 @@ export async function GET() {
   if (!isAdmin(user)) {
     return await errJson(E.adminOnly, 403);
   }
-  const [online, total, stats] = await Promise.all([listOnline(), totalUsers(), listPresenceStats()]);
-  return NextResponse.json({ online, total, stats, windowMinutes: ONLINE_WINDOW_MINUTES });
+  const [online, total, stats, me] = await Promise.all([
+    listOnline(),
+    totalUsers(),
+    listPresenceStats(),
+    dbGetUser(user.id),
+  ]);
+  return NextResponse.json({
+    online,
+    total,
+    stats,
+    windowMinutes: ONLINE_WINDOW_MINUTES,
+    // 내 스위치 상태 — 화면이 "지금 어느 쪽인지"를 보여줘야 눌러도 되는 버튼이 된다
+    myPresence: me?.showPresence ?? true,
+  });
+}
+
+/**
+ * 내 접속 표시를 켜고 끈다 — 친구들 화면에서만 사라진다.
+ *
+ * 관리자만 받는다. 이 스위치는 관리자 화면에만 있어서, 다른 사람에게 받아 두면
+ * 본인은 켜져 있는지 꺼져 있는지 볼 수도, 되돌릴 수도 없는 상태가 남는다.
+ * (친구별로 감추는 것은 누구나 /friends/[id]에서 할 수 있다.)
+ */
+export async function PUT(req: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) {
+    return await errJson(E.loginRequired, 401);
+  }
+  if (!isAdmin(user)) {
+    return await errJson(E.adminOnly, 403);
+  }
+  const body = await req.json().catch(() => null);
+  if (typeof body?.on !== 'boolean') {
+    return await errJson(E.badRequest, 400);
+  }
+  await ensureUser(user);
+  await setShowPresence(user.id, body.on);
+  return NextResponse.json({ ok: true, myPresence: body.on });
 }

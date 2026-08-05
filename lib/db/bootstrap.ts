@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   zelle text,
   news_alerts boolean NOT NULL DEFAULT false,
   show_past_private boolean NOT NULL DEFAULT false,
+  show_presence boolean NOT NULL DEFAULT true,
   banned_until timestamptz,
   ban_reason text,
   created_at timestamptz NOT NULL DEFAULT now()

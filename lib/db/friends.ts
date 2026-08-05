@@ -218,6 +218,7 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
       nickname: users.nickname,
       avatar: users.avatar,
       lastSeen: users.lastSeen,
+      showPresence: users.showPresence,
     })
     .from(users)
     .where(inArray(users.id, otherIds));
@@ -232,8 +233,9 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
     if (!p) return []; // users 행이 없으면 보여줄 것이 없다
     const seen = p.lastSeen ? new Date(p.lastSeen).getTime() : 0;
     // 상대가 나에게 접속을 감췄으면 그냥 접속 중이 아닌 것으로 보인다 (감췄다는 사실도 표시하지 않는다)
+    // 감추는 방법이 둘이다 — 나에게만(친구별 스위치), 모두에게(users.showPresence). 어느 쪽이든 결과는 같다.
     const meIsA = l.a === me;
-    const otherShowsMe = meIsA ? l.bShows : l.aShows;
+    const otherShowsMe = (meIsA ? l.bShows : l.aShows) && p.showPresence;
     const online = otherShowsMe && seen >= onlineFrom;
     return [
       {

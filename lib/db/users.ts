@@ -45,6 +45,17 @@ export async function setShowPastPrivate(userId: string, on: boolean): Promise<v
 }
 
 /**
+ * 친구들에게 "접속 중"으로 보일지 (기본 켜짐).
+ *
+ * 친구별 스위치와 달리 한 번에 전부 끈다. 신호는 그대로 쌓이므로 접속 기록은 남는다 —
+ * 끄는 것은 남에게 보이는 표시뿐이다.
+ */
+export async function setShowPresence(userId: string, on: boolean): Promise<void> {
+  const db = await getDb();
+  await db.update(users).set({ showPresence: on }).where(eq(users.id, userId));
+}
+
+/**
  * 프로필 upsert. nickname: null 이면 커스텀 닉네임 해제(카카오 닉네임 폴백 복귀).
  * kakaoName이 직전 이력과 다르면 kakaoNameHistory에 스냅샷을 쌓는다.
  */

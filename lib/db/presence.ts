@@ -61,6 +61,8 @@ export interface OnlineUser {
   avatar: string | null;
   /** 마지막 신호로부터 지난 초 */
   secondsAgo: number;
+  /** 접속 표시를 꺼 둔 사람 — 친구들에게는 안 보이지만 이 표에는 그대로 나온다 */
+  hidden: boolean;
 }
 
 /**
@@ -190,7 +192,13 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
   }));
 }
 
-/** 지금 접속 중인 사람들 (최근 신호순) */
+/**
+ * 지금 접속 중인 사람들 (최근 신호순).
+ *
+ * 접속 표시를 꺼 둔 사람도 뺴지 않고 hidden으로 표시한다 — 이 표는 관리자가 보는
+ * "실제로 누가 앱을 보고 있나"이고, 스위치를 껐다고 여기서까지 사라지면 스위치가
+ * 켜졌는지 꺼졌는지 확인할 방법이 없어진다. 친구 화면에서 빼는 것은 friends.ts가 한다.
+ */
 export async function listOnline(): Promise<OnlineUser[]> {
   const db = await getDb();
   const since = new Date(Date.now() - ONLINE_WINDOW_MINUTES * 60_000);
@@ -201,6 +209,7 @@ export async function listOnline(): Promise<OnlineUser[]> {
       nickname: users.nickname,
       avatar: users.avatar,
       lastSeen: users.lastSeen,
+      showPresence: users.showPresence,
     })
     .from(users)
     .where(and(isNotNull(users.lastSeen), gte(users.lastSeen, since)))
@@ -215,6 +224,7 @@ export async function listOnline(): Promise<OnlineUser[]> {
     ),
     avatar: r.avatar,
     secondsAgo: Math.max(0, Math.round((now - new Date(r.lastSeen!).getTime()) / 1000)),
+    hidden: !r.showPresence,
   }));
 }
 
