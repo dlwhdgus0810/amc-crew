@@ -59,7 +59,7 @@ export interface PostView {
   /** 무비나잇이고 끝난 모임일 때만 — 우리 평점 요약 (그 밖에는 null) */
   rating: RatingSummary | null;
   /**
-   * 이 모임의 사진. 없으면 null, 비로그인에게도 null.
+   * 이 모임의 사진 — **참가자와 관리자에게만**. 그 밖에는 null (비로그인 포함).
    * urls는 카드에서 넘겨 볼 몇 장이고(앞에서 자른다), count는 실제 전체 장수다.
    * 서명된 주소라 유효기간이 있다 — 담아 두지 말 것.
    */
@@ -242,8 +242,8 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   }
 
   /*
-   * 정산은 같이 낸 사람들 사이의 일이다 — 참가자(와 관리자)에게만 요약을 붙인다.
-   * 그 밖에는 settle이 null이라, 정산이 있다는 사실조차 응답에 나가지 않는다.
+   * 정산과 사진은 같이 논 사람들 사이의 일이다 — 참가자(와 관리자)에게만 붙인다.
+   * 그 밖에는 null이라, 정산이나 사진이 있다는 사실조차 응답에 나가지 않는다.
    */
   const viewerIsAdmin = Boolean(viewerId && adminIds().includes(viewerId));
   const myPostIds = viewerIsAdmin
@@ -267,7 +267,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     settlementSummaries(myPostIds, viewerId),
     commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
     ratingSummaries(ratableIds, viewerId),
-    photoStrips(postIds),
+    photoStrips(myPostIds),
   ]);
   const userById = new Map(userRows.map((u) => [u.id, u]));
 

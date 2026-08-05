@@ -3,7 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView, isParticipant } from '@/lib/db/posts';
-import { addPhoto, countPhotos } from '@/lib/db/photos';
+import { addPhoto, countPhotos, listPhotos } from '@/lib/db/photos';
 import { MAX_PHOTOS_PER_POST, pathAllowed } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,26 @@ export const dynamic = 'force-dynamic';
  *
  * 조회는 없다. 모임 상세가 서버에서 그려지면서 이미 들고 내려간다.
  */
+/**
+ * 이 모임의 사진 목록 — 참가자와 관리자만.
+ *
+ * 모임 상세는 서버가 그리면서 이미 들고 내려가므로 이걸 안 쓴다. 수정 시트가 쓴다 —
+ * 거기서는 넣고 빼는 즉시 목록이 달라져야 하는데, 서명된 주소는 서버만 만들 수 있다.
+ */
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getSessionUser();
+  if (!user) return await errJson(E.loginRequired, 401);
+
+  const post = await getPostView(id, user.id);
+  if (!post) return await errJson(E.postNotFound, 404);
+  if (!(await isParticipant(id, user.id)) && !isAdmin(user)) {
+    return await errJson(E.photoParticipantOnly, 403);
+  }
+  const photos = await listPhotos(id);
+  return NextResponse.json({ photos: photos.map((p) => ({ id: p.id, url: p.url })) });
+}
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getSessionUser();

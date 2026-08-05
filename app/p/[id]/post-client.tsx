@@ -367,8 +367,14 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         />
       )}
 
-      {/* 사진은 아무 때나 — 가기 전 안내문도, 다녀와서 찍은 것도 같은 자리에 쌓인다 */}
-      {user && (
+      {/*
+        * 사진은 아무 때나 올린다 — 가기 전 안내문도, 다녀와서 찍은 것도 같은 자리에 쌓인다.
+        *
+        * 참가한 사람에게만 보인다. 판단은 명단으로 한다 — post.photos로 막으면 아직 한 장도
+        * 없는 모임에서 패널이 통째로 사라져 첫 장을 올릴 길이 없어진다(그 값은 「볼 수 있느냐」가
+        * 아니라 「있느냐」다). 서버도 같은 기준으로 사진을 내려준다.
+        */}
+      {user && (joined || isAdmin) && (
         <PhotoPanel
           postId={post.id}
           photos={initial.photos}

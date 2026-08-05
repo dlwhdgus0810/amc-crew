@@ -115,8 +115,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
    * 요약(post.rating)은 목록도 쓰지만 사람별 점수는 이 화면에서만 쓴다.
    */
   const ratings = post?.rating ? await listRatings(id) : [];
-  // 사진은 회원에게만 내려간다 (모임이 끝났는지와 무관하다)
-  const photos = user ? await listPhotos(id) : [];
+  /*
+   * 사진은 그 모임에 참가한 사람과 관리자에게만 내려간다.
+   * post.photos(요약)가 딱 그 기준으로 채워지므로, 그게 있는지로 판단하면 기준이 하나로 유지된다 —
+   * 여기서 따로 판정하면 언젠가 둘이 어긋난다.
+   */
+  const photos = post?.photos ? await listPhotos(id) : [];
 
   return (
     <PostClient

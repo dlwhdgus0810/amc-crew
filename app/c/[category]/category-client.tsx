@@ -34,7 +34,7 @@ import {formatCents} from '@/lib/money';
 import { formatScore } from '@/lib/ratings';
 import { upload } from '@vercel/blob/client';
 import { shrinkToJpeg, UnreadableImageError } from '@/lib/photo-client';
-import { photoPath } from '@/lib/photos';
+import { MAX_PER_BATCH, photoPath } from '@/lib/photos';
 import {useRefreshSession, useViewer} from '../../session';
 import {usePosterZoom} from '../../poster-zoom';
 
@@ -110,8 +110,12 @@ const T = {
   photoBusy: { ko: '올리는 중…', en: 'Uploading…' },
   photoClear: { ko: '떼기', en: 'Remove' },
   photoHint: {
-    ko: '안내문이든 쿠폰이든 한 장. 모임 카드에 보여요. 나머지는 만든 뒤에 모임 화면에서 더 올릴 수 있어요.',
-    en: 'A flyer, a coupon, anything — it shows on the meetup card. Add the rest from the meetup page afterwards.',
+    ko: '안내문이든 쿠폰이든 한 장. 모임 카드에 보여요. 나머지는 만든 뒤에 더 올릴 수 있어요.',
+    en: 'A flyer, a coupon, anything — it shows on the meetup card. Add more once it’s created.',
+  },
+  photoHintEdit: {
+    ko: '고르는 즉시 붙고, ✕를 누르면 즉시 빠져요. 저장을 누르지 않아도 돼요.',
+    en: 'Added the moment you pick one, removed the moment you tap ✕ — no need to hit save.',
   },
   photoFailed: { ko: '올리지 못했어요.', en: 'Couldn’t upload that.' },
   photoHeic: {
@@ -345,27 +349,65 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const [fPhoto, setFPhoto] = useState<string | null | undefined>(undefined);
   const [fPhotoPreview, setFPhotoPreview] = useState<string | null>(null);
   const [fPhotoBusy, setFPhotoBusy] = useState(false);
+  /** 수정 중인 모임에 이미 붙어 있는 사진 — 넣고 빼는 즉시 서버에 반영된다 */
+  const [editPhotos, setEditPhotos] = useState<{ id: string; url: string }[]>([]);
 
-  /** 포스터 한 장 올리기 — 바이트는 저장소로 곧장 가고, 주소만 폼이 들고 있는다 */
-  async function pickPhoto(file: File | undefined) {
-    if (!file) return;
+  /**
+   * 사진 올리기. 바이트는 저장소로 곧장 가고 우리는 경로만 다룬다.
+   *
+   * 만들 때와 수정할 때가 다르다 — 만들 때는 아직 모임이 없어서 경로를 들고 있다가
+   * 저장할 때 넘기고, 수정할 때는 모임이 있으므로 바로 매단다.
+   */
+  async function pickPhoto(files: FileList | null | undefined) {
+    const list = files ? [...files] : [];
+    if (list.length === 0) return;
     setFPhotoBusy(true);
     setMsg(null);
     try {
-      const { blob } = await shrinkToJpeg(file);
-      const put = await upload(photoPath(user!.id, crypto.randomUUID()), blob, {
-        access: 'private',
-        handleUploadUrl: '/api/blob/upload',
-        contentType: 'image/jpeg',
-      });
-      setFPhoto(put.pathname);
-      setFPhotoPreview(URL.createObjectURL(blob));
+      // 만들 때는 한 장만 — 나머지는 만든 뒤에 올린다
+      for (const file of editId ? list.slice(0, MAX_PER_BATCH) : list.slice(0, 1)) {
+        const { blob, width, height } = await shrinkToJpeg(file);
+        const put = await upload(photoPath(user!.id, crypto.randomUUID()), blob, {
+          access: 'private',
+          handleUploadUrl: '/api/blob/upload',
+          contentType: 'image/jpeg',
+        });
+        if (!editId) {
+          setFPhoto(put.pathname);
+          setFPhotoPreview(URL.createObjectURL(blob));
+          break;
+        }
+        const res = await fetch(`/api/posts/${editId}/photos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pathname: put.pathname, width, height }),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? t(T.photoFailed));
+      }
+      if (editId) await refreshEditPhotos(editId);
     } catch (e) {
       setMsg({
         type: 'err',
         text: e instanceof UnreadableImageError ? t(T.photoHeic) : e instanceof Error ? e.message : t(T.photoFailed),
       });
     }
+    setFPhotoBusy(false);
+  }
+
+  /** 수정 중인 모임의 사진 목록을 다시 읽는다 (서명된 주소는 서버만 만들 수 있다) */
+  async function refreshEditPhotos(postId: string) {
+    const res = await fetch(`/api/posts/${postId}/photos`, { cache: 'no-store' });
+    if (!res.ok) return;
+    setEditPhotos((await res.json()).photos ?? []);
+  }
+
+  async function removeEditPhoto(photoId: string) {
+    if (!editId) return;
+    setFPhotoBusy(true);
+    setMsg(null);
+    const res = await fetch(`/api/posts/${editId}/photos/${photoId}`, { method: 'DELETE' });
+    if (!res.ok) setMsg({ type: 'err', text: (await res.json().catch(() => null))?.error ?? t(T.photoFailed) });
+    else await refreshEditPhotos(editId);
     setFPhotoBusy(false);
   }
 
@@ -386,6 +428,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFNick(false);
     setFPhoto(undefined);
     setFPhotoPreview(null);
+    setEditPhotos([]);
   }
 
   // 지난 모임
@@ -557,6 +600,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     // 사진은 여기서 안 다룬다 — 모임 상세의 「사진」에서 넣고 뺀다 (관리할 자리는 하나여야 한다)
     setFPhoto(undefined);
     setFPhotoPreview(null);
+    setEditPhotos([]);
+    void refreshEditPhotos(post.id);
     setFPrivate(post.visibility === 'link');
   }
 
@@ -1013,18 +1058,40 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           </div>
 
           {/*
-            * 사진 한 장 — 만들 때만 보여준다.
+            * 사진.
             *
-            * 저장을 누르기 전에 올려 두고 경로만 들고 있다가, 모임이 생기면 서버가 그 모임의
-            * 첫 사진으로 매단다(만들기 전에는 postId가 없어서 바로 매달 수가 없다).
-            * 저장을 취소하면 주인 없는 파일이 하나 남고, 그건 청소가 걷어간다.
+            * 만들 때는 아직 모임이 없어서 매달 데가 없다 — 올려 두고 경로만 들고 있다가
+            * 저장할 때 서버가 첫 사진으로 붙인다. (저장을 취소하면 주인 없는 파일이 하나
+            * 남고, 그건 청소가 걷어간다.)
             *
-            * 수정할 때는 안 보여준다 — 사진을 넣고 빼는 자리는 모임 상세 하나여야 한다.
+            * 수정할 때는 모임이 이미 있으므로 고르는 즉시 붙고, 지우는 것도 즉시다 —
+            * 저장 버튼을 기다리지 않는다. 사진은 「고쳐서 저장하는 값」이 아니라
+            * 넣고 빼는 것이라, 저장을 눌러야 반영되면 오히려 헷갈린다.
             */}
-          {isCreate && (
           <div className="form-section">
             <div className="field-label">{t(T.secPhoto)}</div>
-            {fPhotoPreview ? (
+
+            {/* 수정 중이면 이미 붙어 있는 사진들 — 누르면 그 자리에서 뺀다 */}
+            {!isCreate && editPhotos.length > 0 && (
+              <div className="photo-grid" style={{ marginBottom: 8 }}>
+                {editPhotos.map((ph) => (
+                  <div key={ph.id} className="photo-cell">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ph.url} alt="" loading="lazy" />
+                    <button
+                      className="photo-del"
+                      aria-label={t(T.photoClear)}
+                      disabled={fPhotoBusy}
+                      onClick={() => void removeEditPhoto(ph.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {isCreate && fPhotoPreview ? (
               <div className="title-meta-box">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={fPhotoPreview} alt="" style={{ width: 54, borderRadius: 8 }} />
@@ -1045,18 +1112,20 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                 <input
                   type="file"
                   accept="image/*"
+                  {...(isCreate ? {} : { multiple: true })}
                   hidden
                   disabled={fPhotoBusy}
                   onChange={(e) => {
-                    void pickPhoto(e.target.files?.[0]);
+                    void pickPhoto(e.target.files);
                     e.target.value = '';
                   }}
                 />
               </label>
             )}
-            <div className="hint" style={{ marginTop: 6 }}>{t(T.photoHint)}</div>
+            <div className="hint" style={{ marginTop: 6 }}>
+              {isCreate ? t(T.photoHint) : t(T.photoHintEdit)}
+            </div>
           </div>
-          )}
 
           <div className="form-section">
             <div className="field-label">{t(T.secWho)}</div>
@@ -1197,9 +1266,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     /*
      * 카드에 실을 그림 한 장과, 눌렀을 때 넘겨 볼 목록.
      *
-     * 끝난 모임에 사진이 있으면 사진이 앞선다 — 플라이어는 가기 전에 보는 안내문이고,
-     * 끝난 뒤 목록에서 찾는 것은 「그때 뭐 했더라」다. 플라이어는 목록 맨 끝에 그대로 남는다.
-     * 목록 화면은 사진을 한 장(cover)만 들고 있어서, 나머지는 상세에서 본다.
+     * 사진이 있으면 사진이 앞선다 — 무비나잇이라도 우리가 올린 것이 그 모임을 더 잘 가리킨다.
+     * TMDB 포스터는 넘기면 맨 끝에 그대로 있다.
+     * 목록은 앞의 몇 장만 들고 있어서(lib/db/photos.ts) 나머지는 상세에서 본다.
      */
     const label = post.title ? `〈${post.title}〉` : category ? t(category.name) : "";
     const extras: { src: string; name: string }[] = [
@@ -1208,7 +1277,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         : []),
     ];
     const art =
-      past && post.photos
+      post.photos
         ? {
             thumb: post.photos.urls[0]!,
             items: [...post.photos.urls.map((src) => ({ src, name: label })), ...extras],
