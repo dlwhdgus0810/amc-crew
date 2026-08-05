@@ -56,8 +56,8 @@ const ENTRIES: ChangelogEntry[] = [
         en: 'Photos are visible only to people in that meetup. Other members can’t even tell there are any, and knowing the address isn’t enough to open one — so photos from private meetups stay in.',
       },
       {
-        ko: '올린 사람과 호스트는 언제든 지울 수 있어요. 아이폰 사진이 안 올라가면 설정 › 카메라 › 포맷을 「높은 호환성」으로 바꿔주세요.',
-        en: 'Whoever added a photo — and the host — can remove it any time. If an iPhone photo won’t upload, switch Settings › Camera › Formats to “Most Compatible”.',
+        ko: '올린 사람은 언제든 지울 수 있어요. 아이폰 사진이 안 올라가면 설정 › 카메라 › 포맷을 「높은 호환성」으로 바꿔주세요.',
+        en: 'Whoever added a photo can remove it any time. If an iPhone photo won’t upload, switch Settings › Camera › Formats to “Most Compatible”.',
       },
     ],
   },
