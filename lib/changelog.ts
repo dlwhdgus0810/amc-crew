@@ -50,6 +50,7 @@ const ENTRIES: ChangelogEntry[] = [
   },
   {
     at: '2026-08-04T20:00',
+    notable: true,
     title: { ko: '둘러보기를 2열로 볼 수 있어요', en: 'Browse in two columns' },
     items: [
       {
