@@ -31,6 +31,43 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-05T01:30',
+    notable: true,
+    title: { ko: '영화 보고 나서 우리끼리 평점을 매겨요', en: 'Rate the film once you’ve seen it' },
+    items: [
+      {
+        ko: '무비나잇 모임이 끝나면 같이 본 사람끼리 10점 만점으로 점수를 매길 수 있어요. 0.1점 단위까지요.',
+        en: 'Once a Movie Night is over, everyone who was there can score it out of 10 — down to a tenth of a point.',
+      },
+      {
+        ko: '누가 몇 점 줬는지 서로 보여요. 평균도 같이 나와요.',
+        en: 'You can see what everyone else gave, alongside the average.',
+      },
+      {
+        ko: '지난 모임 카드에도 「우리 평점 8.8」이 한 줄로 붙어요. 목록을 내리면서 예전에 본 영화들 점수가 보여요.',
+        en: 'Past meetup cards carry the score too, so scrolling the list shows what you thought of everything you’ve watched.',
+      },
+      {
+        ko: '끝난 모임에만 열리고, 그 자리에 있던 사람만 매길 수 있어요. 나중에 고쳐 매기거나 무를 수 있어요.',
+        en: 'It opens only after the meetup, only for people who were there, and you can change or clear your score later.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-05T01:20',
+    title: { ko: '예전에 저장해 둔 카카오 토큰을 지웠어요', en: 'Old Kakao tokens are gone' },
+    items: [
+      {
+        ko: '카카오톡 알림을 없애면서 쓸 일이 없어진 값이에요. 안 쓰더라도 남아 있으면 언젠가 새는 쪽이라, 저장해 둔 것까지 통째로 지웠어요.',
+        en: 'They stopped being used when KakaoTalk alerts went away. Unused data is still data that can leak, so the stored values are gone too.',
+      },
+      {
+        ko: '로그인에는 아무 영향이 없어요. 지금처럼 카카오로 들어오면 돼요.',
+        en: 'Nothing changes about signing in — log in with Kakao exactly as before.',
+      },
+    ],
+  },
+  {
     at: '2026-08-04T20:20',
     title: { ko: '화면이 또 빨라졌어요', en: 'Screens got faster again' },
     items: [
