@@ -31,7 +31,7 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
-    at: '2026-08-05T15:20',
+    at: '2026-08-05T16:00',
     notable: true,
     title: { ko: '모임에 사진을 올릴 수 있어요', en: 'Photos on meetups' },
     items: [
@@ -44,12 +44,16 @@ const ENTRIES: ChangelogEntry[] = [
         en: 'Any time — a flyer or coupon when you create it, the photos from the day afterwards. They all go in the same place.',
       },
       {
-        ko: '모임 카드에는 한 장만 보여요. 누르면 크게 뜨고 좌우로 넘겨서 나머지를 봐요. 사진이 없는 모임은 지금과 똑같이 보여요.',
-        en: 'The card shows just one. Tap it to open it big and swipe through the rest. Meetups without photos look exactly as they do now.',
+        ko: '모임 카드에 한 장이 보여요. 누르면 크게 뜨고 좌우로 넘겨서 나머지를 봐요. 사진이 없는 모임은 예전과 똑같이 보여요.',
+        en: 'One shows on the meetup card. Tap it to open it big and swipe through the rest. Meetups without photos look exactly as before.',
       },
       {
-        ko: '사진은 로그인한 회원에게만 보여요. 주소를 알아도 로그인 없이는 열리지 않으니, 비공개 모임 사진도 밖으로 새지 않아요.',
-        en: 'Photos are for logged-in members only. Knowing the address isn’t enough to open one, so photos from private meetups stay in.',
+        ko: '만든 뒤에는 모임 화면에서, 그리고 「수정」에서도 넣고 뺄 수 있어요. 수정 중에는 고르는 즉시 붙고 ✕를 누르면 즉시 빠져요 — 저장을 안 눌러도 돼요.',
+        en: 'Afterwards you can add and remove them on the meetup page, or in Edit. In Edit they’re added the moment you pick one and gone the moment you tap ✕ — no need to hit save.',
+      },
+      {
+        ko: '사진은 그 모임에 참가한 사람에게만 보여요. 다른 회원에게는 사진이 있다는 것조차 안 보이고, 주소를 알아도 열리지 않아요 — 비공개 모임 사진도 밖으로 새지 않아요.',
+        en: 'Photos are visible only to people in that meetup. Other members can’t even tell there are any, and knowing the address isn’t enough to open one — so photos from private meetups stay in.',
       },
       {
         ko: '올린 사람과 호스트는 언제든 지울 수 있어요. 아이폰 사진이 안 올라가면 설정 › 카메라 › 포맷을 「높은 호환성」으로 바꿔주세요.',
