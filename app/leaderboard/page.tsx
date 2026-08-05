@@ -1,141 +1,50 @@
-'use client';
+import { Suspense } from 'react';
+import { getViewer } from '@/lib/session';
+import { hostRanking, joinRanking } from '@/lib/db/hosting';
+import LeaderboardClient from './leaderboard-client';
+import { Bar, Block, Skeleton } from '../skeleton';
 
-import { useEffect, useState } from 'react';
-import { formatPoints, hostTier, HOST_TIERS } from '@/lib/hosting';
-import { useT } from '../i18n';
+export const dynamic = 'force-dynamic';
 
-interface HostRank {
-  id: string;
-  name: string;
-  avatar: string | null;
-  count: number;
+/** 화면에는 10등까지만 — 더 길어지면 순위표라기보다 회원 명단이 된다 */
+const TOP = 10;
+
+/**
+ * 순위표를 서버에서 읽어 첫 프레임에 담는다.
+ *
+ * 두 순위는 이미 요청 사이에도 담아 둔 것이라(lib/db/hosting.ts), 대개 여기서 DB를
+ * 새로 치지도 않는다. 로그인한 사람만 본다 — 이름과 "누가 모임을 열었는지"가 통째로
+ * 담긴 목록이라, 모임 카드에서 주최자를 가려 놓고 여기서 내보내면 가린 의미가 없다.
+ */
+async function LeaderboardData() {
+  const { user } = await getViewer();
+  if (!user) return <LeaderboardClient initial={null} />;
+
+  const [hosts, joiners] = await Promise.all([hostRanking(TOP), joinRanking(TOP)]);
+  return <LeaderboardClient initial={{ hosts, joiners }} />;
 }
 
-const T = {
-  title: { ko: '리더보드', en: 'Leaderboard' },
-  subtitle: {
-    ko: '호스팅은 연 모임에 몇 명이 모였는지로 셉니다 (같이 연 모임은 나눠 가져요). 카테고리를 가리지 않고 공개 모임만 세요.',
-    en: 'Hosting counts how many people showed up — co-hosts split it. All categories together, public meetups only.',
-  },
-  // 예정된 모임이 안 보이는 이유 — 안 적어 두면 「내 점수가 왜 안 올랐지」가 된다
-  afterOnly: {
-    ko: '점수는 모임이 끝난 뒤에 올라가요. 예정된 모임은 아직 세지 않아요.',
-    en: 'Points land once a meetup is over — upcoming ones aren’t counted yet.',
-  },
-  tabHosts: { ko: '호스팅 순위', en: 'Hosted' },
-  tabJoiners: { ko: '참여 순위', en: 'Joined' },
-  countJoin: { ko: '{n}회 참가', en: 'Joined {n}' },
-  emptyJoin: { ko: '아직 아무도 참가하지 않았어요.', en: 'Nobody has joined anything yet.' },
-  loading: { ko: '불러오는 중…', en: 'Loading…' },
-  empty: { ko: '아직 아무도 모임을 열지 않았어요. 첫 주최자가 되어보세요!', en: 'Nobody has hosted yet — be the first!' },
-  loginNeeded: {
-    ko: '카카오 로그인 후 볼 수 있어요.',
-    en: 'Log in with Kakao to see the leaderboard.',
-  },
-  count: { ko: '{n}점', en: '{n} pts' },
-  tiersTitle: { ko: '호스트 등급', en: 'Host tiers' },
-  tierFrom: { ko: '{n}점부터', en: 'From {n} pts' },
-};
-
-/** 종합 주최 랭킹 — 둘러보기에서 들어온다 */
 export default function LeaderboardPage() {
-  const [hosts, setHosts] = useState<HostRank[] | null>(null);
-  const [joiners, setJoiners] = useState<HostRank[]>([]);
-  const [tab, setTab] = useState<'hosts' | 'joiners'>('hosts');
-  const [needLogin, setNeedLogin] = useState(false);
-  const t = useT();
-
-  useEffect(() => {
-    fetch('/api/hosts')
-      .then((r) => {
-        if (r.status === 401) {
-          setNeedLogin(true);
-          return { hosts: [], joiners: [] };
-        }
-        return r.ok ? r.json() : { hosts: [], joiners: [] };
-      })
-      .then((d) => {
-        setHosts(d.hosts ?? []);
-        setJoiners(d.joiners ?? []);
-      })
-      .catch(() => setHosts([]));
-  }, []);
-
-  /* 스티커는 주최 횟수로만 붙는다 — 참가 순위에서는 등급을 보여주지 않는다 */
-  const list = tab === 'hosts' ? (hosts ?? []) : joiners;
-
   return (
-    <>
-      <h1>{t(T.title)}</h1>
-      <p className="subtitle">{t(T.subtitle)}</p>
-      <p className="hint" style={{ marginTop: -6, marginBottom: 4 }}>{t(T.afterOnly)}</p>
+    <Suspense fallback={<LeaderboardSkeleton />}>
+      <LeaderboardData />
+    </Suspense>
+  );
+}
 
-      {hosts === null ? (
-        <p className="hint">{t(T.loading)}</p>
-      ) : needLogin ? (
-        <p className="hint">{t(T.loginNeeded)}</p>
-      ) : (
-        <>
-          <div className="seg-group" style={{ marginBottom: 14 }}>
-            <button className={`seg ${tab === 'hosts' ? 'on' : ''}`} onClick={() => setTab('hosts')}>
-              {t(T.tabHosts)}
-            </button>
-            <button className={`seg ${tab === 'joiners' ? 'on' : ''}`} onClick={() => setTab('joiners')}>
-              {t(T.tabJoiners)}
-            </button>
-          </div>
-
-          {list.length === 0 ? (
-            <p className="hint">{tab === 'hosts' ? t(T.empty) : t(T.emptyJoin)}</p>
-          ) : (
-            <div className="host-rank board">
-              <ol>
-                {list.map((h, i) => {
-                  // 등급 스티커는 주최에 붙는 훈장이라 참가 순위에서는 달지 않는다
-                  const tier = tab === 'hosts' ? hostTier(h.count) : null;
-                  return (
-                    <li key={h.id}>
-                      <span className="host-rank-no">{['🥇', '🥈', '🥉'][i] ?? `${i + 1}`}</span>
-                      <span className="ava">
-                        {h.avatar ? <img src={h.avatar} alt="" /> : h.name.slice(0, 1)}
-                        {tier && <span className="host-sticker">{tier.sticker}</span>}
-                      </span>
-                      <span className="host-rank-name">
-                        {h.name}
-                        {tier && <span className="host-rank-tier">{t(tier.label)}</span>}
-                      </span>
-                      <span className="host-rank-count">
-                        {/* 호스팅은 점수(.5까지), 참가는 횟수다 */}
-                        {tab === 'hosts'
-                          ? t(T.count, { n: formatPoints(h.count) })
-                          : t(T.countJoin, { n: h.count })}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* 다음 스티커까지 얼마나 남았는지 보여야 동기가 된다 — 등급은 주최에만 붙으므로 그 탭에서만 */}
-      {tab === 'hosts' && (
-        <>
-          <h2>{t(T.tiersTitle)}</h2>
-          <div className="card">
-            <ul className="tier-list">
-              {HOST_TIERS.map((tier) => (
-                <li key={tier.min}>
-                  <span className="tier-sticker">{tier.sticker}</span>
-                  <span className="tier-name">{t(tier.label)}</span>
-                  <span className="tier-min">{t(T.tierFrom, { n: tier.min })}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </>
-      )}
-    </>
+/** 제목 · 설명 두 줄 · 탭 · 순위 다섯 줄 */
+function LeaderboardSkeleton() {
+  return (
+    <Skeleton label="순위표를 불러오는 중">
+      <Bar w={110} h={24} />
+      <Bar w="88%" h={13} mt={10} />
+      <Bar w={240} h={12} mt={6} />
+      <Bar w={200} h={38} mt={18} />
+      <Block h={64}>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Bar key={i} w="100%" h={22} mt={i === 0 ? 0 : 12} />
+        ))}
+      </Block>
+    </Skeleton>
   );
 }
