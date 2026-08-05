@@ -31,6 +31,24 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-05T16:30',
+    title: { ko: '점수가 같으면 공동 순위예요', en: 'Ties share a rank now' },
+    items: [
+      {
+        ko: '리더보드에서 점수가 같은데도 순서대로 1, 2, 3등을 매기고 있었어요. 이제 같은 점수는 같은 등수예요.',
+        en: 'The leaderboard used to number people 1, 2, 3 down the list even when their scores were level. Equal scores now share a rank.',
+      },
+      {
+        ko: '예를 들어 8점 · 8점 · 6점 · 6점 · 5점이면 8점 두 분이 공동 1등, 6점 두 분이 공동 3등, 5점이 5등이에요. 그래서 은메달을 받는 사람이 없을 수도 있어요.',
+        en: 'So with 8, 8, 6, 6, 5 the two 8s are joint first, the two 6s are joint third, and the 5 is fifth — which means nobody may hold the silver.',
+      },
+      {
+        ko: '점수는 그대로예요. 등수를 세는 방법만 바뀌었어요.',
+        en: 'Nobody’s score changed — only the way ranks are counted.',
+      },
+    ],
+  },
+  {
     at: '2026-08-05T16:00',
     notable: true,
     title: { ko: '모임에 사진을 올릴 수 있어요', en: 'Photos on meetups' },
