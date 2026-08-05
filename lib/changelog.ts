@@ -36,12 +36,12 @@ const ENTRIES: ChangelogEntry[] = [
     title: { ko: '모임에 사진을 올릴 수 있어요', en: 'Photos on meetups' },
     items: [
       {
-        ko: '정재호 님이 건의한 기능이에요. 모임을 만들 때 안내문이나 쿠폰 같은 포스터를 한 장 올릴 수 있어요.',
-        en: 'Suggested by 정재호. When you create a meetup you can attach one poster — a flyer, a coupon, whatever.',
+        ko: '정재호 님이 건의한 기능이에요. 모임에 참가한 사람이면 누구나 사진을 올릴 수 있어요.',
+        en: 'Suggested by 정재호. Anyone in a meetup can add photos to it.',
       },
       {
-        ko: '모임이 끝나면 그날 찍은 사진을 올릴 수 있어요. 그 모임에 있던 사람이면 누구나요.',
-        en: 'Once a meetup is over, anyone who was there can add the photos from that day.',
+        ko: '언제 올려도 돼요. 만들면서 안내문이나 쿠폰을 한 장 걸어도 되고, 다녀와서 그날 찍은 걸 올려도 돼요. 나눠 두지 않았어요.',
+        en: 'Any time — a flyer or coupon when you create it, the photos from the day afterwards. They all go in the same place.',
       },
       {
         ko: '모임 카드에는 한 장만 보여요. 누르면 크게 뜨고 좌우로 넘겨서 나머지를 봐요. 사진이 없는 모임은 지금과 똑같이 보여요.',
