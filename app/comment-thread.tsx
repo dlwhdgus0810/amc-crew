@@ -11,6 +11,7 @@
 
 import { useState } from 'react';
 import { useT } from './i18n';
+import { useNow } from './use-now';
 
 export interface CommentView {
   id: string;
@@ -76,6 +77,7 @@ export default function CommentThread({
   onError?: (message: string) => void;
 }) {
   const t = useT();
+  const now = useNow();
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<CommentView | null>(null);
@@ -88,9 +90,12 @@ export default function CommentThread({
   const roots = comments.filter((c) => !c.parentId || !byId.has(c.parentId));
   const repliesOf = (id: string) => comments.filter((c) => c.parentId === id);
 
-  /** "2시간" 처럼 짧게 — 좁은 폭에서 이름 옆에 얹기 위해 */
+  /**
+   * "2시간" 처럼 짧게 — 좁은 폭에서 이름 옆에 얹기 위해.
+   * now는 하이드레이션 때문에 받는다 (app/use-now.ts 참고).
+   */
   function ago(iso: string) {
-    const ms = Date.now() - new Date(iso).getTime();
+    const ms = (now ?? Date.now()) - new Date(iso).getTime();
     const mins = Math.floor(ms / 60000);
     if (mins < 1) return t(T.justNow);
     if (mins < 60) return t(T.minsAgo, { n: mins });
@@ -176,7 +181,10 @@ export default function CommentThread({
                 ? t(T.anonMine, { name: c.name })
                 : c.name}
           </span>
-          <span className="comment-time">{ago(c.createdAt)}</span>
+          {/* 서버와 브라우저의 시각이 다를 수 있다 — app/use-now.ts 참고 */}
+          <span className="comment-time" suppressHydrationWarning>
+            {ago(c.createdAt)}
+          </span>
           <button
             className={`heart ${like.liked ? 'on' : ''}`}
             onClick={() => toggleLike(c)}

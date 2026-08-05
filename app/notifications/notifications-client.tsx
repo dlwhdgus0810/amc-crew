@@ -7,6 +7,7 @@ import { useLocale, useT } from '../i18n';
 import { pick } from '@/lib/i18n';
 import { FRIEND_KINDS, NOTIF, POST_KINDS } from '@/lib/notif-kinds';
 import { timeAgo } from '@/lib/datefmt';
+import { useNow } from '../use-now';
 import { CHANGELOG } from '@/lib/changelog';
 import NotifSwipe from '../notif-swipe';
 
@@ -63,6 +64,7 @@ export default function NotificationsClient({ initial }: { initial: Notification
   const router = useRouter();
   const t = useT();
   const locale = useLocale();
+  const now = useNow();
 
   // 서버가 다시 그려 새 prop이 오면 상태로 옮긴다 (useState의 첫 값은 처음 한 번만 쓰인다)
   useEffect(() => {
@@ -192,7 +194,10 @@ export default function NotificationsClient({ initial }: { initial: Notification
         const inner = (
           <div className={`notif-item ${n.read ? '' : 'unread'}`}>
             <span className="notif-message">{n.message}</span>
-            <span className="notif-time">{timeAgo(n.createdAt, locale)}</span>
+            {/* 서버와 브라우저의 시각이 다를 수 있다 — app/use-now.ts 참고 */}
+            <span className="notif-time" suppressHydrationWarning>
+              {timeAgo(n.createdAt, locale, now)}
+            </span>
           </div>
         );
         return (

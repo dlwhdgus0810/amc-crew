@@ -81,8 +81,12 @@ const AGO = {
   daysAgo: { ko: '{n}일 전', en: '{n}d ago' },
 };
 
-export function timeAgo(iso: string, locale: Locale): string {
-  const diff = Date.now() - new Date(iso).getTime();
+/**
+ * now를 받는 이유는 하이드레이션 때문이다 — app/use-now.ts의 설명을 볼 것.
+ * 안 주면 부르는 순간의 시각을 쓴다 (서버 렌더가 그렇게 쓴다).
+ */
+export function timeAgo(iso: string, locale: Locale, now?: number | null): string {
+  const diff = (now ?? Date.now()) - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
   if (min < 1) return pick(locale, AGO.justNow);
   if (min < 60) return pick(locale, AGO.minutesAgo, { n: min });
