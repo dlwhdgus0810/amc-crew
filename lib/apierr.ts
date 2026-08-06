@@ -186,6 +186,9 @@ export const E = {
     ko: 'AMC API가 설정되지 않았습니다. AMC_VENDOR_KEY와 AMC_THEATRE_ID 환경변수를 설정하세요.',
     en: 'The AMC API is not configured. Set AMC_VENDOR_KEY and AMC_THEATRE_ID.',
   },
+  noticeTitle: { ko: '공지 제목은 1~60자로 입력해주세요.', en: 'The notice title must be 1–60 characters.' },
+  noticeBody: { ko: '공지 내용은 1000자 이하로 입력해주세요.', en: 'The notice must be 1000 characters or fewer.' },
+  noticeNotFound: { ko: '공지를 찾을 수 없어요.', en: 'Notice not found.' },
   amcNoShowtimes: {
     ko: 'AMC API에서 The Odyssey 회차를 찾지 못했습니다.',
     en: 'No The Odyssey showtimes found via the AMC API.',

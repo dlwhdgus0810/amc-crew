@@ -496,3 +496,45 @@ export const settlementItemMembers = pgTable(
   },
   (t) => [primaryKey({ columns: [t.itemId, t.userId] })]
 );
+
+/**
+ * 관리자가 올리는 공지 — 앱을 열면 한 번 뜨는 알림창.
+ *
+ * 새 소식(lib/changelog.ts)과는 다르다. 저건 "무엇이 바뀌었나"를 코드와 함께 배포하는
+ * 기록이고, 이건 "이렇게 해주세요"를 그때그때 띄우는 말이다. 그래서 코드가 아니라 DB에 있다.
+ *
+ * 여러 줄을 쌓아 둘 수 있지만 화면에 뜨는 것은 켜져 있는 것 중 가장 최근 하나뿐이다 —
+ * 알림창이 둘 겹치면 어느 것도 제대로 안 읽힌다.
+ */
+export const notices = pgTable('notices', {
+  id: uuid('id').primaryKey(),
+  /**
+   * 두 언어로 적는다 — 앱 어디에도 한국어만 나오는 화면은 없다.
+   *
+   * 영어는 비워 둘 수 있고, 비어 있으면 한국어를 그대로 보여준다. 번역이 늦었다고
+   * 공지가 안 뜨는 것보다는 낫다 — 이 앱을 영어로 보는 사람도 한국어를 읽는다.
+   */
+  titleKo: text('title_ko').notNull(),
+  titleEn: text('title_en'),
+  /** 본문 — 제목만으로 충분하면 비워 둔다 */
+  bodyKo: text('body_ko'),
+  bodyEn: text('body_en'),
+  /**
+   * 이 공지를 볼 사람들. 빈 배열이면 전체 —
+   * 기본이 전체이고, 골라 담는 것은 올리기 전에 나한테만 띄워 보려고 두는 장치다.
+   *
+   * 표를 따로 두지 않은 이유: 열두어 명짜리 명단이고, 이걸로 무언가를 조회할 일이 없다.
+   * 누가 봤는지는 여기 남지 않는다 (읽음 표시는 각자의 기기에만 있다).
+   */
+  targets: jsonb('targets').$type<string[]>().notNull().default([]),
+  /** 내려도 지우지 않는다 — 무슨 공지를 언제 올렸는지가 남아야 한다 */
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * 마지막으로 손댄 시각.
+   *
+   * "이 사람이 이 공지를 봤는가"의 열쇠가 (id, updatedAt)이라, 내용을 고치면
+   * 한 번 닫았던 사람에게도 다시 뜬다. 고쳤다는 건 다시 읽혀야 한다는 뜻이다.
+   */
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});

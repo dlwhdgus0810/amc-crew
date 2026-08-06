@@ -178,6 +178,18 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS notifications_user_read_idx ON notifications (user_id, read);
 
+CREATE TABLE IF NOT EXISTS notices (
+  id uuid PRIMARY KEY,
+  title_ko text NOT NULL,
+  title_en text,
+  body_ko text,
+  body_en text,
+  targets jsonb NOT NULL DEFAULT '[]',
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS presence_sessions (
   id uuid PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,

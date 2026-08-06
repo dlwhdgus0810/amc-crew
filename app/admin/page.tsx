@@ -101,6 +101,50 @@ const T = {
     en: 'Send the latest entry to members with alerts on? It also goes out as a push.',
   },
   newsSent: { ko: '{n}명에게 보냈어요. ({skipped}명은 이미 받아서 건너뛰었어요)', en: 'Sent to {n}. ({skipped} already had it)' },
+  noticeTitle: { ko: '공지', en: 'Notices' },
+  noticeDesc: {
+    ko: '앱을 열면 화면 가운데에 한 번 뜨는 알림창이에요. 올려 둔 것 중 가장 최근 하나만 보이고, 각자 닫으면 그 공지는 다시 안 떠요. 푸시로는 나가지 않아요.',
+    en: 'A one-time popup when someone opens the app. Only the newest live notice shows, and it stops appearing once a person closes it. No push is sent.',
+  },
+  noticeKo: { ko: '한국어', en: 'Korean' },
+  noticeEn: { ko: 'English', en: 'English' },
+  noticeEnHint: {
+    ko: '영어는 비워 둬도 돼요. 비우면 영어로 보는 사람에게도 한국어가 그대로 보여요.',
+    en: 'English is optional — leave it blank and Korean shows to everyone.',
+  },
+  noticeTitlePh: { ko: '제목 — 예: 참가하시면 참가 버튼을 눌러주세요', en: 'Title — e.g. Tap Join if you’re coming' },
+  noticeTitlePhEn: { ko: 'Title (English)', en: 'Title (English)' },
+  noticeBodyPh: { ko: '내용 (선택) — 줄을 나눠 써도 그대로 보여요', en: 'Body (optional) — line breaks are kept' },
+  noticeBodyPhEn: { ko: 'Body (English, optional)', en: 'Body (English, optional)' },
+  noticeWho: { ko: '누구에게', en: 'Who sees it' },
+  noticeAll: { ko: '전체', en: 'Everyone' },
+  noticeSome: { ko: '고른 사람만', en: 'Only picked' },
+  noticeSomeHint: {
+    ko: '올리기 전에 나한테만 띄워 보는 용도예요. 고른 사람 외에는 이 공지가 있는 줄도 몰라요.',
+    en: 'For trying it on yourself before it goes out. Nobody else even knows it exists.',
+  },
+  noticePickNone: { ko: '한 명 이상 골라주세요.', en: 'Pick at least one person.' },
+  noticeToAll: { ko: '전체', en: 'Everyone' },
+  noticeToSome: { ko: '{n}명에게만', en: '{n} picked' },
+  noticePublish: { ko: '올리기', en: 'Publish' },
+  noticePosted: { ko: '올렸어요. 다들 앱을 열면 보게 돼요.', en: 'Live — everyone sees it next time they open the app.' },
+  noticePostedSome: {
+    ko: '올렸어요. 고른 사람에게만 보여요 — 확인한 뒤 「전체에게」로 바꾸면 다들 보게 돼요.',
+    en: 'Live for the people you picked. Switch it to everyone once it looks right.',
+  },
+  noticeToEveryone: { ko: '전체에게 보내기', en: 'Send to everyone' },
+  noticeToEveryoneConfirm: {
+    ko: '이 공지를 전체에게 보낼까요? 다들 앱을 열면 보게 돼요.',
+    en: 'Send this notice to everyone? They’ll see it next time they open the app.',
+  },
+  noticeEmpty: { ko: '아직 올린 공지가 없어요.', en: 'No notices yet.' },
+  noticeLive: { ko: '지금 보이는 공지', en: 'Showing now' },
+  noticeHidden: { ko: '내림', en: 'Taken down' },
+  noticeOlder: { ko: '가려짐', en: 'Superseded' },
+  noticeDown: { ko: '내리기', en: 'Take down' },
+  noticeUp: { ko: '다시 올리기', en: 'Put back' },
+  noticeDelete: { ko: '지우기', en: 'Delete' },
+  noticeDeleteConfirm: { ko: '이 공지를 지울까요? 되돌릴 수 없어요.', en: 'Delete this notice? This can’t be undone.' },
   banTitle: { ko: '이용 정지', en: 'Suspensions' },
   banDesc: {
     ko: '정한 시간 동안 앱을 못 쓰게 막아요. 시간이 지나면 저절로 풀리고, 그 사람이 만든 모임과 댓글은 그대로 남아요.',
@@ -240,8 +284,149 @@ export default function AdminPage() {
   const [durations, setDurations] = useState<number[]>([]);
   const [newsBusy, setNewsBusy] = useState(false);
   const [presenceBusy, setPresenceBusy] = useState(false);
+  const [notices, setNotices] = useState<
+    {
+      id: string;
+      titleKo: string;
+      titleEn: string | null;
+      bodyKo: string | null;
+      bodyEn: string | null;
+      targets: string[];
+      active: boolean;
+      createdAt: string;
+    }[]
+  >([]);
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeTitleEn, setNoticeTitleEn] = useState('');
+  const [noticeBody, setNoticeBody] = useState('');
+  const [noticeBodyEn, setNoticeBodyEn] = useState('');
+  const [noticeBusy, setNoticeBusy] = useState(false);
+  /** 받는 사람 — 빈 배열이 곧 전체다. 「고른 사람만」을 골랐는지는 이 스위치가 따로 기억한다 */
+  const [noticePicked, setNoticePicked] = useState(false);
+  const [noticeTargets, setNoticeTargets] = useState<string[]>([]);
+  /** 받는 사람 고르기용 전체 명단 — 정지 목록(관리자가 빠져 있다)과 달리 나도 들어 있어야 한다 */
+  const [everyone, setEveryone] = useState<{ id: string; name: string; avatar: string | null }[]>([]);
   const t = useT();
   const locale = useLocale();
+
+  async function loadNotices() {
+    const res = await fetch('/api/notices?all=1', { cache: 'no-store' });
+    if (res.ok) setNotices((await res.json()).notices ?? []);
+  }
+
+  async function loadEveryone() {
+    const res = await fetch('/api/admin/members', { cache: 'no-store' });
+    if (res.ok) setEveryone((await res.json()).members ?? []);
+  }
+
+  /** 공지에서 이름을 보여줄 때 — 지운 회원이면 id라도 보여준다 */
+  function nameOf(id: string): string {
+    return everyone.find((m) => m.id === id)?.name ?? id;
+  }
+
+  /**
+   * 공지 올리기.
+   *
+   * 앞의 것을 따로 내리지 않아도 된다 — 뜨는 것은 올려 둔 것 중 가장 최근 하나뿐이다.
+   */
+  async function publishNotice() {
+    // 「고른 사람만」인데 아무도 안 골랐으면 전체로 나가버린다 — 그 전에 막는다
+    if (noticePicked && noticeTargets.length === 0) {
+      setMsg({ type: 'err', text: t(T.noticePickNone) });
+      return;
+    }
+    setNoticeBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/notices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titleKo: noticeTitle.trim(),
+          titleEn: noticeTitleEn.trim(),
+          bodyKo: noticeBody.trim(),
+          bodyEn: noticeBodyEn.trim(),
+          targets: noticePicked ? noticeTargets : [],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(T.failed));
+      setNoticeTitle('');
+      setNoticeTitleEn('');
+      setNoticeBody('');
+      setNoticeBodyEn('');
+      setMsg({ type: 'ok', text: noticePicked ? t(T.noticePostedSome) : t(T.noticePosted) });
+      await loadNotices();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setNoticeBusy(false);
+    }
+  }
+
+  async function toggleNotice(id: string, active: boolean) {
+    setNoticeBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/notices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active }),
+      });
+      if (!res.ok) throw new Error(t(T.failed));
+      await loadNotices();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setNoticeBusy(false);
+    }
+  }
+
+  /**
+   * 골라 보낸 공지를 전체로 넓힌다 — 「나한테만 띄워 보고 괜찮으면 다들에게」가
+   * 이 기능을 쓰는 가장 흔한 순서라, 지우고 다시 쓰게 두지 않는다.
+   */
+  async function widenNotice(n: (typeof notices)[number]) {
+    if (!confirm(t(T.noticeToEveryoneConfirm))) return;
+    setNoticeBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/notices/${n.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titleKo: n.titleKo,
+          titleEn: n.titleEn ?? '',
+          bodyKo: n.bodyKo ?? '',
+          bodyEn: n.bodyEn ?? '',
+          targets: [],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(T.failed));
+      setMsg({ type: 'ok', text: t(T.noticePosted) });
+      await loadNotices();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setNoticeBusy(false);
+    }
+  }
+
+  async function removeNotice(id: string) {
+    if (!confirm(t(T.noticeDeleteConfirm))) return;
+    setNoticeBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/notices/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(t(T.failed));
+      await loadNotices();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+    } finally {
+      setNoticeBusy(false);
+    }
+  }
 
   /**
    * 내 접속 표시를 켜고 끈다.
@@ -379,6 +564,8 @@ export default function AdminPage() {
       .then((d) => d && setDeleted(d.notifications ?? []))
       .catch(() => {});
     loadMembers();
+    loadNotices();
+    loadEveryone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isKakaoAdmin]);
 
@@ -650,6 +837,143 @@ export default function AdminPage() {
               {newsBusy ? t(T.newsSending) : t(T.newsSend)}
             </button>
           </div>
+
+          <h1 style={{ marginTop: 80 }}>{t(T.noticeTitle)}</h1>
+          <p className="subtitle">{t(T.noticeDesc)}</p>
+          <div className="card">
+            <div className="field-label">{t(T.noticeKo)}</div>
+            <input
+              type="text"
+              placeholder={t(T.noticeTitlePh)}
+              value={noticeTitle}
+              maxLength={60}
+              onChange={(e) => setNoticeTitle(e.target.value)}
+            />
+            <textarea
+              placeholder={t(T.noticeBodyPh)}
+              value={noticeBody}
+              maxLength={1000}
+              rows={3}
+              style={{ marginTop: 10 }}
+              onChange={(e) => setNoticeBody(e.target.value)}
+            />
+
+            <div className="field-label" style={{ marginTop: 16 }}>
+              {t(T.noticeEn)}
+            </div>
+            <input
+              type="text"
+              placeholder={t(T.noticeTitlePhEn)}
+              value={noticeTitleEn}
+              maxLength={60}
+              onChange={(e) => setNoticeTitleEn(e.target.value)}
+            />
+            <textarea
+              placeholder={t(T.noticeBodyPhEn)}
+              value={noticeBodyEn}
+              maxLength={1000}
+              rows={3}
+              style={{ marginTop: 10 }}
+              onChange={(e) => setNoticeBodyEn(e.target.value)}
+            />
+            <p className="hint" style={{ marginTop: 8 }}>
+              {t(T.noticeEnHint)}
+            </p>
+
+            <div className="field-label" style={{ marginTop: 16 }}>
+              {t(T.noticeWho)}
+            </div>
+            <div className="seg-group">
+              {[false, true].map((v) => (
+                <button
+                  key={String(v)}
+                  className={`seg ${noticePicked === v ? 'on' : ''}`}
+                  disabled={noticeBusy}
+                  onClick={() => setNoticePicked(v)}
+                >
+                  {v ? t(T.noticeSome) : t(T.noticeAll)}
+                </button>
+              ))}
+            </div>
+            {noticePicked && (
+              <>
+                <div className="seg-group" style={{ flexWrap: 'wrap', marginTop: 10 }}>
+                  {everyone.map((m) => (
+                    <button
+                      key={m.id}
+                      className={`seg ${noticeTargets.includes(m.id) ? 'on' : ''}`}
+                      disabled={noticeBusy}
+                      onClick={() =>
+                        setNoticeTargets((prev) =>
+                          prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id]
+                        )
+                      }
+                    >
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+                <p className="hint" style={{ marginTop: 8 }}>
+                  {t(T.noticeSomeHint)}
+                </p>
+              </>
+            )}
+
+            <button
+              className="secondary"
+              style={{ marginTop: 14 }}
+              disabled={noticeBusy || !noticeTitle.trim()}
+              onClick={publishNotice}
+            >
+              {t(T.noticePublish)}
+            </button>
+          </div>
+
+          {notices.length === 0 ? (
+            <p className="subtitle">{t(T.noticeEmpty)}</p>
+          ) : (
+            notices.map((n, i) => {
+              /*
+               * 켜져 있는 것이 여럿이어도 뜨는 건 가장 최근 하나다. 나머지 켜진 것들을
+               * 그냥 「올림」으로 두면 왜 안 보이는지 알 수 없어서, 뜨는 것 하나만 갈라 놓는다.
+               */
+              const live = n.active && notices.findIndex((x) => x.active) === i;
+              return (
+                <div key={n.id} className="card notice-row">
+                  <div className="notice-row-head">
+                    <span className={`notice-state ${live ? 'live' : ''}`}>
+                      {live ? t(T.noticeLive) : n.active ? t(T.noticeOlder) : t(T.noticeHidden)}
+                    </span>
+                    <span className="notice-state">
+                      {n.targets.length === 0 ? t(T.noticeToAll) : t(T.noticeToSome, { n: n.targets.length })}
+                    </span>
+                    <span className="notice-row-when">{n.createdAt.slice(0, 10)}</span>
+                  </div>
+                  <p className="notice-row-title">{n.titleKo}</p>
+                  {n.bodyKo && <p className="notice-row-body">{n.bodyKo}</p>}
+                  {n.titleEn && <p className="notice-row-title en">{n.titleEn}</p>}
+                  {n.bodyEn && <p className="notice-row-body">{n.bodyEn}</p>}
+                  {/* 누구에게 갔는지는 이름으로 — 「3명에게만」만 보면 누구였는지 알 수 없다 */}
+                  {n.targets.length > 0 && (
+                    <p className="notice-row-who">{n.targets.map(nameOf).join(', ')}</p>
+                  )}
+                  <div className="field-row" style={{ marginTop: 12, flexWrap: 'wrap' }}>
+                    {n.targets.length > 0 && (
+                      <button className="secondary" disabled={noticeBusy} onClick={() => widenNotice(n)}>
+                        {t(T.noticeToEveryone)}
+                      </button>
+                    )}
+                    <button className="secondary" disabled={noticeBusy} onClick={() => toggleNotice(n.id, !n.active)}>
+                      {n.active ? t(T.noticeDown) : t(T.noticeUp)}
+                    </button>
+                    <button className="danger" disabled={noticeBusy} onClick={() => removeNotice(n.id)}>
+                      {t(T.noticeDelete)}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
 
             </>
           )}

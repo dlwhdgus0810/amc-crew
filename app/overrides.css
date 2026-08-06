@@ -1465,3 +1465,109 @@ h2 {
   cursor: pointer;
 }
 .photo-pending { opacity: 0.45; }
+
+/* ── 공지 알림창 (app/notice-popup.tsx) ──────────────────────
+   z-index 70 — 사진 확대(60)보다 위, 정지 가리개(90)보다 아래.
+   막힌 사람에게 공지를 읽힐 자리는 아니라서 그 순서가 맞다. */
+.notice-pop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(16, 16, 16, 0.55);
+  backdrop-filter: blur(3px);
+}
+.notice-box {
+  width: 100%;
+  max-width: 340px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  /* 공지가 길면 상자 안에서만 스크롤된다 — 뒤 화면은 잠겨 있다 */
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+.notice-tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.notice-title {
+  margin: 12px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
+}
+.notice-body {
+  margin: 8px 0 0;
+  color: var(--text-mid);
+  font-size: 14px;
+  line-height: 1.6;
+  /* 관리자가 줄을 나눠 썼으면 그대로 나눠 보여준다 */
+  white-space: pre-wrap;
+}
+.notice-ok {
+  width: 100%;
+  margin-top: 18px;
+  min-height: 44px;
+}
+
+/* 관리자 화면의 공지 목록 */
+.notice-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.notice-state {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.notice-state.live {
+  border-color: transparent;
+  background: var(--text);
+  color: var(--surface);
+  font-weight: 700;
+}
+.notice-row-when {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.notice-row-title {
+  margin: 10px 0 0;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.notice-row-body {
+  margin: 6px 0 0;
+  color: var(--text-mid);
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+/* 영어 줄은 한 칸 띄우고 조금 흐리게 — 같은 공지의 다른 언어라는 게 보이도록 */
+.notice-row-title.en {
+  margin-top: 12px;
+  color: var(--text-mid);
+}
+.notice-row-who {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
