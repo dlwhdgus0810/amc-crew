@@ -65,13 +65,26 @@ export function splitWithExtras(
  * Venmo 딥링크 — 받는 사람·금액·메모를 채운 채로 Venmo가 열린다.
  * 확인은 Venmo 안에서 누른다. 문서로 보장된 규격은 아니라 바뀔 수 있다.
  *
- * 쿼리를 손으로 짓는다. URLSearchParams는 폼 규칙(application/x-www-form-urlencoded)을
- * 따라 **빈칸을 +로 적는데**, Venmo는 그걸 되돌리지 않고 메모에 +를 그대로 띄운다
- * ("축구+8/8+회비"). encodeURIComponent는 빈칸을 %20으로 적고, 그건 제대로 풀린다.
+ * **빈칸을 쓰지 않는다.** 메모에 "볼링+8/5(수)+·+내기"처럼 +가 찍히던 문제의 원인은
+ * 우리 쪽 인코딩이 아니라 Venmo의 되넘김이다. 실제로 따라가 보면:
+ *
+ *   https://venmo.com/<id>?note=볼링%208%2F5     ← 우리가 보내는 것 (%20 = 빈칸)
+ *     → 302 account.venmo.com/<id>?note=볼링%208%2F5
+ *     → 307 venmo://paycharge?...note=볼링+8%2F5  ← 여기서 폼 규칙으로 다시 적는다
+ *
+ * 마지막 판에 +가 박히고 앱은 퍼센트 디코딩만 하므로 +가 글자 그대로 남는다.
+ * %20으로 보내든 +로 보내든 결과가 같아서, 인코딩으로는 못 고친다.
+ *
+ * 그래서 빈칸을 U+00A0(줄바꿈 없는 빈칸)로 바꿔 보낸다. 이건 ASCII 빈칸이 아니라
+ * %C2%A0으로 실려 위 되넘김을 그대로 통과하고(확인함), 앱에서는 보통 빈칸처럼 보인다.
+ * 대가는 그 자리에서 줄이 안 바뀐다는 것뿐이라, 메모를 짧게 유지한다(NOTE_MAX).
  */
+// 눈에 안 보이는 글자라 이스케이프로 적는다 — 소스에서 ASCII 빈칸과 구분되어야 한다
+const NBSP = '\u00a0';
+
 export function venmoLink(username: string, cents: number, note: string): string {
   const amount = (cents / 100).toFixed(2);
-  const query = `txn=pay&amount=${amount}&note=${encodeURIComponent(note)}`;
+  const query = `txn=pay&amount=${amount}&note=${encodeURIComponent(note.replace(/ /g, NBSP))}`;
   return `https://venmo.com/${encodeURIComponent(username)}?${query}`;
 }
 
@@ -84,8 +97,12 @@ export function venmoLink(username: string, cents: number, note: string): string
  * 길이를 재는 이유: Venmo가 긴 메모를 어디서 자르는지 문서로 밝혀져 있지 않다.
  * 자르기는 우리가 한다 — 남의 손에 맡기면 항목 이름이 중간에서 끊겨 오해를 부른다.
  * 넘치는 항목은 이름을 지우고 개수만 남긴다("+2"). 숫자는 어느 언어에서나 같은 뜻이다.
+ *
+ * 180에서 120으로 줄였다. 빈칸을 U+00A0으로 보내는 탓에(venmoLink) 메모 한 줄이
+ * 통째로 한 낱말처럼 취급되어 줄이 안 바뀐다 — 길면 앱에서 잘려 보일 수 있다.
+ * 항목 넷까지는 넉넉히 들어간다.
  */
-const NOTE_MAX = 180;
+const NOTE_MAX = 120;
 
 export interface NotePart {
   label: string;
