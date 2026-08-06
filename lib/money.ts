@@ -64,10 +64,75 @@ export function splitWithExtras(
 /**
  * Venmo 딥링크 — 받는 사람·금액·메모를 채운 채로 Venmo가 열린다.
  * 확인은 Venmo 안에서 누른다. 문서로 보장된 규격은 아니라 바뀔 수 있다.
+ *
+ * 쿼리를 손으로 짓는다. URLSearchParams는 폼 규칙(application/x-www-form-urlencoded)을
+ * 따라 **빈칸을 +로 적는데**, Venmo는 그걸 되돌리지 않고 메모에 +를 그대로 띄운다
+ * ("축구+8/8+회비"). encodeURIComponent는 빈칸을 %20으로 적고, 그건 제대로 풀린다.
  */
 export function venmoLink(username: string, cents: number, note: string): string {
-  const params = new URLSearchParams({ txn: 'pay', amount: (cents / 100).toFixed(2), note });
-  return `https://venmo.com/${encodeURIComponent(username)}?${params}`;
+  const amount = (cents / 100).toFixed(2);
+  const query = `txn=pay&amount=${amount}&note=${encodeURIComponent(note)}`;
+  return `https://venmo.com/${encodeURIComponent(username)}?${query}`;
+}
+
+/**
+ * Venmo 메모 한 줄 — 앱의 정산 카드를 그대로 옮긴다.
+ *
+ * 받는 쪽이 Venmo만 보고도 무엇에 대한 돈인지 알아야 한다. 모임 이름과 날짜만
+ * 적혀 있으면 "이 $12.50이 회비인지 밥값인지"를 다시 물어보게 된다.
+ *
+ * 길이를 재는 이유: Venmo가 긴 메모를 어디서 자르는지 문서로 밝혀져 있지 않다.
+ * 자르기는 우리가 한다 — 남의 손에 맡기면 항목 이름이 중간에서 끊겨 오해를 부른다.
+ * 넘치는 항목은 이름을 지우고 개수만 남긴다("+2"). 숫자는 어느 언어에서나 같은 뜻이다.
+ */
+const NOTE_MAX = 180;
+
+export interface NotePart {
+  label: string;
+  cents: number;
+}
+
+/**
+ * 메모에 실을 「내 몫의 내역」 — 항목마다 내가 낀 것만, 내 몫만.
+ *
+ * 서버는 사람별 합계만 내려주므로 항목별 몫은 여기서 같은 함수(splitWithExtras)로 다시 센다.
+ * 그래도 마지막 한두 센트는 어긋날 수 있어서, 차이는 마지막 항목에 얹어 **합이 늘 실제
+ * 청구액과 같게** 맞춘다. 메모의 합이 결제 금액과 다르면 받는 쪽이 그걸 먼저 물어본다.
+ */
+export function myShareParts(
+  items: { label: string; amountCents: number; scope: 'all' | 'some'; memberIds: string[]; extraPeople: number }[],
+  payerIds: string[],
+  userId: string,
+  myCents: number
+): NotePart[] {
+  const inList = new Set(payerIds);
+  const parts: NotePart[] = [];
+  for (const item of items) {
+    const members = item.scope === 'all' ? payerIds : item.memberIds.filter((id) => inList.has(id));
+    const cents = splitWithExtras(item.amountCents, members, item.extraPeople).get(userId) ?? 0;
+    if (cents > 0) parts.push({ label: item.label, cents });
+  }
+  const sum = parts.reduce((n, p) => n + p.cents, 0);
+  const last = parts[parts.length - 1];
+  if (last && sum !== myCents) last.cents += myCents - sum;
+  return parts;
+}
+
+export function payNote(event: string, parts: { label: string; cents: number }[]): string {
+  const head = event.trim();
+  const shown: string[] = [];
+  let dropped = 0;
+
+  for (const p of parts) {
+    const piece = `${p.label.trim()} ${formatCents(p.cents)}`;
+    const candidate = [head, [...shown, piece].join(', ')].filter(Boolean).join(' · ');
+    // 뒤에 "+n"이 붙을 자리까지 미리 비워 둔다 (넉넉히 5자)
+    if (candidate.length > NOTE_MAX - 5) dropped++;
+    else shown.push(piece);
+  }
+
+  const body = [...shown, ...(dropped > 0 ? [`+${dropped}`] : [])].join(', ');
+  return [head, body].filter(Boolean).join(' · ').slice(0, NOTE_MAX);
 }
 
 /**

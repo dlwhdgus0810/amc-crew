@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '@/lib/db/index';
 import { posts, settlements, users } from '@/lib/db/schema';
 import { getSettlement } from '@/lib/db/settlements';
-import { venmoLink } from '@/lib/money';
+import { payNote, venmoLink } from '@/lib/money';
 import { catName } from '@/lib/categories';
 import { dateLabelShort } from '@/lib/datefmt';
 import { DEFAULT_LOCALE } from '@/lib/i18n';
@@ -40,9 +40,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
   if (cents <= 0) return NextResponse.redirect(new URL(`/p/${row.postId}`, req.nextUrl.origin));
 
   const [post] = await db.select().from(posts).where(eq(posts.id, row.postId));
-  const note = post
+  const head = post
     ? `${catName(post.category, DEFAULT_LOCALE)} ${dateLabelShort(post.date, DEFAULT_LOCALE)}`
     : 'Kansas Korean';
+  /*
+   * 메모에 항목도 싣는다 — 앱을 안 쓰는 사람이라 이 화면 말고는 무슨 돈인지 알 길이 없다.
+   * 앱 밖 인원이 걸린 항목만, 그 사람 몫으로 적는다 (화면에서 계산한 것과 같은 규칙).
+   */
+  const note = payNote(
+    head,
+    view.items
+      .filter((i) => i.extraPeople > 0 && i.heads > 0)
+      .map((i) => ({ label: i.label, cents: Math.floor(i.amountCents / i.heads) }))
+  );
 
   return NextResponse.redirect(venmoLink(payee.venmo, cents, note));
 }

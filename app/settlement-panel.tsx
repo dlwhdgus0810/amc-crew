@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from './i18n';
-import { formatCents, parseAmountCents, splitWithExtras, venmoLink } from '@/lib/money';
+import { formatCents, myShareParts, parseAmountCents, payNote, splitWithExtras, venmoLink } from '@/lib/money';
 import { timeAgo } from '@/lib/datefmt';
 
 const T = {
@@ -463,6 +463,25 @@ export default function SettlementPanel({
 
   const mine = settlement?.shares.find((s) => s.userId === currentUserId);
   const isPayee = settlement?.payee.id === currentUserId;
+
+  /**
+   * Venmo 메모 — 모임 이름 뒤에 내 몫의 내역을 붙인다 (규칙은 lib/money.ts에 있다).
+   *
+   * 낼 사람 명단은 `payers`가 아니라 서버가 준 extraMembers로 짓는다. payers의 extras는
+   * **편집을 시작할 때만** 채워지는 상태라(startEditing), 보기만 하는 사람에게는 늘 비어 있다.
+   * 그대로 쓰면 머릿수가 모자라 항목마다 몫이 부풀고, 그 차이가 마지막 항목에 몰려
+   * 음수까지 나온다. 서버의 payerIds(참가자 + 정산에만 넣은 사람)와 같은 명단이어야 한다.
+   */
+  function myNote(): string {
+    if (!settlement || !currentUserId || !mine) return noteLabel;
+    const ids = [
+      ...participants.map((p) => p.id),
+      ...settlement.extraMembers.map((e) => e.id).filter((id) => !participants.some((p) => p.id === id)),
+    ];
+    const parts = myShareParts(settlement.items, ids, currentUserId, mine.cents);
+    // 셈이 어긋나 이상한 값이 나오면 메모에는 아무것도 싣지 않는다 (모임 이름만)
+    return payNote(noteLabel, parts.some((p) => p.cents <= 0) ? [] : parts);
+  }
   const canEdit = Boolean(currentUserId) && (!settlement || isPayee);
   /* 다시 알릴 수 있는 사람 = 받을 사람(또는 관리자), 대상 = 낼 금액이 있는 사람들 */
   const canRemind = Boolean(settlement) && (isPayee || isAdmin);
@@ -561,7 +580,7 @@ export default function SettlementPanel({
                     <span className="pay-zelle-label">Venmo</span>
                     <a
                       className="pay-zelle-value"
-                      href={venmoLink(settlement.payee.venmo, mine.cents, noteLabel)}
+                      href={venmoLink(settlement.payee.venmo, mine.cents, myNote())}
                       target="_blank"
                       rel="noreferrer"
                     >

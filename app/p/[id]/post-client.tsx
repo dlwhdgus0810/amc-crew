@@ -6,7 +6,7 @@ import PlaceLink from '@/app/place-link';
 import { useEffect, useState } from 'react';
 import { catDisplayName, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../../i18n';
-import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
+import { dateLabel as fmtDate, dateLabelShort, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
 import { effectiveEnd } from '@/lib/dates';
 
 const T = {
@@ -386,6 +386,11 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         />
       )}
 
+      {/*
+       * noteLabel은 Venmo 메모의 머리말이다 — 「무비나잇 Boyhood 8/8(금)」.
+       * 〈 〉는 뺐다. 앱 화면에서는 제목을 감싸 주는 표시지만, 메모 한 줄에서는 자리만
+       * 먹고 어떤 글꼴에서는 네모로 깨진다. 날짜도 짧은 쪽을 쓴다 (뒤에 항목이 붙는다).
+       */}
       <SettlementPanel
         postId={post.id}
         participants={post.participants.map((p) => ({ id: p.id, name: p.name }))}
@@ -393,7 +398,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         isAdmin={isAdmin}
         myVenmo={myVenmo}
         myZelle={myZelle}
-        noteLabel={`${catLabel}${post.title ? ` 〈${post.title}〉` : ''} ${dateLabel(post.date)}`}
+        noteLabel={`${catLabel}${post.title ? ` ${post.title}` : ''} ${dateLabelShort(post.date, locale)}`}
       />
 
       <h2>{t(T.comments)} {post.commentCount > 0 ? post.commentCount : ''}</h2>

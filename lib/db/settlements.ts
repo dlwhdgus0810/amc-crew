@@ -15,7 +15,7 @@ import {
 import { resolveDisplayName } from '../store';
 import { catName, getCategory } from '../categories';
 import { adminIds } from '../auth';
-import { formatCents, shortCode, splitWithExtras, venmoLink } from '../money';
+import { formatCents, payNote, shortCode, splitWithExtras, venmoLink } from '../money';
 import { sendPush } from '../push';
 import { dateLabelShort, timeLabel } from '../datefmt';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
@@ -371,7 +371,16 @@ export async function notifySettlement(
   // 인앱·푸시는 plain, 카톡만 kakao (받을 계좌가 붙은 판)
   const messages = new Map<string, { plain: string; kakao: string; locale: Locale }>();
 
-  const note = `${catName(post.category, DEFAULT_LOCALE)} ${dateLabelShort(post.date, DEFAULT_LOCALE)}`;
+  /*
+   * 이 메모는 「코드가 없는 옛 정산」에 쓰는 긴 Venmo 주소에만 들어간다 (아래 viaVenmoLink).
+   * 앱 밖 인원용이라 그 사람이 걸린 항목만, 그 사람 몫으로 적는다 — /v/<code>와 같은 규칙이다.
+   */
+  const note = payNote(
+    `${catName(post.category, DEFAULT_LOCALE)} ${dateLabelShort(post.date, DEFAULT_LOCALE)}`,
+    view.items
+      .filter((i) => i.extraPeople > 0 && i.heads > 0)
+      .map((i) => ({ label: i.label, cents: Math.floor(i.amountCents / i.heads) }))
+  );
 
   for (const target of targets) {
     const locale = localeById.get(target.userId) ?? 'ko';
