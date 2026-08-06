@@ -1571,3 +1571,12 @@ h2 {
   font-size: 12.5px;
   color: var(--text-dim);
 }
+/* 확인한 사람 — 본문과 버튼 사이에 한 칸 띄워 둔다 */
+.notice-reads {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft, var(--border));
+}
+.notice-reads .notice-row-who {
+  margin-top: 6px;
+}

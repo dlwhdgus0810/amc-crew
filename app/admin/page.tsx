@@ -126,6 +126,14 @@ const T = {
   noticePickNone: { ko: '한 명 이상 골라주세요.', en: 'Pick at least one person.' },
   noticeToAll: { ko: '전체', en: 'Everyone' },
   noticeToSome: { ko: '{n}명에게만', en: '{n} picked' },
+  noticeRead: { ko: '{seen}/{total}명 확인', en: '{seen}/{total} confirmed' },
+  noticeReadWho: { ko: '확인: {names}', en: 'Confirmed: {names}' },
+  noticeReadNot: { ko: '아직: {names}', en: 'Not yet: {names}' },
+  noticeReadNone: { ko: '아직 아무도 안 눌렀어요.', en: 'Nobody has confirmed yet.' },
+  noticeReadNote: {
+    ko: '「알겠어요」를 누른 사람이에요. 눌렀다는 것이지 읽었다는 뜻은 아니고, 회원들에게는 안 보여요. 내용을 고치면 다시 0부터 세요.',
+    en: 'Who tapped “Got it” — tapped, not necessarily read. Members don’t see this. Editing the notice resets the count.',
+  },
   noticePublish: { ko: '올리기', en: 'Publish' },
   noticePosted: { ko: '올렸어요. 다들 앱을 열면 보게 돼요.', en: 'Live — everyone sees it next time they open the app.' },
   noticePostedSome: {
@@ -292,6 +300,7 @@ export default function AdminPage() {
       bodyKo: string | null;
       bodyEn: string | null;
       targets: string[];
+      reads: { userId: string; seenAt: string }[];
       active: boolean;
       createdAt: string;
     }[]
@@ -929,6 +938,11 @@ export default function AdminPage() {
             </button>
           </div>
 
+          {notices.length > 0 && (
+            <p className="subtitle" style={{ marginTop: 18 }}>
+              {t(T.noticeReadNote)}
+            </p>
+          )}
           {notices.length === 0 ? (
             <p className="subtitle">{t(T.noticeEmpty)}</p>
           ) : (
@@ -957,6 +971,30 @@ export default function AdminPage() {
                   {n.targets.length > 0 && (
                     <p className="notice-row-who">{n.targets.map(nameOf).join(', ')}</p>
                   )}
+                  {(() => {
+                    /*
+                     * 받을 사람이 곧 분모다 — 골라 보낸 공지를 전체 인원으로 나누면
+                     * 「3/12명 확인」처럼 영영 안 차는 숫자가 된다.
+                     */
+                    const audience = n.targets.length > 0 ? n.targets : everyone.map((m) => m.id);
+                    const seen = n.reads.map((r) => r.userId).filter((id) => audience.includes(id));
+                    const notYet = audience.filter((id) => !seen.includes(id));
+                    return (
+                      <div className="notice-reads">
+                        <span className="notice-state">
+                          {t(T.noticeRead, { seen: seen.length, total: audience.length })}
+                        </span>
+                        {seen.length === 0 ? (
+                          <p className="notice-row-who">{t(T.noticeReadNone)}</p>
+                        ) : (
+                          <p className="notice-row-who">{t(T.noticeReadWho, { names: seen.map(nameOf).join(', ') })}</p>
+                        )}
+                        {notYet.length > 0 && seen.length > 0 && (
+                          <p className="notice-row-who">{t(T.noticeReadNot, { names: notYet.map(nameOf).join(', ') })}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="field-row" style={{ marginTop: 12, flexWrap: 'wrap' }}>
                     {n.targets.length > 0 && (
                       <button className="secondary" disabled={noticeBusy} onClick={() => widenNotice(n)}>

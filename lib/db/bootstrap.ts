@@ -190,6 +190,13 @@ CREATE TABLE IF NOT EXISTS notices (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS notice_reads (
+  notice_id uuid NOT NULL REFERENCES notices(id) ON DELETE CASCADE,
+  user_id text NOT NULL REFERENCES users(id),
+  seen_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (notice_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS presence_sessions (
   id uuid PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,

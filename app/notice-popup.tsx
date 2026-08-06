@@ -13,8 +13,11 @@ import { useViewer } from './session';
  *
  * 대신 한 번 닫으면 그 공지는 다시 안 뜬다. 매번 뜨는 알림창은 두 번째부터 안 읽고 닫는다.
  *
- * 읽음 표시는 이 기기의 localStorage에만 남는다 — 사람 × 공지로 표를 만들 만한 일이 아니다.
- * 기기를 바꾸면 한 번 더 보는 정도는 감수한다 (새 소식 카드도 같은 방식이다).
+ * 「알겠어요」는 서버에 한 줄 남긴다. 올린 쪽이 「다들 봤나」를 알아야 해서고, 덤으로
+ * 읽음 표시가 사람에게 붙어 폰에서 닫은 것을 노트북도 안다.
+ *
+ * localStorage에도 함께 적는다. 그게 없으면 서버에 알리는 데 실패했을 때(지하철·기내)
+ * 같은 공지가 그 자리에서 다시 뜬다. 어느 한쪽에만 있어도 안 뜨고, 서버 쪽이 기준이다.
  */
 
 const SEEN_KEY = 'kk-notice-seen';
@@ -109,8 +112,10 @@ export default function NoticePopup() {
       try {
         localStorage.setItem(SEEN_KEY, JSON.stringify([...seenList(), keyOf(notice)].slice(-SEEN_MAX)));
       } catch {
-        // 못 적으면 다음에 또 뜬다 — 그뿐이다
+        // 못 적으면 서버 쪽 기록이 받아 준다
       }
+      // 답을 기다리지 않는다 — 창은 이미 닫혔고, 실패하면 localStorage가 받아 준다
+      fetch(`/api/notices/${notice.id}/read`, { method: 'POST', keepalive: true }).catch(() => {});
     }
     setNotice(null);
   }

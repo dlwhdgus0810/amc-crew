@@ -1,7 +1,7 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import { getDb } from './index';
-import { notices } from './schema';
+import { noticeReads, notices } from './schema';
 import { NOTICE_TAG } from '../cache-tags';
 
 /**
@@ -67,16 +67,79 @@ export const activeNotices = unstable_cache(activeQuery, ['active-notices'], {
   revalidate: 300,
 });
 
-/** 이 사람에게 뜰 공지 하나 — 받는 사람을 고르지 않았거나(전체) 그 안에 있는 것 중 최신 */
-export function pickFor(list: NoticeView[], userId: string): NoticeView | null {
-  return list.find((n) => n.targets.length === 0 || n.targets.includes(userId)) ?? null;
+/** 이 사람이 볼 수 있는 공지들 — 받는 사람을 고르지 않았거나(전체) 그 안에 있는 것, 최신순 */
+function visibleTo(list: NoticeView[], userId: string): NoticeView[] {
+  return list.filter((n) => n.targets.length === 0 || n.targets.includes(userId));
 }
 
-/** 관리자 화면이 보는 전체 목록 — 내린 것도 함께 (무엇을 언제 올렸는지가 기록이다) */
-export async function listNotices(): Promise<NoticeView[]> {
+/**
+ * 지금 이 사람에게 띄울 공지 하나 — 볼 수 있는 것 중 아직 확인하지 않은 최신.
+ *
+ * 확인 여부는 담아 두지 않는다(사람마다 다르다). 볼 수 있는 목록은 담아 둔 것을 쓰고,
+ * 여기서 그 몇 개에 대해서만 확인 기록을 묻는다 — 늘 한 번, 열두어 줄짜리 질의다.
+ */
+export async function noticeFor(list: NoticeView[], userId: string): Promise<NoticeView | null> {
+  const mine = visibleTo(list, userId);
+  if (mine.length === 0) return null;
+
+  const db = await getDb();
+  const rows = await db
+    .select({ noticeId: noticeReads.noticeId, seenAt: noticeReads.seenAt })
+    .from(noticeReads)
+    .where(and(eq(noticeReads.userId, userId), inArray(noticeReads.noticeId, mine.map((n) => n.id))));
+  const seenAt = new Map(rows.map((r) => [r.noticeId, r.seenAt.getTime()]));
+
+  /*
+   * 확인한 뒤에 내용이 바뀌었으면 다시 띄운다 — 고쳤다는 건 다시 읽혀야 한다는 뜻이다.
+   * 그래서 「어느 판을 봤나」를 따로 담지 않고 두 시각을 견준다.
+   */
+  return mine.find((n) => (seenAt.get(n.id) ?? 0) < new Date(n.updatedAt).getTime()) ?? null;
+}
+
+/** 「알겠어요」 — 두 번 눌러도 한 줄이고, 다시 누르면 시각만 새로 적힌다 */
+export async function markNoticeRead(noticeId: string, userId: string): Promise<void> {
+  const db = await getDb();
+  await db
+    .insert(noticeReads)
+    .values({ noticeId, userId })
+    .onConflictDoUpdate({ target: [noticeReads.noticeId, noticeReads.userId], set: { seenAt: new Date() } });
+}
+
+export interface NoticeRead {
+  userId: string;
+  seenAt: string;
+}
+
+/** 공지별 확인한 사람들 — 관리자 목록에만 쓴다 */
+export async function readsFor(noticeIds: string[]): Promise<Map<string, NoticeRead[]>> {
+  const out = new Map<string, NoticeRead[]>();
+  if (noticeIds.length === 0) return out;
+  const db = await getDb();
+  const rows = await db.select().from(noticeReads).where(inArray(noticeReads.noticeId, noticeIds));
+  for (const r of rows) {
+    const list = out.get(r.noticeId) ?? [];
+    list.push({ userId: r.userId, seenAt: r.seenAt.toISOString() });
+    out.set(r.noticeId, list);
+  }
+  return out;
+}
+
+/**
+ * 관리자 화면이 보는 전체 목록 — 내린 것도 함께 (무엇을 언제 올렸는지가 기록이다).
+ *
+ * 확인 기록도 같이 준다. 다만 **고치기 전에 눌러 둔 것은 세지 않는다** —
+ * 고친 뒤에는 그 사람들에게 다시 뜨고 있는데 화면에 「확인함」으로 남아 있으면
+ * 「다들 봤구나」라는 거짓말이 된다.
+ */
+export async function listNotices(): Promise<(NoticeView & { reads: NoticeRead[] })[]> {
   const db = await getDb();
   const rows = await db.select().from(notices).orderBy(desc(notices.createdAt));
-  return rows.map(view);
+  const reads = await readsFor(rows.map((r) => r.id));
+  return rows.map((r) => {
+    const v = view(r);
+    const cut = r.updatedAt.getTime();
+    return { ...v, reads: (reads.get(r.id) ?? []).filter((x) => new Date(x.seenAt).getTime() >= cut) };
+  });
 }
 
 export interface NoticeInput {

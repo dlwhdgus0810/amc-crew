@@ -4,7 +4,7 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { NOTICE_TAG } from '@/lib/cache-tags';
-import { activeNotices, createNotice, listNotices, pickFor } from '@/lib/db/notices';
+import { activeNotices, createNotice, listNotices, noticeFor } from '@/lib/db/notices';
 import { readNoticeInput } from './input';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ notices: await listNotices() });
   }
-  return NextResponse.json({ notice: pickFor(await activeNotices(), user.id) });
+  return NextResponse.json({ notice: await noticeFor(await activeNotices(), user.id) });
 }
 
 /** 새 공지 올리기 (관리자) */

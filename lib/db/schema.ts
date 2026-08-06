@@ -538,3 +538,28 @@ export const notices = pgTable('notices', {
    */
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * 공지를 확인한 사람 — 「알겠어요」를 누른 순간 한 줄.
+ *
+ * 이걸 두는 이유가 둘이다. 하나는 올린 쪽에서 「다들 봤나」를 알 수 있어야 해서고,
+ * 다른 하나는 읽음 표시가 기기가 아니라 사람에게 붙어야 폰에서 닫은 것을 노트북이 알아서다.
+ *
+ * 「눌렀다」이지 「읽었다」가 아니다 — 그 차이는 화면 문구가 감당한다.
+ *
+ * seenAt은 지운 시각이 아니라 판정 기준이다: 공지의 updatedAt이 이보다 나중이면
+ * 내용이 그 뒤에 바뀐 것이므로 다시 띄운다. 그래서 「어느 판을 봤나」를 따로 담지 않는다.
+ */
+export const noticeReads = pgTable(
+  'notice_reads',
+  {
+    noticeId: uuid('notice_id')
+      .notNull()
+      .references(() => notices.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    seenAt: timestamp('seen_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.noticeId, t.userId] })]
+);
