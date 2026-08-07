@@ -78,7 +78,7 @@ export const CATEGORIES: Category[] = [
     color: '#AA5910',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '독서모임', en: 'Book Club' },
+    name: { ko: '독서나눔', en: 'Book Club' },
     description: { ko: '읽은 만큼만 말하면 됩니다', en: 'Say as much as you read.' },
     // 무엇을 읽는지가 곧 「갈지 말지」라서 제목 자리에 책을 받는다 (무비나잇의 영화와 같은 자리)
     titleLabel: { ko: '책 (선택)', en: 'Book (optional)' },
