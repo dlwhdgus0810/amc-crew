@@ -32,7 +32,7 @@ export const STATEMENTS: Statement[] = [
         bottom: {ko: '그 질문을 여기서 같이 풉니다.', en: 'That’s the question we answer here.'},
     },
     {
-        top: {ko: '가고 싶은 모임이 없으면', en: 'If nothing here looks good,'},
+        top: {ko: '가고 싶은 모임이 없으면,', en: 'If nothing here looks good,'},
         bottom: {ko: '가고 싶은 모임을 여세요.', en: 'make the one you’d want to go to.'},
     },
     {
