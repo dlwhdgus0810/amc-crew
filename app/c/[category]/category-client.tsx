@@ -230,6 +230,18 @@ const T = {
     en: 'Everyone’s in — anyone can create the meetup now. Pick the book and the date together.',
   },
   signupFailed: { ko: '신청하지 못했어요.', en: 'Couldn’t sign up.' },
+  signupCreate: { ko: '이 {n}명으로 모임 만들기', en: 'Create the meetup with these {n}' },
+  signupCreateHint: {
+    ko: '만들면 신청한 분들이 모두 참가자로 들어가고, 정해진 날짜와 장소를 알림으로 받아요.',
+    en: 'Everyone on the list joins the meetup and gets the date and place in an alert.',
+  },
+  signupTermsTitle: { ko: '신청 전에 약속 하나만', en: 'One promise before you sign up' },
+  signupTermsOk: { ko: '확인했어요, 신청할게요', en: 'Got it — sign me up' },
+  signupTermsCancel: { ko: '다음에요', en: 'Not now' },
+  signupOnlyMembers: {
+    ko: '참가신청을 하면 모임을 만들 수 있어요.',
+    en: 'Sign up first, then you can create the meetup.',
+  },
   noDateHint: {
     ko: '먼저 사람을 모으고 날짜는 나중에 정해요. 캘린더에는 안 뜨고, 날짜를 정하면 참가자에게 알림이 가요.',
     en: 'Gather people first and set the date later. It stays off the calendar, and everyone joined is notified once you pick a date.',
@@ -461,6 +473,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFCapacity('');
     setFRepeat(false);
     setFNoDate(false);
+    setFromSignups(false);
     setFPrivate(false);
     setFInvite(new Set());
     setFCoHost(null);
@@ -568,16 +581,48 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const signupTarget = category?.signup?.target ?? 0;
   const [signups, setSignups] = useState(initial.signups);
   const [signupBusy, setSignupBusy] = useState(false);
+  /** 이번 만들기가 참가신청 명단에서 시작됐는지 — 그러면 신청자들이 참가자로 들어간다 */
+  const [fromSignups, setFromSignups] = useState(false);
+  /** 신청 전에 띄우는 안내 — 확인을 눌러야 실제로 신청된다 */
+  const [termsOpen, setTermsOpen] = useState(false);
   const signedUp = Boolean(user && signups.some((s) => s.userId === user.id));
   const signupReady = signupTarget > 0 && signups.length >= signupTarget;
-  /* 다 모이기 전에는 모임을 만들지 않는다 — 그러라고 두는 명단이다 (관리자는 예외) */
-  const canCreate = Boolean(user) && (signupTarget === 0 || signupReady || isAdmin);
+  /*
+   * 「모임 만들기」 버튼을 어디에 둘 것인가.
+   *
+   * 참가신청을 쓰는 카테고리에서는 목록 어디에도 두지 않는다. 모임을 만드는 길은
+   * 참가신청 카드 하나뿐이다 — 명단이 곧 그 모임의 참가자라서, 명단을 거치지 않고
+   * 만들면 모아 둔 사람들이 빈손으로 남는다.
+   */
+  const canCreate = Boolean(user) && signupTarget === 0;
+  /* 명단으로 만들 수 있는 사람 = 신청한 사람 (관리자는 바로잡을 수 있어야 하므로 예외) */
+  const canCreateFromSignups = signupReady && (signedUp || isAdmin);
+
+  /**
+   * 신청 버튼.
+   *
+   * 신청은 안내를 한 번 거친다 — 책을 읽어 오고 빠지지 않는 것이 이 모임의 전제라,
+   * 나중에 「그런 줄 몰랐다」가 되지 않게 눌러서 확인하고 들어온다.
+   * 취소는 그냥 취소다. 나가는 데 확인을 받으면 붙잡는 것처럼 보인다.
+   */
+  function onSignupButton() {
+    if (!user) {
+      setMsg({ type: 'err', text: t(T.loginToSubscribe) });
+      return;
+    }
+    if (!signedUp && (category?.signup?.terms?.length ?? 0) > 0) {
+      setTermsOpen(true);
+      return;
+    }
+    void toggleSignup();
+  }
 
   async function toggleSignup() {
     if (!user) {
       setMsg({ type: 'err', text: t(T.loginToSubscribe) });
       return;
     }
+    setTermsOpen(false);
     setSignupBusy(true);
     setMsg(null);
     try {
@@ -599,9 +644,11 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   }
 
   /** 날짜 헤더의 ＋ — 그 날짜를 미리 채운 채로 만들기 패널을 연다 */
-  function openCreate(date?: string) {
+  function openCreate(date?: string, fromSignups = false) {
     setEditId(null);
     resetForm();
+    // resetForm이 꺼 두므로 그 뒤에 켠다
+    setFromSignups(fromSignups);
     if (date) setFDate(date);
     // 비공개로 바꾸면 바로 쓸 수 있도록 친구를 미리 전부 골라 둔다
     setFInvite(new Set(friends.friends.map((f) => f.id)));
@@ -629,6 +676,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           allowNicknames: fNick,
           ...(fPhoto ? { photoPath: fPhoto } : {}),
           repeatWeekly: fRepeat,
+          ...(fromSignups ? { fromSignups: true } : {}),
           visibility: fPrivate ? 'link' : 'public',
           ...(fPrivate && !fRepeat ? { inviteFriendIds: [...fInvite] } : {}),
         }),
@@ -662,6 +710,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   function startEditPost(post: PostView) {
     setMsg(null);
     setShowForm(false);
+    // 고치기는 명단과 무관하다 — 켜 둔 채로 오면 엉뚱한 사람이 들어간다
+    setFromSignups(false);
     setEditId(post.id);
     setFTitle(post.title ?? '');
     setFTitleMeta(post.titleMeta);
@@ -914,11 +964,22 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           <p className="hint" style={{ marginTop: 12 }}>
             {signupReady ? t(T.signupReady) : t(T.signupWait, { n: signupTarget - signups.length })}
           </p>
+          {canCreateFromSignups && (
+            <>
+              <button style={{ marginTop: 12, width: '100%' }} onClick={() => openCreate(undefined, true)}>
+                {t(T.signupCreate, { n: signups.length })}
+              </button>
+              <p className="hint" style={{ margin: '8px 0 0' }}>{t(T.signupCreateHint)}</p>
+            </>
+          )}
+          {signupReady && !signedUp && !isAdmin && (
+            <p className="hint" style={{ margin: '12px 0 0' }}>{t(T.signupOnlyMembers)}</p>
+          )}
           <button
-            className={signedUp ? 'secondary' : ''}
+            className={signedUp || canCreateFromSignups ? 'secondary' : ''}
             style={{ marginTop: 12, width: '100%' }}
             disabled={signupBusy}
-            onClick={toggleSignup}
+            onClick={onSignupButton}
           >
             {!user ? t(T.signupLogin) : signedUp ? t(T.signupLeave) : t(T.signupJoin)}
           </button>
@@ -927,7 +988,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
 
       {!showPast && (
         <>
-          {posts.length === 0 && (
+          {posts.length === 0 && signupTarget === 0 && (
             <div className="feed-empty">
               {t(T.emptyUpcoming)}
               {canCreate && (
@@ -953,6 +1014,28 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         ) : (
           groupByDate(pastPosts ?? []).map((group) => renderGroup(group, true))
         ))}
+
+      {termsOpen && category?.signup && (
+        <div className="notice-pop" role="dialog" aria-modal="true" aria-labelledby="signup-terms">
+          <div className="notice-box">
+            <span className="notice-tag">{t(T.signupJoin)}</span>
+            <h2 id="signup-terms" className="notice-title">
+              {t(T.signupTermsTitle)}
+            </h2>
+            <ul className="signup-terms">
+              {category.signup.terms.map((line, i) => (
+                <li key={i}>{t(line)}</li>
+              ))}
+            </ul>
+            <button className="notice-ok" disabled={signupBusy} onClick={() => void toggleSignup()}>
+              {t(T.signupTermsOk)}
+            </button>
+            <button className="secondary" style={{ width: '100%', marginTop: 8 }} onClick={() => setTermsOpen(false)}>
+              {t(T.signupTermsCancel)}
+            </button>
+          </div>
+        </div>
+      )}
 
       {panelOpen && renderCreatePanel()}
 

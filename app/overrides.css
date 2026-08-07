@@ -1601,3 +1601,14 @@ h2 {
   font-size: 12px;
   color: var(--text-dim);
 }
+/* 참가신청 안내 — 공지 팝업(.notice-box) 안에 들어가는 목록 */
+.signup-terms {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--text-mid);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.signup-terms li + li {
+  margin-top: 8px;
+}

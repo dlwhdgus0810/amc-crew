@@ -4,7 +4,8 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
-import { createPost, listPosts } from '@/lib/db/posts';
+import { addParticipants, createPost, getPost, listPosts, notifyAddedToPost } from '@/lib/db/posts';
+import { listSignups } from '@/lib/db/signups';
 import { pathAllowed } from '@/lib/photos';
 import { addPhoto } from '@/lib/db/photos';
 import { friendIds } from '@/lib/db/friends';
@@ -167,6 +168,32 @@ export async function POST(req: NextRequest) {
    */
   if (typeof body?.photoPath === 'string' && pathAllowed(body.photoPath, user.id)) {
     await addPhoto({ postId, userId: user.id, pathname: body.photoPath, width: null, height: null });
+  }
+
+  /*
+   * 참가신청 명단으로 만든 모임 — 신청한 사람들을 그대로 참가자로 넣는다.
+   *
+   * 이 카테고리(독서나눔)에서 모임을 만드는 유일한 길이다. 「5명이 모였으니 이제 만들자」로
+   * 온 것이라, 만들고 나서 그 5명을 한 명씩 다시 부르라고 하면 뭘 위해 모았는지 알 수 없다.
+   *
+   * 명단은 서버에서 다시 읽는다 — 브라우저가 보낸 id를 믿으면 아무나 참가자로 넣을 수 있다.
+   */
+  if (body?.fromSignups === true && getCategory(category)?.signup) {
+    const roster = (await listSignups(category)).map((s) => s.userId).filter((uid) => uid !== user.id);
+    if (roster.length > 0) {
+      await addParticipants(postId, roster);
+      // 넣긴 사람에게는 알린다 — 신청은 했어도 언제 어디로 정해졌는지는 이걸로 안다
+      const created = await getPost(postId);
+      if (created) {
+        for (const uid of roster) {
+          try {
+            await notifyAddedToPost(created, authorName, uid);
+          } catch (e) {
+            console.error('[signups] notify added failed:', e);
+          }
+        }
+      }
+    }
   }
   // past를 화면에 알려준다 — 알림이 갔다고 적을지 말지를 서버 판정으로 정하게(기준이 둘이면 어긋난다)
   return NextResponse.json({ ok: true, postId, past: backfilling });

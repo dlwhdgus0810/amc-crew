@@ -38,8 +38,11 @@ export interface Category {
    * 「모임 만들기」가 안 보인다. 번개로 시작할 수 없는 종목을 위한 것이다 —
    * 독서나눔은 혼자 날짜를 잡아 봐야 아무도 안 온다. 몇 명 있어야 굴러가는지를
    * 아는 사람이 여기 숫자를 적는다.
+   *
+   * terms는 신청 버튼을 눌렀을 때 띄우는 안내다. 읽고 확인을 눌러야 신청이 된다 —
+   * 이 모임은 한 명이 빠지면 그날이 헐거워지는 종류라, 「몰랐다」로 시작하지 않게 한다.
    */
-  signup?: { target: number };
+  signup?: { target: number; terms: Msg[] };
   /** 카테고리 안에서 여는 도구 (무비나잇 → AMC 회차 고르기) */
   tool?: { href: string; label: Msg; desc: Msg };
 }
@@ -96,7 +99,23 @@ export const CATEGORIES: Category[] = [
     locationHint: { ko: '예: Kaldi’s Coffee OP', en: 'e.g. Kaldi’s Coffee OP' },
     proposedBy: '정인건',
     // 다섯이면 책 한 권을 두고 이야기가 굴러간다 — 그보다 적으면 모임이 아니라 약속이다
-    signup: { target: 5 },
+    signup: {
+      target: 5,
+      terms: [
+        {
+          ko: '정해진 분량은 읽고 와주세요. 다들 읽어 왔다는 전제로 이야기가 굴러가요.',
+          en: 'Come having read the agreed pages — the whole conversation assumes everyone did.',
+        },
+        {
+          ko: '모임에는 되도록 빠지지 말아주세요. 다섯이 모여야 시작하는 모임이라 한 명이 비면 그날이 헐거워져요.',
+          en: 'Try not to miss a session. It takes five to run, so one empty chair thins out the whole evening.',
+        },
+        {
+          ko: '사정이 생기면 미리 말해주세요. 늦게 말할수록 다른 사람들의 계획도 같이 흔들려요.',
+          en: 'If something comes up, say so early — late notice moves everyone else’s plans too.',
+        },
+      ],
+    },
   },
   {
     slug: 'tennis',
