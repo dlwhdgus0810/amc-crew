@@ -31,6 +31,83 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-07T14:20',
+    title: { ko: '앱 이야기는 건의함으로 해주세요', en: 'Ask about the app inside the app' },
+    items: [
+      {
+        ko: '앱에 대한 문의·건의·오류 제보는 개인적으로 말고 앱 안의 건의함을 써주세요. 프로필 → 건의함이에요.',
+        en: 'Questions, ideas and bug reports about the app go in the app’s suggestion box — Profile → Suggestions — not to me personally.',
+      },
+      {
+        ko: '개인적으로 오면 저만 보고 흘러가요. 건의함에 넣으면 번호가 붙고 「접수됨 → 반영 예정 → 반영됨」이 남아서, 어떻게 됐는지 두 분 다 확인할 수 있어요.',
+        en: 'Sent privately, it just scrolls away in a chat. In the suggestion box it gets a number and a status — received, planned, shipped — so we can both see where it went.',
+      },
+      {
+        ko: '개인적으로 문의하시면 5분 정지 사유가 될 수 있어요. 5분이에요, 금방 풀려요.',
+        en: 'Asking privately can earn you a five-minute suspension. Five minutes — you’ll live.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-07T14:00',
+    notable: true,
+    title: { ko: '독서나눔이 생겼어요', en: 'Book Club is here' },
+    items: [
+      {
+        ko: '정인건 님이 제안한 카테고리예요. 둘러보기에서 축구와 테니스 사이에 있어요.',
+        en: 'Suggested by 정인건. You’ll find it between Soccer and Tennis.',
+      },
+      {
+        ko: '시작하는 방법이 다른 모임들과 달라요. 누가 날짜를 잡아 여는 게 아니라 5명이 모여야 시작해요. 들어가서 「참가신청」을 누르면 명단에 이름이 올라가요.',
+        en: 'It starts differently from the rest. Nobody picks a date and opens it — five people have to gather first. Tap “Count me in” to get on the list.',
+      },
+      {
+        ko: '5명이 차면 신청한 분들께 알림이 가고, 그 명단에서 바로 모임을 만들 수 있어요. 만들면 신청한 분들이 모두 참가자로 들어가요. 무슨 책을 읽을지와 날짜는 그 다섯이 같이 정하시면 돼요.',
+        en: 'At five, everyone on the list gets an alert and can create the meetup right from it — and everyone on the list joins automatically. The book and the date are yours to settle together.',
+      },
+      {
+        ko: '만들어진 모임에는 7명까지 들어올 수 있어요. 늦게 오셔도 자리가 있으면 참가할 수 있어요.',
+        en: 'A meetup holds up to seven, so there’s room to join late if a seat is free.',
+      },
+      {
+        ko: '신청할 때와 참가할 때 안내가 한 번 떠요. 정해진 분량은 읽고 오고 되도록 빠지지 않는 게 이 모임의 전제라서요.',
+        en: 'Signing up and joining both show a short promise first — reading the agreed pages and turning up is what makes this one work.',
+      },
+      {
+        ko: '아직 모임이 없어도 신청한 사람이 있으면 홈에 카드가 떠요. 일정 자리에 「2명 참가신청」처럼 보여요.',
+        en: 'Even with no meetup yet, the card shows up at home once someone signs up — the schedule line reads “2 signed up”.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-06T14:00',
+    title: { ko: 'Venmo 메모에 정산 내역이 적혀요', en: 'Venmo notes now say what the money is for' },
+    items: [
+      {
+        ko: '정산에서 Venmo 아이디를 누르면 메모에 모임 이름만 들어갔는데, 이제 내가 내는 항목과 금액도 같이 적혀요. (예: 볼링 8/5(수) · 레인비 $12.00, 신발 대여 $3.00)',
+        en: 'Tapping a Venmo handle used to fill the note with just the meetup. Now it carries your own items and amounts too — “Bowling Wed Aug 5 · Lane fee $12.00, Shoes $3.00”.',
+      },
+      {
+        ko: '메모의 빈칸이 +로 보이던 것도 고쳤어요.',
+        en: 'The spaces that showed up as + signs are fixed as well.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-06T12:00',
+    title: { ko: '중요한 안내는 팝업으로 떠요', en: 'Important notices come as a popup' },
+    items: [
+      {
+        ko: '꼭 보셔야 하는 안내는 앱을 열 때 화면 가운데에 한 번 떠요. 「알겠어요」를 누르면 그 안내는 다시 안 떠요.',
+        en: 'Anything you really need to see appears once in the middle of the screen when you open the app. Tap “Got it” and it won’t come back.',
+      },
+      {
+        ko: '새 소식과는 달라요 — 새 소식은 「무엇이 바뀌었나」, 공지는 「이렇게 해주세요」예요.',
+        en: 'It’s not the same as What’s New: that one is what changed, this one is what to do.',
+      },
+    ],
+  },
+  {
     at: '2026-08-05T16:30',
     title: { ko: '점수가 같으면 공동 순위예요', en: 'Ties share a rank now' },
     items: [
