@@ -7,6 +7,7 @@ import { getViewer } from '@/lib/session';
 import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
 import { dbGetUser } from '@/lib/db/users';
+import { listSignups } from '@/lib/db/signups';
 import { getSubscriptions, listPosts } from '@/lib/db/posts';
 import { friendsOf, incomingOf, listFriendships, outgoingOf } from '@/lib/db/friends';
 import { resolveDisplayName } from '@/lib/store';
@@ -48,13 +49,16 @@ async function CategoryData({ slug }: { slug: string }) {
   const noFriends: Awaited<ReturnType<typeof listFriendships>> = [];
   const noMembers: Awaited<ReturnType<typeof adminMembers>> = [];
 
-  const [posts, pastPosts, subs, friendships, members] = await Promise.all([
+  // 참가신청을 쓰는 카테고리(독서나눔)만 명단을 읽는다 — 나머지는 빈 배열이라 질의도 없다
+  const noSignups: Awaited<ReturnType<typeof listSignups>> = [];
+  const [posts, pastPosts, subs, friendships, members, signups] = await Promise.all([
     listPosts(slug, false, user?.id, showPastPrivate),
     listPosts(slug, true, user?.id, showPastPrivate),
     user ? getSubscriptions(user.id) : noSubs,
     user ? listFriendships(user.id) : noFriends,
     // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
     isAdmin ? adminMembers() : noMembers,
+    getCategory(slug)?.signup ? listSignups(slug) : noSignups,
   ]);
 
   return (
@@ -68,6 +72,7 @@ async function CategoryData({ slug }: { slug: string }) {
         incoming: incomingOf(friendships),
         outgoing: outgoingOf(friendships),
         members,
+        signups,
       }}
     />
   );

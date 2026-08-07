@@ -31,6 +31,15 @@ export interface Category {
   locationHint?: Msg;
   /** 이 카테고리를 제안한 사람 — 카테고리 화면에 이름을 적어 준다 */
   proposedBy?: string;
+  /**
+   * 「사람이 먼저, 모임은 그다음」인 카테고리.
+   *
+   * 이걸 켜면 카테고리 화면에 **참가신청 명단**이 생기고, 목표 인원이 찰 때까지
+   * 「모임 만들기」가 안 보인다. 번개로 시작할 수 없는 종목을 위한 것이다 —
+   * 독서나눔은 혼자 날짜를 잡아 봐야 아무도 안 온다. 몇 명 있어야 굴러가는지를
+   * 아는 사람이 여기 숫자를 적는다.
+   */
+  signup?: { target: number };
   /** 카테고리 안에서 여는 도구 (무비나잇 → AMC 회차 고르기) */
   tool?: { href: string; label: Msg; desc: Msg };
 }
@@ -86,6 +95,8 @@ export const CATEGORIES: Category[] = [
     titleLabel: { ko: '책', en: 'Book' },
     locationHint: { ko: '예: Kaldi’s Coffee OP', en: 'e.g. Kaldi’s Coffee OP' },
     proposedBy: '정인건',
+    // 다섯이면 책 한 권을 두고 이야기가 굴러간다 — 그보다 적으면 모임이 아니라 약속이다
+    signup: { target: 5 },
   },
   {
     slug: 'tennis',

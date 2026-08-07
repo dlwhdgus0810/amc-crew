@@ -215,6 +215,21 @@ const T = {
   gatheringHint: { ko: '사람 모으는 중', en: 'gathering people' },
   gatheringCount: { ko: '{n}명 모였어요', en: '{n} in so far' },
   noDateToggle: { ko: '날짜는 나중에', en: 'Decide the date later' },
+  signupTitle: { ko: '{n}명 모이면 시작해요', en: 'We start when {n} people are in' },
+  signupNow: { ko: '지금 {n}명', en: '{n} so far' },
+  signupJoin: { ko: '참가신청', en: 'Count me in' },
+  signupLeave: { ko: '신청 취소', en: 'Take me out' },
+  signupLogin: { ko: '카카오 로그인하고 신청하기', en: 'Log in with Kakao to sign up' },
+  signupEmpty: { ko: '아직 신청한 사람이 없어요. 첫 번째가 되어보세요!', en: 'Nobody yet — be the first.' },
+  signupWait: {
+    ko: '{n}명만 더 모이면 다 같이 날짜를 정해요. 모이면 알림으로 알려드릴게요.',
+    en: '{n} more and you’ll all pick a date together. We’ll let you know.',
+  },
+  signupReady: {
+    ko: '다 모였어요! 이제 누구든 모임을 만들 수 있어요. 책이랑 날짜는 같이 정해보세요.',
+    en: 'Everyone’s in — anyone can create the meetup now. Pick the book and the date together.',
+  },
+  signupFailed: { ko: '신청하지 못했어요.', en: 'Couldn’t sign up.' },
   noDateHint: {
     ko: '먼저 사람을 모으고 날짜는 나중에 정해요. 캘린더에는 안 뜨고, 날짜를 정하면 참가자에게 알림이 가요.',
     en: 'Gather people first and set the date later. It stays off the calendar, and everyone joined is notified once you pick a date.',
@@ -281,6 +296,8 @@ export interface CategoryInitial {
   incoming: Person[];
   outgoing: Person[];
   members: Person[];
+  /** 참가신청 명단 — 그런 카테고리(독서나눔)에서만 채워진다 */
+  signups: { userId: string; name: string; avatar: string | null }[];
 }
 
 /** 친구 목록 세 갈래를 화면이 쓰는 모양(관계 표)으로 */
@@ -492,6 +509,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setPosts(initial.posts);
     setPastPosts(initial.pastPosts);
     setSubscribed(initial.subscribed);
+    setSignups(initial.signups);
     setMembers(initial.members);
     setFriends(tiesOf(initial));
   }, [initial]);
@@ -541,6 +559,43 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     if (!res.ok) setSubscribed(!next);
     // 구독 여부도 서버가 읽어 주는 값이라, 다시 그려 두지 않으면 탭을 옮겼다 오면 옛 값이 온다
     else refresh();
+  }
+
+  /*
+   * 참가신청 — 「사람이 먼저, 모임은 그다음」인 카테고리(lib/categories.ts의 signup).
+   * 목표 인원이 찰 때까지 「모임 만들기」를 감추고 이 카드만 보여준다.
+   */
+  const signupTarget = category?.signup?.target ?? 0;
+  const [signups, setSignups] = useState(initial.signups);
+  const [signupBusy, setSignupBusy] = useState(false);
+  const signedUp = Boolean(user && signups.some((s) => s.userId === user.id));
+  const signupReady = signupTarget > 0 && signups.length >= signupTarget;
+  /* 다 모이기 전에는 모임을 만들지 않는다 — 그러라고 두는 명단이다 (관리자는 예외) */
+  const canCreate = Boolean(user) && (signupTarget === 0 || signupReady || isAdmin);
+
+  async function toggleSignup() {
+    if (!user) {
+      setMsg({ type: 'err', text: t(T.loginToSubscribe) });
+      return;
+    }
+    setSignupBusy(true);
+    setMsg(null);
+    try {
+      const res = signedUp
+        ? await fetch(`/api/signups?category=${encodeURIComponent(slug)}`, { method: 'DELETE' })
+        : await fetch('/api/signups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category: slug }),
+          });
+      if (!res.ok) throw new Error(t(T.signupFailed));
+      // 명단은 서버가 읽어 주는 값이라 다시 그려 받는다 (이름·순서를 여기서 지어내지 않는다)
+      refresh();
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.signupFailed) });
+    } finally {
+      setSignupBusy(false);
+    }
   }
 
   /** 날짜 헤더의 ＋ — 그 날짜를 미리 채운 채로 만들기 패널을 연다 */
@@ -834,12 +889,48 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
+      {/*
+        * 참가신청 — 이 카테고리는 모임을 먼저 만드는 곳이 아니다.
+        * 사람이 다 모여야 「모임 만들기」가 열리므로, 그 전까지는 이 카드가 그 자리를 대신한다.
+        */}
+      {!showPast && signupTarget > 0 && (
+        <div className="card signup-card">
+          <div className="signup-head">
+            <strong>{t(T.signupTitle, { n: signupTarget })}</strong>
+            <span className="signup-count">{t(T.signupNow, { n: signups.length })}</span>
+          </div>
+          {signups.length === 0 ? (
+            <p className="hint" style={{ margin: '10px 0 0' }}>{t(T.signupEmpty)}</p>
+          ) : (
+            <ul className="online-list" style={{ marginTop: 12 }}>
+              {signups.map((s) => (
+                <li key={s.userId}>
+                  <span className="avatar-sm">{s.avatar ? <img src={s.avatar} alt="" /> : s.name.slice(0, 1)}</span>
+                  <span className="online-name">{s.name}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="hint" style={{ marginTop: 12 }}>
+            {signupReady ? t(T.signupReady) : t(T.signupWait, { n: signupTarget - signups.length })}
+          </p>
+          <button
+            className={signedUp ? 'secondary' : ''}
+            style={{ marginTop: 12, width: '100%' }}
+            disabled={signupBusy}
+            onClick={toggleSignup}
+          >
+            {!user ? t(T.signupLogin) : signedUp ? t(T.signupLeave) : t(T.signupJoin)}
+          </button>
+        </div>
+      )}
+
       {!showPast && (
         <>
           {posts.length === 0 && (
             <div className="feed-empty">
               {t(T.emptyUpcoming)}
-              {user && (
+              {canCreate && (
                 <button className="new-inline" onClick={() => openCreate()}>
                   {t(T.newMeetupWide)}
                 </button>
@@ -847,7 +938,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             </div>
           )}
           {groupByDate(posts).map((group) => renderGroup(group, false))}
-          {user && posts.length > 0 && (
+          {canCreate && posts.length > 0 && (
             <button className="new-inline" onClick={() => openCreate()}>
               {t(T.newMeetupWide)}
             </button>
@@ -906,7 +997,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             {hint && <span className="day-hint">{hint}</span>}
             {!group.date && <span className="day-hint">{t(T.gatheringHint)}</span>}
           </h2>
-          {user && !past && group.date && (
+          {canCreate && !past && group.date && (
             <button className="link-btn" onClick={() => openCreate(group.date!)}>
               {t(T.newMeetup)}
             </button>

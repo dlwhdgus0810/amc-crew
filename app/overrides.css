@@ -1580,3 +1580,24 @@ h2 {
 .notice-reads .notice-row-who {
   margin-top: 6px;
 }
+
+/* ── 참가신청 카드 (사람이 먼저 모이는 카테고리) ────────────── */
+.signup-card {
+  margin-bottom: 14px;
+}
+.signup-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.signup-head strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.signup-count {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}

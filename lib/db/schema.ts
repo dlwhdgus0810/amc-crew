@@ -510,6 +510,28 @@ export const settlementItemMembers = pgTable(
 );
 
 /**
+ * 카테고리 참가신청 — 「사람이 먼저, 모임은 그다음」인 카테고리에서 쓴다.
+ *
+ * 독서나눔처럼 번개로 시작할 수 없는 종목이 있다. 누가 호스트로 나서서 날짜를 잡는
+ * 순서가 아니라, 할 사람이 몇 명 모이고 나서 그 사람들끼리 상의해 모임을 만든다.
+ * 그래서 이 명단은 모임(posts)이 아니라 **카테고리에** 붙는다.
+ *
+ * 모임이 만들어져도 명단은 그대로 둔다 — 「독서나눔 할 사람」 명단이라 다음 회차에도
+ * 그대로 쓰인다. 빠지려면 본인이 신청을 취소한다.
+ */
+export const categorySignups = pgTable(
+  'category_signups',
+  {
+    category: text('category').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.category, t.userId] })]
+);
+
+/**
  * 관리자가 올리는 공지 — 앱을 열면 한 번 뜨는 알림창.
  *
  * 새 소식(lib/changelog.ts)과는 다르다. 저건 "무엇이 바뀌었나"를 코드와 함께 배포하는
