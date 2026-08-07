@@ -13,7 +13,7 @@ import { siteUrl } from '@/lib/site';
 import { catName } from '@/lib/categories';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
-import { dateLabelShort, timeLabel } from '@/lib/datefmt';
+import { whenLabelShort } from '@/lib/datefmt';
 import PostClient from './post-client';
 
 export const dynamic = 'force-dynamic';
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const title = pick(locale, T.title, {
     cat: catName(post.category, locale),
     title: post.title ? ` 〈${post.title}〉` : '',
-    when: `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`,
+    when: whenLabelShort(post.date, post.startTime, locale),
   });
   const metaPart = post.titleMeta
     ? [

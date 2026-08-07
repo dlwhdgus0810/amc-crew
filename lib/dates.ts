@@ -95,8 +95,14 @@ export function openEndCutoffTime(): string | null {
   return cut < 0 ? null : fromMinutes(cut);
 }
 
-/** (날짜, 시각)이 이미 "지난 모임" 기준을 넘겼는지 — 목록 분류와 생성 검증이 같은 기준을 쓴다 */
-export function isPastSlot(date: string, startTime: string, endTime?: string | null): boolean {
+/**
+ * (날짜, 시각)이 이미 "지난 모임" 기준을 넘겼는지 — 목록 분류와 생성 검증이 같은 기준을 쓴다.
+ *
+ * 날짜가 없으면(모집 중) 절대 지나지 않는다. 언제 할지를 안 정했으니 끝났을 리도 없다 —
+ * 날짜가 정해지는 순간부터 이 판정이 시작된다.
+ */
+export function isPastSlot(date: string | null, startTime: string | null, endTime?: string | null): boolean {
+  if (!date || !startTime) return false;
   const { date: cutDate, time: cutTime } = pastCutoff();
   if (date !== cutDate) return date < cutDate;
   if (endTime) return endTime <= cutTime;

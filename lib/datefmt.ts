@@ -1,7 +1,7 @@
 // 모임 날짜·시간 표기. 화면과 알림 문구가 같은 포맷을 쓰도록 한곳에 모아둔다.
 // YYYY-MM-DD / HH:mm 문자열만 다루므로 시간대 변환은 하지 않는다 (UTC 기준으로 파싱해 날짜 밀림 방지).
 
-import { Locale, pick } from './i18n';
+import { Locale, Msg, pick } from './i18n';
 
 const WEEKDAYS: Record<Locale, string[]> = {
   ko: ['일', '월', '화', '수', '목', '금', '토'],
@@ -44,6 +44,18 @@ export function dateLabelLong(date: string, locale: Locale): string {
   return locale === 'en'
     ? `${WEEKDAYS_LONG.en[weekday]}, ${MONTHS_EN[m - 1]} ${d}`
     : `${m}월 ${d}일 ${WEEKDAYS_LONG.ko[weekday]}`;
+}
+
+/**
+ * 날짜가 아직 없는 모임 — 사람부터 모으는 중이라는 뜻이다 (posts.date IS NULL).
+ * 화면과 알림이 같은 말을 쓰도록 여기 한 번만 적는다.
+ */
+export const WHEN_TBD: Msg = { ko: '날짜 미정', en: 'Date TBD' };
+
+/** 모임 한 줄의 「언제」 자리 — 날짜가 없으면 「날짜 미정」 */
+export function whenLabelShort(date: string | null, startTime: string | null, locale: Locale): string {
+  if (!date || !startTime) return pick(locale, WHEN_TBD);
+  return `${dateLabelShort(date, locale)} ${timeLabel(startTime, locale)}`;
 }
 
 /** ko: 7/25(토) · en: Sat Jul 25 — 알림 한 줄에 들어가는 짧은 형태 */

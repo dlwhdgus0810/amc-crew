@@ -5,7 +5,7 @@ import { posts, settlements, users } from '@/lib/db/schema';
 import { getSettlement } from '@/lib/db/settlements';
 import { payNote, venmoLink } from '@/lib/money';
 import { catName } from '@/lib/categories';
-import { dateLabelShort } from '@/lib/datefmt';
+import { whenLabelShort } from '@/lib/datefmt';
 import { DEFAULT_LOCALE } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
 
   const [post] = await db.select().from(posts).where(eq(posts.id, row.postId));
   const head = post
-    ? `${catName(post.category, DEFAULT_LOCALE)} ${dateLabelShort(post.date, DEFAULT_LOCALE)}`
+    ? `${catName(post.category, DEFAULT_LOCALE)} ${whenLabelShort(post.date, post.startTime, DEFAULT_LOCALE)}`
     : 'Kansas Korean';
   /*
    * 메모에 항목도 싣는다 — 앱을 안 쓰는 사람이라 이 화면 말고는 무슨 돈인지 알 길이 없다.

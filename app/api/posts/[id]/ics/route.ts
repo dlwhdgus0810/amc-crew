@@ -8,6 +8,10 @@ import { effectiveEnd } from '@/lib/dates';
 
 const T = {
   notFound: { ko: '포스트를 찾을 수 없어요.', en: 'Meetup not found.' },
+  noDate: {
+    ko: '아직 날짜가 정해지지 않은 모임이에요. 날짜가 잡히면 캘린더에 넣을 수 있어요.',
+    en: 'This meetup has no date yet. You can add it once the date is set.',
+  },
   summary: { ko: '{emoji} {cat}{title} 모임', en: '{emoji} {cat}{title} meetup' },
   page: { ko: '모임 페이지: {url}', en: 'Meetup page: {url}' },
 };
@@ -29,6 +33,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const [post, locale] = await Promise.all([getPostView(id), getLocale()]);
   if (!post) {
     return NextResponse.json({ error: pick(locale, T.notFound) }, { status: 404 });
+  }
+  /*
+   * 날짜 미정(사람부터 모으는 모임)은 캘린더 일정이 될 수 없다 — 시작 시각이 없는
+   * VEVENT는 규격에 없다. 오늘 날짜로 채워 넣으면 남의 달력에 거짓말이 박힌다.
+   */
+  if (!post.date || !post.startTime) {
+    return NextResponse.json({ error: pick(locale, T.noDate) }, { status: 409 });
   }
 
   const summary = pick(locale, T.summary, {

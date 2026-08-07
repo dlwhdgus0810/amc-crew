@@ -96,7 +96,13 @@ export async function listMeetupsBetween(
     if (viewerId && p.userId === viewerId) joined.add(p.postId);
   }
 
-  return rows.map((r) => ({
+  /*
+   * 날짜 미정(모집 중)인 모임은 달력에 찍을 자리가 없다. 위 between 조건이 이미
+   * 걸러내지만(null 비교는 참이 되지 않는다) 타입까지 좁히려고 한 번 더 거른다.
+   */
+  return rows
+    .filter((r): r is typeof r & { date: string; startTime: string } => Boolean(r.date && r.startTime))
+    .map((r) => ({
     id: r.id,
     category: r.category,
     title: r.title,

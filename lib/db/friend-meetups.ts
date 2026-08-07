@@ -71,7 +71,12 @@ export async function friendMeetups(viewerId: string, ownerId: string): Promise<
   const upcoming: FriendMeetup[] = [];
   const past: FriendMeetup[] = [];
   for (const r of rows) {
-    const item: FriendMeetup = { ...r, together: withMe.has(r.id) };
+    /*
+     * 날짜 미정(모집 중)은 여기서 뺀다. 이 화면은 「이 친구가 언제 뭘 하는지」를
+     * 날짜 줄로 늘어놓는 곳이라, 날짜가 없는 줄은 놓을 자리가 없다.
+     */
+    if (!r.date || !r.startTime) continue;
+    const item: FriendMeetup = { ...r, date: r.date, startTime: r.startTime, together: withMe.has(r.id) };
     if (isPastSlot(r.date, r.startTime, r.endTime)) past.push(item);
     else upcoming.push(item);
   }

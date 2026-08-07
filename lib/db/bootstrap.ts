@@ -56,8 +56,9 @@ CREATE TABLE IF NOT EXISTS posts (
   recurring_rule_id uuid REFERENCES recurring_rules(id) ON DELETE SET NULL,
   amc_showtime_id text,
   visibility text NOT NULL DEFAULT 'public',
-  date text NOT NULL,
-  start_time text NOT NULL,
+  -- null이면 「날짜 미정」 (사람부터 모으는 모임) — lib/db/schema.ts의 주석 참고
+  date text,
+  start_time text,
   end_time text,
   location text NOT NULL,
   description text,

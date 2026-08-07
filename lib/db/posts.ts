@@ -18,7 +18,7 @@ import { deleteBlobs, signedUrls } from '../blob';
 import { ratable } from '../ratings';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 import { NOTIF } from '../notif-kinds';
-import { dateLabelShort, timeLabel } from '../datefmt';
+import { dateLabelShort, timeLabel, whenLabelShort } from '../datefmt';
 
 export interface PostView {
   id: string;
@@ -33,8 +33,13 @@ export interface PostView {
   coHost: { id: string; name: string } | null;
   /** 이 모임에서 닉네임으로 보여도 되는지 (수정 화면이 그대로 되살리려면 필요하다) */
   allowNicknames: boolean;
-  date: string;
-  startTime: string;
+  /**
+   * null이면 「날짜 미정」 — 사람부터 모으는 모임이다 (독서나눔처럼 번개가 안 되는 종목).
+   * 화면은 날짜 자리에 「날짜 미정」을 그리고, 캘린더·순위·오늘 알림에서는 아예 빠진다.
+   */
+  date: string | null;
+  /** 날짜가 미정이면 이것도 null — 둘은 늘 같이 있거나 같이 없다 */
+  startTime: string | null;
   /** 안 적었으면 null — 화면에서 시작 시각만 보여준다 */
   endTime: string | null;
   location: string;
@@ -144,7 +149,22 @@ export const listPosts = cache(
     ? or(gt(posts.endTime, cutTime), and(isNull(posts.endTime), gt(posts.startTime, openCut)))
     : or(gt(posts.endTime, cutTime), isNull(posts.endTime));
   const ended = or(lt(posts.date, cutDate), and(eq(posts.date, cutDate), endedToday));
-  const upcoming = or(gt(posts.date, cutDate), and(eq(posts.date, cutDate), upcomingToday));
+  /*
+   * 날짜 미정(date IS NULL)은 「아직 안 끝난 모임」에 들어간다.
+   *
+   * 여기만 따로 적어 주면 된다 — 날짜를 견주는 다른 곳(캘린더, 다음 모임 요약, 순위,
+   * 오늘 알림)은 null과의 비교가 참이 되지 않아 저절로 빠진다. 그게 우리가 원하는 것이다:
+   * 날짜가 없는 모임은 달력에 찍을 수도, 끝났다고 셀 수도 없다.
+   *
+   * 정렬은 미정을 맨 위로. 「언제인지 아직 모르니 사람부터 모읍니다」가 이 목록에서
+   * 제일 먼저 눈에 띄어야 하는 말이고, 뒤에 두면 예정된 모임들에 묻힌다.
+   * (Postgres는 오름차순에서 NULL을 뒤로 보내므로 NULLS FIRST를 적어 준다)
+   */
+  const upcoming = or(
+    isNull(posts.date),
+    gt(posts.date, cutDate),
+    and(eq(posts.date, cutDate), upcomingToday)
+  );
   const postRows = past
     ? await db
         .select()
@@ -156,7 +176,7 @@ export const listPosts = cache(
         .select()
         .from(posts)
         .where(and(eq(posts.category, category), upcoming, visible))
-        .orderBy(posts.date, posts.startTime);
+        .orderBy(sql`${posts.date} ASC NULLS FIRST`, sql`${posts.startTime} ASC NULLS FIRST`);
     return buildViews(postRows, viewerId);
   }
 );
@@ -393,7 +413,7 @@ export async function toggleCommentLike(
 
 /** 댓글 알림: 댓글 단 사람을 제외한 참가자 전원에게 인앱 + 카톡 발송 */
 export async function notifyComment(
-  post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
+  post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
   commenterId: string,
   commenterName: string,
   body: string,
@@ -484,15 +504,15 @@ const N = {
 function describeForNotification(
   category: string,
   label: Msg,
-  date: string,
-  startTime: string,
+  date: string | null,
+  startTime: string | null,
   location: string,
   title: string | null | undefined,
   locale: Locale
 ): string {
   const cat = getCategory(category);
   const titlePart = title ? ` 〈${title}〉` : '';
-  const when = `${dateLabelShort(date, locale)} ${timeLabel(startTime, locale)}`;
+  const when = whenLabelShort(date, startTime, locale);
   return `${cat?.emoji ?? ''} ${catName(category, locale)} ${pick(locale, label)}${titlePart} · ${when} · ${location}`;
 }
 
@@ -587,8 +607,8 @@ export async function notifyFriendJoin(
   post: {
     id: string;
     category: string;
-    date: string;
-    startTime: string;
+    date: string | null;
+    startTime: string | null;
     location: string;
     title?: string | null;
     visibility?: string | null;
@@ -611,7 +631,7 @@ export async function notifyFriendJoin(
 
 /** 남이 나를 모임에 넣었을 때 — 넣긴 사람에게 한 줄 */
 export async function notifyAddedToPost(
-  post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
+  post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
   actorName: string,
   addedUserId: string
 ): Promise<void> {
@@ -634,7 +654,7 @@ export async function notifyAddedToPost(
  * 폰을 울리지는 않는다. 알아두면 되는 일이지 당장 손댈 일이 아니다.
  */
 export async function notifyCoHost(
-  post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
+  post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
   actorName: string,
   coHostId: string
 ): Promise<void> {
@@ -698,8 +718,9 @@ export async function createPost(input: {
   allowNicknames?: boolean;
   title?: string;
   titleMeta?: TitleMeta;
-  date: string;
-  startTime: string;
+  /** null이면 날짜 미정 — 사람부터 모으는 모임 (startTime도 함께 null) */
+  date: string | null;
+  startTime: string | null;
   endTime: string | null;
   location: string;
   description?: string;
@@ -914,8 +935,9 @@ export async function updatePost(input: {
   actorName: string;
   title: string | null;
   titleMeta: TitleMeta | null;
-  date: string;
-  startTime: string;
+  /** null이면 날짜 미정 — 나중에 날짜를 정하면 여기로 값이 들어온다 */
+  date: string | null;
+  startTime: string | null;
   endTime: string | null;
   location: string;
   description: string | null;
@@ -1015,7 +1037,7 @@ export async function updatePost(input: {
  * 취소 알림은 postId를 null로 저장해 포스트 삭제 CASCADE에 지워지지 않게 한다.
  */
 export async function deletePost(
-  post: { id: string; category: string; date: string; startTime: string; location: string; title?: string | null },
+  post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
   actorId: string,
   actorName: string,
   origin?: string,

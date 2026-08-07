@@ -115,8 +115,20 @@ export const posts = pgTable(
      */
     visibility: text('visibility').notNull().default('public'),
 
-    date: text('date').notNull(), // YYYY-MM-DD (사전순 = 시간순)
-    startTime: text('start_time').notNull(), // HH:mm
+    /**
+     * YYYY-MM-DD (사전순 = 시간순). **null이면 「날짜 미정」 — 사람부터 모으는 모임이다.**
+     *
+     * 독서나눔처럼 번개로 시작할 수 없는 종목 때문에 열어 뒀다. 몇 명 모이면 그때
+     * 날짜를 잡는 식이라, 없는 날짜를 아무거나 적어 두면 캘린더가 거짓말을 한다.
+     *
+     * null이 어디서 어떻게 빠지는지는 대부분 SQL이 알아서 한다 — 날짜 비교는 null에
+     * 대해 참이 되지 않으므로 캘린더·다음 모임 요약·순위 집계·오늘 알림에서 저절로
+     * 빠진다. 목록에 **넣는** 쪽만 따로 적어 준다(lib/db/posts.ts의 listPosts).
+     * JS로 비교하는 곳(isPastSlot)은 null을 「안 지났음」으로 본다.
+     */
+    date: text('date'),
+    /** HH:mm — 날짜가 미정이면 이것도 없다 (둘은 늘 같이 있거나 같이 없다) */
+    startTime: text('start_time'),
     endTime: text('end_time'), // HH:mm — 안 적어도 된다 (lib/dates.ts의 effectiveEnd 참고)
     location: text('location').notNull(),
     description: text('description'),

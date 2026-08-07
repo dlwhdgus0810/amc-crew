@@ -17,7 +17,7 @@ import { catName, getCategory } from '../categories';
 import { adminIds } from '../auth';
 import { formatCents, payNote, shortCode, splitWithExtras, venmoLink } from '../money';
 import { sendPush } from '../push';
-import { dateLabelShort, timeLabel } from '../datefmt';
+import { dateLabelShort, timeLabel, whenLabelShort } from '../datefmt';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 import { NOTIF } from '../notif-kinds';
 
@@ -376,7 +376,7 @@ export async function notifySettlement(
    * 앱 밖 인원용이라 그 사람이 걸린 항목만, 그 사람 몫으로 적는다 — /v/<code>와 같은 규칙이다.
    */
   const note = payNote(
-    `${catName(post.category, DEFAULT_LOCALE)} ${dateLabelShort(post.date, DEFAULT_LOCALE)}`,
+    `${catName(post.category, DEFAULT_LOCALE)} ${whenLabelShort(post.date, post.startTime, DEFAULT_LOCALE)}`,
     view.items
       .filter((i) => i.extraPeople > 0 && i.heads > 0)
       .map((i) => ({ label: i.label, cents: Math.floor(i.amountCents / i.heads) }))
@@ -398,7 +398,7 @@ export async function notifySettlement(
       cat: catName(post.category, locale),
       payee: view.payee.name,
       amount: formatCents(target.cents),
-      when: `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`,
+      when: whenLabelShort(post.date, post.startTime, locale),
       place: post.location,
     })}`.trim();
     /*
@@ -424,7 +424,7 @@ export async function notifySettlement(
       (await db.select({ locale: users.locale }).from(users).where(eq(users.id, view.payee.id)))[0]?.locale
     );
     const asked = targets.reduce((n, t) => n + t.cents, 0);
-    const when = `${dateLabelShort(post.date, locale)} ${timeLabel(post.startTime, locale)}`;
+    const when = whenLabelShort(post.date, post.startTime, locale);
     // 아무에게도 청구하지 않는 정산(혼자 + 외부 인원)은 "보냈다"고 하면 거짓말이 된다
     const copy =
       targets.length > 0

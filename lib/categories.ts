@@ -79,9 +79,11 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '독서나눔', en: 'Book Club' },
-    description: { ko: '읽은 만큼만 말하면 됩니다', en: 'Say as much as you read.' },
+    // 다른 카드와 결이 다르다 — 여기만 「번개로 모여서 바로」가 안 되는 종목이라,
+    // 분위기보다 어떻게 시작하는지를 먼저 알려준다
+    description: { ko: '5명 모이면 책 정하고 시작', en: 'Five in, then we pick the book.' },
     // 무엇을 읽는지가 곧 「갈지 말지」라서 제목 자리에 책을 받는다 (무비나잇의 영화와 같은 자리)
-    titleLabel: { ko: '책 (선택)', en: 'Book (optional)' },
+    titleLabel: { ko: '책', en: 'Book' },
     locationHint: { ko: '예: Kaldi’s Coffee OP', en: 'e.g. Kaldi’s Coffee OP' },
     proposedBy: '정인건',
   },

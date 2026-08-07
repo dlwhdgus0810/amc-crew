@@ -23,6 +23,8 @@ import {
   dateLabelLong as fmtDateLong,
   timeLabel as fmtTime,
   weekdayLabel as fmtWeekday,
+  whenLabelShort,
+  WHEN_TBD,
 } from '@/lib/datefmt';
 import {addDays, todayLocal} from '@/lib/dates';
 import type {TitleMeta, TitleSearchResult} from '@/lib/tmdb';
@@ -209,6 +211,14 @@ const T = {
     en: 'This meetup already happened. Deleting it also removes its roster and host points, for good. Delete it?',
   },
   deleteFailed: { ko: '삭제 실패', en: 'Couldn’t delete' },
+  /* 날짜 미정(사람부터 모으는 모임) */
+  gatheringHint: { ko: '사람 모으는 중', en: 'gathering people' },
+  gatheringCount: { ko: '{n}명 모였어요', en: '{n} in so far' },
+  noDateToggle: { ko: '날짜는 나중에', en: 'Decide the date later' },
+  noDateHint: {
+    ko: '먼저 사람을 모으고 날짜는 나중에 정해요. 캘린더에는 안 뜨고, 날짜를 정하면 참가자에게 알림이 가요.',
+    en: 'Gather people first and set the date later. It stays off the calendar, and everyone joined is notified once you pick a date.',
+  },
 };
 
 interface SessionUser {
@@ -227,8 +237,9 @@ interface PostView {
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null;
   isPast: boolean;
-  date: string;
-  startTime: string;
+  /** null이면 「날짜 미정」 — 사람부터 모으는 모임 */
+  date: string | null;
+  startTime: string | null;
   /** 안 적었으면 null — 카드에는 시작 시각만 보여준다 */
   endTime: string | null;
   location: string;
@@ -247,9 +258,12 @@ interface PostView {
   comments: CommentView[];
 }
 
-/** 같은 날짜의 모임을 한 덩어리로 묶는다 (서버가 이미 날짜순으로 준다) */
+/**
+ * 같은 날짜의 모임을 한 덩어리로 묶는다 (서버가 이미 날짜순으로 준다).
+ * 날짜 미정(모집 중)은 date가 null인 덩어리 하나로 맨 앞에 온다 — 서버가 그렇게 정렬해 준다.
+ */
 function groupByDate(list: PostView[]) {
-  const out: { date: string; posts: PostView[] }[] = [];
+  const out: { date: string | null; posts: PostView[] }[] = [];
   for (const p of list) {
     const last = out[out.length - 1];
     if (last && last.date === p.date) last.posts.push(p);
@@ -330,6 +344,13 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const [fMemo, setFMemo] = useState('');
   const [fCapacity, setFCapacity] = useState('');
   const [fRepeat, setFRepeat] = useState(false); // 매주 반복 (새 모임 만들 때만)
+  /**
+   * 날짜 미정 — 사람부터 모으는 모임.
+   *
+   * 켜면 날짜·시간을 안 보내고(null), 매주 반복과는 함께 켤 수 없다 —
+   * 반복은 요일이 있어야 다음 회차를 열 수 있다.
+   */
+  const [fNoDate, setFNoDate] = useState(false);
   const [fPrivate, setFPrivate] = useState(false); // 비공개 — 링크를 아는 사람만
   /** 비공개 모임을 알릴 친구 — 처음엔 전원이 켜져 있고, 뺄 사람만 뺀다 */
   const [fInvite, setFInvite] = useState<Set<string>>(new Set());
@@ -422,6 +443,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFMemo('');
     setFCapacity('');
     setFRepeat(false);
+    setFNoDate(false);
     setFPrivate(false);
     setFInvite(new Set());
     setFCoHost(null);
@@ -542,9 +564,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           category: slug,
           title: fTitle,
           titleMeta: fTitleMeta ?? undefined,
-          date: fDate,
-          startTime: fStart,
-          endTime: fEnd || null,
+          date: fNoDate ? null : fDate,
+          startTime: fNoDate ? null : fStart,
+          endTime: fNoDate ? null : fEnd || null,
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
@@ -589,8 +611,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFTitle(post.title ?? '');
     setFTitleMeta(post.titleMeta);
     setTitleResults([]);
-    setFDate(post.date);
-    setFStart(post.startTime);
+    setFDate(post.date ?? '');
+    setFStart(post.startTime ?? '');
+    setFNoDate(!post.date);
     setFEnd(post.endTime ?? '');
     setFLocation(post.location);
     setFMemo(post.description ?? '');
@@ -616,9 +639,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         body: JSON.stringify({
           title: fTitle,
           titleMeta: fTitleMeta ?? undefined,
-          date: fDate,
-          startTime: fStart,
-          endTime: fEnd || null,
+          date: fNoDate ? null : fDate,
+          startTime: fNoDate ? null : fStart,
+          endTime: fNoDate ? null : fEnd || null,
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
@@ -713,7 +736,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           title: t(T.shareTitle, {
             cat: name,
             title: post.title ? ` 〈${post.title}〉` : '',
-            when: `${dateLabel(post.date)} ${to12h(post.startTime)}`,
+            when: whenLabelShort(post.date, post.startTime, locale),
             place: post.location,
           }),
           url,
@@ -873,17 +896,18 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     </>
   );
 
-  function renderGroup(group: { date: string; posts: PostView[] }, past: boolean) {
-    const hint = past ? null : whenHint(group.date);
+  function renderGroup(group: { date: string | null; posts: PostView[] }, past: boolean) {
+    const hint = past || !group.date ? null : whenHint(group.date);
     return (
-      <section className="day-block" key={`${past ? 'past-' : ''}${group.date}`}>
+      <section className="day-block" key={`${past ? 'past-' : ''}${group.date ?? 'tbd'}`}>
         <div className="day-head">
           <h2 className="day-title">
-            {dateLabelLong(group.date)}
+            {group.date ? dateLabelLong(group.date) : t(WHEN_TBD)}
             {hint && <span className="day-hint">{hint}</span>}
+            {!group.date && <span className="day-hint">{t(T.gatheringHint)}</span>}
           </h2>
-          {user && !past && (
-            <button className="link-btn" onClick={() => openCreate(group.date)}>
+          {user && !past && group.date && (
+            <button className="link-btn" onClick={() => openCreate(group.date!)}>
               {t(T.newMeetup)}
             </button>
           )}
@@ -1016,6 +1040,28 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
 
           <div className="form-section">
             <div className="field-label">{t(T.secWhen)}</div>
+            {/*
+              * 날짜를 나중에 정하는 모임 — 켜면 날짜·시간 칸을 아예 감춘다.
+              * 비활성으로 남겨 두면 「왜 안 써지지」를 먼저 겪게 된다.
+              */}
+            <label className="repeat-check" style={{ marginBottom: fNoDate ? 0 : 10 }}>
+              <input
+                type="checkbox"
+                checked={fNoDate}
+                onChange={(e) => {
+                  setFNoDate(e.target.checked);
+                  // 반복은 요일이 있어야 다음 회차를 열 수 있다 — 날짜가 없으면 성립하지 않는다
+                  if (e.target.checked) setFRepeat(false);
+                }}
+              />
+              <span>{t(T.noDateToggle)}</span>
+            </label>
+            {fNoDate ? (
+              <p className="hint" style={{ margin: '8px 0 0' }}>
+                {t(T.noDateHint)}
+              </p>
+            ) : (
+              <>
             <label className="stack-field">
               <span className="stack-label">{t(T.fieldDate)}</span>
               <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} />
@@ -1043,6 +1089,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                   )}
                 </span>
               </label>
+            )}
+              </>
             )}
           </div>
 
@@ -1311,10 +1359,17 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         <div className={art ? 'post-head has-poster' : 'post-head'}>
           <div className="post-head-text">
             <div className="post-when">
-              {to12h(post.startTime)}
-              {post.endTime ? ` – ${to12h(post.endTime)}` : ''}
+              {post.startTime ? (
+                <>
+                  {to12h(post.startTime)}
+                  {post.endTime ? ` – ${to12h(post.endTime)}` : ''}
+                </>
+              ) : (
+                /* 시각 자리에 인원을 적는다 — 이 모임에서 지금 궁금한 건 「몇 명 모였나」다 */
+                t(T.gatheringCount, { n: post.participantCount })
+              )}
               {post.visibility === 'link' && <span className="repeat-badge private">{t(T.privateBadge)}</span>}
-              {post.recurringRuleId && (
+              {post.recurringRuleId && post.date && (
                 <span className="repeat-badge">{t(T.repeatBadge, { day: weekdayLabel(post.date) })}</span>
               )}
             </div>

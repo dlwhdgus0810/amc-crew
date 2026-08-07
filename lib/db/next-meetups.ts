@@ -78,8 +78,9 @@ async function query(categories: string[]): Promise<Record<string, NextMeetup>> 
   for (const [category, r] of firstByCategory) {
     out[category] = {
       postId: r.id,
-      date: r.date,
-      startTime: r.startTime,
+      // upcoming 조건(날짜 비교)이 날짜 미정을 이미 걸러낸다 — 여기 오는 행은 날짜가 있다
+      date: r.date!,
+      startTime: r.startTime!,
       location: r.location,
       title: r.title,
       count: count.get(r.id) ?? 0,

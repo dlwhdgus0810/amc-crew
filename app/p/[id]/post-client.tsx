@@ -6,7 +6,7 @@ import PlaceLink from '@/app/place-link';
 import { useEffect, useState } from 'react';
 import { catDisplayName, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../../i18n';
-import { dateLabel as fmtDate, dateLabelShort, timeLabel as fmtTime, weekdayLabel as fmtWeekday } from '@/lib/datefmt';
+import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday, whenLabelShort, WHEN_TBD } from '@/lib/datefmt';
 import { effectiveEnd } from '@/lib/dates';
 
 const T = {
@@ -30,6 +30,7 @@ const T = {
   director: { ko: '감독', en: 'Director' },
   cast: { ko: '출연 {names}', en: 'Cast {names}' },
   repeatBadge: { ko: '매주 {day}', en: 'Every {day}' },
+  gathering: { ko: '모이는 중', en: 'Gathering' },
   people: { ko: '{n}명 참여', en: '{n} joined' },
   peopleCap: { ko: '{n}/{cap}명 참여', en: '{n}/{cap} joined' },
   pastSuffix: { ko: ' — 지난 모임', en: ' — past meetup' },
@@ -209,9 +210,16 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
   const catLabel = cat ? t(cat.name) : post.category;
   const catHeading = cat ? t(catDisplayName(cat.slug)) : post.category;
   const gcalTitle = t(T.meetupSuffix, { cat: catLabel, title: post.title ? ` 〈${post.title}〉` : '' });
+  /*
+   * 날짜 미정(사람부터 모으는 모임)은 캘린더에 넣을 수 없다 — 링크 자체를 만들지 않고
+   * 아래에서 캘린더 버튼을 통째로 감춘다. 오늘로 채워 넣으면 남의 달력이 거짓말을 한다.
+   */
+  const scheduled = Boolean(post.date && post.startTime);
   // 구글 캘린더도 끝 시각을 요구한다 — 안 적은 모임은 짐작한 길이로 채운다
-  const gcalEnd = effectiveEnd(post.startTime, post.endTime);
-  const gcalDates = `${post.date.replace(/-/g, '')}T${post.startTime.replace(':', '')}00/${post.date.replace(/-/g, '')}T${gcalEnd.replace(':', '')}00`;
+  const gcalEnd = effectiveEnd(post.startTime ?? '00:00', post.endTime);
+  const gcalDates = scheduled
+    ? `${post.date!.replace(/-/g, '')}T${post.startTime!.replace(':', '')}00/${post.date!.replace(/-/g, '')}T${gcalEnd.replace(':', '')}00`
+    : '';
   const gcalUrl =
     `https://calendar.google.com/calendar/render?action=TEMPLATE` +
     `&text=${encodeURIComponent(gcalTitle)}` +
@@ -267,10 +275,20 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           post.title && <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>〈{post.title}〉</div>
         )}
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.4px' }}>
-          {dateLabel(post.date)} {to12h(post.startTime)}
-          {post.endTime ? ` ~ ${to12h(post.endTime)}` : ''}
-          {post.recurringRuleId && (
-            <span className="repeat-badge">{t(T.repeatBadge, { day: fmtWeekday(post.date, locale) })}</span>
+          {post.date && post.startTime ? (
+            <>
+              {dateLabel(post.date)} {to12h(post.startTime)}
+              {post.endTime ? ` ~ ${to12h(post.endTime)}` : ''}
+              {post.recurringRuleId && (
+                <span className="repeat-badge">{t(T.repeatBadge, { day: fmtWeekday(post.date, locale) })}</span>
+              )}
+            </>
+          ) : (
+            /* 날짜 자리를 비우지 않는다 — 비어 있으면 안 불러온 것처럼 보인다 */
+            <>
+              {t(WHEN_TBD)}
+              <span className="repeat-badge">{t(T.gathering)}</span>
+            </>
           )}
         </div>
         <div style={{ marginTop: 8, fontSize: 15.5 }}>
@@ -323,7 +341,8 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
             * 둘을 한 묶음으로 두는 이유 — 좁은 폰에서 줄이 바뀔 때 하나만 떨어져 나가면
             * 남은 아이콘이 무슨 짝인지 알 수 없다.
             */}
-          {!past && (
+          {/* 날짜가 없으면 캘린더에 넣을 것도 없다 — 버튼을 눌러 봐야 할 수 있는 일이 없다 */}
+          {!past && scheduled && (
             <span style={{ display: 'inline-flex' }}>
               <a
                 className="icon-link"
@@ -398,7 +417,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         isAdmin={isAdmin}
         myVenmo={myVenmo}
         myZelle={myZelle}
-        noteLabel={`${catLabel}${post.title ? ` ${post.title}` : ''} ${dateLabelShort(post.date, locale)}`}
+        noteLabel={`${catLabel}${post.title ? ` ${post.title}` : ''} ${whenLabelShort(post.date, post.startTime, locale)}`}
       />
 
       <h2>{t(T.comments)} {post.commentCount > 0 ? post.commentCount : ''}</h2>

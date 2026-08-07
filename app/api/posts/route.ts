@@ -40,8 +40,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const category = typeof body?.category === 'string' ? body.category : '';
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
-  const date = typeof body?.date === 'string' ? body.date : '';
-  const startTime = typeof body?.startTime === 'string' ? body.startTime : '';
+  /*
+   * 날짜를 아예 안 정한 모임(사람부터 모으기) — date를 null로 보내면 그렇게 저장된다.
+   * 날짜와 시각은 늘 한 쌍이다: 하나만 오면 잘못 만든 요청이다.
+   */
+  const noDate = body?.date === null || body?.date === '';
+  const date = !noDate && typeof body?.date === 'string' ? body.date : null;
+  const startTime = !noDate && typeof body?.startTime === 'string' ? body.startTime : null;
   // 종료 시각은 안 적어도 된다 — 빈 값이면 null로 저장하고, 언제 끝난 걸로 볼지는 lib/dates.ts가 정한다
   const endTime = typeof body?.endTime === 'string' && body.endTime ? body.endTime : null;
   const location = typeof body?.location === 'string' ? body.location.trim() : '';
@@ -51,13 +56,13 @@ export async function POST(req: NextRequest) {
   if (!POST_CATEGORY_SLUGS.includes(category)) {
     return await errJson(E.badCategory, 400);
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime)) {
+  if (!noDate && (!date || !startTime || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime))) {
     return await errJson(E.badDateTime, 400);
   }
   if (endTime !== null && !/^\d{2}:\d{2}$/.test(endTime)) {
     return await errJson(E.badDateTime, 400);
   }
-  if (endTime !== null && startTime >= endTime) {
+  if (endTime !== null && startTime && startTime >= endTime) {
     return await errJson(E.endBeforeStart, 400);
   }
   /*

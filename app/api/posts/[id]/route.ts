@@ -48,21 +48,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const body = await req.json().catch(() => null);
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
-  const date = typeof body?.date === 'string' ? body.date : '';
-  const startTime = typeof body?.startTime === 'string' ? body.startTime : '';
+  // 날짜 미정으로 두거나(둘 다 null) 나중에 날짜를 정하는 것 둘 다 여기로 온다
+  const noDate = body?.date === null || body?.date === '';
+  const date = !noDate && typeof body?.date === 'string' ? body.date : null;
+  const startTime = !noDate && typeof body?.startTime === 'string' ? body.startTime : null;
   // 종료 시각은 안 적어도 된다 — 빈 값이면 null로 저장하고, 언제 끝난 걸로 볼지는 lib/dates.ts가 정한다
   const endTime = typeof body?.endTime === 'string' && body.endTime ? body.endTime : null;
   const location = typeof body?.location === 'string' ? body.location.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
   const rawCapacity = body?.capacity;
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime)) {
+  if (!noDate && (!date || !startTime || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime))) {
     return await errJson(E.badDateTime, 400);
   }
   if (endTime !== null && !/^\d{2}:\d{2}$/.test(endTime)) {
     return await errJson(E.badDateTime, 400);
   }
-  if (endTime !== null && startTime >= endTime) {
+  if (endTime !== null && startTime && startTime >= endTime) {
     return await errJson(E.endBeforeStart, 400);
   }
 
