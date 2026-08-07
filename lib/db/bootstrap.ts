@@ -179,6 +179,11 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS notifications_user_read_idx ON notifications (user_id, read);
 
+CREATE TABLE IF NOT EXISTS hidden_categories (
+  category text PRIMARY KEY,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS category_signups (
   category text NOT NULL,
   user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,

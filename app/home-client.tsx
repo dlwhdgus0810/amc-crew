@@ -85,6 +85,8 @@ export interface HomeInitial {
   subs: string[];
   favs: string[];
   summaries: NextMeetupsSeed;
+  /** 관리자가 목록에서 내려 둔 카테고리 */
+  hidden: string[];
 }
 
 export default function HubPage({ initial }: { initial: HomeInitial }) {
@@ -310,13 +312,17 @@ export default function HubPage({ initial }: { initial: HomeInitial }) {
    * summaryFor의 active가 「지금 뭔가 있다」를 알려준다 — 예정된 모임이거나, 모여 있는
    * 참가신청이거나. 예정 모임만 보면 사람부터 모으는 카테고리(독서나눔)가 빠진다.
    */
-  const withUpcoming = CATEGORIES.filter((c) => summaryFor(c.slug, c.kind)?.active);
+  /* 관리자가 내려 둔 카테고리는 어느 갈래로 골라도 빠진다 (즐겨찾기에 넣어 뒀어도) */
+  const visible = CATEGORIES.filter((c) => !initial.hidden.includes(c.slug));
+  const withUpcoming = visible.filter((c) => summaryFor(c.slug, c.kind)?.active);
   const shown =
     favList.length > 0
-      ? favList.map(getCategory).filter((c) => c !== undefined)
+      ? favList
+          .map(getCategory)
+          .filter((c): c is NonNullable<typeof c> => c !== undefined && !initial.hidden.includes(c.slug))
       : withUpcoming.length > 0
         ? withUpcoming
-        : CATEGORIES;
+        : visible;
   const canReorder = Boolean(user) && favList.length > 1;
 
   return (

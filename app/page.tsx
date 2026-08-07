@@ -4,6 +4,7 @@ import { getLocale } from '@/lib/locale';
 import { getFavorites, getSubscriptions } from '@/lib/db/posts';
 import { nextMeetupByCategory } from '@/lib/db/next-meetups';
 import { signupCounts } from '@/lib/db/signups';
+import { hiddenSlugs } from '@/lib/db/hidden';
 import { CATEGORIES, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { statementOfDay } from '@/lib/statements';
 import { todayLocal } from '@/lib/dates';
@@ -25,14 +26,28 @@ export const dynamic = 'force-dynamic';
  */
 async function HomeData() {
   const { user } = await getViewer();
-  const [subs, favs, summaries, signups] = await Promise.all([
+  const [subs, favs, summaries, signups, hidden] = await Promise.all([
     user ? getSubscriptions(user.id) : [],
     user ? getFavorites(user.id) : [],
     nextMeetupByCategory(POST_CATEGORY_SLUGS),
     // 모임이 아직 없어도 신청한 사람이 있으면 홈에 띄운다 (독서나눔처럼 사람부터 모으는 곳)
     signupCounts(),
+    // 관리자가 내려 둔 카테고리는 목록에서 뺀다 (카테고리 화면은 주소로 그대로 열린다)
+    hiddenSlugs(),
   ]);
-  return <HomeClient initial={{ subs, favs, summaries: { today: todayLocal(), summaries, signups } }} />;
+  return <HomeClient initial={{ subs, favs, summaries: { today: todayLocal(), summaries, signups } , hidden }} />;
+}
+
+/** 홈 맨 위의 카테고리 띠 — 감춘 것은 빼고 그린다 */
+async function CategoryStrip() {
+  const hidden = await hiddenSlugs();
+  return (
+    <div className="statement-meta">
+      {CATEGORIES.filter((c) => !hidden.includes(c.slug))
+        .map((c) => c.en)
+        .join(' — ')}
+    </div>
+  );
 }
 
 export default async function HubPage() {
@@ -52,8 +67,16 @@ export default async function HubPage() {
         <br />
         <span className="dim2">{pick(locale, today.bottom)}</span>
       </div>
-      {/* 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다 */}
-      <div className="statement-meta">{CATEGORIES.map((c) => c.en).join(' — ')}</div>
+      {/*
+        * 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다.
+        * 관리자가 내려 둔 것은 여기서도 뺀다 — 카드에는 없는데 이 줄에만 남으면
+        * 「있는데 왜 안 보이지」가 된다.
+        */}
+      {/* 기다리는 동안 전부 늘어놓지 않는다 — 감춘 것이 잠깐 보였다 사라지면 그게 더 이상하다.
+          자리(줄 높이)만 잡아 두고 값이 오면 채운다 */}
+      <Suspense fallback={<div className="statement-meta">&nbsp;</div>}>
+        <CategoryStrip />
+      </Suspense>
 
       <WhatsNewCard />
 

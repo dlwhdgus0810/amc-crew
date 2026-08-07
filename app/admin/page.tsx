@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import type { Msg } from '@/lib/i18n';
 import { TEST_USERS } from '@/lib/test-users';
+import { CATEGORIES } from '@/lib/categories';
 import { entryLabel } from '@/lib/datefmt';
 import { useViewer } from '../session';
 
@@ -130,6 +131,13 @@ const T = {
   noticeReadWho: { ko: '확인: {names}', en: 'Confirmed: {names}' },
   noticeReadNot: { ko: '아직: {names}', en: 'Not yet: {names}' },
   noticeReadNone: { ko: '아직 아무도 안 눌렀어요.', en: 'Nobody has confirmed yet.' },
+  hideTitle: { ko: '카테고리 감추기', en: 'Hide categories' },
+  hideDesc: {
+    ko: '고른 카테고리를 홈과 둘러보기 목록에서 내려요. 지우는 게 아니라 목록에서만 빠지는 거라, 그 안의 모임·명단은 그대로 있고 주소로 들어가면 열려요.',
+    en: 'Takes the picked categories off the home and browse lists. Nothing is deleted — their meetups and lists stay, and the pages still open by link.',
+  },
+  hideNone: { ko: '내려 둔 카테고리가 없어요.', en: 'None hidden.' },
+  hideSaved: { ko: '저장했어요.', en: 'Saved.' },
   noticeReadNote: {
     ko: '「알겠어요」를 누른 사람이에요. 눌렀다는 것이지 읽었다는 뜻은 아니고, 회원들에게는 안 보여요. 내용을 고치면 다시 0부터 세요.',
     en: 'Who tapped “Got it” — tapped, not necessarily read. Members don’t see this. Editing the notice resets the count.',
@@ -310,6 +318,9 @@ export default function AdminPage() {
   const [noticeBody, setNoticeBody] = useState('');
   const [noticeBodyEn, setNoticeBodyEn] = useState('');
   const [noticeBusy, setNoticeBusy] = useState(false);
+  /** 목록에서 내려 둔 카테고리 (관리자만 고친다) */
+  const [hidden, setHidden] = useState<string[]>([]);
+  const [hideBusy, setHideBusy] = useState(false);
   /** 받는 사람 — 빈 배열이 곧 전체다. 「고른 사람만」을 골랐는지는 이 스위치가 따로 기억한다 */
   const [noticePicked, setNoticePicked] = useState(false);
   const [noticeTargets, setNoticeTargets] = useState<string[]>([]);
@@ -321,6 +332,32 @@ export default function AdminPage() {
   async function loadNotices() {
     const res = await fetch('/api/notices?all=1', { cache: 'no-store' });
     if (res.ok) setNotices((await res.json()).notices ?? []);
+  }
+
+  async function loadHidden() {
+    const res = await fetch('/api/admin/hidden-categories', { cache: 'no-store' });
+    if (res.ok) setHidden((await res.json()).hidden ?? []);
+  }
+
+  /** 켜고 끈 결과를 통째로 보낸다 — 하나씩 더하고 빼면 두 번 누를 때 어긋난다 */
+  async function saveHidden(next: string[]) {
+    setHidden(next);
+    setHideBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/hidden-categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden: next }),
+      });
+      if (!res.ok) throw new Error(t(T.failed));
+      setMsg({ type: 'ok', text: t(T.hideSaved) });
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
+      await loadHidden();
+    } finally {
+      setHideBusy(false);
+    }
   }
 
   async function loadEveryone() {
@@ -575,6 +612,7 @@ export default function AdminPage() {
     loadMembers();
     loadNotices();
     loadEveryone();
+    loadHidden();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isKakaoAdmin]);
 
@@ -845,6 +883,30 @@ export default function AdminPage() {
             <button className="secondary" disabled={newsBusy} onClick={sendNews}>
               {newsBusy ? t(T.newsSending) : t(T.newsSend)}
             </button>
+          </div>
+
+          <h1 style={{ marginTop: 80 }}>{t(T.hideTitle)}</h1>
+          <p className="subtitle">{t(T.hideDesc)}</p>
+          <div className="card">
+            <div className="seg-group" style={{ flexWrap: 'wrap' }}>
+              {CATEGORIES.filter((c) => c.kind === 'posts').map((c) => (
+                <button
+                  key={c.slug}
+                  className={`seg ${hidden.includes(c.slug) ? 'on' : ''}`}
+                  disabled={hideBusy}
+                  onClick={() =>
+                    saveHidden(
+                      hidden.includes(c.slug) ? hidden.filter((s) => s !== c.slug) : [...hidden, c.slug]
+                    )
+                  }
+                >
+                  {t(c.name)}
+                </button>
+              ))}
+            </div>
+            {hidden.length === 0 && (
+              <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>{t(T.hideNone)}</p>
+            )}
           </div>
 
           <h1 style={{ marginTop: 80 }}>{t(T.noticeTitle)}</h1>

@@ -93,13 +93,8 @@ export interface CategoriesInitial {
   subs: string[];
   favs: string[];
   summaries: NextMeetupsSeed;
-}
-
-/** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx) */
-export interface CategoriesInitial {
-  subs: string[];
-  favs: string[];
-  summaries: NextMeetupsSeed;
+  /** 관리자가 목록에서 내려 둔 카테고리 */
+  hidden: string[];
 }
 
 export default function CategoriesPage({ initial }: { initial: CategoriesInitial }) {
@@ -108,6 +103,8 @@ export default function CategoriesPage({ initial }: { initial: CategoriesInitial
   const t = useT();
   // 카드 하단 「다음 일정」 한 줄 — 서버가 읽어 둔 것을 그대로 쓴다
   const { summaryFor } = useNextMeetups(initial.summaries);
+  /* 관리자가 내려 둔 카테고리는 목록에서 뺀다 — 주소로는 그대로 열린다 */
+  const shown = CATEGORIES.filter((c) => !initial.hidden.includes(c.slug));
 
   const [layout, setLayoutState] = useState<Layout>('rows');
   const loggedIn = Boolean(useViewer().user);
@@ -203,7 +200,7 @@ export default function CategoriesPage({ initial }: { initial: CategoriesInitial
       )}
 
       <div className={layout === 'tile' ? 'cat-grid tile' : 'cat-grid'}>
-        {CATEGORIES.map((c) => (
+        {shown.map((c) => (
           <CategoryCard
             key={c.slug}
             category={c}

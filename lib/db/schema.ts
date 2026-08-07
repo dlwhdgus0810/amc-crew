@@ -510,6 +510,18 @@ export const settlementItemMembers = pgTable(
 );
 
 /**
+ * 관리자가 감춰 둔 카테고리.
+ *
+ * 열네 장이 늘 다 보일 필요는 없다 — 계절이 지난 종목이나 당분간 안 여는 것을 내려두면
+ * 홈과 둘러보기가 지금 굴러가는 것들로 좁혀진다. 카테고리 자체는 코드에 그대로 남고
+ * 주소(/c/<slug>)로도 열리므로, 이건 지우는 것이 아니라 목록에서 빼는 것이다.
+ */
+export const hiddenCategories = pgTable('hidden_categories', {
+  category: text('category').primaryKey(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
  * 카테고리 참가신청 — 「사람이 먼저, 모임은 그다음」인 카테고리에서 쓴다.
  *
  * 독서나눔처럼 번개로 시작할 수 없는 종목이 있다. 누가 호스트로 나서서 날짜를 잡는
