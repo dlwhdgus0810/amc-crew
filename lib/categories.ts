@@ -71,6 +71,21 @@ export const CATEGORIES: Category[] = [
     description: { ko: '숨차면 걸어도 됩니다', en: 'Walk when you need to.' },
   },
   {
+    slug: 'reading',
+    emoji: '📚',
+    en: 'BOOK CLUB',
+    // 축구(31.8°)와 테니스(120.8°) 사이 — 이 구간에서 C .13을 그대로 낼 수 있는 자리다
+    color: '#AA5910',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '독서모임', en: 'Book Club' },
+    description: { ko: '읽은 만큼만 말하면 됩니다', en: 'Say as much as you read.' },
+    // 무엇을 읽는지가 곧 「갈지 말지」라서 제목 자리에 책을 받는다 (무비나잇의 영화와 같은 자리)
+    titleLabel: { ko: '책 (선택)', en: 'Book (optional)' },
+    locationHint: { ko: '예: Kaldi’s Coffee OP', en: 'e.g. Kaldi’s Coffee OP' },
+    proposedBy: '정인건',
+  },
+  {
     slug: 'tennis',
     emoji: '🎾',
     en: 'TENNIS',
