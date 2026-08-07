@@ -61,6 +61,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!noDate && (!date || !startTime || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime))) {
     return await errJson(E.badDateTime, 400);
   }
+  // 날짜를 비워 두는 것은 참가신청을 쓰는 카테고리에서만 (만들 때와 같은 규칙)
+  if (noDate && !getCategory(post.category)?.signup) {
+    return await errJson(E.badDateTime, 400);
+  }
   if (endTime !== null && !/^\d{2}:\d{2}$/.test(endTime)) {
     return await errJson(E.badDateTime, 400);
   }

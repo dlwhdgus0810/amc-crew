@@ -60,6 +60,14 @@ export async function POST(req: NextRequest) {
   if (!noDate && (!date || !startTime || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime))) {
     return await errJson(E.badDateTime, 400);
   }
+  /*
+   * 날짜 없는 모임은 참가신청을 쓰는 카테고리(독서나눔)에서만 만들 수 있다.
+   * 나머지는 예전 그대로 날짜가 있어야 한다 — 화면에서도 그 스위치를 안 보여주지만,
+   * 규칙은 화면이 아니라 여기서 정한다.
+   */
+  if (noDate && !getCategory(category)?.signup) {
+    return await errJson(E.badDateTime, 400);
+  }
   if (endTime !== null && !/^\d{2}:\d{2}$/.test(endTime)) {
     return await errJson(E.badDateTime, 400);
   }

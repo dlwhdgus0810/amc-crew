@@ -1252,7 +1252,12 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             {/*
               * 날짜를 나중에 정하는 모임 — 켜면 날짜·시간 칸을 아예 감춘다.
               * 비활성으로 남겨 두면 「왜 안 써지지」를 먼저 겪게 된다.
+              *
+              * 참가신청을 쓰는 카테고리(독서나눔)에만 둔다. 나머지는 예전 그대로
+              * 날짜를 정해야 모임이 열린다 — 번개로 모이는 곳에서 날짜가 비어 있으면
+              * 그 줄이 목록 맨 위를 차지한 채 아무 일도 안 일어난다.
               */}
+            {category?.signup && (
             <label className="repeat-check" style={{ marginBottom: fNoDate ? 0 : 10 }}>
               <input
                 type="checkbox"
@@ -1265,6 +1270,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
               />
               <span>{t(T.noDateToggle)}</span>
             </label>
+            )}
             {fNoDate ? (
               <p className="hint" style={{ margin: '8px 0 0' }}>
                 {t(T.noDateHint)}
