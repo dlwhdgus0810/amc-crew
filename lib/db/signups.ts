@@ -67,12 +67,28 @@ export async function listSignups(category: string): Promise<SignupView[]> {
  * 이 신청으로 목표 인원을 **처음 채웠을 때만** 알린다 — 그 뒤로 한 명 더 들어올 때마다
  * 「다 모였어요」가 또 가면 그 말이 아무 뜻도 없어진다.
  */
-export async function addSignup(category: string, userId: string): Promise<{ count: number; reached: boolean }> {
+export async function addSignup(
+  category: string,
+  userId: string
+): Promise<{ count: number; reached: boolean; full: boolean }> {
   const db = await getDb();
+  const cfg = getCategory(category)?.signup;
+  const before = await listSignups(category);
+
+  /*
+   * 정원을 넘겨 받지 않는다. 아홉 명이 신청해 두고 모임 정원이 일곱이면 두 명은
+   * 모아 놓고 못 들어가는 셈이 된다 — 그건 명단이 할 일이 아니다.
+   * 이미 신청한 사람이 또 눌렀을 때는 마감이어도 그대로 통과시킨다 (바뀌는 게 없다).
+   */
+  const already = before.some((s) => s.userId === userId);
+  if (!already && cfg && before.length >= cfg.limit) {
+    return { count: before.length, reached: false, full: true };
+  }
+
   await db.insert(categorySignups).values({ category, userId }).onConflictDoNothing();
   const list = await listSignups(category);
-  const target = getCategory(category)?.signup?.target ?? 0;
-  return { count: list.length, reached: target > 0 && list.length === target };
+  const target = cfg?.target ?? 0;
+  return { count: list.length, reached: target > 0 && list.length === target, full: false };
 }
 
 export async function removeSignup(category: string, userId: string): Promise<number> {

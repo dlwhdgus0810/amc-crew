@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCategory } from '@/lib/categories';
 import PlaceLink from '@/app/place-link';
 import CatIcon from '@/app/cat-icon';
+import TermsPopup from '@/app/terms-popup';
 import { hostTier } from '@/lib/hosting';
 import {useLocale, useT} from '../../i18n';
 import {
@@ -217,6 +218,11 @@ const T = {
   noDateToggle: { ko: '날짜는 나중에', en: 'Decide the date later' },
   signupTitle: { ko: '{n}명 모이면 시작해요', en: 'We start when {n} people are in' },
   signupNow: { ko: '지금 {n}명', en: '{n} so far' },
+  signupFull: { ko: '신청 마감', en: 'List full' },
+  signupFullHint: {
+    ko: '{n}명까지 받아요. 자리가 나면 다시 신청할 수 있어요.',
+    en: 'Room for {n}. You can sign up if someone drops out.',
+  },
   signupJoin: { ko: '참가신청', en: 'Count me in' },
   signupLeave: { ko: '신청 취소', en: 'Take me out' },
   signupLogin: { ko: '카카오 로그인하고 신청하기', en: 'Log in with Kakao to sign up' },
@@ -238,6 +244,7 @@ const T = {
   signupTermsTitle: { ko: '신청 전에 약속 하나만', en: 'One promise before you sign up' },
   signupTermsOk: { ko: '확인했어요, 신청할게요', en: 'Got it — sign me up' },
   signupTermsCancel: { ko: '다음에요', en: 'Not now' },
+  joinTermsOk: { ko: '확인했어요, 참가할게요', en: 'Got it — count me in' },
   signupOnlyMembers: {
     ko: '참가신청을 하면 모임을 만들 수 있어요.',
     en: 'Sign up first, then you can create the meetup.',
@@ -583,10 +590,15 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const [signupBusy, setSignupBusy] = useState(false);
   /** 이번 만들기가 참가신청 명단에서 시작됐는지 — 그러면 신청자들이 참가자로 들어간다 */
   const [fromSignups, setFromSignups] = useState(false);
-  /** 신청 전에 띄우는 안내 — 확인을 눌러야 실제로 신청된다 */
-  const [termsOpen, setTermsOpen] = useState(false);
+  /**
+   * 약속 창을 무엇 때문에 띄웠는지.
+   * 'signup'이면 명단에 드는 것, 모임 id면 그 모임에 참가하는 것. false면 안 떠 있다.
+   */
+  const [termsOpen, setTermsOpen] = useState<false | 'signup' | string>(false);
   const signedUp = Boolean(user && signups.some((s) => s.userId === user.id));
   const signupReady = signupTarget > 0 && signups.length >= signupTarget;
+  const signupLimit = category?.signup?.limit ?? 0;
+  const signupFull = signupLimit > 0 && signups.length >= signupLimit && !signedUp;
   /*
    * 「모임 만들기」 버튼을 어디에 둘 것인가.
    *
@@ -611,7 +623,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
       return;
     }
     if (!signedUp && (category?.signup?.terms?.length ?? 0) > 0) {
-      setTermsOpen(true);
+      setTermsOpen('signup');
       return;
     }
     void toggleSignup();
@@ -649,6 +661,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     resetForm();
     // resetForm이 꺼 두므로 그 뒤에 켠다
     setFromSignups(fromSignups);
+    // 명단으로 만드는 모임은 정원이 정해져 있다 — 미리 채워 두되 고칠 수는 있게 둔다
+    if (fromSignups && category?.signup) setFCapacity(String(category.signup.limit));
     if (date) setFDate(date);
     // 비공개로 바꾸면 바로 쓸 수 있도록 친구를 미리 전부 골라 둔다
     setFInvite(new Set(friends.friends.map((f) => f.id)));
@@ -769,11 +783,31 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     }
   }
 
+  /**
+   * 카드의 참가 버튼.
+   *
+   * 약속을 받는 카테고리(독서나눔)에서는 들어올 때 한 번 읽힌다 — 명단으로 시작한
+   * 모임이라 나중에 들어오는 사람도 같은 약속 위에 있어야 한다. 나갈 때는 묻지 않는다.
+   */
+  function onJoinButton(post: PostView) {
+    if (!user) {
+      setMsg({ type: 'err', text: t(T.loginToJoin) });
+      return;
+    }
+    const joined = post.participants.some((p) => p.id === user.id);
+    if (!joined && (category?.signup?.terms?.length ?? 0) > 0) {
+      setTermsOpen(post.id);
+      return;
+    }
+    void join(post);
+  }
+
   async function join(post: PostView) {
     if (!user) {
       setMsg({ type: 'err', text: t(T.loginToJoin) });
       return;
     }
+    setTermsOpen(false);
     setBusy(true);
     setMsg(null);
     const joined = post.participants.some((p) => p.id === user.id);
@@ -962,7 +996,11 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             </ul>
           )}
           <p className="hint" style={{ marginTop: 12 }}>
-            {signupReady ? t(T.signupReady) : t(T.signupWait, { n: signupTarget - signups.length })}
+            {signupFull
+              ? t(T.signupFullHint, { n: signupLimit })
+              : signupReady
+                ? t(T.signupReady)
+                : t(T.signupWait, { n: signupTarget - signups.length })}
           </p>
           {canCreateFromSignups && (
             <>
@@ -978,10 +1016,10 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           <button
             className={signedUp || canCreateFromSignups ? 'secondary' : ''}
             style={{ marginTop: 12, width: '100%' }}
-            disabled={signupBusy}
+            disabled={signupBusy || signupFull}
             onClick={onSignupButton}
           >
-            {!user ? t(T.signupLogin) : signedUp ? t(T.signupLeave) : t(T.signupJoin)}
+            {!user ? t(T.signupLogin) : signedUp ? t(T.signupLeave) : signupFull ? t(T.signupFull) : t(T.signupJoin)}
           </button>
         </div>
       )}
@@ -1015,26 +1053,23 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           groupByDate(pastPosts ?? []).map((group) => renderGroup(group, true))
         ))}
 
+      {/* 신청 전 약속 — 명단에 드는 것도, 이미 만들어진 모임에 들어가는 것도 같은 약속이다 */}
       {termsOpen && category?.signup && (
-        <div className="notice-pop" role="dialog" aria-modal="true" aria-labelledby="signup-terms">
-          <div className="notice-box">
-            <span className="notice-tag">{t(T.signupJoin)}</span>
-            <h2 id="signup-terms" className="notice-title">
-              {t(T.signupTermsTitle)}
-            </h2>
-            <ul className="signup-terms">
-              {category.signup.terms.map((line, i) => (
-                <li key={i}>{t(line)}</li>
-              ))}
-            </ul>
-            <button className="notice-ok" disabled={signupBusy} onClick={() => void toggleSignup()}>
-              {t(T.signupTermsOk)}
-            </button>
-            <button className="secondary" style={{ width: '100%', marginTop: 8 }} onClick={() => setTermsOpen(false)}>
-              {t(T.signupTermsCancel)}
-            </button>
-          </div>
-        </div>
+        <TermsPopup
+          terms={category.signup.terms}
+          tag={termsOpen === 'signup' ? t(T.signupJoin) : t(T.join)}
+          okLabel={termsOpen === 'signup' ? t(T.signupTermsOk) : t(T.joinTermsOk)}
+          busy={signupBusy || busy}
+          onConfirm={() => {
+            if (termsOpen === 'signup') void toggleSignup();
+            else {
+              const target = posts.find((p) => p.id === termsOpen);
+              setTermsOpen(false);
+              if (target) void join(target);
+            }
+          }}
+          onClose={() => setTermsOpen(false)}
+        />
       )}
 
       {panelOpen && renderCreatePanel()}
@@ -1712,7 +1747,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             <button
               className={`join-text ${joined ? 'joined' : ''}`}
               disabled={busy || (!joined && full)}
-              onClick={() => join(post)}
+              onClick={() => onJoinButton(post)}
             >
               {joined ? t(T.leave) : full ? t(T.full) : t(T.join)}
             </button>

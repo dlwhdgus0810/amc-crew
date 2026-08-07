@@ -53,7 +53,10 @@ export async function POST(req: NextRequest) {
   if (bad) return await bad;
 
   await ensureUser(user);
-  const { count, reached } = await addSignup(category, user.id);
+  const { count, reached, full } = await addSignup(category, user.id);
+  if (full) {
+    return await errJson(E.signupFull, 409);
+  }
   /*
    * 목표 인원을 이 신청이 처음 채웠을 때만 알린다. 알림이 실패해도 신청은 성공이다 —
    * 명단에 든 것이 먼저고, 못 알린 것은 화면을 열면 어차피 보인다.

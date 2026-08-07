@@ -42,7 +42,16 @@ export interface Category {
    * terms는 신청 버튼을 눌렀을 때 띄우는 안내다. 읽고 확인을 눌러야 신청이 된다 —
    * 이 모임은 한 명이 빠지면 그날이 헐거워지는 종류라, 「몰랐다」로 시작하지 않게 한다.
    */
-  signup?: { target: number; terms: Msg[] };
+  signup?: {
+    /** 이만큼 모여야 모임을 만들 수 있다 */
+    target: number;
+    /**
+     * 만들어진 모임의 정원. 다 모인 뒤에도 더 들어올 수 있되 여기까지다 —
+     * 책 한 권을 두고 이야기가 굴러가는 인원에는 위아래가 다 있다.
+     */
+    limit: number;
+    terms: Msg[];
+  };
   /** 카테고리 안에서 여는 도구 (무비나잇 → AMC 회차 고르기) */
   tool?: { href: string; label: Msg; desc: Msg };
 }
@@ -101,6 +110,7 @@ export const CATEGORIES: Category[] = [
     // 다섯이면 책 한 권을 두고 이야기가 굴러간다 — 그보다 적으면 모임이 아니라 약속이다
     signup: {
       target: 5,
+      limit: 7,
       terms: [
         {
           ko: '정해진 분량은 읽고 와주세요. 다들 읽어 왔다는 전제로 이야기가 굴러가요.',

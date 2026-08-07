@@ -39,6 +39,7 @@ const T = {
   mine: { ko: '내가 만든 모임이에요.', en: 'You created this meetup.' },
   join: { ko: '참가하기 →', en: 'Join →' },
   leave: { ko: '참가 취소', en: 'Leave' },
+  joinTermsOk: { ko: '확인했어요, 참가할게요', en: 'Got it — count me in' },
   full: { ko: '마감', en: 'Full' },
   loginAndJoin: { ko: '카카오 로그인하고 참가하기', en: 'Log in with Kakao to join' },
   shareLink: { ko: '링크 공유', en: 'Share link' },
@@ -54,6 +55,7 @@ import CommentThread from '../../comment-thread';
 import SettlementPanel from '../../settlement-panel';
 import RatingPanel from '../../rating-panel';
 import PhotoPanel from '../../photo-panel';
+import TermsPopup from '../../terms-popup';
 import { siteUrl } from '@/lib/site';
 import { useRefreshSession, useViewer } from '../../session';
 
@@ -134,6 +136,8 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
   const myVenmo = viewer.venmo;
   const myZelle = viewer.zelle;
   const [busy, setBusy] = useState(false);
+  /** 참가 전에 띄우는 약속 창 (그런 카테고리에서만) */
+  const [termsOpen, setTermsOpen] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const t = useT();
   const locale = useLocale();
@@ -154,8 +158,23 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
     setPost(initial.post);
   }, [initial]);
 
+  /**
+   * 참가 버튼 — 약속을 받는 카테고리(독서나눔)에서는 들어올 때 한 번 읽힌다.
+   * 카테고리 목록 쪽과 같은 규칙이다 (app/c/[category]/category-client.tsx).
+   */
+  function onJoinButton() {
+    if (!post || !user) return;
+    const already = post.participants.some((p) => p.id === user.id);
+    if (!already && (cat?.signup?.terms?.length ?? 0) > 0) {
+      setTermsOpen(true);
+      return;
+    }
+    void join();
+  }
+
   async function join() {
     if (!post || !user) return;
+    setTermsOpen(false);
     setBusy(true);
     setMsg(null);
     const joined = post.participants.some((p) => p.id === user.id);
@@ -324,7 +343,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
             mine ? (
               <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>{t(T.mine)}</span>
             ) : (
-              <button disabled={busy || (!joined && full)} onClick={join}>
+              <button disabled={busy || (!joined && full)} onClick={onJoinButton}>
                 {joined ? t(T.leave) : full ? t(T.full) : t(T.join)}
               </button>
             )
@@ -430,6 +449,17 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         onChanged={loadPost}
         onError={(text) => setMsg({ type: 'err', text })}
       />
+      {termsOpen && cat?.signup && (
+        <TermsPopup
+          terms={cat.signup.terms}
+          tag={t(T.join)}
+          okLabel={t(T.joinTermsOk)}
+          busy={busy}
+          onConfirm={() => void join()}
+          onClose={() => setTermsOpen(false)}
+        />
+      )}
+
     </>
   );
 }

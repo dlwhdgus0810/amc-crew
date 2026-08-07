@@ -111,6 +111,13 @@ export async function POST(req: NextRequest) {
     return await errJson(E.coHostNotFriend, 400);
   }
 
+  /*
+   * 명단으로 만드는 모임은 정원이 정해져 있다 (signup.limit).
+   * 다 모인 뒤에도 더 들어올 수 있게 하되 거기까지다 — 만든 사람이 안 적어도 서버가 채운다.
+   */
+  const signupLimit = body?.fromSignups === true ? getCategory(category)?.signup?.limit : undefined;
+  if (signupLimit && capacity === undefined) capacity = signupLimit;
+
   const common = {
     category,
     authorId: user.id,

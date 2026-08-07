@@ -186,6 +186,10 @@ export const E = {
     ko: 'AMC API가 설정되지 않았습니다. AMC_VENDOR_KEY와 AMC_THEATRE_ID 환경변수를 설정하세요.',
     en: 'The AMC API is not configured. Set AMC_VENDOR_KEY and AMC_THEATRE_ID.',
   },
+  signupFull: {
+    ko: '신청이 다 찼어요. 자리가 나면 다시 신청할 수 있어요.',
+    en: 'The list is full. You can sign up if someone drops out.',
+  },
   noticeTitle: { ko: '공지 제목은 1~60자로 입력해주세요.', en: 'The notice title must be 1–60 characters.' },
   noticeBody: { ko: '공지 내용은 1000자 이하로 입력해주세요.', en: 'The notice must be 1000 characters or fewer.' },
   noticeNotFound: { ko: '공지를 찾을 수 없어요.', en: 'Notice not found.' },
