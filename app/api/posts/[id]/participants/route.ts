@@ -84,7 +84,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await notifyAddedToPost(post, actorName, friendId);
       // 넣긴 사람의 다른 친구들에게도 알린다. 누른 사람만 뺀다 — 방금 자기가 한 일이다.
       const others = (await friendIds(friendId)).filter((uid) => uid !== user.id);
-      await notifyFriendJoin(post, friendName, others);
+      await notifyFriendJoin(post, friendName, others, friendId);
     } catch (e) {
       console.error('[participants] notify failed:', e);
     }

@@ -33,7 +33,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (!wasIn) {
     try {
       const myName = resolveDisplayName((await getProfiles())[user.id], user.name);
-      await notifyFriendJoin(post, myName, await friendIds(user.id));
+      await notifyFriendJoin(post, myName, await friendIds(user.id), user.id);
     } catch (e) {
       console.error('[join] notify failed:', e);
     }

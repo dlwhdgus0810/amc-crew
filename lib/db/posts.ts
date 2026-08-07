@@ -614,9 +614,18 @@ export async function notifyFriendJoin(
     visibility?: string | null;
   },
   joinerName: string,
-  recipientIds: string[]
+  recipientIds: string[],
+  /**
+   * 참가한 사람의 id — 관리자면 알리지 않는다.
+   *
+   * 관리자는 이 앱을 만들면서 하루에도 여러 번 들어갔다 나갔다 한다. 그때마다
+   * 친구들 알림함에 「○○님이 참가했어요」가 쌓이면, 정작 봐야 할 알림이 그 사이에 묻힌다.
+   * 관리자가 아닌 사람의 참가는 예전 그대로 알린다.
+   */
+  joinerId?: string
 ): Promise<void> {
   if (post.visibility === 'link' || recipientIds.length === 0) return;
+  if (joinerId && adminIds().includes(joinerId)) return;
   await insertInAppNotice(
     recipientIds,
     post.id,

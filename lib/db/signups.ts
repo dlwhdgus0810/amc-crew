@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { categorySignups, users } from './schema';
 import { resolveDisplayName } from '../store';
@@ -59,6 +59,21 @@ export async function listSignups(category: string): Promise<SignupView[]> {
     avatar: r.avatar,
     createdAt: r.createdAt.toISOString(),
   }));
+}
+
+/**
+ * 카테고리별 신청 인원 — 홈 카드에 「3명 참가신청」을 적으려고 쓴다.
+ *
+ * 열두어 줄짜리 표라 한 번에 다 세고 화면이 골라 쓴다. 카테고리마다 따로 물으면
+ * 홈 한 번에 질의가 여럿이 된다.
+ */
+export async function signupCounts(): Promise<Record<string, number>> {
+  const db = await getDb();
+  const rows = await db
+    .select({ category: categorySignups.category, n: sql<number>`count(*)::int` })
+    .from(categorySignups)
+    .groupBy(categorySignups.category);
+  return Object.fromEntries(rows.map((r) => [r.category, r.n]));
 }
 
 /**

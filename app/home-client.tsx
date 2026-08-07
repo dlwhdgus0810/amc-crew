@@ -307,9 +307,10 @@ export default function HubPage({ initial }: { initial: HomeInitial }) {
    *     한눈에 안 들어오는데, 모임이 있는 카드만 남기면 그게 곧 오늘의 목록이 된다.
    *  3) 그것도 없으면(아직 아무도 안 열었을 때) 예전처럼 전부.
    *
-   * summaryFor는 예정된 모임이 있을 때만 when을 준다 (없으면 「예정된 모임 없음」 한 줄뿐).
+   * summaryFor의 active가 「지금 뭔가 있다」를 알려준다 — 예정된 모임이거나, 모여 있는
+   * 참가신청이거나. 예정 모임만 보면 사람부터 모으는 카테고리(독서나눔)가 빠진다.
    */
-  const withUpcoming = CATEGORIES.filter((c) => summaryFor(c.slug, c.kind)?.when);
+  const withUpcoming = CATEGORIES.filter((c) => summaryFor(c.slug, c.kind)?.active);
   const shown =
     favList.length > 0
       ? favList.map(getCategory).filter((c) => c !== undefined)

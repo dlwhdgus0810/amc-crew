@@ -3,6 +3,7 @@ import { getViewer } from '@/lib/session';
 import { getLocale } from '@/lib/locale';
 import { getFavorites, getSubscriptions } from '@/lib/db/posts';
 import { nextMeetupByCategory } from '@/lib/db/next-meetups';
+import { signupCounts } from '@/lib/db/signups';
 import { CATEGORIES, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { statementOfDay } from '@/lib/statements';
 import { todayLocal } from '@/lib/dates';
@@ -24,12 +25,14 @@ export const dynamic = 'force-dynamic';
  */
 async function HomeData() {
   const { user } = await getViewer();
-  const [subs, favs, summaries] = await Promise.all([
+  const [subs, favs, summaries, signups] = await Promise.all([
     user ? getSubscriptions(user.id) : [],
     user ? getFavorites(user.id) : [],
     nextMeetupByCategory(POST_CATEGORY_SLUGS),
+    // 모임이 아직 없어도 신청한 사람이 있으면 홈에 띄운다 (독서나눔처럼 사람부터 모으는 곳)
+    signupCounts(),
   ]);
-  return <HomeClient initial={{ subs, favs, summaries: { today: todayLocal(), summaries } }} />;
+  return <HomeClient initial={{ subs, favs, summaries: { today: todayLocal(), summaries, signups } }} />;
 }
 
 export default async function HubPage() {
