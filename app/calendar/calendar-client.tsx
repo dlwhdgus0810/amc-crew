@@ -6,6 +6,7 @@ import { catDisplayName, getCategory } from '@/lib/categories';
 import { addDays, calendarRange, monthEndOf, weekStartOf, weekdayOf } from '@/lib/dates';
 import { dateLabel, timeLabel } from '@/lib/datefmt';
 import { useLocale, useT } from '../i18n';
+import type { Locale } from '@/lib/i18n';
 
 interface CalendarMeetup {
   id: string;
@@ -54,9 +55,10 @@ const T = {
   past: { ko: '지난 모임', en: 'Ended' },
 };
 
-const WEEKDAY_HEAD = {
+const WEEKDAY_HEAD: Record<Locale, string[]> = {
   ko: ['일', '월', '화', '수', '목', '금', '토'],
   en: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+  es: ['D', 'L', 'M', 'M', 'J', 'V', 'S'],
 };
 const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 

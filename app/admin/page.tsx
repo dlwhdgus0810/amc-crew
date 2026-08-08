@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
-import type { Msg } from '@/lib/i18n';
+import { HTML_LANG, type Msg } from '@/lib/i18n';
 import { TEST_USERS } from '@/lib/test-users';
 import { CATEGORIES } from '@/lib/categories';
 import { entryLabel } from '@/lib/datefmt';
@@ -1181,7 +1181,7 @@ export default function AdminPage() {
                       <tr key={n.id}>
                         <td>{n.name}</td>
                         <td>{n.message}</td>
-                        <td>{new Date(n.deletedAt).toLocaleString(locale === 'ko' ? 'ko-KR' : 'en-US')}</td>
+                        <td>{new Date(n.deletedAt).toLocaleString(HTML_LANG[locale])}</td>
                       </tr>
                     ))}
                   </tbody>

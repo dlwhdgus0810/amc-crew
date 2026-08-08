@@ -71,10 +71,12 @@ const T = {
   male: { ko: '남성', en: 'Male' },
   female: { ko: '여성', en: 'Female' },
   notEntered: { ko: '미입력', en: 'Not set' },
-  language: { ko: '언어', en: 'Language' },
+  language: { ko: '언어', en: 'Language', es: 'Idioma' },
   languageDesc: {
     ko: '앱 화면과 알림 문구에 쓰이는 언어예요.',
     en: 'Used for the app interface and notification messages.',
+    // 스페인어는 아직 옮기는 중이라, 안 옮긴 화면은 영어로 보인다는 것을 여기서 알려준다
+    es: 'Se usa en la app y en los avisos. El español está en camino — lo que falte se verá en inglés.',
   },
   languageSaved: { ko: '언어를 바꿨어요.', en: 'Language updated.' },
   failed: { ko: '저장하지 못했어요.', en: 'Couldn’t save.' },

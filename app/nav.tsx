@@ -16,19 +16,24 @@ import { useT } from './i18n';
 /** 프로필이 바뀌었음을 탭바에 알리는 신호 */
 export const PROFILE_UPDATED = 'kk-profile-updated';
 
+/*
+ * 탭바는 스페인어를 먼저 채웠다 — 언어를 바꿨을 때 제일 먼저, 그리고 어느 화면에서나
+ * 보이는 글자라 여기가 비어 있으면 「바뀌긴 한 건가」 싶어진다.
+ * 나머지 화면은 아직 영어로 떨어진다 (lib/i18n.ts의 pick).
+ */
 const T = {
-  home: { ko: '홈', en: 'Home' },
-  categories: { ko: '둘러보기', en: 'Browse' },
-  calendar: { ko: '캘린더', en: 'Calendar' },
+  home: { ko: '홈', en: 'Home', es: 'Inicio' },
+  categories: { ko: '둘러보기', en: 'Browse', es: 'Explorar' },
+  calendar: { ko: '캘린더', en: 'Calendar', es: 'Calendario' },
   // 탭바에서는 내렸고(프로필 안으로), 문맥 탭에서만 쓴다
-  tickets: { ko: '건의함', en: 'Suggestions' },
-  movienight: { ko: '무비나잇', en: 'Movie Night' },
-  showtimes: { ko: '회차 고르기', en: 'Showtimes' },
-  groups: { ko: '그룹', en: 'Groups' },
-  profile: { ko: '프로필', en: 'Profile' },
-  admin: { ko: '관리자', en: 'Admin' },
-  notifications: { ko: '알림', en: 'Alerts' },
-  create: { ko: '모임 만들기', en: 'New meetup' },
+  tickets: { ko: '건의함', en: 'Suggestions', es: 'Sugerencias' },
+  movienight: { ko: '무비나잇', en: 'Movie Night', es: 'Noche de cine' },
+  showtimes: { ko: '회차 고르기', en: 'Showtimes', es: 'Funciones' },
+  groups: { ko: '그룹', en: 'Groups', es: 'Grupos' },
+  profile: { ko: '프로필', en: 'Profile', es: 'Perfil' },
+  admin: { ko: '관리자', en: 'Admin', es: 'Admin' },
+  notifications: { ko: '알림', en: 'Alerts', es: 'Avisos' },
+  create: { ko: '모임 만들기', en: 'New meetup', es: 'Crear quedada' },
 };
 
 /* 20px 라인 아이콘 — 굵기 1.8로 통일 */

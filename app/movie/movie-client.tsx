@@ -71,7 +71,11 @@ const T = {
   weekdayLabel: { ko: '{wd}요일', en: '{wd}' },
 };
 
-const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS: Record<Locale, string[]> = {
+  ko: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  es: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+};
 
 function formatDateHeading(
   date: string,
@@ -80,8 +84,9 @@ function formatDateHeading(
   const [, m, d] = date.split('-').map(Number);
   const wd = fmtWeekday(date, locale);
   return {
-    label: locale === 'en' ? `${MONTHS_EN[m - 1]} ${d}` : `${m}월 ${d}일`,
-    weekday: locale === 'en' ? wd : `${wd}요일`,
+    // 한국어만 「8월 2일」 꼴이고 나머지 언어는 「Aug 2」 차례를 쓴다 (fmtWeekday가 이름을 맞춰 준다)
+    label: locale === 'ko' ? `${m}월 ${d}일` : `${MONTHS[locale][m - 1]} ${d}`,
+    weekday: locale === 'ko' ? `${wd}요일` : wd,
     short: `${m}/${d}`,
     wd,
   };

@@ -21,7 +21,7 @@ import { SessionProvider } from './session';
 import { getViewer } from '@/lib/session';
 import { getLocale } from '@/lib/locale';
 import { SITE_URL } from '@/lib/site';
-import { pick } from '@/lib/i18n';
+import { HTML_LANG, pick } from '@/lib/i18n';
 
 /*
  * 글꼴은 빌드 때 받아 우리 도메인에서 준다.
@@ -123,7 +123,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
    */
   const [locale, viewer] = await Promise.all([getLocale(), getViewer()]);
   return (
-    <html lang={locale} className={`${sans.variable} ${mono.variable} ${grotesk.variable}`}>
+    <html lang={HTML_LANG[locale]} className={`${sans.variable} ${mono.variable} ${grotesk.variable}`}>
       <body>
         <I18nProvider locale={locale}>
           <SessionProvider value={viewer}>
