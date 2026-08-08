@@ -25,8 +25,8 @@ const SEEN_KEY = 'kk-notice-seen';
 const SEEN_MAX = 20;
 
 const T = {
-  label: { ko: '공지', en: 'Notice' },
-  ok: { ko: '알겠어요', en: 'Got it' },
+  label: { ko: '공지', en: 'Notice', es: 'Aviso' },
+  ok: { ko: '알겠어요', en: 'Got it', es: 'Entendido' },
 };
 
 interface Notice {

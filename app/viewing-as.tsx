@@ -5,8 +5,8 @@ import { useT } from './i18n';
 import { useViewer } from './session';
 
 const T = {
-  viewing: { ko: '지금 {name} 계정으로 보는 중', en: 'Viewing as {name}' },
-  back: { ko: '관리자로 돌아가기', en: 'Back to admin' },
+  viewing: { ko: '지금 {name} 계정으로 보는 중', en: 'Viewing as {name}', es: 'Viendo como {name}' },
+  back: { ko: '관리자로 돌아가기', en: 'Back to admin', es: 'Volver a admin' },
 };
 
 /**

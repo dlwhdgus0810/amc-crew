@@ -9,9 +9,9 @@ import { useT } from './i18n';
 export const WHATS_NEW_SEEN = 'kk-whats-new-seen';
 
 const T = {
-  label: { ko: '새 소식', en: 'What’s new' },
-  go: { ko: '보기 →', en: 'See what changed →' },
-  close: { ko: '닫기', en: 'Dismiss' },
+  label: { ko: '새 소식', en: 'What’s new', es: 'Novedades' },
+  go: { ko: '보기 →', en: 'See what changed →', es: 'Ver qué cambió →' },
+  close: { ko: '닫기', en: 'Dismiss', es: 'Cerrar' },
 };
 
 /**

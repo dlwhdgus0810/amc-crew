@@ -4,34 +4,39 @@ import { useEffect, useState } from 'react';
 import { useT } from './i18n';
 
 const T = {
-  title: { ko: '앱 푸시 알림', en: 'App push notifications' },
+  title: { ko: '앱 푸시 알림', en: 'App push notifications', es: 'Notificaciones de la app' },
   desc: {
     ko: '카카오톡과 별개로, 홈 화면에 추가한 앱으로 바로 알림을 받아요. 앱 아이콘에 숫자도 붙어요.',
     en: 'Separate from KakaoTalk — get alerts straight from the app on your home screen, with a badge on the icon.',
+    es: 'Aparte de KakaoTalk: los avisos llegan desde la app de tu pantalla de inicio, con un globo en el icono.',
   },
-  on: { ko: '이 기기에서 받는 중', en: 'On for this device' },
-  off: { ko: '꺼짐', en: 'Off' },
-  enable: { ko: '알림 켜기', en: 'Turn on' },
-  disable: { ko: '알림 끄기', en: 'Turn off' },
-  working: { ko: '처리 중…', en: 'Working…' },
-  otherDevices: { ko: '다른 기기 {n}대에서도 받는 중이에요.', en: 'Also on for {n} other device(s).' },
+  on: { ko: '이 기기에서 받는 중', en: 'On for this device', es: 'Activadas en este dispositivo' },
+  off: { ko: '꺼짐', en: 'Off', es: 'Desactivadas' },
+  enable: { ko: '알림 켜기', en: 'Turn on', es: 'Activar' },
+  disable: { ko: '알림 끄기', en: 'Turn off', es: 'Desactivar' },
+  working: { ko: '처리 중…', en: 'Working…', es: 'Un momento…' },
+  otherDevices: { ko: '다른 기기 {n}대에서도 받는 중이에요.', en: 'Also on for {n} other device(s).', es: 'También activadas en {n} dispositivo(s) más.' },
   unsupported: {
     ko: '이 브라우저는 앱 푸시 알림을 지원하지 않아요. 카카오톡 알림은 그대로 받을 수 있어요.',
     en: 'This browser doesn’t support push notifications. KakaoTalk alerts still work.',
+    es: 'Este navegador no admite notificaciones push. Los avisos por KakaoTalk siguen funcionando.',
   },
   noSw: {
     ko: '앱 준비가 아직 안 끝났어요. 새로고침한 뒤 다시 시도해주세요.',
     en: 'The app isn’t ready yet. Refresh the page and try again.',
+    es: 'La app aún no está lista. Actualiza la página e inténtalo de nuevo.',
   },
   needsInstall: {
     ko: '아이폰은 홈 화면에 추가한 뒤에야 푸시 알림을 켤 수 있어요. 공유 버튼 → "홈 화면에 추가"를 먼저 해주세요.',
     en: 'On iPhone, push notifications only work once the app is on your home screen. Share → “Add to Home Screen” first.',
+    es: 'En iPhone las notificaciones solo funcionan con la app en la pantalla de inicio. Primero: Compartir → «Añadir a inicio».',
   },
   denied: {
     ko: '알림이 차단돼 있어요. 브라우저(또는 iOS 설정 → 알림)에서 이 앱의 알림을 허용해주세요.',
     en: 'Notifications are blocked. Allow them for this app in your browser (or iOS Settings → Notifications).',
+    es: 'Las notificaciones están bloqueadas. Permítelas para esta app en el navegador (o en Ajustes → Notificaciones en iOS).',
   },
-  failed: { ko: '알림을 켜지 못했어요. 잠시 후 다시 시도해주세요.', en: 'Couldn’t turn on notifications. Try again shortly.' },
+  failed: { ko: '알림을 켜지 못했어요. 잠시 후 다시 시도해주세요.', en: 'Couldn’t turn on notifications. Try again shortly.', es: 'No se pudieron activar. Inténtalo de nuevo en un momento.' },
 };
 
 /**

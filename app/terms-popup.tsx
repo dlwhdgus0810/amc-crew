@@ -17,9 +17,9 @@ import type { Msg } from '@/lib/i18n';
  */
 
 const T = {
-  title: { ko: '들어가기 전에 약속 하나만', en: 'One promise before you join' },
-  ok: { ko: '확인했어요', en: 'Got it' },
-  later: { ko: '다음에요', en: 'Not now' },
+  title: { ko: '들어가기 전에 약속 하나만', en: 'One promise before you join', es: 'Una promesa antes de entrar' },
+  ok: { ko: '확인했어요', en: 'Got it', es: 'Entendido' },
+  later: { ko: '다음에요', en: 'Not now', es: 'Ahora no' },
 };
 
 export default function TermsPopup({

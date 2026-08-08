@@ -7,25 +7,27 @@ import { useLocale } from '../i18n';
 import { LOCALES, LOCALE_NAMES, Locale, Msg, pick } from '@/lib/i18n';
 
 const T = {
-  loading: { ko: '불러오는 중…', en: 'Loading…' },
-  welcome: { ko: '환영해요, {name}님! 👋', en: 'Welcome, {name}! 👋' },
+  loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
+  welcome: { ko: '환영해요, {name}님! 👋', en: 'Welcome, {name}! 👋', es: '¡Bienvenido, {name}! 👋' },
   subtitle: {
     ko: '시작하기 전에 몇 가지만 알려주세요. 프로필에서 언제든 수정할 수 있어요.',
     en: 'Just a few things before you start. You can change any of these later in your profile.',
+    es: 'Solo un par de cosas antes de empezar. Podrás cambiarlas luego en tu perfil.',
   },
-  language: { ko: '언어', en: 'Language' },
-  nickname: { ko: '닉네임', en: 'Nickname' },
+  language: { ko: '언어', en: 'Language', es: 'Idioma' },
+  nickname: { ko: '닉네임', en: 'Nickname', es: 'Apodo' },
   nicknameHint: {
     ko: '비워두면 카카오톡 닉네임({name})을 그대로 써요.',
     en: 'Leave it empty to use your Kakao nickname ({name}).',
+    es: 'Déjalo vacío para usar tu apodo de Kakao ({name}).',
   },
-  birthday: { ko: '생년월일', en: 'Date of birth' },
-  gender: { ko: '성별', en: 'Gender' },
-  male: { ko: '남성', en: 'Male' },
-  female: { ko: '여성', en: 'Female' },
-  start: { ko: '시작하기', en: 'Get started' },
-  saving: { ko: '저장 중…', en: 'Saving…' },
-  saveFailed: { ko: '저장 실패', en: 'Couldn’t save' },
+  birthday: { ko: '생년월일', en: 'Date of birth', es: 'Fecha de nacimiento' },
+  gender: { ko: '성별', en: 'Gender', es: 'Género' },
+  male: { ko: '남성', en: 'Male', es: 'Hombre' },
+  female: { ko: '여성', en: 'Female', es: 'Mujer' },
+  start: { ko: '시작하기', en: 'Get started', es: 'Empezar' },
+  saving: { ko: '저장 중…', en: 'Saving…', es: 'Guardando…' },
+  saveFailed: { ko: '저장 실패', en: 'Couldn’t save', es: 'No se pudo guardar' },
 };
 
 /** 온보딩 완료 후 복귀할 경로 (?next=, 사이트 내 경로만) — 공유 링크로 유입된 신규 사용자용 */

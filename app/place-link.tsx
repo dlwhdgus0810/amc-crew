@@ -4,7 +4,7 @@ import { isMappable, mapsUrl } from '@/lib/maps';
 import { useT } from './i18n';
 
 const T = {
-  openMap: { ko: '{place} — 지도에서 열기', en: '{place} — open in Maps' },
+  openMap: { ko: '{place} — 지도에서 열기', en: '{place} — open in Maps', es: '{place} — abrir en Mapas' },
 };
 
 const PinIcon = () => (

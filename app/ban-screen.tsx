@@ -16,16 +16,17 @@ import { useViewer } from './session';
  */
 
 const T = {
-  title: { ko: '지금은 앱을 쓸 수 없어요', en: 'The app is closed to you right now' },
+  title: { ko: '지금은 앱을 쓸 수 없어요', en: 'The app is closed to you right now', es: 'Ahora mismo la app está cerrada para ti' },
   desc: {
     ko: '관리자가 이용을 잠시 멈춰 뒀어요. 아래 시간이 지나면 저절로 풀려요.',
     en: 'An admin paused your access. It lifts on its own when the timer runs out.',
+    es: 'Un administrador pausó tu acceso. Se levanta solo cuando acabe el tiempo.',
   },
-  reason: { ko: '사유', en: 'Reason' },
-  left: { ko: '남은 시간', en: 'Time left' },
-  over: { ko: '정지가 풀렸어요!', en: 'You’re back in' },
-  refresh: { ko: '다시 시작하기', en: 'Continue' },
-  logout: { ko: '로그아웃', en: 'Log out' },
+  reason: { ko: '사유', en: 'Reason', es: 'Motivo' },
+  left: { ko: '남은 시간', en: 'Time left', es: 'Tiempo restante' },
+  over: { ko: '정지가 풀렸어요!', en: 'You’re back in', es: 'Ya puedes volver' },
+  refresh: { ko: '다시 시작하기', en: 'Continue', es: 'Continuar' },
+  logout: { ko: '로그아웃', en: 'Log out', es: 'Cerrar sesión' },
   days: { ko: '{n}일 ', en: '{n}d ' },
 };
 

@@ -15,11 +15,11 @@ import { useT } from './i18n';
  */
 
 const T = {
-  zoom: { ko: '{name} 크게 보기', en: 'View {name} larger' },
-  close: { ko: '닫기', en: 'Close' },
-  prev: { ko: '이전 사진', en: 'Previous' },
-  next: { ko: '다음 사진', en: 'Next' },
-  count: { ko: '{i} / {n}', en: '{i} / {n}' },
+  zoom: { ko: '{name} 크게 보기', en: 'View {name} larger', es: 'Ver {name} más grande' },
+  close: { ko: '닫기', en: 'Close', es: 'Cerrar' },
+  prev: { ko: '이전 사진', en: 'Previous', es: 'Anterior' },
+  next: { ko: '다음 사진', en: 'Next', es: 'Siguiente' },
+  count: { ko: '{i} / {n}', en: '{i} / {n}', es: '{i} / {n}' },
 };
 
 export interface Zoomed {
