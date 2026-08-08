@@ -65,15 +65,15 @@ export async function setBan(userId: string, minutes: number, reason: string): P
 }
 
 const N = {
-  banned: { ko: '⛔ {dur} 동안 앱을 쓸 수 없어요', en: '⛔ You can’t use the app for {dur}' },
-  withReason: { ko: '⛔ {dur} 동안 앱을 쓸 수 없어요 — {reason}', en: '⛔ You can’t use the app for {dur} — {reason}' },
-  lifted: { ko: '✅ 정지가 풀렸어요. 다시 쓸 수 있어요!', en: '✅ Your suspension is over — welcome back!' },
-  min: { ko: '{n}분', en: '{n} minutes' },
-  hour: { ko: '{n}시간', en: '{n} hours' },
-  day: { ko: '{n}일', en: '{n} days' },
+  banned: { ko: '⛔ {dur} 동안 앱을 쓸 수 없어요', en: '⛔ You can’t use the app for {dur}', es: '⛔ No puedes usar la app durante {dur}' },
+  withReason: { ko: '⛔ {dur} 동안 앱을 쓸 수 없어요 — {reason}', en: '⛔ You can’t use the app for {dur} — {reason}', es: '⛔ No puedes usar la app durante {dur} — {reason}' },
+  lifted: { ko: '✅ 정지가 풀렸어요. 다시 쓸 수 있어요!', en: '✅ Your suspension is over — welcome back!', es: '✅ Tu suspensión terminó. ¡Bienvenido de vuelta!' },
+  min: { ko: '{n}분', en: '{n} minutes', es: '{n} minutos' },
+  hour: { ko: '{n}시간', en: '{n} hours', es: '{n} horas' },
+  day: { ko: '{n}일', en: '{n} days', es: '{n} días' },
   // 영어만 단수형이 따로 필요하다 ("for 1 hours"는 눈에 걸린다)
-  hourOne: { ko: '{n}시간', en: 'an hour' },
-  dayOne: { ko: '{n}일', en: 'a day' },
+  hourOne: { ko: '{n}시간', en: 'an hour', es: 'una hora' },
+  dayOne: { ko: '{n}일', en: 'a day', es: 'un día' },
 };
 
 function durLabel(minutes: number, locale: Locale): string {

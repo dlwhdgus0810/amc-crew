@@ -14,20 +14,20 @@ export const TICKET_STATUSES: TicketStatus[] = ['open', 'planned', 'done', 'decl
 
 /** 알림 문구 (수신자 언어로 렌더된다) */
 const N = {
-  newTicket: { ko: '📮 새 건의 #{n}: {title} — {by}', en: '📮 New ticket #{n}: {title} — {by}' },
-  newCheer: { ko: '💌 쪽지 #{n}: {title} — {by}', en: '💌 Note #{n}: {title} — {by}' },
-  btnReview: { ko: '건의 보기', en: 'Open ticket' },
-  btnMine: { ko: '내 건의 보기', en: 'View my tickets' },
-  verdict: { ko: '📮 건의 #{n} "{title}" — {status}{note}', en: '📮 Ticket #{n} “{title}” — {status}{note}' },
-  note: { ko: ' · {text}', en: ' · {text}' },
+  newTicket: { ko: '📮 새 건의 #{n}: {title} — {by}', en: '📮 New ticket #{n}: {title} — {by}', es: '📮 Nueva sugerencia n.º {n}: {title} — {by}' },
+  newCheer: { ko: '💌 쪽지 #{n}: {title} — {by}', en: '💌 Note #{n}: {title} — {by}', es: '💌 Recado n.º {n}: {title} — {by}' },
+  btnReview: { ko: '건의 보기', en: 'Open ticket', es: 'Abrir sugerencia' },
+  btnMine: { ko: '내 건의 보기', en: 'View my tickets', es: 'Ver mis sugerencias' },
+  verdict: { ko: '📮 건의 #{n} "{title}" — {status}{note}', en: '📮 Ticket #{n} “{title}” — {status}{note}', es: '📮 Sugerencia n.º {n} «{title}» — {status}{note}' },
+  note: { ko: ' · {text}', en: ' · {text}', es: ' · {text}' },
 };
 
 /** 상태 이름 — 알림에도 화면과 같은 말을 쓴다 */
 export const TICKET_STATUS_LABEL: Record<TicketStatus, Msg> = {
-  open: { ko: '접수됨', en: 'Received' },
-  planned: { ko: '반영 예정', en: 'Planned' },
-  done: { ko: '반영됨', en: 'Shipped' },
-  declined: { ko: '보류', en: 'Not planned' },
+  open: { ko: '접수됨', en: 'Received', es: 'Recibida' },
+  planned: { ko: '반영 예정', en: 'Planned', es: 'Prevista' },
+  done: { ko: '반영됨', en: 'Shipped', es: 'Hecha' },
+  declined: { ko: '보류', en: 'Not planned', es: 'Aparcada' },
 };
 
 export interface TicketView {

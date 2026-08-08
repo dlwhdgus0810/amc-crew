@@ -61,26 +61,30 @@ const N = {
   ask: {
     ko: '💰 {cat} 정산 — {payee}님에게 {amount} 보내주세요 · {when} · {place}',
     en: '💰 {cat} settle-up — send {amount} to {payee} · {when} · {place}',
+    es: '💰 Cuentas de {cat}: envía {amount} a {payee} · {when} · {place}',
   },
-  btn: { ko: '정산 보기', en: 'See the split' },
-  viaVenmo: { ko: 'Venmo: {handle}', en: 'Venmo: {handle}' },
+  btn: { ko: '정산 보기', en: 'See the split', es: 'Ver el reparto' },
+  viaVenmo: { ko: 'Venmo: {handle}', en: 'Venmo: {handle}', es: 'Venmo: {handle}' },
   /*
    * 외부인 전달용에만 주소를 붙인다. 이 사람들은 앱에 없어서 모임 화면을 열 수 없고,
    * 그래서 금액이 채워진 링크가 여기 말고는 갈 곳이 없다.
    */
-  viaVenmoLink: { ko: 'Venmo로 보내기: {url}', en: 'Pay with Venmo: {url}' },
-  viaZelle: { ko: 'Zelle: {handle}', en: 'Zelle: {handle}' },
+  viaVenmoLink: { ko: 'Venmo로 보내기: {url}', en: 'Pay with Venmo: {url}', es: 'Pagar con Venmo: {url}' },
+  viaZelle: { ko: 'Zelle: {handle}', en: 'Zelle: {handle}', es: 'Zelle: {handle}' },
   sentCopy: {
     ko: '💰 {cat} 정산을 보냈어요 — {n}명에게 총 {amount} · {when} · {place}',
     en: '💰 {cat} settle-up sent — {amount} requested from {n} people · {when} · {place}',
+    es: '💰 Cuentas de {cat} enviadas: {amount} pedidos a {n} personas · {when} · {place}',
   },
   savedCopy: {
     ko: '💰 {cat} 정산을 저장했어요 — 앱에 없는 분들에게 받으시면 돼요 (총 {amount}) · {when} · {place}',
     en: '💰 {cat} settle-up saved — collect from the people outside the app ({amount} total) · {when} · {place}',
+    es: '💰 Cuentas de {cat} guardadas: cóbralo a la gente de fuera de la app ({amount} en total) · {when} · {place}',
   },
   outsiderShare: {
     ko: '모임 밖 인원 1인당 {amount} — 아래를 그분들께 전달하세요',
     en: 'Each person outside the meetup owes {amount} — forward the details below',
+    es: 'Cada persona de fuera debe {amount}: reenvíales los datos de abajo',
   },
 };
 

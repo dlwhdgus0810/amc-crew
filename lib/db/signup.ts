@@ -5,8 +5,8 @@ import { notifyAdmins } from './admin-notify';
 import { pick } from '../i18n';
 
 const N = {
-  newMember: { ko: '🎉 새 회원 가입: {name} (총 {n}명)', en: '🎉 New member: {name} ({n} total)' },
-  btnOpen: { ko: '앱 열기', en: 'Open the app' },
+  newMember: { ko: '🎉 새 회원 가입: {name} (총 {n}명)', en: '🎉 New member: {name} ({n} total)', es: '🎉 Nuevo miembro: {name} ({n} en total)' },
+  btnOpen: { ko: '앱 열기', en: 'Open the app', es: 'Abrir la app' },
 };
 
 /** 첫 로그인(가입) 시 관리자에게 알린다 */

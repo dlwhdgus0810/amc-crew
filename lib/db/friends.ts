@@ -19,8 +19,8 @@ import { Locale, Msg, pick } from '../i18n';
  */
 
 const N = {
-  reqLine: { ko: '{name}님이 친구 요청을 보냈어요', en: '{name} sent you a friend request' },
-  okLine: { ko: '{name}님과 친구가 됐어요', en: 'You and {name} are now friends' },
+  reqLine: { ko: '{name}님이 친구 요청을 보냈어요', en: '{name} sent you a friend request', es: '{name} te envió una solicitud de amistad' },
+  okLine: { ko: '{name}님과 친구가 됐어요', en: 'You and {name} are now friends', es: '{name} y tú ya sois amigos' },
 };
 
 /** 내 모임을 친구에게 어디까지 보여줄지 */

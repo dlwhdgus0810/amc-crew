@@ -7,16 +7,17 @@ import { sendPush } from '../push';
 import { pick, toLocale } from '../i18n';
 
 const N = {
-  newRequest: { ko: '💡 새 카테고리 제안: {name} — {by}', en: '💡 New category suggestion: {name} — {by}' },
-  btnReview: { ko: '제안 검토하기', en: 'Review it' },
-  approved: { ko: '승인됐어요', en: 'was approved' },
-  rejected: { ko: '반려됐어요', en: 'was declined' },
+  newRequest: { ko: '💡 새 카테고리 제안: {name} — {by}', en: '💡 New category suggestion: {name} — {by}', es: '💡 Nueva propuesta de categoría: {name} — {by}' },
+  btnReview: { ko: '제안 검토하기', en: 'Review it', es: 'Revisarla' },
+  approved: { ko: '승인됐어요', en: 'was approved', es: 'fue aprobada' },
+  rejected: { ko: '반려됐어요', en: 'was declined', es: 'fue rechazada' },
   verdict: {
     ko: '💡 제안한 카테고리 "{name}"이(가) {verdict}.{note}',
     en: '💡 Your category suggestion “{name}” {verdict}.{note}',
+    es: '💡 Tu propuesta de categoría «{name}» {verdict}.{note}',
   },
-  note: { ko: ' — {text}', en: ' — {text}' },
-  btnMine: { ko: '내 제안 보기', en: 'View my suggestions' },
+  note: { ko: ' — {text}', en: ' — {text}', es: ' — {text}' },
+  btnMine: { ko: '내 제안 보기', en: 'View my suggestions', es: 'Ver mis propuestas' },
 };
 
 /** 수신자 언어 (users.locale, 없으면 기본) */

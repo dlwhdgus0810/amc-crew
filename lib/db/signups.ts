@@ -23,8 +23,9 @@ const N = {
   reached: {
     ko: '📚 {cat} {n}명이 모였어요! 이제 모임 날짜를 정해봐요',
     en: '📚 {cat} — {n} people are in! Time to pick a date',
+    es: '📚 {cat}: ¡ya sois {n}! Toca elegir fecha',
   },
-  btn: { ko: '모임 만들기', en: 'Create the meetup' },
+  btn: { ko: '모임 만들기', en: 'Create the meetup', es: 'Crear la quedada' },
 };
 
 export interface SignupView {

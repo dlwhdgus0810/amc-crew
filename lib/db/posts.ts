@@ -476,28 +476,29 @@ const REMINDER_PREFIX = '⏰';
 
 /** 알림 문구 조각 (수신자 언어로 렌더된다) */
 const N = {
-  newPost: { ko: '새 모임', en: 'new meetup' },
-  weekly: { ko: '이번 주 모임', en: 'this week' },
-  updated: { ko: '모임 변경', en: 'updated' },
-  cancelled: { ko: '모임 취소', en: 'cancelled' },
-  comment: { ko: '새 댓글', en: 'new comment' },
+  newPost: { ko: '새 모임', en: 'new meetup', es: 'nueva quedada' },
+  weekly: { ko: '이번 주 모임', en: 'this week', es: 'esta semana' },
+  updated: { ko: '모임 변경', en: 'updated', es: 'actualizada' },
+  cancelled: { ko: '모임 취소', en: 'cancelled', es: 'cancelada' },
+  comment: { ko: '새 댓글', en: 'new comment', es: 'nuevo comentario' },
   /** 익명 댓글의 이름 자리 (app/comment-thread.tsx의 표기와 같아야 한다) */
-  anon: { ko: '익명', en: 'Anonymous' },
-  today: { ko: '오늘 모임', en: 'today' },
-  byActor: { ko: '{text} — {name}', en: '{text} — {name}' },
-  commentLine: { ko: '{text} — {name}: {body}', en: '{text} — {name}: {body}' },
-  btnPost: { ko: '모임 보기', en: 'View meetup' },
-  btnComment: { ko: '댓글 보기', en: 'View comments' },
-  btnOther: { ko: '다른 모임 보기', en: 'See other meetups' },
+  anon: { ko: '익명', en: 'Anonymous', es: 'Anónimo' },
+  today: { ko: '오늘 모임', en: 'today', es: 'hoy' },
+  byActor: { ko: '{text} — {name}', en: '{text} — {name}', es: '{text} — {name}' },
+  commentLine: { ko: '{text} — {name}: {body}', en: '{text} — {name}: {body}', es: '{text} — {name}: {body}' },
+  btnPost: { ko: '모임 보기', en: 'View meetup', es: 'Ver la quedada' },
+  btnComment: { ko: '댓글 보기', en: 'View comments', es: 'Ver comentarios' },
+  btnOther: { ko: '다른 모임 보기', en: 'See other meetups', es: 'Ver otras quedadas' },
   // 친구 알림 — 주어가 모임이 아니라 사람이라 이름이 앞에 온다
-  meetup: { ko: '모임', en: 'meetup' },
-  friendJoinLine: { ko: '{name}님이 참가했어요 · {text}', en: '{name} joined · {text}' },
+  meetup: { ko: '모임', en: 'meetup', es: 'quedada' },
+  friendJoinLine: { ko: '{name}님이 참가했어요 · {text}', en: '{name} joined · {text}', es: '{name} se apuntó · {text}' },
   coHostLine: {
     ko: '{name}님이 회원님을 공동 호스트로 정했어요 · {text}',
     en: '{name} made you a co-host · {text}',
+    es: '{name} te hizo co-anfitrión · {text}',
   },
-  addedLine: { ko: '{name}님이 이 모임에 넣었어요 · {text}', en: '{name} added you · {text}' },
-  inviteLine: { ko: '{name}님이 초대했어요 · {text}', en: '{name} invited you · {text}' },
+  addedLine: { ko: '{name}님이 이 모임에 넣었어요 · {text}', en: '{name} added you · {text}', es: '{name} te añadió · {text}' },
+  inviteLine: { ko: '{name}님이 초대했어요 · {text}', en: '{name} invited you · {text}', es: '{name} te invitó · {text}' },
 };
 
 /** 알림 메시지용 모임 설명: "🥒 피클볼 새 모임 · 8/1(토) 오후 6:00 · OP코트" (제목이 있으면 〈제목〉 삽입) */
