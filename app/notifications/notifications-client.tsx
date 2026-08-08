@@ -20,27 +20,27 @@ export interface NotificationsInitial {
 }
 
 const T = {
-  friends: { ko: '친구', en: 'Friends' },
-  friendsHint: { ko: '접속 중인 친구와 받은 요청', en: 'Who’s online, and your requests' },
-  loading: { ko: '불러오는 중…', en: 'Loading…' },
-  title: { ko: '알림', en: 'Alerts' },
-  loginPrompt: { ko: '카카오 로그인 후 알림을 볼 수 있어요.', en: 'Log in with Kakao to see your alerts.' },
+  friends: { ko: '친구', en: 'Friends', es: 'Amigos' },
+  friendsHint: { ko: '접속 중인 친구와 받은 요청', en: 'Who’s online, and your requests', es: 'Quién está en línea y tus solicitudes' },
+  loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
+  title: { ko: '알림', en: 'Alerts', es: 'Avisos' },
+  loginPrompt: { ko: '카카오 로그인 후 알림을 볼 수 있어요.', en: 'Log in with Kakao to see your alerts.', es: 'Entra con Kakao para ver tus avisos.' },
   empty: {
     ko: '아직 알림이 없어요. 홈에서 관심 있는 취미를 구독해보세요!',
     en: 'No alerts yet. Subscribe to a hobby on the home page!',
   },
-  del: { ko: '지우기', en: 'Delete' },
-  delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t delete that.' },
+  del: { ko: '지우기', en: 'Delete', es: 'Borrar' },
+  delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t delete that.', es: 'No se pudo borrar.' },
   /* 제목 바로 아래에 둔다 — 지우는 방법을 모르면 목록 끝까지 내려갈 이유가 없다 */
   swipeHint: {
     ko: '알림을 왼쪽으로 밀면 지울 수 있어요.',
     en: 'Swipe an alert left to delete it.',
   },
-  trash: { ko: '지운 알림', en: 'Deleted' },
-  trashEmpty: { ko: '지운 알림이 없어요.', en: 'Nothing deleted yet.' },
-  restore: { ko: '되돌리기', en: 'Restore' },
-  restoreFailed: { ko: '되돌리지 못했어요.', en: 'Couldn’t restore that.' },
-  deletedAt: { ko: '{when} 지움', en: 'deleted {when}' },
+  trash: { ko: '지운 알림', en: 'Deleted', es: 'Borrados' },
+  trashEmpty: { ko: '지운 알림이 없어요.', en: 'Nothing deleted yet.', es: 'Nada borrado todavía.' },
+  restore: { ko: '되돌리기', en: 'Restore', es: 'Restaurar' },
+  restoreFailed: { ko: '되돌리지 못했어요.', en: 'Couldn’t restore that.', es: 'No se pudo restaurar.' },
+  deletedAt: { ko: '{when} 지움', en: 'deleted {when}', es: 'borrado {when}' },
 };
 
 interface Notification {

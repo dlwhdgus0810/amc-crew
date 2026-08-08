@@ -33,17 +33,17 @@ import useNextMeetups, { type NextMeetupsSeed } from './use-next-meetups';
 import { useRefreshSession, useViewer } from './session';
 
 const T = {
-  loading: { ko: '불러오는 중…', en: 'Loading…' },
-  profile: { ko: '프로필 →', en: 'Profile →' },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
-  loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.' },
-  loginToFavorite: { ko: '카카오 로그인 후 즐겨찾기할 수 있어요.', en: 'Log in with Kakao to add favourites.' },
-  allCategories: { ko: '전체 카테고리 보기 →', en: 'See all categories →' },
+  loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
+  profile: { ko: '프로필 →', en: 'Profile →', es: 'Perfil →' },
+  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
+  loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.', es: 'Entra con Kakao para suscribirte.' },
+  loginToFavorite: { ko: '카카오 로그인 후 즐겨찾기할 수 있어요.', en: 'Log in with Kakao to add favourites.', es: 'Entra con Kakao para guardar favoritos.' },
+  allCategories: { ko: '전체 카테고리 보기 →', en: 'See all categories →', es: 'Ver todas las categorías →' },
   dragHint: {
     ko: '⠿ 을 끌어서 즐겨찾기 순서를 바꿀 수 있어요. 키보드로는 ⠿에서 스페이스를 누른 뒤 방향키로 옮기세요.',
     en: 'Drag ⠿ to reorder your favourites, or focus ⠿ and press Space, then use the arrow keys.',
   },
-  reorder: { ko: '순서 바꾸기', en: 'Reorder' },
+  reorder: { ko: '순서 바꾸기', en: 'Reorder', es: 'Reordenar' },
   suggest: {
     ko: '하고 싶은 취미가 없나요? 카테고리 제안하기 →',
     en: 'Missing your hobby? Suggest a category →',

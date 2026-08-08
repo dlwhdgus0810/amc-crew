@@ -15,12 +15,12 @@ import useNextMeetups, { type NextMeetupsSeed } from '../use-next-meetups';
 import { useRefreshSession, useViewer } from '../session';
 
 const T = {
-  loading: { ko: '불러오는 중…', en: 'Loading…' },
-  title: { ko: '카테고리', en: 'Categories' },
-  leaderboard: { ko: '리더보드', en: 'Leaderboard' },
-  layoutA11y: { ko: '카드 배열', en: 'Card layout' },
-  layoutRows: { ko: '한 줄로 보기', en: 'One per row' },
-  layoutTile: { ko: '바둑판으로 보기', en: 'Grid of two' },
+  loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
+  title: { ko: '카테고리', en: 'Categories', es: 'Categorías' },
+  leaderboard: { ko: '리더보드', en: 'Leaderboard', es: 'Clasificación' },
+  layoutA11y: { ko: '카드 배열', en: 'Card layout', es: 'Diseño de tarjetas' },
+  layoutRows: { ko: '한 줄로 보기', en: 'One per row', es: 'Una por fila' },
+  layoutTile: { ko: '바둑판으로 보기', en: 'Grid of two', es: 'Cuadrícula de dos' },
   subtitle: {
     ko: '★ 즐겨찾기는 홈에 먼저 띄우는 용도이고, 구독은 새 모임과 내가 참가한 모임의 댓글 알림을 받는 용도예요.',
     en: '★ Favourites show up first on the home screen; subscriptions alert you to new meetups and to comments on ones you joined.',
@@ -29,7 +29,7 @@ const T = {
     ko: '카카오 로그인 후 즐겨찾기와 구독을 설정할 수 있어요.',
     en: 'Log in with Kakao to set favourites and subscriptions.',
   },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
+  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
 };
 
 function KakaoIcon() {

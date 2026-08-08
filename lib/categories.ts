@@ -57,10 +57,11 @@ export interface Category {
 }
 
 /** 카테고리별로 지정하지 않았을 때 쓰는 장소 문구 */
-export const DEFAULT_LOCATION_LABEL: Msg = { ko: '장소', en: 'Place' };
+export const DEFAULT_LOCATION_LABEL: Msg = { ko: '장소', en: 'Place', es: 'Lugar' };
 export const DEFAULT_LOCATION_HINT: Msg = {
   ko: '예: Lifetime OP 피클볼 코트',
   en: 'e.g. Lifetime OP pickleball courts',
+  es: 'p. ej. canchas de pickleball de Lifetime OP',
 };
 
 // 배열 순서가 곧 홈 캐러셀 노출 순서다 (카드 번호 01·02…도 여기서 나온다)
@@ -93,8 +94,8 @@ export const CATEGORIES: Category[] = [
     color: '#B0503F',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '축구', en: 'Soccer' },
-    description: { ko: '숨차면 걸어도 됩니다', en: 'Walk when you need to.' },
+    name: { ko: '축구', en: 'Soccer', es: 'Fútbol' },
+    description: { ko: '숨차면 걸어도 됩니다', en: 'Walk when you need to.', es: 'Camina cuando lo necesites.' },
   },
   {
     slug: 'reading',
@@ -104,13 +105,13 @@ export const CATEGORIES: Category[] = [
     color: '#AA5910',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '독서나눔', en: 'Book Club' },
+    name: { ko: '독서나눔', en: 'Book Club', es: 'Club de lectura' },
     // 다른 카드와 결이 다르다 — 여기만 「번개로 모여서 바로」가 안 되는 종목이라,
     // 분위기보다 어떻게 시작하는지를 먼저 알려준다
-    description: { ko: '5명 모이면 책 정하고 시작', en: 'Five in, then we pick the book.' },
+    description: { ko: '5명 모이면 책 정하고 시작', en: 'Five in, then we pick the book.', es: 'Cinco personas y elegimos libro.' },
     // 무엇을 읽는지가 곧 「갈지 말지」라서 제목 자리에 책을 받는다 (무비나잇의 영화와 같은 자리)
-    titleLabel: { ko: '책', en: 'Book' },
-    locationHint: { ko: '예: Kaldi’s Coffee OP', en: 'e.g. Kaldi’s Coffee OP' },
+    titleLabel: { ko: '책', en: 'Book', es: 'Libro' },
+    locationHint: { ko: '예: Kaldi’s Coffee OP', en: 'e.g. Kaldi’s Coffee OP', es: 'p. ej. Kaldi’s Coffee OP' },
     proposedBy: '정인건',
     // 다섯이면 책 한 권을 두고 이야기가 굴러간다 — 그보다 적으면 모임이 아니라 약속이다
     signup: {
@@ -120,14 +121,17 @@ export const CATEGORIES: Category[] = [
         {
           ko: '정해진 분량은 읽고 와주세요. 다들 읽어 왔다는 전제로 이야기가 굴러가요.',
           en: 'Come having read the agreed pages — the whole conversation assumes everyone did.',
+          es: 'Ven con las páginas acordadas leídas: toda la conversación da por hecho que todos lo hicieron.',
         },
         {
           ko: '모임에는 되도록 빠지지 말아주세요. 다섯이 모여야 시작하는 모임이라 한 명이 비면 그날이 헐거워져요.',
           en: 'Try not to miss a session. It takes five to run, so one empty chair thins out the whole evening.',
+          es: 'Intenta no faltar. Hacen falta cinco, así que una silla vacía deja floja toda la tarde.',
         },
         {
           ko: '사정이 생기면 미리 말해주세요. 늦게 말할수록 다른 사람들의 계획도 같이 흔들려요.',
           en: 'If something comes up, say so early — late notice moves everyone else’s plans too.',
+          es: 'Si te surge algo, avisa pronto: avisar tarde mueve también los planes de los demás.',
         },
       ],
     },
@@ -139,9 +143,9 @@ export const CATEGORIES: Category[] = [
     color: '#677C05',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '테니스', en: 'Tennis' },
-    description: { ko: '같이 해뇨', en: 'Find players' },
-    locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts' },
+    name: { ko: '테니스', en: 'Tennis', es: 'Tenis' },
+    description: { ko: '같이 해뇨', en: 'Find players', es: '¿Jugamos?' },
+    locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts', es: 'p. ej. canchas de tenis de Harmon Park' },
     proposedBy: 'sarah 예지 park',
   },
   {
@@ -151,12 +155,12 @@ export const CATEGORIES: Category[] = [
     color: '#3D843A',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '캠핑', en: 'Camping' },
-    description: { ko: '불멍 5분, 먹방 5시간', en: 'Five minutes of fire, five hours of food' },
+    name: { ko: '캠핑', en: 'Camping', es: 'Camping' },
+    description: { ko: '불멍 5분, 먹방 5시간', en: 'Five minutes of fire, five hours of food', es: 'Cinco minutos de fogata, cinco horas de comida' },
     // 캠핑장은 자리를 잡아 두고 만나므로, 사이트 번호가 곧 「어디로 오면 되는지」다
-    titleLabel: { ko: '사이트 번호 (선택)', en: 'Site number (optional)' },
-    locationLabel: { ko: '캠핑장', en: 'Campground' },
-    locationHint: { ko: '예: Clinton State Park', en: 'e.g. Clinton State Park' },
+    titleLabel: { ko: '사이트 번호 (선택)', en: 'Site number (optional)', es: 'Número de parcela (opcional)' },
+    locationLabel: { ko: '캠핑장', en: 'Campground', es: 'Campamento' },
+    locationHint: { ko: '예: Clinton State Park', en: 'e.g. Clinton State Park', es: 'p. ej. Clinton State Park' },
     proposedBy: '정재호',
   },
   {
@@ -166,18 +170,19 @@ export const CATEGORIES: Category[] = [
     color: '#008759',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '무비나잇', en: 'Movie Night' },
-    description: { ko: '팝콘은 각자, 감상은 같이', en: 'Popcorn separately, opinions together.' },
-    titleLabel: { ko: '영화/드라마', en: 'Movie/Show' },
+    name: { ko: '무비나잇', en: 'Movie Night', es: 'Noche de cine' },
+    description: { ko: '팝콘은 각자, 감상은 같이', en: 'Popcorn separately, opinions together.', es: 'Palomitas por separado, opiniones juntos.' },
+    titleLabel: { ko: '영화/드라마', en: 'Movie/Show', es: 'Película o serie' },
     titleSearch: 'tmdb',
     // AMC 회차 고르기는 따로 카드를 두지 않고 여기서 연다 — 회차에서 만든 모임도
     // 어차피 무비나잇으로 들어오므로, 입구가 둘일 이유가 없다
     tool: {
       href: '/movie',
-      label: { ko: 'AMC 회차 고르기', en: 'Pick AMC showtimes' },
+      label: { ko: 'AMC 회차 고르기', en: 'Pick AMC showtimes', es: 'Elegir funciones de AMC' },
       desc: {
         ko: 'AMC Town Center 20 상영표에서 회차를 고르면, 같은 회차를 고른 사람끼리 모임이 만들어져요.',
         en: 'Pick a showtime at AMC Town Center 20 and everyone who picked the same one becomes a meetup.',
+        es: 'Elige una función en AMC Town Center 20 y quienes elijan la misma forman una quedada.',
       },
     },
   },
@@ -188,11 +193,11 @@ export const CATEGORIES: Category[] = [
     color: '#038189',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '베이킹 클래스', en: 'Baking Class' },
-    description: { ko: '실패해도 먹을 수는 있습니다', en: 'Even the failures are edible.' },
-    titleLabel: { ko: '만들 것', en: 'What we’re baking' },
-    locationLabel: { ko: '장소', en: 'Place' },
-    locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio' },
+    name: { ko: '베이킹 클래스', en: 'Baking Class', es: 'Clase de repostería' },
+    description: { ko: '실패해도 먹을 수는 있습니다', en: 'Even the failures are edible.', es: 'Hasta lo que sale mal se puede comer.' },
+    titleLabel: { ko: '만들 것', en: 'What we’re baking', es: 'Qué horneamos' },
+    locationLabel: { ko: '장소', en: 'Place', es: 'Lugar' },
+    locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio', es: 'p. ej. mi casa / estudio de repostería en OP' },
   },
   {
     slug: 'running',
@@ -201,9 +206,9 @@ export const CATEGORIES: Category[] = [
     color: '#0179B5',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '러닝 크루', en: 'Running Crew' },
-    description: { ko: '이 날씨에 러닝 크루 제안은 좀..', en: 'Who suggested this category in this weather?' },
-    locationHint: { ko: '예: Indian Creek Trail', en: 'e.g. Indian Creek Trail' },
+    name: { ko: '러닝 크루', en: 'Running Crew', es: 'Grupo de running' },
+    description: { ko: '이 날씨에 러닝 크루 제안은 좀..', en: 'Who suggested this category in this weather?', es: '¿Quién propuso esto con este clima?' },
+    locationHint: { ko: '예: Indian Creek Trail', en: 'e.g. Indian Creek Trail', es: 'p. ej. Indian Creek Trail' },
     proposedBy: '지유',
   },
   {
@@ -213,8 +218,8 @@ export const CATEGORIES: Category[] = [
     color: '#4270BC',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '피클볼', en: 'Pickleball' },
-    description: { ko: '다들 그렇게 시작했답니다', en: 'Everyone started that way.' },
+    name: { ko: '피클볼', en: 'Pickleball', es: 'Pickleball' },
+    description: { ko: '다들 그렇게 시작했답니다', en: 'Everyone started that way.', es: 'Todos empezamos así.' },
   },
   {
     slug: 'game',
@@ -223,16 +228,16 @@ export const CATEGORIES: Category[] = [
     color: '#6765BB',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '게임', en: 'Game' },
-    description: { ko: '듀오 구합니다', en: 'Looking for a duo.' },
-    titleLabel: { ko: '게임', en: 'Game' },
+    name: { ko: '게임', en: 'Game', es: 'Videojuegos' },
+    description: { ko: '듀오 구합니다', en: 'Looking for a duo.', es: 'Busco dúo.' },
+    titleLabel: { ko: '게임', en: 'Game', es: 'Juego' },
     titleOptions: [
-      { ko: '리그 오브 레전드', en: 'League of Legends' },
-      { ko: '오버워치', en: 'Overwatch' },
+      { ko: '리그 오브 레전드', en: 'League of Legends', es: 'League of Legends' },
+      { ko: '오버워치', en: 'Overwatch', es: 'Overwatch' },
     ],
     // 온라인으로 모이는 일이 많아 "장소"가 꼭 물리적인 곳은 아니다
-    locationLabel: { ko: '어디서', en: 'Where' },
-    locationHint: { ko: '예: 디스코드 / 우리집', en: 'e.g. Discord / my place' },
+    locationLabel: { ko: '어디서', en: 'Where', es: 'Dónde' },
+    locationHint: { ko: '예: 디스코드 / 우리집', en: 'e.g. Discord / my place', es: 'p. ej. Discord / mi casa' },
     proposedBy: '라민 야말',
   },
   {
@@ -242,8 +247,8 @@ export const CATEGORIES: Category[] = [
     color: '#885AAB',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '볼링', en: 'Bowling' },
-    description: { ko: '양말만 챙겨 오세요', en: 'Just bring socks.' },
+    name: { ko: '볼링', en: 'Bowling', es: 'Bolos' },
+    description: { ko: '양말만 챙겨 오세요', en: 'Just bring socks.', es: 'Solo trae calcetines.' },
   },
   {
     slug: 'birthday',
@@ -252,11 +257,11 @@ export const CATEGORIES: Category[] = [
     color: '#A0508D',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '생일파티', en: 'Birthday Party' },
-    description: { ko: '많을수록 좋은 자리니까요', en: 'The more, the better.' },
+    name: { ko: '생일파티', en: 'Birthday Party', es: 'Cumpleaños' },
+    description: { ko: '많을수록 좋은 자리니까요', en: 'The more, the better.', es: 'Cuantos más, mejor.' },
     // 생일 모임에서 제일 먼저 알아야 할 건 누구 생일인가다
-    titleLabel: { ko: '누구 생일', en: 'Whose birthday' },
-    locationHint: { ko: '예: 우리집 / 대장금 Overland Park', en: 'e.g. my place / Dae Jang Geum, Overland Park' },
+    titleLabel: { ko: '누구 생일', en: 'Whose birthday', es: 'De quién es el cumple' },
+    locationHint: { ko: '예: 우리집 / 대장금 Overland Park', en: 'e.g. my place / Dae Jang Geum, Overland Park', es: 'p. ej. mi casa / Dae Jang Geum, Overland Park' },
     proposedBy: '박진욱',
   },
   {
@@ -266,11 +271,11 @@ export const CATEGORIES: Category[] = [
     color: '#AE4C67',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '밥친구', en: 'Meal Buddy' },
-    description: { ko: '혼밥도 좋지만 오늘은 말고', en: 'Solo dining, but not tonight.' },
-    titleLabel: { ko: '메뉴', en: 'Menu' },
-    locationLabel: { ko: '식당', en: 'Restaurant' },
-    locationHint: { ko: '예: 대장금 Overland Park', en: 'e.g. Dae Jang Geum, Overland Park' },
+    name: { ko: '밥친구', en: 'Meal Buddy', es: 'Compañero de comida' },
+    description: { ko: '혼밥도 좋지만 오늘은 말고', en: 'Solo dining, but not tonight.', es: 'Comer solo está bien, pero hoy no.' },
+    titleLabel: { ko: '메뉴', en: 'Menu', es: 'Menú' },
+    locationLabel: { ko: '식당', en: 'Restaurant', es: 'Restaurante' },
+    locationHint: { ko: '예: 대장금 Overland Park', en: 'e.g. Dae Jang Geum, Overland Park', es: 'p. ej. Dae Jang Geum, Overland Park' },
   },
   {
     slug: 'cafe',
@@ -279,10 +284,10 @@ export const CATEGORIES: Category[] = [
     color: '#9B6400',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '카페 메이트', en: 'Café Mate' },
-    description: { ko: '콘센트 자리는 선착순입니다', en: 'Outlets are first come, first served.' },
-    locationLabel: { ko: '카페', en: 'Café' },
-    locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall' },
+    name: { ko: '카페 메이트', en: 'Café Mate', es: 'Compañero de café' },
+    description: { ko: '콘센트 자리는 선착순입니다', en: 'Outlets are first come, first served.', es: 'Los enchufes son por orden de llegada.' },
+    locationLabel: { ko: '카페', en: 'Café', es: 'Cafetería' },
+    locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall', es: 'p. ej. Starbucks 135th & Nall' },
   },
   {
     slug: 'gym',
@@ -291,10 +296,10 @@ export const CATEGORIES: Category[] = [
     color: '#857000',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '헬스장', en: 'Gym' },
-    description: { ko: '봐줄 사람 있으면 한 개 더', en: 'One more rep with a spotter.' },
-    locationLabel: { ko: '헬스장', en: 'Gym' },
-    locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park' },
+    name: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
+    description: { ko: '봐줄 사람 있으면 한 개 더', en: 'One more rep with a spotter.', es: 'Una repetición más si alguien te cuida.' },
+    locationLabel: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
+    locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
   },
 ];
 
