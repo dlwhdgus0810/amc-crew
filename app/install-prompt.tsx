@@ -5,59 +5,69 @@ import { useT } from './i18n';
 
 const T = {
   // 카톡 인앱 브라우저 — 로그인·홈 화면 추가가 안 되므로 밖으로 빼내야 한다
-  kakaoTitle: { ko: '브라우저에서 열어주세요', en: 'Open in your browser' },
+  kakaoTitle: { ko: '브라우저에서 열어주세요', en: 'Open in your browser', es: 'Ábrela en el navegador' },
   kakaoIos: {
     ko: '카카오톡 안에서는 홈 화면에 추가할 수 없어요. 사파리로 옮긴 뒤 두 단계면 끝나요.',
     en: 'You can’t add this to your home screen inside KakaoTalk. Move to Safari and it’s two steps.',
+    es: 'Dentro de KakaoTalk no se puede añadir a la pantalla de inicio. Pásate a Safari y son dos pasos.',
   },
   kakaoIosStep1: {
     ko: '오른쪽 아래 *⋯* 를 누르고 *다른 브라우저로 열기* (또는 *Safari로 열기*)를 고르세요.',
     en: 'Tap *⋯* at the bottom right and choose *Open in other browser* (or *Open in Safari*).',
+    es: 'Toca *⋯* abajo a la derecha y elige *Abrir en otro navegador* (o *Abrir en Safari*).',
   },
   kakaoIosStep2: {
     ko: '사파리에서 *공유* 버튼(⬆︎) → *홈 화면에 추가* → *추가* 를 누르면 끝이에요.',
     en: 'In Safari: *Share* (⬆︎) → *Add to Home Screen* → *Add*. Done.',
+    es: 'En Safari: *Compartir* (⬆︎) → *Añadir a inicio* → *Añadir*. Listo.',
   },
   kakaoAndroid: {
     ko: '카카오톡 안에서는 홈 화면에 추가할 수 없어요. 크롬으로 옮기면 바로 설치할 수 있어요.',
     en: 'You can’t add this to your home screen inside KakaoTalk. Move to Chrome and you can install it right away.',
+    es: 'Dentro de KakaoTalk no se puede añadir a la pantalla de inicio. Pásate a Chrome y podrás instalarla al momento.',
   },
   kakaoAndroidStep1: {
     ko: '아래 *크롬으로 열기* 를 누르세요. (안 되면 *링크 복사* 후 크롬에 붙여넣기)',
     en: 'Tap *Open in Chrome* below. (If that fails, *Copy link* and paste it into Chrome.)',
+    es: 'Toca *Abrir en Chrome* abajo. (Si no va, *Copiar enlace* y pégalo en Chrome.)',
   },
   kakaoAndroidStep2: {
     ko: '크롬에서 뜨는 *홈 화면에 추가* 안내를 따라주세요.',
     en: 'Then follow the *Add to Home Screen* prompt Chrome shows you.',
+    es: 'Después sigue el aviso *Añadir a inicio* que te muestre Chrome.',
   },
-  openChrome: { ko: '크롬으로 열기', en: 'Open in Chrome' },
-  copyLink: { ko: '링크 복사', en: 'Copy link' },
-  copied: { ko: '복사했어요. 브라우저에 붙여넣어 주세요.', en: 'Copied — paste it into your browser.' },
+  openChrome: { ko: '크롬으로 열기', en: 'Open in Chrome', es: 'Abrir en Chrome' },
+  copyLink: { ko: '링크 복사', en: 'Copy link', es: 'Copiar enlace' },
+  copied: { ko: '복사했어요. 브라우저에 붙여넣어 주세요.', en: 'Copied — paste it into your browser.', es: 'Copiado: pégalo en tu navegador.' },
 
   // 설치 안내
-  installTitle: { ko: '홈 화면에 추가하기', en: 'Add to your home screen' },
+  installTitle: { ko: '홈 화면에 추가하기', en: 'Add to your home screen', es: 'Añádela a la pantalla de inicio' },
   installWhy: {
     ko: '앱처럼 전체화면으로 열리고, 다음부터 바로 들어올 수 있어요.',
     en: 'It opens full screen like an app, and you can jump back in anytime.',
+    es: 'Se abre a pantalla completa como una app y puedes volver cuando quieras.',
   },
   // *별표* 사이는 굵게 나온다 — 실제 버튼 이름을 눈에 띄게 하려고
   iosStep1: {
     ko: '화면 아래 *공유* 버튼(⬆︎)을 누르세요. 안 보이면 *⋯ (더보기)* → *공유* 순서예요.',
     en: 'Tap *Share* (⬆︎) in the bottom bar. Don’t see it? Tap *⋯ (More)* → *Share*.',
+    es: 'Toca *Compartir* (⬆︎) en la barra de abajo. ¿No lo ves? Toca *⋯ (Más)* → *Compartir*.',
   },
   iosStep2: {
     ko: '목록을 아래로 내려 *홈 화면에 추가* 를 누르세요.',
     en: 'Scroll down the list and tap *Add to Home Screen*.',
+    es: 'Baja por la lista y toca *Añadir a inicio*.',
   },
   iosStep3: {
     ko: '오른쪽 위 *추가* 를 누르면 끝이에요.',
     en: 'Tap *Add* in the top right. That’s it.',
+    es: 'Toca *Añadir* arriba a la derecha. Ya está.',
   },
-  iosChromeStep1: { ko: '오른쪽 아래 *⋯* 를 누르세요.', en: 'Tap *⋯* at the bottom right.' },
-  iosChromeStep2: { ko: '*홈 화면에 추가* 를 누르세요.', en: 'Tap *Add to Home Screen*.' },
-  iosChromeStep3: { ko: '*추가* 를 누르면 끝이에요.', en: 'Tap *Add*. That’s it.' },
-  install: { ko: '설치하기', en: 'Install' },
-  dismiss: { ko: '닫기', en: 'Dismiss' },
+  iosChromeStep1: { ko: '오른쪽 아래 *⋯* 를 누르세요.', en: 'Tap *⋯* at the bottom right.', es: 'Toca *⋯* abajo a la derecha.' },
+  iosChromeStep2: { ko: '*홈 화면에 추가* 를 누르세요.', en: 'Tap *Add to Home Screen*.', es: 'Toca *Añadir a inicio*.' },
+  iosChromeStep3: { ko: '*추가* 를 누르면 끝이에요.', en: 'Tap *Add*. That’s it.', es: 'Toca *Añadir*. Ya está.' },
+  install: { ko: '설치하기', en: 'Install', es: 'Instalar' },
+  dismiss: { ko: '닫기', en: 'Dismiss', es: 'Cerrar' },
 };
 
 const DISMISS_KEY = 'kk-install-hint-dismissed';

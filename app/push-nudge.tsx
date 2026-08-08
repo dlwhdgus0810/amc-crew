@@ -17,44 +17,50 @@ import { useViewer } from './session';
 
 const T = {
   // 아이폰 · 아직 홈 화면에 없음
-  iosTitle: { ko: '알림을 받으려면 두 단계만', en: 'Two steps to get alerts' },
+  iosTitle: { ko: '알림을 받으려면 두 단계만', en: 'Two steps to get alerts', es: 'Dos pasos para recibir avisos' },
   iosWhy: {
     ko: '아이폰은 홈 화면에 추가한 앱에서만 알림을 켤 수 있어요. 사파리 탭에서는 켤 수 없어요.',
     en: 'On iPhone, alerts only work from the app on your home screen — a Safari tab can’t turn them on.',
+    es: 'En iPhone los avisos solo funcionan desde la app de la pantalla de inicio: una pestaña de Safari no puede activarlos.',
   },
   iosStep1: {
     ko: '화면 아래 *공유* 버튼(⬆︎) → *홈 화면에 추가* → *추가*',
     en: '*Share* (⬆︎) at the bottom → *Add to Home Screen* → *Add*',
+    es: '*Compartir* (⬆︎) abajo → *Añadir a inicio* → *Añadir*',
   },
   iosStep2: {
     ko: '홈 화면에 생긴 아이콘으로 다시 열고, *프로필 → 앱 푸시 알림* 에서 켜주세요.',
     en: 'Open it again from the new home-screen icon, then turn it on in *Profile → App push notifications*.',
+    es: 'Ábrela de nuevo desde el icono de inicio y actívalo en *Perfil → Notificaciones de la app*.',
   },
-  iosChromeStep1: { ko: '오른쪽 아래 *⋯* → *홈 화면에 추가* → *추가*', en: 'Tap *⋯* bottom right → *Add to Home Screen* → *Add*' },
+  iosChromeStep1: { ko: '오른쪽 아래 *⋯* → *홈 화면에 추가* → *추가*', en: 'Tap *⋯* bottom right → *Add to Home Screen* → *Add*', es: 'Toca *⋯* abajo a la derecha → *Añadir a inicio* → *Añadir*' },
 
   // 안드로이드 · 데스크톱 — 여기서 바로 켤 수 있다
-  nowTitle: { ko: '알림 받으시겠어요?', en: 'Want alerts?' },
+  nowTitle: { ko: '알림 받으시겠어요?', en: 'Want alerts?', es: '¿Quieres avisos?' },
   nowWhy: {
     ko: '새 모임과 내 모임 소식을 앱으로 바로 받아요. 카카오톡 알림과 별개라, 둘 다 받아도 되고 하나만 받아도 돼요.',
     en: 'Get new meetups and updates straight from the app. Separate from KakaoTalk — keep both, or just one.',
+    es: 'Recibe quedadas nuevas y novedades desde la app. Aparte de KakaoTalk: quédate con los dos o con uno.',
   },
   androidTip: {
     ko: '홈 화면에 추가해 두면 앱 아이콘에 안 읽은 개수도 붙어요.',
     en: 'Add it to your home screen and the icon carries an unread badge too.',
+    es: 'Si la añades a la pantalla de inicio, el icono también muestra los sin leer.',
   },
 
   // 홈 화면 앱에서 열었는데 아직 안 켠 경우
-  installedTitle: { ko: '알림이 꺼져 있어요', en: 'Alerts are off' },
+  installedTitle: { ko: '알림이 꺼져 있어요', en: 'Alerts are off', es: 'Avisos desactivados' },
 
-  enable: { ko: '알림 켜기', en: 'Turn on alerts' },
-  working: { ko: '켜는 중…', en: 'Turning on…' },
-  later: { ko: '나중에', en: 'Not now' },
-  done: { ko: '켰어요! 이제 앱으로 알림이 와요.', en: 'Done — alerts will come straight to the app.' },
+  enable: { ko: '알림 켜기', en: 'Turn on alerts', es: 'Activar avisos' },
+  working: { ko: '켜는 중…', en: 'Turning on…', es: 'Activando…' },
+  later: { ko: '나중에', en: 'Not now', es: 'Ahora no' },
+  done: { ko: '켰어요! 이제 앱으로 알림이 와요.', en: 'Done — alerts will come straight to the app.', es: 'Listo: los avisos llegarán directos a la app.' },
   denied: {
     ko: '알림이 차단돼 있어요. iOS는 설정 → 알림, 안드로이드는 브라우저 사이트 설정에서 허용해주세요.',
     en: 'Notifications are blocked. Allow them in iOS Settings → Notifications, or your browser’s site settings.',
+    es: 'Las notificaciones están bloqueadas. Permítelas en Ajustes → Notificaciones (iOS) o en los ajustes del sitio en tu navegador.',
   },
-  failed: { ko: '켜지 못했어요. 잠시 후 다시 시도해주세요.', en: 'Couldn’t turn it on. Try again shortly.' },
+  failed: { ko: '켜지 못했어요. 잠시 후 다시 시도해주세요.', en: 'Couldn’t turn it on. Try again shortly.', es: 'No se pudo activar. Inténtalo de nuevo en un momento.' },
 };
 
 /** 며칠 뒤에 다시 물어볼지 — 한 번 닫았다고 영영 안 띄우면 켤 기회가 사라진다 */
