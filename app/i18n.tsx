@@ -14,7 +14,7 @@ export function useLocale(): Locale {
   return useContext(LocaleContext);
 }
 
-/** t({ ko: '저장', en: 'Save' }) 형태로 쓴다 */
+/** t({ ko: '저장', en: 'Save', es: 'Guardar' }) 형태로 쓴다 */
 export function useT() {
   const locale = useLocale();
   return (msg: Msg, vars?: Record<string, string | number>) => pick(locale, msg, vars);

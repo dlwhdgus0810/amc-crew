@@ -7,12 +7,13 @@ import { useLocale, useT } from '../i18n';
 import { WHATS_NEW_SEEN } from '../whats-new-card';
 
 const T = {
-  title: { ko: '새 소식', en: 'What’s new' },
+  title: { ko: '새 소식', en: 'What’s new', es: 'Novedades' },
   subtitle: {
     ko: '앱에 무엇이 바뀌었는지 모아 둔 곳이에요. 바라는 게 있으면 건의함에 남겨주세요.',
     en: 'Everything that’s changed in the app. Want something? Leave it in the suggestion box.',
+    es: 'Todo lo que ha cambiado en la app. ¿Quieres algo? Déjalo en el buzón de sugerencias.',
   },
-  empty: { ko: '아직 소식이 없어요.', en: 'Nothing yet.' },
+  empty: { ko: '아직 소식이 없어요.', en: 'Nothing yet.', es: 'Todavía nada.' },
 };
 
 /**

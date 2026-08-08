@@ -14,9 +14,9 @@ import CatIcon from './cat-icon';
 import { useT } from './i18n';
 
 const T = {
-  favoriteA11y: { ko: '즐겨찾기', en: 'Favourite' },
-  subscribeA11y: { ko: '구독 알림', en: 'Subscription alerts' },
-  noUpcoming: { ko: '예정된 모임 없음', en: 'No upcoming meetups' },
+  favoriteA11y: { ko: '즐겨찾기', en: 'Favourite', es: 'Favorito' },
+  subscribeA11y: { ko: '구독 알림', en: 'Subscription alerts', es: 'Avisos de suscripción' },
+  noUpcoming: { ko: '예정된 모임 없음', en: 'No upcoming meetups', es: 'No hay quedadas próximas' },
 };
 
 /** 구독 중이면 ★처럼 속을 채운다 (색은 카드 글자색을 따라간다) */

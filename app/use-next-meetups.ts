@@ -12,11 +12,11 @@ import { useLocale, useT } from './i18n';
 import { dateLabelShort, timeLabel } from '@/lib/datefmt';
 
 const T = {
-  people: { ko: '{n}명', en: '{n} joined' },
-  peopleCap: { ko: '{n}/{cap}명', en: '{n}/{cap}' },
-  matched: { ko: '{n}명 매칭', en: '{n} matched' },
-  noUpcoming: { ko: '예정된 모임 없음', en: 'No upcoming meetups' },
-  signups: { ko: '{n}명 참가신청', en: '{n} signed up' },
+  people: { ko: '{n}명', en: '{n} joined', es: '{n} apuntados' },
+  peopleCap: { ko: '{n}/{cap}명', en: '{n}/{cap}', es: '{n}/{cap}' },
+  matched: { ko: '{n}명 매칭', en: '{n} matched', es: '{n} coinciden' },
+  noUpcoming: { ko: '예정된 모임 없음', en: 'No upcoming meetups', es: 'No hay quedadas próximas' },
+  signups: { ko: '{n}명 참가신청', en: '{n} signed up', es: '{n} apuntados' },
 };
 
 interface NextMeetup {

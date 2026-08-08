@@ -7,7 +7,7 @@ import { addDays, nextWeekdayOnOrAfter, todayLocal, weekdayOf } from '../dates';
 import type { Msg } from '../i18n';
 
 /** 크론이 만든 회차의 알림 문구 (수신자 언어로 렌더된다) */
-const WEEKLY_LABEL: Msg = { ko: '이번 주 모임', en: 'this week' };
+const WEEKLY_LABEL: Msg = { ko: '이번 주 모임', en: 'this week', es: 'esta semana' };
 import type { TitleMeta } from '../tmdb';
 
 /** 크론이 미리 만들어 두는 기간. 7일이면 매주 규칙당 정확히 한 회차가 잡힌다. */

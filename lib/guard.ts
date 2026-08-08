@@ -25,10 +25,10 @@ export async function banGuard(user: SessionUser): Promise<NextResponse | null> 
 }
 
 const U = {
-  min: { ko: '{n}분', en: '{n} min' },
+  min: { ko: '{n}분', en: '{n} min', es: '{n} min' },
   hour: { ko: '{n}시간', en: '{n}h' },
   day: { ko: '{n}일 {h}시간', en: '{n}d {h}h' },
-  dayOnly: { ko: '{n}일', en: '{n}d' },
+  dayOnly: { ko: '{n}일', en: '{n}d', es: '{n} d' },
 };
 
 /** "2일 3시간" 처럼 남은 기간을 굵직하게 — 초 단위까지 셀 자리가 아니다 */

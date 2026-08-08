@@ -7,13 +7,14 @@ import { siteUrl } from '@/lib/site';
 import { effectiveEnd } from '@/lib/dates';
 
 const T = {
-  notFound: { ko: '포스트를 찾을 수 없어요.', en: 'Meetup not found.' },
+  notFound: { ko: '포스트를 찾을 수 없어요.', en: 'Meetup not found.', es: 'Quedada no encontrada.' },
   noDate: {
     ko: '아직 날짜가 정해지지 않은 모임이에요. 날짜가 잡히면 캘린더에 넣을 수 있어요.',
     en: 'This meetup has no date yet. You can add it once the date is set.',
+    es: 'Esta quedada aún no tiene fecha. Podrás añadirla cuando se decida.',
   },
-  summary: { ko: '{emoji} {cat}{title} 모임', en: '{emoji} {cat}{title} meetup' },
-  page: { ko: '모임 페이지: {url}', en: 'Meetup page: {url}' },
+  summary: { ko: '{emoji} {cat}{title} 모임', en: '{emoji} {cat}{title} meetup', es: '{emoji} quedada de {cat}{title}' },
+  page: { ko: '모임 페이지: {url}', en: 'Meetup page: {url}', es: 'Página de la quedada: {url}' },
 };
 
 export const dynamic = 'force-dynamic';

@@ -19,12 +19,12 @@ import PostClient from './post-client';
 export const dynamic = 'force-dynamic';
 
 const T = {
-  notFound: { ko: '모임을 찾을 수 없어요 — Kansas Korean', en: 'Meetup not found — Kansas Korean' },
-  title: { ko: '{cat} 모임{title} · {when}', en: '{cat} meetup{title} · {when}' },
-  director: { ko: '감독 {name}', en: 'Dir. {name}' },
-  joined: { ko: '{n}명 참여 중', en: '{n} joined' },
-  capacity: { ko: ' (정원 {n}명)', en: ' (capacity {n})' },
-  cta: { ko: ' — 링크를 눌러 바로 참가하세요', en: ' — tap the link to join' },
+  notFound: { ko: '모임을 찾을 수 없어요 — Kansas Korean', en: 'Meetup not found — Kansas Korean', es: 'Quedada no encontrada — Kansas Korean' },
+  title: { ko: '{cat} 모임{title} · {when}', en: '{cat} meetup{title} · {when}', es: 'quedada de {cat}{title} · {when}' },
+  director: { ko: '감독 {name}', en: 'Dir. {name}', es: 'Dir. {name}' },
+  joined: { ko: '{n}명 참여 중', en: '{n} joined', es: '{n} apuntados' },
+  capacity: { ko: ' (정원 {n}명)', en: ' (capacity {n})', es: ' (aforo {n})' },
+  cta: { ko: ' — 링크를 눌러 바로 참가하세요', en: ' — tap the link to join', es: ' — toca el enlace para apuntarte' },
 };
 
 // 카카오톡 등에 공유했을 때 미리보기(OG)용 메타데이터

@@ -72,10 +72,11 @@ import './button-13d.css';
 import './cat-tile.css';
 
 const META = {
-  title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?' },
+  title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?', es: 'Kansas Korean — ¿quién se apunta?' },
   description: {
     ko: '영화·피클볼·볼링·축구·밥친구·카페 — 취미 모임 만들고 같이 놀 사람 모으기',
     en: 'Movies, pickleball, bowling, soccer, meals, cafés — create a meetup and find people to join',
+    es: 'Cine, pickleball, bolos, fútbol, comidas, cafés: crea una quedada y encuentra con quién ir',
   },
 };
 

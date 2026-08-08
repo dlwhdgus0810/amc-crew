@@ -24,10 +24,12 @@ const T = {
   subtitle: {
     ko: '★ 즐겨찾기는 홈에 먼저 띄우는 용도이고, 구독은 새 모임과 내가 참가한 모임의 댓글 알림을 받는 용도예요.',
     en: '★ Favourites show up first on the home screen; subscriptions alert you to new meetups and to comments on ones you joined.',
+    es: '★ Los favoritos salen primero en el inicio; las suscripciones te avisan de quedadas nuevas y de comentarios en las tuyas.',
   },
   loginPrompt: {
     ko: '카카오 로그인 후 즐겨찾기와 구독을 설정할 수 있어요.',
     en: 'Log in with Kakao to set favourites and subscriptions.',
+    es: 'Entra con Kakao para elegir favoritos y suscripciones.',
   },
   kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
 };

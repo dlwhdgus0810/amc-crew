@@ -28,6 +28,7 @@ const T = {
   empty: {
     ko: '아직 알림이 없어요. 홈에서 관심 있는 취미를 구독해보세요!',
     en: 'No alerts yet. Subscribe to a hobby on the home page!',
+    es: 'Aún no hay avisos. ¡Suscríbete a una afición desde el inicio!',
   },
   del: { ko: '지우기', en: 'Delete', es: 'Borrar' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t delete that.', es: 'No se pudo borrar.' },
@@ -35,6 +36,7 @@ const T = {
   swipeHint: {
     ko: '알림을 왼쪽으로 밀면 지울 수 있어요.',
     en: 'Swipe an alert left to delete it.',
+    es: 'Desliza un aviso a la izquierda para borrarlo.',
   },
   trash: { ko: '지운 알림', en: 'Deleted', es: 'Borrados' },
   trashEmpty: { ko: '지운 알림이 없어요.', en: 'Nothing deleted yet.', es: 'Nada borrado todavía.' },

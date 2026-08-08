@@ -14,8 +14,9 @@ const T = {
   message: {
     ko: '🔔 알림 테스트 ({time}) — 이게 보이면 이 경로는 살아 있어요.',
     en: '🔔 Notification test ({time}) — if you can see this, this channel works.',
+    es: '🔔 Prueba de aviso ({time}): si lo ves, este canal funciona.',
   },
-  button: { ko: '앱 열기', en: 'Open the app' },
+  button: { ko: '앱 열기', en: 'Open the app', es: 'Abrir la app' },
 };
 
 /** 앱 시간대 기준 시:분 — 여러 번 눌렀을 때 어느 것이 방금 것인지 구분하려고 넣는다 */

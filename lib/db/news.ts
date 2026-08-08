@@ -13,8 +13,8 @@ import { NOTIF } from '../notif-kinds';
  */
 
 const T = {
-  message: { ko: '📣 새 소식: {title}', en: '📣 What’s new: {title}' },
-  button: { ko: '보러 가기', en: 'See what changed' },
+  message: { ko: '📣 새 소식: {title}', en: '📣 What’s new: {title}', es: '📣 Novedades: {title}' },
+  button: { ko: '보러 가기', en: 'See what changed', es: 'Ver qué cambió' },
 };
 
 /** 이 사람이 새 소식 알림을 켰는지 */

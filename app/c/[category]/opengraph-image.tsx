@@ -12,7 +12,7 @@ export const contentType = 'image/png';
 export const runtime = 'nodejs';
 
 const T = {
-  cta: { ko: '같이 놀 사람 찾기', en: 'Find people to join' },
+  cta: { ko: '같이 놀 사람 찾기', en: 'Find people to join', es: 'Encuentra con quién ir' },
 };
 
 export default async function Image({ params }: { params: Promise<{ category: string }> }) {

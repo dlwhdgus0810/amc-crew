@@ -27,7 +27,7 @@ const T = {
   over: { ko: '정지가 풀렸어요!', en: 'You’re back in', es: 'Ya puedes volver' },
   refresh: { ko: '다시 시작하기', en: 'Continue', es: 'Continuar' },
   logout: { ko: '로그아웃', en: 'Log out', es: 'Cerrar sesión' },
-  days: { ko: '{n}일 ', en: '{n}d ' },
+  days: { ko: '{n}일 ', en: '{n}d ', es: '{n} d ' },
 };
 
 interface Ban {

@@ -18,9 +18,9 @@ export const contentType = 'image/png';
 export const runtime = 'nodejs';
 
 const T = {
-  people: { ko: '{n}명 참여 중', en: '{n} joined' },
-  cap: { ko: '{n}/{cap}명', en: '{n}/{cap}' },
-  notFound: { ko: '지난 모임이거나 없는 링크예요', en: 'This meetup is gone' },
+  people: { ko: '{n}명 참여 중', en: '{n} joined', es: '{n} apuntados' },
+  cap: { ko: '{n}/{cap}명', en: '{n}/{cap}', es: '{n}/{cap}' },
+  notFound: { ko: '지난 모임이거나 없는 링크예요', en: 'This meetup is gone', es: 'Esta quedada ya no existe' },
 };
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {

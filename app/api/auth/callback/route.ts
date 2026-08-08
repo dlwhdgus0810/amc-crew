@@ -17,11 +17,12 @@ const T = {
   talkOn: {
     ko: '카카오톡 알림을 켰어요. 구독한 취미에 새 모임이 올라오면 여기로 알려드릴게요.',
     en: 'KakaoTalk alerts are on. We’ll message you here when a new meetup is posted in the hobbies you follow.',
+    es: 'Avisos por KakaoTalk activados. Te escribiremos aquí cuando se abra una quedada en tus aficiones.',
   },
-  openApp: { ko: '앱 열기', en: 'Open the app' },
-  expired: { ko: '로그인 요청이 만료됐어요. 다시 시도해주세요.', en: 'The login request expired. Please try again.' },
-  tokenFailed: { ko: '카카오 토큰 발급에 실패했어요.', en: 'Kakao token exchange failed.' },
-  profileFailed: { ko: '카카오 프로필 조회에 실패했어요.', en: 'Couldn’t load your Kakao profile.' },
+  openApp: { ko: '앱 열기', en: 'Open the app', es: 'Abrir la app' },
+  expired: { ko: '로그인 요청이 만료됐어요. 다시 시도해주세요.', en: 'The login request expired. Please try again.', es: 'La solicitud de inicio de sesión caducó. Inténtalo otra vez.' },
+  tokenFailed: { ko: '카카오 토큰 발급에 실패했어요.', en: 'Kakao token exchange failed.', es: 'Falló el intercambio de token con Kakao.' },
+  profileFailed: { ko: '카카오 프로필 조회에 실패했어요.', en: 'Couldn’t load your Kakao profile.', es: 'No se pudo cargar tu perfil de Kakao.' },
 };
 
 export const dynamic = 'force-dynamic';
