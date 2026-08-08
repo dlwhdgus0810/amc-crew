@@ -15,42 +15,46 @@ import { useLocale, useT } from '../../i18n';
  */
 
 const T = {
-  loading: { ko: '불러오는 중…', en: 'Loading…' },
-  notFound: { ko: '친구를 찾을 수 없어요.', en: 'Friend not found.' },
-  back: { ko: '← 친구', en: '← Friends' },
+  loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
+  notFound: { ko: '친구를 찾을 수 없어요.', en: 'Friend not found.', es: 'No se encontró a esa persona.' },
+  back: { ko: '← 친구', en: '← Friends', es: '← Amigos' },
 
-  upcoming: { ko: '예정된 모임', en: 'Upcoming' },
-  past: { ko: '지난 모임', en: 'Past' },
-  none: { ko: '예정된 모임이 없어요.', en: 'No upcoming meetups.' },
-  nonePast: { ko: '지난 모임이 없어요.', en: 'No past meetups.' },
+  upcoming: { ko: '예정된 모임', en: 'Upcoming', es: 'Próximas' },
+  past: { ko: '지난 모임', en: 'Past', es: 'Pasadas' },
+  none: { ko: '예정된 모임이 없어요.', en: 'No upcoming meetups.', es: 'No hay quedadas próximas.' },
+  nonePast: { ko: '지난 모임이 없어요.', en: 'No past meetups.', es: 'No hay quedadas pasadas.' },
   hidden: {
     ko: '{name}님이 모임을 보여주지 않기로 했어요.',
     en: '{name} chose not to show their meetups.',
+    es: '{name} ha preferido no mostrar sus quedadas.',
   },
   hiddenPast: {
     ko: '{name}님은 예정된 모임만 보여주고 있어요.',
     en: '{name} only shows upcoming meetups.',
+    es: '{name} solo muestra las próximas.',
   },
-  together: { ko: '같이 감', en: 'Together' },
-  online: { ko: '접속 중', en: 'Online' },
+  together: { ko: '같이 감', en: 'Together', es: 'Juntos' },
+  online: { ko: '접속 중', en: 'Online', es: 'En línea' },
 
-  settings: { ko: '{name}님에게 보여줄 것', en: 'What {name} sees' },
+  settings: { ko: '{name}님에게 보여줄 것', en: 'What {name} sees', es: 'Lo que ve {name}' },
   settingsHint: {
     ko: '내 쪽만 바뀌어요. 감춰도 상대에게는 알리지 않고, 상대가 나에게 보여주는 건 그대로예요.',
     en: 'Only your side changes. They aren’t told, and what they show you stays as it is.',
+    es: 'Solo cambia tu lado. No se le avisa, y lo que te muestra sigue igual.',
   },
-  presence: { ko: '내 접속 상태', en: 'When I’m online' },
-  presenceOn: { ko: '보임', en: 'Visible' },
-  presenceOff: { ko: '숨김', en: 'Hidden' },
-  meetups: { ko: '내 모임', en: 'My meetups' },
-  scopeAll: { ko: '전부', en: 'All' },
-  scopeUpcoming: { ko: '예정만', en: 'Upcoming only' },
-  scopeNone: { ko: '숨김', en: 'Hidden' },
+  presence: { ko: '내 접속 상태', en: 'When I’m online', es: 'Cuando estoy en línea' },
+  presenceOn: { ko: '보임', en: 'Visible', es: 'Visible' },
+  presenceOff: { ko: '숨김', en: 'Hidden', es: 'Oculto' },
+  meetups: { ko: '내 모임', en: 'My meetups', es: 'Mis quedadas' },
+  scopeAll: { ko: '전부', en: 'All', es: 'Todas' },
+  scopeUpcoming: { ko: '예정만', en: 'Upcoming only', es: 'Solo las próximas' },
+  scopeNone: { ko: '숨김', en: 'Hidden', es: 'Oculto' },
   privateNote: {
     ko: '비공개 모임은 어느 경우에도 보이지 않아요.',
     en: 'Private meetups never show, whichever you pick.',
+    es: 'Las quedadas privadas no se ven nunca, elijas lo que elijas.',
   },
-  failed: { ko: '바꾸지 못했어요. 잠시 후 다시 시도해주세요.', en: 'Couldn’t change that. Try again shortly.' },
+  failed: { ko: '바꾸지 못했어요. 잠시 후 다시 시도해주세요.', en: 'Couldn’t change that. Try again shortly.', es: 'No se pudo cambiar. Inténtalo de nuevo en un momento.' },
 };
 
 type Scope = 'all' | 'upcoming' | 'none';

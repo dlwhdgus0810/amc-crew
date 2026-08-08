@@ -13,39 +13,42 @@ import { useRefreshSession } from '../session';
  */
 
 const T = {
-  title: { ko: '친구', en: 'Friends' },
+  title: { ko: '친구', en: 'Friends', es: 'Amigos' },
   subtitle: {
     ko: '같은 모임에서 만난 사람에게 친구 요청을 보낼 수 있어요. 모임 카드에서 참가자를 눌러보세요.',
     en: 'You can add anyone you’ve shared a meetup with — tap a participant on a meetup card.',
+    es: 'Puedes añadir a cualquiera con quien hayas coincidido: toca a alguien en la tarjeta de una quedada.',
   },
-  loading: { ko: '불러오는 중…', en: 'Loading…' },
-  loginPrompt: { ko: '카카오 로그인 후 볼 수 있어요.', en: 'Log in with Kakao to see this.' },
+  loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
+  loginPrompt: { ko: '카카오 로그인 후 볼 수 있어요.', en: 'Log in with Kakao to see this.', es: 'Entra con Kakao para ver esto.' },
 
-  online: { ko: '지금 접속 중', en: 'Online now' },
-  onlineNone: { ko: '지금 앱을 보고 있는 친구가 없어요.', en: 'No friends are in the app right now.' },
-  justNow: { ko: '방금', en: 'just now' },
-  minsAgo: { ko: '{n}분 전', en: '{n}m ago' },
+  online: { ko: '지금 접속 중', en: 'Online now', es: 'En línea ahora' },
+  onlineNone: { ko: '지금 앱을 보고 있는 친구가 없어요.', en: 'No friends are in the app right now.', es: 'Ahora mismo no hay amigos en la app.' },
+  justNow: { ko: '방금', en: 'just now', es: 'ahora mismo' },
+  minsAgo: { ko: '{n}분 전', en: '{n}m ago', es: 'hace {n} min' },
 
-  incoming: { ko: '받은 요청', en: 'Requests' },
-  outgoing: { ko: '보낸 요청', en: 'Sent' },
-  waiting: { ko: '기다리는 중', en: 'Waiting' },
-  list: { ko: '내 친구', en: 'My friends' },
+  incoming: { ko: '받은 요청', en: 'Requests', es: 'Solicitudes' },
+  outgoing: { ko: '보낸 요청', en: 'Sent', es: 'Enviadas' },
+  waiting: { ko: '기다리는 중', en: 'Waiting', es: 'Pendiente' },
+  list: { ko: '내 친구', en: 'My friends', es: 'Mis amigos' },
   none: {
     ko: '아직 친구가 없어요. 모임에서 만난 사람에게 요청을 보내보세요!',
     en: 'No friends yet — send a request to someone you’ve met at a meetup!',
+    es: 'Aún no tienes amigos: ¡envía una solicitud a alguien de una quedada!',
   },
 
   listHint: {
     ko: '이름을 누르면 그 친구의 모임과, 그 친구에게 보여줄 범위를 정할 수 있어요.',
     en: 'Tap a name to see their meetups and choose what they see of yours.',
+    es: 'Toca un nombre para ver sus quedadas y elegir qué ve de las tuyas.',
   },
 
-  accept: { ko: '수락', en: 'Accept' },
-  decline: { ko: '거절', en: 'Decline' },
-  cancel: { ko: '요청 취소', en: 'Cancel' },
-  unfriend: { ko: '친구 끊기', en: 'Remove' },
-  unfriendAsk: { ko: '{name}님과 친구를 끊을까요?', en: 'Remove {name} from your friends?' },
-  failed: { ko: '처리하지 못했어요. 잠시 후 다시 시도해주세요.', en: 'That didn’t go through. Try again shortly.' },
+  accept: { ko: '수락', en: 'Accept', es: 'Aceptar' },
+  decline: { ko: '거절', en: 'Decline', es: 'Rechazar' },
+  cancel: { ko: '요청 취소', en: 'Cancel', es: 'Cancelar' },
+  unfriend: { ko: '친구 끊기', en: 'Remove', es: 'Quitar' },
+  unfriendAsk: { ko: '{name}님과 친구를 끊을까요?', en: 'Remove {name} from your friends?', es: '¿Quitar a {name} de tus amigos?' },
+  failed: { ko: '처리하지 못했어요. 잠시 후 다시 시도해주세요.', en: 'That didn’t go through. Try again shortly.', es: 'No salió bien. Inténtalo de nuevo en un momento.' },
 };
 
 interface Friend {
