@@ -37,7 +37,7 @@ const T = {
   participants: { ko: '참여자', en: 'Participants', es: 'Participantes' },
   colName: { ko: '이름', en: 'Name', es: 'Nombre' },
   colCount: { ko: '선택 회차 수', en: 'Showtimes picked', es: 'Funciones elegidas' },
-  count: { ko: '{n}개', en: '{n}' },
+  count: { ko: '{n}개', en: '{n}', es: '{n}' },
   me: { ko: ' (나)', en: ' (you)', es: ' (tú)' },
   close: { ko: '닫기', en: 'Close', es: 'Cerrar' },
   editPicks: { ko: '회차 수정', en: 'Edit picks', es: 'Editar elección' },

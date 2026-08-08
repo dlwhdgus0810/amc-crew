@@ -26,8 +26,8 @@ export async function banGuard(user: SessionUser): Promise<NextResponse | null> 
 
 const U = {
   min: { ko: '{n}분', en: '{n} min', es: '{n} min' },
-  hour: { ko: '{n}시간', en: '{n}h' },
-  day: { ko: '{n}일 {h}시간', en: '{n}d {h}h' },
+  hour: { ko: '{n}시간', en: '{n}h', es: '{n} h' },
+  day: { ko: '{n}일 {h}시간', en: '{n}d {h}h', es: '{n} d {h} h' },
   dayOnly: { ko: '{n}일', en: '{n}d', es: '{n} d' },
 };
 

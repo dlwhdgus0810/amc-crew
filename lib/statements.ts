@@ -16,62 +16,62 @@ export interface Statement {
 
 export const STATEMENTS: Statement[] = [
     {
-        top: {ko: '아무도 몰라도 괜찮아요.', en: 'It’s fine if you don’t know anyone.'},
-        bottom: {ko: '당신은 환영받기 위해 태어난 사람.', en: 'You were born to be welcomed.'},
+        top: {ko: '아무도 몰라도 괜찮아요.', en: 'It’s fine if you don’t know anyone.', es: 'No pasa nada si no conoces a nadie.'},
+        bottom: {ko: '당신은 환영받기 위해 태어난 사람.', en: 'You were born to be welcomed.', es: 'Aquí siempre cabe uno más.'},
     },
     {
-        top: {ko: '잘하지 않아도 됩니다.', en: 'You don’t have to be good at it.'},
-        bottom: {ko: '초보도 낄 자리를 만들어 둡니다.', en: 'There’s room for beginners here.'},
+        top: {ko: '잘하지 않아도 됩니다.', en: 'You don’t have to be good at it.', es: 'No hace falta que se te dé bien.'},
+        bottom: {ko: '초보도 낄 자리를 만들어 둡니다.', en: 'There’s room for beginners here.', es: 'Aquí hay sitio para quien empieza.'},
     },
     {
-        top: {ko: '드루와,', en: 'Come on in,'},
-        bottom: {ko: '드루와!', en: 'Come on in!'},
+        top: {ko: '드루와,', en: 'Come on in,', es: 'Pásate,'},
+        bottom: {ko: '드루와!', en: 'Come on in!', es: '¡Pásate!'},
     },
     {
-        top: {ko: '오늘 뭐 하지?', en: 'What should we do today?'},
-        bottom: {ko: '그 질문을 여기서 같이 풉니다.', en: 'That’s the question we answer here.'},
+        top: {ko: '오늘 뭐 하지?', en: 'What should we do today?', es: '¿Qué hacemos hoy?'},
+        bottom: {ko: '그 질문을 여기서 같이 풉니다.', en: 'That’s the question we answer here.', es: 'Esa es la pregunta que se responde aquí.'},
     },
     {
-        top: {ko: '가고 싶은 모임이 없으면,', en: 'If nothing here looks good,'},
-        bottom: {ko: '가고 싶은 모임을 여세요.', en: 'make the one you’d want to go to.'},
+        top: {ko: '가고 싶은 모임이 없으면,', en: 'If nothing here looks good,', es: 'Si nada te convence,'},
+        bottom: {ko: '가고 싶은 모임을 여세요.', en: 'make the one you’d want to go to.', es: 'crea la quedada a la que tú irías.'},
     },
     {
-        top: {ko: '오늘 저녁, 비어 있나요?', en: 'Free this evening?'},
-        bottom: {ko: '누군가는 지금 사람을 찾고 있습니다.', en: 'Someone is looking for people right now.'},
+        top: {ko: '오늘 저녁, 비어 있나요?', en: 'Free this evening?', es: '¿Libre esta tarde?'},
+        bottom: {ko: '누군가는 지금 사람을 찾고 있습니다.', en: 'Someone is looking for people right now.', es: 'Alguien está buscando gente ahora mismo.'},
     },
     {
-        top: {ko: '날짜와 장소만 정하면 됩니다.', en: 'A date and a place — that’s all it takes.'},
-        bottom: {ko: '모임 만들기는 30초면 끝납니다.', en: 'Posting a meetup takes thirty seconds.'},
-    },
-
-    {
-        top: {ko: '밥, 커피, 공놀이, 영화.', en: 'Meals, coffee, ball games, movies.'},
-        bottom: {ko: '핑계는 뭐든 좋습니다.', en: 'Any excuse works.'},
-    },
-    {
-        top: {ko: '주말은 금방 지나갑니다.', en: 'The weekend goes fast.'},
-        bottom: {ko: '미리 잡아두면 안 놓칩니다.', en: 'Lock it in and you won’t miss it.'},
-    },
-    {
-        top: {ko: '아는 얼굴이 늘어갑니다.', en: 'More familiar faces every week.'},
-        bottom: {ko: '한 번 같이 놀면 친구가 됩니다.', en: 'One meetup and you’re friends.'},
-    },
-    {
-        top: {ko: '두 명이어도 모임입니다.', en: 'Two people is a meetup.'},
-        bottom: {ko: '많이 모여야 하는 건 아닙니다.', en: 'It doesn’t have to be a crowd.'},
+        top: {ko: '날짜와 장소만 정하면 됩니다.', en: 'A date and a place — that’s all it takes.', es: 'Una fecha y un sitio: no hace falta más.'},
+        bottom: {ko: '모임 만들기는 30초면 끝납니다.', en: 'Posting a meetup takes thirty seconds.', es: 'Crear una quedada lleva treinta segundos.'},
     },
 
     {
-        top: {ko: '먼저 열면 사람이 모입니다.', en: 'Open one and people show up.'},
-        bottom: {ko: '한 명이 시작해야 시작됩니다.', en: 'Someone has to go first.'},
+        top: {ko: '밥, 커피, 공놀이, 영화.', en: 'Meals, coffee, ball games, movies.', es: 'Comidas, cafés, partidos, cine.'},
+        bottom: {ko: '핑계는 뭐든 좋습니다.', en: 'Any excuse works.', es: 'Cualquier excusa vale.'},
     },
     {
-        top: {ko: '혼자 하면 운동, 같이 하면 약속.', en: 'Alone it’s exercise. Together it’s plans.'},
-        bottom: {ko: '약속이 있어야 나가게 됩니다.', en: 'Plans are what get you out the door.'},
+        top: {ko: '주말은 금방 지나갑니다.', en: 'The weekend goes fast.', es: 'El fin de semana se va volando.'},
+        bottom: {ko: '미리 잡아두면 안 놓칩니다.', en: 'Lock it in and you won’t miss it.', es: 'Ciérralo y no se te escapa.'},
     },
     {
-        top: {ko: '이번 주에 한 번은 만납시다.', en: 'Let’s meet at least once this week.'},
-        bottom: {ko: '달력에 하나만 있어도 한 주가 다릅니다.', en: 'One thing on the calendar changes the week.'},
+        top: {ko: '아는 얼굴이 늘어갑니다.', en: 'More familiar faces every week.', es: 'Cada semana, más caras conocidas.'},
+        bottom: {ko: '한 번 같이 놀면 친구가 됩니다.', en: 'One meetup and you’re friends.', es: 'Una quedada y ya sois amigos.'},
+    },
+    {
+        top: {ko: '두 명이어도 모임입니다.', en: 'Two people is a meetup.', es: 'Con dos ya es una quedada.'},
+        bottom: {ko: '많이 모여야 하는 건 아닙니다.', en: 'It doesn’t have to be a crowd.', es: 'No hace falta ser multitud.'},
+    },
+
+    {
+        top: {ko: '먼저 열면 사람이 모입니다.', en: 'Open one and people show up.', es: 'Ábrela y la gente aparece.'},
+        bottom: {ko: '한 명이 시작해야 시작됩니다.', en: 'Someone has to go first.', es: 'Alguien tiene que dar el primer paso.'},
+    },
+    {
+        top: {ko: '혼자 하면 운동, 같이 하면 약속.', en: 'Alone it’s exercise. Together it’s plans.', es: 'Solo es ejercicio. Juntos son planes.'},
+        bottom: {ko: '약속이 있어야 나가게 됩니다.', en: 'Plans are what get you out the door.', es: 'Los planes son los que te sacan de casa.'},
+    },
+    {
+        top: {ko: '이번 주에 한 번은 만납시다.', en: 'Let’s meet at least once this week.', es: 'Quedemos al menos una vez esta semana.'},
+        bottom: {ko: '달력에 하나만 있어도 한 주가 다릅니다.', en: 'One thing on the calendar changes the week.', es: 'Una cosa en el calendario te cambia la semana.'},
     },
 ];
 
