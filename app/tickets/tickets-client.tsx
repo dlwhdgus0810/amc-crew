@@ -20,85 +20,92 @@ interface Ticket {
 const KINDS: { value: Ticket['kind']; label: Msg; hint: Msg }[] = [
   {
     value: 'feature',
-    label: { ko: '새 기능', en: 'New feature' },
-    hint: { ko: '예: 모임에 사진을 올리고 싶어요', en: 'e.g. let me post photos in a meetup' },
+    label: { ko: '새 기능', en: 'New feature', es: 'Función nueva' },
+    hint: { ko: '예: 모임에 사진을 올리고 싶어요', en: 'e.g. let me post photos in a meetup', es: 'p. ej. poder subir fotos a una quedada' },
   },
   {
     value: 'improve',
-    label: { ko: '개선', en: 'Improvement' },
-    hint: { ko: '예: 참가자 이름이 너무 작아요', en: 'e.g. participant names are too small' },
+    label: { ko: '개선', en: 'Improvement', es: 'Mejora' },
+    hint: { ko: '예: 참가자 이름이 너무 작아요', en: 'e.g. participant names are too small', es: 'p. ej. los nombres se ven muy pequeños' },
   },
   {
     value: 'bug',
-    label: { ko: '오류', en: 'Something broken' },
-    hint: { ko: '예: 알림을 눌렀는데 안 열려요', en: 'e.g. tapping the alert does nothing' },
+    label: { ko: '오류', en: 'Something broken', es: 'Algo roto' },
+    hint: { ko: '예: 알림을 눌렀는데 안 열려요', en: 'e.g. tapping the alert does nothing', es: 'p. ej. al tocar el aviso no pasa nada' },
   },
   {
     value: 'other',
-    label: { ko: '기타', en: 'Anything else' },
-    hint: { ko: '무엇이든 편하게 적어주세요', en: 'Tell us anything' },
+    label: { ko: '기타', en: 'Anything else', es: 'Otra cosa' },
+    hint: { ko: '무엇이든 편하게 적어주세요', en: 'Tell us anything', es: 'Cuéntanos lo que sea' },
   },
   {
     // 값은 'cheer' 그대로 둔다 — 이미 쌓인 행이 있고, 이름만 바뀐 것이라 옮길 이유가 없다
     value: 'cheer',
-    label: { ko: '쪽지', en: 'Note' },
-    hint: { ko: '아무거나 적어도 돼요', en: 'Anything at all' },
+    label: { ko: '쪽지', en: 'Note', es: 'Recado' },
+    hint: { ko: '아무거나 적어도 돼요', en: 'Anything at all', es: 'Lo que quieras' },
   },
 ];
 
 const STATUS_LABEL: Record<Ticket['status'], Msg> = {
-  open: { ko: '접수됨', en: 'Received' },
-  planned: { ko: '반영 예정', en: 'Planned' },
-  done: { ko: '반영됨', en: 'Shipped' },
-  declined: { ko: '보류', en: 'Not planned' },
+  open: { ko: '접수됨', en: 'Received', es: 'Recibida' },
+  planned: { ko: '반영 예정', en: 'Planned', es: 'Prevista' },
+  done: { ko: '반영됨', en: 'Shipped', es: 'Hecha' },
+  declined: { ko: '보류', en: 'Not planned', es: 'Aparcada' },
 };
 
 const T = {
-  loading: { ko: '불러오는 중…', en: 'Loading…' },
-  title: { ko: '건의함', en: 'Suggestion box' },
+  loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
+  title: { ko: '건의함', en: 'Suggestion box', es: 'Buzón de sugerencias' },
   intro: {
     ko: '사소한 기능 개선부터 원하시는 모든 기능을 넣어드립니다. 적어주시면 티켓이 발급되고, 진행 상황을 여기서 확인할 수 있어요.',
     en: 'From the smallest tweak to a whole new feature — tell us and we’ll build it. You get a ticket, and you can follow its progress right here.',
+    es: 'Desde el detalle más pequeño hasta una función entera: dilo y lo hacemos. Recibes un número y puedes seguirlo aquí mismo.',
   },
   loginPrompt: {
     ko: '카카오 로그인 후 건의를 남길 수 있어요.',
     en: 'Log in with Kakao to file a ticket.',
+    es: 'Entra con Kakao para enviar una sugerencia.',
   },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao' },
-  kind: { ko: '어떤 건의인가요?', en: 'What kind of ticket?' },
-  summary: { ko: '한 줄 요약', en: 'One-line summary' },
-  summaryCheer: { ko: '쪽지', en: 'Your note' },
-  detail: { ko: '자세한 내용 (선택)', en: 'Details (optional)' },
-  detailCheer: { ko: '더 하고 싶은 말 (선택)', en: 'More, if you like (optional)' },
+  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
+  kind: { ko: '어떤 건의인가요?', en: 'What kind of ticket?', es: '¿De qué tipo?' },
+  summary: { ko: '한 줄 요약', en: 'One-line summary', es: 'Resumen en una línea' },
+  summaryCheer: { ko: '쪽지', en: 'Your note', es: 'Tu recado' },
+  detail: { ko: '자세한 내용 (선택)', en: 'Details (optional)', es: 'Detalles (opcional)' },
+  detailCheer: { ko: '더 하고 싶은 말 (선택)', en: 'More, if you like (optional)', es: 'Algo más, si quieres (opcional)' },
   detailPh: {
     ko: '어떤 상황에서 필요한지, 어떻게 동작하면 좋을지 적어주시면 그대로 만들어드릴게요.',
     en: 'When you’d use it and how it should behave — the more you write, the closer we build it.',
+    es: 'Cuándo lo usarías y cómo debería funcionar: cuanto más cuentes, más se parecerá a lo que quieres.',
   },
   detailCheerPh: {
     ko: '아무거나 적어도 돼요. 하고 싶은 말, 좋았던 점, 그냥 안부도요.',
     en: 'Anything at all — a thought, something you liked, or just hello.',
+    es: 'Lo que sea: una idea, algo que te gustó, o solo un saludo.',
   },
-  submit: { ko: '티켓 발급받기 →', en: 'Get a ticket →' },
-  submitCheer: { ko: '쪽지 보내기 →', en: 'Send the note →' },
-  submitting: { ko: '발급 중…', en: 'Issuing…' },
-  sending: { ko: '보내는 중…', en: 'Sending…' },
-  submitFailed: { ko: '발급 실패', en: 'Couldn’t file it' },
+  submit: { ko: '티켓 발급받기 →', en: 'Get a ticket →', es: 'Enviar sugerencia →' },
+  submitCheer: { ko: '쪽지 보내기 →', en: 'Send the note →', es: 'Enviar el recado →' },
+  submitting: { ko: '발급 중…', en: 'Issuing…', es: 'Registrando…' },
+  sending: { ko: '보내는 중…', en: 'Sending…', es: 'Enviando…' },
+  submitFailed: { ko: '발급 실패', en: 'Couldn’t file it', es: 'No se pudo registrar' },
   issued: {
     ko: '#{n} 티켓이 발급됐어요! 진행 상황은 알림으로 알려드릴게요.',
     en: 'Ticket #{n} is open — we’ll ping you as it moves.',
+    es: 'Sugerencia n.º {n} registrada: te avisamos cuando avance.',
   },
   cheered: {
     ko: '쪽지 잘 전달했어요. 고맙습니다! 💌',
     en: 'Your note has been passed along — thank you! 💌',
+    es: 'Tu recado ha llegado. ¡Gracias! 💌',
   },
-  mine: { ko: '내가 낸 건의', en: 'Your tickets' },
-  mineEmpty: { ko: '아직 낸 건의가 없어요.', en: 'No tickets yet.' },
-  reply: { ko: '답변: {text}', en: 'Reply: {text}' },
+  mine: { ko: '내가 낸 건의', en: 'Your tickets', es: 'Tus sugerencias' },
+  mineEmpty: { ko: '아직 낸 건의가 없어요.', en: 'No tickets yet.', es: 'Aún no has enviado ninguna.' },
+  reply: { ko: '답변: {text}', en: 'Reply: {text}', es: 'Respuesta: {text}' },
   category: {
     ko: '새 취미 카테고리를 원하시면 → 카테고리 제안',
     en: 'Want a whole new hobby category? → Suggest a category',
+    es: '¿Quieres una categoría nueva? → Proponer una categoría',
   },
-  home: { ko: '홈으로 →', en: 'Go home →' },
+  home: { ko: '홈으로 →', en: 'Go home →', es: 'Ir al inicio →' },
 };
 
 function KakaoIcon() {
