@@ -18,28 +18,31 @@ export interface LeaderboardInitial {
 }
 
 const T = {
-  title: { ko: '리더보드', en: 'Leaderboard' },
+  title: { ko: '리더보드', en: 'Leaderboard', es: 'Clasificación' },
   subtitle: {
     ko: '호스팅은 연 모임에 몇 명이 모였는지로 셉니다 (같이 연 모임은 나눠 가져요). 카테고리를 가리지 않고 공개 모임만 세요.',
     en: 'Hosting counts how many people showed up — co-hosts split it. All categories together, public meetups only.',
+    es: 'Organizar cuenta según cuánta gente vino; los co-anfitriones se lo reparten. Todas las categorías juntas, solo quedadas públicas.',
   },
   // 예정된 모임이 안 보이는 이유 — 안 적어 두면 「내 점수가 왜 안 올랐지」가 된다
   afterOnly: {
     ko: '점수는 모임이 끝난 뒤에 올라가요. 예정된 모임은 아직 세지 않아요.',
     en: 'Points land once a meetup is over — upcoming ones aren’t counted yet.',
+    es: 'Los puntos se suman cuando la quedada termina: las próximas aún no cuentan.',
   },
-  tabHosts: { ko: '호스팅 순위', en: 'Hosted' },
-  tabJoiners: { ko: '참여 순위', en: 'Joined' },
-  countJoin: { ko: '{n}회 참가', en: 'Joined {n}' },
-  emptyJoin: { ko: '아직 아무도 참가하지 않았어요.', en: 'Nobody has joined anything yet.' },
-  empty: { ko: '아직 아무도 모임을 열지 않았어요. 첫 주최자가 되어보세요!', en: 'Nobody has hosted yet — be the first!' },
+  tabHosts: { ko: '호스팅 순위', en: 'Hosted', es: 'Organizadas' },
+  tabJoiners: { ko: '참여 순위', en: 'Joined', es: 'Apuntadas' },
+  countJoin: { ko: '{n}회 참가', en: 'Joined {n}', es: 'Apuntadas {n}' },
+  emptyJoin: { ko: '아직 아무도 참가하지 않았어요.', en: 'Nobody has joined anything yet.', es: 'Todavía nadie se ha apuntado a nada.' },
+  empty: { ko: '아직 아무도 모임을 열지 않았어요. 첫 주최자가 되어보세요!', en: 'Nobody has hosted yet — be the first!', es: 'Todavía nadie ha organizado nada: ¡sé el primero!' },
   loginNeeded: {
     ko: '카카오 로그인 후 볼 수 있어요.',
     en: 'Log in with Kakao to see the leaderboard.',
+    es: 'Entra con Kakao para ver la clasificación.',
   },
-  count: { ko: '{n}점', en: '{n} pts' },
-  tiersTitle: { ko: '호스트 등급', en: 'Host tiers' },
-  tierFrom: { ko: '{n}점부터', en: 'From {n} pts' },
+  count: { ko: '{n}점', en: '{n} pts', es: '{n} pts' },
+  tiersTitle: { ko: '호스트 등급', en: 'Host tiers', es: 'Niveles de anfitrión' },
+  tierFrom: { ko: '{n}점부터', en: 'From {n} pts', es: 'Desde {n} pts' },
 };
 
 /** 종합 주최 랭킹 — 둘러보기에서 들어온다 */

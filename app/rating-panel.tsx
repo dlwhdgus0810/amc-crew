@@ -17,21 +17,22 @@ import { formatScore, RATING_MAX } from '@/lib/ratings';
  */
 
 const T = {
-  heading: { ko: '우리 평점', en: 'Our rating' },
-  none: { ko: '아직 아무도 점수를 안 매겼어요.', en: 'Nobody has rated this yet.' },
-  ofN: { ko: '{n}명 평균', en: 'from {n}' },
-  mine: { ko: '내 점수', en: 'Your score' },
-  save: { ko: '매기기', en: 'Rate' },
-  update: { ko: '고쳐 매기기', en: 'Update' },
-  clear: { ko: '무르기', en: 'Clear' },
-  saving: { ko: '저장하는 중…', en: 'Saving…' },
-  failed: { ko: '저장하지 못했어요.', en: 'Couldn’t save that.' },
-  down: { ko: '0.1점 내리기', en: 'Down 0.1' },
-  up: { ko: '0.1점 올리기', en: 'Up 0.1' },
-  slider: { ko: '평점 (0.0~10.0)', en: 'Rating (0.0–10.0)' },
+  heading: { ko: '우리 평점', en: 'Our rating', es: 'Nuestra nota' },
+  none: { ko: '아직 아무도 점수를 안 매겼어요.', en: 'Nobody has rated this yet.', es: 'Todavía nadie la ha puntuado.' },
+  ofN: { ko: '{n}명 평균', en: 'from {n}', es: 'de {n}' },
+  mine: { ko: '내 점수', en: 'Your score', es: 'Tu nota' },
+  save: { ko: '매기기', en: 'Rate', es: 'Puntuar' },
+  update: { ko: '고쳐 매기기', en: 'Update', es: 'Cambiar' },
+  clear: { ko: '무르기', en: 'Clear', es: 'Quitar' },
+  saving: { ko: '저장하는 중…', en: 'Saving…', es: 'Guardando…' },
+  failed: { ko: '저장하지 못했어요.', en: 'Couldn’t save that.', es: 'No se pudo guardar.' },
+  down: { ko: '0.1점 내리기', en: 'Down 0.1', es: 'Bajar 0,1' },
+  up: { ko: '0.1점 올리기', en: 'Up 0.1', es: 'Subir 0,1' },
+  slider: { ko: '평점 (0.0~10.0)', en: 'Rating (0.0–10.0)', es: 'Nota (0,0–10,0)' },
   onlyThere: {
     ko: '이 모임에 참가한 사람만 점수를 매길 수 있어요.',
     en: 'Only people who were there can rate it.',
+    es: 'Solo quien estuvo allí puede puntuarla.',
   },
 };
 

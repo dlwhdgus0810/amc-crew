@@ -19,24 +19,26 @@ import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST, photoPath } from '@/lib/photos';
  */
 
 const T = {
-  heading: { ko: '사진', en: 'Photos' },
-  none: { ko: '아직 사진이 없어요.', en: 'No photos yet.' },
-  add: { ko: '사진 올리기', en: 'Add photos' },
-  uploading: { ko: '{done}/{total} 올리는 중…', en: 'Uploading {done}/{total}…' },
+  heading: { ko: '사진', en: 'Photos', es: 'Fotos' },
+  none: { ko: '아직 사진이 없어요.', en: 'No photos yet.', es: 'Aún no hay fotos.' },
+  add: { ko: '사진 올리기', en: 'Add photos', es: 'Añadir fotos' },
+  uploading: { ko: '{done}/{total} 올리는 중…', en: 'Uploading {done}/{total}…', es: 'Subiendo {done}/{total}…' },
   onlyThere: {
     ko: '이 모임에 참가한 사람만 사진을 올릴 수 있어요.',
     en: 'Only people in the meetup can add photos.',
+    es: 'Solo quien está en la quedada puede añadir fotos.',
   },
-  full: { ko: '사진은 {n}장까지 올릴 수 있어요.', en: 'Up to {n} photos per meetup.' },
-  tooMany: { ko: '한 번에 {n}장까지 고를 수 있어요.', en: 'Pick up to {n} at a time.' },
-  failed: { ko: '올리지 못했어요.', en: 'Couldn’t upload that.' },
+  full: { ko: '사진은 {n}장까지 올릴 수 있어요.', en: 'Up to {n} photos per meetup.', es: 'Hasta {n} fotos por quedada.' },
+  tooMany: { ko: '한 번에 {n}장까지 고를 수 있어요.', en: 'Pick up to {n} at a time.', es: 'Elige hasta {n} a la vez.' },
+  failed: { ko: '올리지 못했어요.', en: 'Couldn’t upload that.', es: 'No se pudo subir.' },
   heic: {
     ko: '이 사진 형식(HEIC)은 못 읽어요. 아이폰 설정 › 카메라 › 포맷을 「높은 호환성」으로 바꾸거나, 사진을 한 번 편집해 저장한 뒤 올려주세요.',
     en: 'That photo format (HEIC) can’t be read. Switch iPhone Settings › Camera › Formats to “Most Compatible”, or edit and save the photo once, then try again.',
+    es: 'No se puede leer ese formato (HEIC). Cambia Ajustes › Cámara › Formatos a «Más compatible» en el iPhone, o edita y guarda la foto una vez y vuelve a intentarlo.',
   },
-  del: { ko: '지우기', en: 'Remove' },
-  delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.' },
-  by: { ko: '{name} 올림', en: 'by {name}' },
+  del: { ko: '지우기', en: 'Remove', es: 'Quitar' },
+  delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.', es: 'No se pudo quitar.' },
+  by: { ko: '{name} 올림', en: 'by {name}', es: 'de {name}' },
 };
 
 export interface PhotoItem {
