@@ -28,6 +28,19 @@ export const NOTIF = {
   signup: 'signup',
 } as const;
 
+/**
+ * 참가신청 알림의 kind에서 카테고리를 꺼낸다 (`signup:reading` → `reading`).
+ *
+ * 이 알림에는 걸어 둘 모임이 없다 — 「이제 만들자」는 소식이라 아직 만들어지지 않았다.
+ * 그래서 보낼 곳(카테고리)을 kind에 실어 보낸다. 심는 쪽은 lib/db/signups.ts.
+ */
+export function signupCategory(kind: string | null | undefined): string | null {
+  if (!kind) return null;
+  const at = kind.indexOf(':');
+  if (at < 0 || kind.slice(0, at) !== NOTIF.signup) return null;
+  return kind.slice(at + 1) || null;
+}
+
 /** 모임 화면(/p/<id>)으로 보내는 종류 */
 export const POST_KINDS: string[] = [NOTIF.friendJoin, NOTIF.added, NOTIF.invite];
 

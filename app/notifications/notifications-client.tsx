@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import { pick } from '@/lib/i18n';
-import { FRIEND_KINDS, NOTIF, POST_KINDS } from '@/lib/notif-kinds';
+import { FRIEND_KINDS, NOTIF, POST_KINDS, signupCategory } from '@/lib/notif-kinds';
 import { timeAgo } from '@/lib/datefmt';
 import { useNow } from '../use-now';
 import { CHANGELOG } from '@/lib/changelog';
@@ -190,9 +190,15 @@ export default function NotificationsClient({ initial }: { initial: Notification
               ? `/p/${n.postId}`
               : FRIEND_KINDS.includes(n.kind ?? '')
                 ? '/friends'
-                : n.category
-                  ? `/c/${n.category}`
-                  : null;
+                /*
+                 * 참가신청 알림은 걸어 둘 모임이 없다 — 「이제 날짜를 정해봐요」인데
+                 * 정할 자리로 못 가면 그 알림이 할 일이 없다. 보낼 곳은 kind에 실려 온다.
+                 */
+                : signupCategory(n.kind)
+                  ? `/c/${signupCategory(n.kind)}`
+                  : n.category
+                    ? `/c/${n.category}`
+                    : null;
         const inner = (
           <div className={`notif-item ${n.read ? '' : 'unread'}`}>
             <span className="notif-message">{n.message}</span>
