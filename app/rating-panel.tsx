@@ -17,6 +17,7 @@ import { formatScore, RATING_MAX } from '@/lib/ratings';
  */
 
 const T = {
+  unknown: { ko: '알 수 없음', en: 'Unknown', es: 'Desconocido' },
   heading: { ko: '우리 평점', en: 'Our rating', es: 'Nuestra nota' },
   none: { ko: '아직 아무도 점수를 안 매겼어요.', en: 'Nobody has rated this yet.', es: 'Todavía nadie la ha puntuado.' },
   ofN: { ko: '{n}명 평균', en: 'from {n}', es: 'de {n}' },
@@ -69,7 +70,7 @@ export default function RatingPanel({
   }, [summary.mine]);
 
   const iWasThere = Boolean(currentUserId && participants.some((p) => p.id === currentUserId));
-  const nameOf = (userId: string) => participants.find((p) => p.id === userId)?.name ?? '알 수 없음';
+  const nameOf = (userId: string) => participants.find((p) => p.id === userId)?.name ?? t(T.unknown);
 
   /** 0.1 단위로 붙잡아 둔다 — 슬라이더가 8.299999를 주는 일이 없도록 */
   const clamp = (v: number) => Math.min(RATING_MAX, Math.max(0, Math.round(v * 10) / 10));

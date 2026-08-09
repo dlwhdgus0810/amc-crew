@@ -19,6 +19,7 @@ import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST, photoPath } from '@/lib/photos';
  */
 
 const T = {
+  unknown: { ko: '알 수 없음', en: 'Unknown', es: 'Desconocido' },
   heading: { ko: '사진', en: 'Photos', es: 'Fotos' },
   none: { ko: '아직 사진이 없어요.', en: 'No photos yet.', es: 'Aún no hay fotos.' },
   add: { ko: '사진 올리기', en: 'Add photos', es: 'Añadir fotos' },
@@ -75,7 +76,7 @@ export default function PhotoPanel({
 
   const inMeetup = Boolean(currentUserId && participants.some((p) => p.id === currentUserId));
   const canAdd = inMeetup || isAdmin;
-  const nameOf = (userId: string) => participants.find((p) => p.id === userId)?.name ?? '알 수 없음';
+  const nameOf = (userId: string) => participants.find((p) => p.id === userId)?.name ?? t(T.unknown);
 
   // 확대 창에 넘길 목록 — 격자 순서 그대로다
   const items: Zoomed[] = photos.map((p) => ({ src: p.url, name: label, by: t(T.by, { name: nameOf(p.userId) }) }));
