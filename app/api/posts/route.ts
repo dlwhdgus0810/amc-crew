@@ -5,7 +5,7 @@ import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getProfiles, resolveDisplayName } from '@/lib/store';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { addParticipants, createPost, getPost, listPosts, notifyAddedToPost } from '@/lib/db/posts';
-import { listSignups } from '@/lib/db/signups';
+import { clearSignups, listSignups } from '@/lib/db/signups';
 import { pathAllowed } from '@/lib/photos';
 import { addPhoto } from '@/lib/db/photos';
 import { friendIds } from '@/lib/db/friends';
@@ -197,6 +197,14 @@ export async function POST(req: NextRequest) {
     const roster = (await listSignups(category)).map((s) => s.userId).filter((uid) => uid !== user.id);
     if (roster.length > 0) {
       await addParticipants(postId, roster);
+    }
+    /*
+     * 명단은 여기서 비운다 — 모아 둔 사람들이 모임으로 옮겨 갔으니 명단이 할 일은 끝났다.
+     * 참가자로 넣은 **다음에** 비운다 (먼저 비우면 넣기가 실패했을 때 명단만 사라진다).
+     * 신청자가 만든 사람 하나뿐이어도 비운다 — 그 한 줄도 이제 모임 쪽에 있다.
+     */
+    await clearSignups(category);
+    if (roster.length > 0) {
       // 넣긴 사람에게는 알린다 — 신청은 했어도 언제 어디로 정해졌는지는 이걸로 안다
       const created = await getPost(postId);
       if (created) {

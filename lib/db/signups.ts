@@ -116,6 +116,21 @@ export async function removeSignup(category: string, userId: string): Promise<nu
 }
 
 /**
+ * 명단을 비운다 — 그 명단으로 모임이 만들어졌을 때.
+ *
+ * 명단은 「할 사람을 모으는 중」이라는 뜻이고, 모임이 생긴 순간 그 일은 끝났다.
+ * 안 비우면 같은 다섯 명이 명단에 남아 「모임 만들기」가 계속 떠 있고,
+ * 누가 또 누르면 같은 사람들로 두 번째 모임이 생긴다 (그리고 넣긴 사람들에게
+ * 「이 모임에 넣었어요」가 한 번 더 간다).
+ *
+ * 다음 모임은 다시 사람을 모아서 연다 — 그게 이 카테고리가 굴러가는 방식이다.
+ */
+export async function clearSignups(category: string): Promise<void> {
+  const db = await getDb();
+  await db.delete(categorySignups).where(eq(categorySignups.category, category));
+}
+
+/**
  * 「다 모였어요」 알림 — 신청한 사람 전원에게.
  *
  * 구독자가 아니라 **신청한 사람들**에게 간다. 이건 「새 모임이 열렸다」가 아니라
