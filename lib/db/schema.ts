@@ -555,16 +555,18 @@ export const categorySignups = pgTable(
 export const notices = pgTable('notices', {
   id: uuid('id').primaryKey(),
   /**
-   * 두 언어로 적는다 — 앱 어디에도 한국어만 나오는 화면은 없다.
+   * 앱이 쓰는 세 언어로 적는다 — 앱 어디에도 한국어만 나오는 화면은 없다.
    *
-   * 영어는 비워 둘 수 있고, 비어 있으면 한국어를 그대로 보여준다. 번역이 늦었다고
-   * 공지가 안 뜨는 것보다는 낫다 — 이 앱을 영어로 보는 사람도 한국어를 읽는다.
+   * 한국어 말고는 비워 둘 수 있고, 비어 있으면 적혀 있는 다른 언어를 그대로 보여준다.
+   * 번역이 늦었다고 공지가 안 뜨는 것보다는 낫다 — 다른 언어로 보는 사람도 한국어를 읽는다.
    */
   titleKo: text('title_ko').notNull(),
   titleEn: text('title_en'),
+  titleEs: text('title_es'),
   /** 본문 — 제목만으로 충분하면 비워 둔다 */
   bodyKo: text('body_ko'),
   bodyEn: text('body_en'),
+  bodyEs: text('body_es'),
   /**
    * 이 공지를 볼 사람들. 빈 배열이면 전체 —
    * 기본이 전체이고, 골라 담는 것은 올리기 전에 나한테만 띄워 보려고 두는 장치다.

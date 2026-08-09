@@ -109,14 +109,17 @@ const T = {
   },
   noticeKo: { ko: '한국어', en: 'Korean' },
   noticeEn: { ko: 'English', en: 'English' },
+  noticeEs: { ko: 'Español', en: 'Español' },
   noticeEnHint: {
-    ko: '영어는 비워 둬도 돼요. 비우면 영어로 보는 사람에게도 한국어가 그대로 보여요.',
-    en: 'English is optional — leave it blank and Korean shows to everyone.',
+    ko: '한국어 말고는 비워 둬도 돼요. 비우면 그 언어로 보는 사람에게도 적어 둔 말이 그대로 보여요.',
+    en: 'Only Korean is required — leave the rest blank and whatever you wrote shows instead.',
   },
   noticeTitlePh: { ko: '제목 — 예: 참가하시면 참가 버튼을 눌러주세요', en: 'Title — e.g. Tap Join if you’re coming' },
   noticeTitlePhEn: { ko: 'Title (English)', en: 'Title (English)' },
   noticeBodyPh: { ko: '내용 (선택) — 줄을 나눠 써도 그대로 보여요', en: 'Body (optional) — line breaks are kept' },
   noticeBodyPhEn: { ko: 'Body (English, optional)', en: 'Body (English, optional)' },
+  noticeTitlePhEs: { ko: 'Título (español)', en: 'Título (español)' },
+  noticeBodyPhEs: { ko: 'Texto (español, opcional)', en: 'Texto (español, opcional)' },
   noticeWho: { ko: '누구에게', en: 'Who sees it' },
   noticeAll: { ko: '전체', en: 'Everyone' },
   noticeSome: { ko: '고른 사람만', en: 'Only picked' },
@@ -305,8 +308,10 @@ export default function AdminPage() {
       id: string;
       titleKo: string;
       titleEn: string | null;
+      titleEs: string | null;
       bodyKo: string | null;
       bodyEn: string | null;
+      bodyEs: string | null;
       targets: string[];
       reads: { userId: string; seenAt: string }[];
       active: boolean;
@@ -317,6 +322,8 @@ export default function AdminPage() {
   const [noticeTitleEn, setNoticeTitleEn] = useState('');
   const [noticeBody, setNoticeBody] = useState('');
   const [noticeBodyEn, setNoticeBodyEn] = useState('');
+  const [noticeTitleEs, setNoticeTitleEs] = useState('');
+  const [noticeBodyEs, setNoticeBodyEs] = useState('');
   const [noticeBusy, setNoticeBusy] = useState(false);
   /** 목록에서 내려 둔 카테고리 (관리자만 고친다) */
   const [hidden, setHidden] = useState<string[]>([]);
@@ -390,8 +397,10 @@ export default function AdminPage() {
         body: JSON.stringify({
           titleKo: noticeTitle.trim(),
           titleEn: noticeTitleEn.trim(),
+          titleEs: noticeTitleEs.trim(),
           bodyKo: noticeBody.trim(),
           bodyEn: noticeBodyEn.trim(),
+          bodyEs: noticeBodyEs.trim(),
           targets: noticePicked ? noticeTargets : [],
         }),
       });
@@ -399,8 +408,10 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.error ?? t(T.failed));
       setNoticeTitle('');
       setNoticeTitleEn('');
+      setNoticeTitleEs('');
       setNoticeBody('');
       setNoticeBodyEn('');
+      setNoticeBodyEs('');
       setMsg({ type: 'ok', text: noticePicked ? t(T.noticePostedSome) : t(T.noticePosted) });
       await loadNotices();
     } catch (e) {
@@ -443,8 +454,10 @@ export default function AdminPage() {
         body: JSON.stringify({
           titleKo: n.titleKo,
           titleEn: n.titleEn ?? '',
+          titleEs: n.titleEs ?? '',
           bodyKo: n.bodyKo ?? '',
           bodyEn: n.bodyEn ?? '',
+          bodyEs: n.bodyEs ?? '',
           targets: [],
         }),
       });
@@ -947,6 +960,24 @@ export default function AdminPage() {
               style={{ marginTop: 10 }}
               onChange={(e) => setNoticeBodyEn(e.target.value)}
             />
+            <div className="field-label" style={{ marginTop: 16 }}>
+              {t(T.noticeEs)}
+            </div>
+            <input
+              type="text"
+              placeholder={t(T.noticeTitlePhEs)}
+              value={noticeTitleEs}
+              maxLength={60}
+              onChange={(e) => setNoticeTitleEs(e.target.value)}
+            />
+            <textarea
+              placeholder={t(T.noticeBodyPhEs)}
+              value={noticeBodyEs}
+              maxLength={1000}
+              rows={3}
+              style={{ marginTop: 10 }}
+              onChange={(e) => setNoticeBodyEs(e.target.value)}
+            />
             <p className="hint" style={{ marginTop: 8 }}>
               {t(T.noticeEnHint)}
             </p>
@@ -1029,6 +1060,8 @@ export default function AdminPage() {
                   {n.bodyKo && <p className="notice-row-body">{n.bodyKo}</p>}
                   {n.titleEn && <p className="notice-row-title en">{n.titleEn}</p>}
                   {n.bodyEn && <p className="notice-row-body">{n.bodyEn}</p>}
+                  {n.titleEs && <p className="notice-row-title en">{n.titleEs}</p>}
+                  {n.bodyEs && <p className="notice-row-body">{n.bodyEs}</p>}
                   {/* 누구에게 갔는지는 이름으로 — 「3명에게만」만 보면 누구였는지 알 수 없다 */}
                   {n.targets.length > 0 && (
                     <p className="notice-row-who">{n.targets.map(nameOf).join(', ')}</p>

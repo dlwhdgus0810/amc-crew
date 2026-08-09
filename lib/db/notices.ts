@@ -19,8 +19,10 @@ export interface NoticeView {
   id: string;
   titleKo: string;
   titleEn: string | null;
+  titleEs: string | null;
   bodyKo: string | null;
   bodyEn: string | null;
+  bodyEs: string | null;
   /** 빈 배열이면 전체 */
   targets: string[];
   active: boolean;
@@ -33,8 +35,10 @@ function view(r: typeof notices.$inferSelect): NoticeView {
     id: r.id,
     titleKo: r.titleKo,
     titleEn: r.titleEn,
+    titleEs: r.titleEs,
     bodyKo: r.bodyKo,
     bodyEn: r.bodyEn,
+    bodyEs: r.bodyEs,
     targets: r.targets ?? [],
     active: r.active,
     createdAt: r.createdAt.toISOString(),
@@ -145,8 +149,10 @@ export async function listNotices(): Promise<(NoticeView & { reads: NoticeRead[]
 export interface NoticeInput {
   titleKo: string;
   titleEn: string | null;
+  titleEs: string | null;
   bodyKo: string | null;
   bodyEn: string | null;
+  bodyEs: string | null;
 }
 
 /**

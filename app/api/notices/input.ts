@@ -5,8 +5,8 @@ import type { NoticeInput } from '@/lib/db/notices';
 /**
  * 공지 본문 읽기 — 올릴 때와 고칠 때가 같은 값을 받으므로 한 곳에 둔다.
  *
- * 영어는 없어도 된다. 비어 있으면 null로 넣고 화면이 한국어를 그대로 쓴다 —
- * 여기서 한국어를 복사해 채워 넣지 않는다. 그러면 나중에 영어를 채웠는지
+ * 한국어 말고는 없어도 된다. 비어 있으면 null로 넣고 화면이 적혀 있는 다른 언어를 쓴다 —
+ * 여기서 한국어를 복사해 채워 넣지 않는다. 그러면 나중에 그 언어를 채웠는지
  * 아닌지를 알 수 없게 된다.
  */
 
@@ -23,13 +23,15 @@ export async function readNoticeInput(req: NextRequest): Promise<Parsed> {
 
   const titleKo = str(body?.titleKo);
   const titleEn = str(body?.titleEn);
+  const titleEs = str(body?.titleEs);
   const bodyKo = str(body?.bodyKo);
   const bodyEn = str(body?.bodyEn);
+  const bodyEs = str(body?.bodyEs);
 
-  if (!titleKo || titleKo.length > TITLE_MAX || titleEn.length > TITLE_MAX) {
+  if (!titleKo || [titleKo, titleEn, titleEs].some((v) => v.length > TITLE_MAX)) {
     return { error: await errJson(E.noticeTitle, 400) };
   }
-  if (bodyKo.length > BODY_MAX || bodyEn.length > BODY_MAX) {
+  if ([bodyKo, bodyEn, bodyEs].some((v) => v.length > BODY_MAX)) {
     return { error: await errJson(E.noticeBody, 400) };
   }
 
@@ -44,8 +46,10 @@ export async function readNoticeInput(req: NextRequest): Promise<Parsed> {
     input: {
       titleKo,
       titleEn: titleEn || null,
+      titleEs: titleEs || null,
       bodyKo: bodyKo || null,
       bodyEn: bodyEn || null,
+      bodyEs: bodyEs || null,
     },
     targets,
   };

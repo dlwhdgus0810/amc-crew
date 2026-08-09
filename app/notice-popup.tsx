@@ -33,19 +33,28 @@ interface Notice {
   id: string;
   titleKo: string;
   titleEn: string | null;
+  titleEs: string | null;
   bodyKo: string | null;
   bodyEn: string | null;
+  bodyEs: string | null;
   updatedAt: string;
 }
 
 /**
- * 읽는 사람의 언어로. 한쪽만 적혀 있으면 양쪽 다 그것을 쓴다.
+ * 읽는 사람의 언어로. 안 적힌 언어는 적혀 있는 다른 언어로 채운다.
  *
  * 번역이 없다고 공지를 통째로 감추면 그 언어로 보는 사람만 이 말을 못 듣는다.
  * 안 읽히는 것보다 다른 언어로라도 읽히는 편이 낫다.
+ *
+ * 빈 자리를 메우는 순서는 언어마다 다르다 — 스페인어 자리에는 한국어보다 영어가 먼저다.
+ * 읽는 사람이 알아볼 확률이 그쪽이 높다.
  */
-function msg(ko: string | null, en: string | null) {
-  return { ko: ko || en || '', en: en || ko || '' };
+function msg(ko: string | null, en: string | null, es: string | null) {
+  return {
+    ko: ko || en || es || '',
+    en: en || ko || es || '',
+    es: es || en || ko || '',
+  };
 }
 
 /** 이 공지를 이미 닫았는지 가리는 열쇠 — 내용을 고치면 달라져서 다시 뜬다 */
@@ -131,10 +140,10 @@ export default function NoticePopup() {
       <div className="notice-box">
         <span className="notice-tag">{t(T.label)}</span>
         <h2 id="notice-title" className="notice-title">
-          {t(msg(notice.titleKo, notice.titleEn))}
+          {t(msg(notice.titleKo, notice.titleEn, notice.titleEs))}
         </h2>
-        {(notice.bodyKo || notice.bodyEn) && (
-          <p className="notice-body">{t(msg(notice.bodyKo, notice.bodyEn))}</p>
+        {(notice.bodyKo || notice.bodyEn || notice.bodyEs) && (
+          <p className="notice-body">{t(msg(notice.bodyKo, notice.bodyEn, notice.bodyEs))}</p>
         )}
         <button className="notice-ok" onClick={close} autoFocus>
           {t(T.ok)}
