@@ -3,7 +3,8 @@ import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
 import { postParticipants, posts, users } from './schema';
-import { resolveDisplayName, UNKNOWN_NAME } from '../store';
+import { NameRow, nameOf, UNKNOWN_NAME } from '../store';
+import { Locale } from '../i18n';
 import { adminIds } from '../auth';
 import { openEndCutoffTime, pastCutoff } from '../dates';
 import { POSTS_TAG } from '../cache-tags';
@@ -98,8 +99,27 @@ export interface HostRank {
   count: number;
 }
 
+/**
+ * 담아 두는 모양 — 이름 대신 **이름의 재료**를 들고 있다.
+ *
+ * 이 두 표는 요청 사이에도 남는데(unstable_cache), 이름은 보는 사람의 언어에 따라
+ * 달라진다. 담기 전에 이름을 정해 버리면 이 표를 처음 연 사람의 언어가 5분 동안
+ * 모두에게 남는다 — 영어로 보는 사람이 한글 이름을, 한국어로 보는 사람이 영어 이름을 본다.
+ * 그래서 이름은 캐시 밖에서, 화면을 그리는 자리에서 고른다 (rankNames).
+ */
+export interface RankSeed extends NameRow {
+  id: string;
+  avatar: string | null;
+  count: number;
+}
+
+/** 담아 둔 재료에 보는 사람의 언어로 이름을 붙인다 — 캐시 밖에서 부른다 */
+export function rankNames(seeds: RankSeed[], locale: Locale): HostRank[] {
+  return seeds.map((s) => ({ id: s.id, name: nameOf(s, UNKNOWN_NAME, locale), avatar: s.avatar, count: s.count }));
+}
+
 /** 종합 주최 랭킹 — 카테고리를 가리지 않고 연 공개 모임 전부를 센다 */
-async function hostQuery(limit: number): Promise<HostRank[]> {
+async function hostQuery(limit: number): Promise<RankSeed[]> {
   const db = await getDb();
   const rows = resultRows(
     await db.execute(sql`
@@ -125,7 +145,7 @@ async function hostQuery(limit: number): Promise<HostRank[]> {
  * 주최 점수와 같이 끝난 모임만 센다 — 참가 버튼을 눌러 두기만 해도 점수가 오르면
  * 가지 않은 모임으로 순위가 오른다.
  */
-async function joinQuery(limit: number): Promise<HostRank[]> {
+async function joinQuery(limit: number): Promise<RankSeed[]> {
   const db = await getDb();
   // endedSql()이 posts를 p로 부르므로 여기서도 같은 별칭으로 조인한다
   const p = alias(posts, 'p');
@@ -155,36 +175,33 @@ export const joinRanking = unstable_cache(joinQuery, ['join-ranking'], {
   revalidate: 300,
 });
 
-/** 집계 결과에 이름·사진을 붙이고 관리자를 뺀다 (두 랭킹이 같은 규칙을 쓰게) */
-async function withProfiles(rows: { id: string; n: number }[], limit: number): Promise<HostRank[]> {
+/** 집계 결과에 이름 재료·사진을 붙이고 관리자를 뺀다 (두 랭킹이 같은 규칙을 쓰게) */
+async function withProfiles(rows: { id: string; n: number }[], limit: number): Promise<RankSeed[]> {
   const admins = new Set(adminIds());
   const kept = rows.filter((r) => !admins.has(r.id)).slice(0, limit);
   if (kept.length === 0) return [];
 
   const db = await getDb();
   const profiles = await db
-    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, avatar: users.avatar })
+    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn, avatar: users.avatar })
     .from(users)
     .where(inArray(users.id, kept.map((r) => r.id)));
   const byId = new Map(profiles.map((p) => [p.id, p]));
 
+  /*
+   * 순위표는 닉네임을 정해 둔 사람은 닉네임으로 부른다.
+   *
+   * 모임 안에서는 그 모임의 규칙(allowNicknames)을 따르지만, 이 표는 여러 모임을
+   * 합친 결과라 따를 규칙이 없다. 그래서 본인이 프로필에 적어 둔 이름을 쓴다 —
+   * 닉네임을 안 정한 사람은 그대로 실명이다. 어느 이름으로 부를지는 rankNames가 정한다.
+   */
   return kept.map((r) => {
     const p = byId.get(r.id);
     return {
       id: r.id,
-      /*
-       * 순위표는 닉네임을 정해 둔 사람은 닉네임으로 부른다.
-       *
-       * 모임 안에서는 그 모임의 규칙(allowNicknames)을 따르지만, 이 표는 여러 모임을
-       * 합친 결과라 따를 규칙이 없다. 그래서 본인이 프로필에 적어 둔 이름을 쓴다 —
-       * 닉네임을 안 정한 사람은 그대로 실명이다.
-       */
-      name: p
-        ? resolveDisplayName(
-            { kakaoName: p.kakaoName, ...(p.nickname ? { nickname: p.nickname } : {}), kakaoNameHistory: [] },
-            UNKNOWN_NAME
-          )
-        : UNKNOWN_NAME,
+      kakaoName: p?.kakaoName ?? '',
+      nickname: p?.nickname ?? null,
+      nameEn: p?.nameEn ?? null,
       avatar: p?.avatar ?? null,
       count: Number(r.n),
     };

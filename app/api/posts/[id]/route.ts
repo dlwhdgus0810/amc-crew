@@ -3,7 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { friendIds } from '@/lib/db/friends';
 import { getSessionUser, isAdmin } from '@/lib/auth';
-import { getProfiles, resolveDisplayName } from '@/lib/store';
+import { getProfiles, LocalName, localName } from '@/lib/store';
 import { countParticipants, deletePost, getPost, getPostView, notifyCoHost, updatePost } from '@/lib/db/posts';
 import { getCategory } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
@@ -12,9 +12,10 @@ import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
-async function displayNameOf(user: { id: string; name: string }): Promise<string> {
+/** 알림에 실을 이름 — 받는 사람의 언어로 정해진다 */
+async function displayNameOf(user: { id: string; name: string }): Promise<LocalName> {
   const profile = (await getProfiles())[user.id];
-  return resolveDisplayName(profile, user.name);
+  return localName(profile, user.name);
 }
 
 /** 공유 링크 상세 페이지용 단건 조회 (비로그인 허용) */

@@ -5,7 +5,7 @@ import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { getPost, isParticipant, joinPost, leavePost, notifyFriendJoin } from '@/lib/db/posts';
 import { friendIds } from '@/lib/db/friends';
-import { getProfiles, resolveDisplayName } from '@/lib/store';
+import { getProfiles, localName } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +32,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   // 친구들에게 조용히 알린다 (인앱만). 실패해도 참가는 성공 처리
   if (!wasIn) {
     try {
-      const myName = resolveDisplayName((await getProfiles())[user.id], user.name);
+      const myName = localName((await getProfiles())[user.id], user.name);
       await notifyFriendJoin(post, myName, await friendIds(user.id), user.id);
     } catch (e) {
       console.error('[join] notify failed:', e);

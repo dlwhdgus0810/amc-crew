@@ -1,4 +1,5 @@
 import { getDaySchedule, getProfiles, getSelections, resolveDisplayName } from './store';
+import { getLocale } from './locale';
 import { Selections } from './types';
 import { amcConfigured } from './amc';
 import { scheduleDates } from './seed';
@@ -44,12 +45,12 @@ export async function scheduleMovies(requested?: string | null) {
 /** 선택 현황 — 누가 무엇을 골랐는지. 회차를 누를 때마다 바뀐다 */
 export async function schedulePicks(requested?: string | null) {
   const { dates, date } = resolveDate(requested);
-  const [selections, profiles] = await Promise.all([getSelections(), getProfiles()]);
+  const [selections, profiles, locale] = await Promise.all([getSelections(), getProfiles(), getLocale()]);
 
   // 표시 이름은 읽기 시점에 프로필 기준으로 해석 (앱 닉네임 → 카카오 닉네임 → 저장 시점 스냅샷)
   const resolved: Selections = {};
   for (const [userId, sel] of Object.entries(selections)) {
-    resolved[userId] = { ...sel, name: resolveDisplayName(profiles[userId], sel.name) };
+    resolved[userId] = { ...sel, name: resolveDisplayName(profiles[userId], sel.name, locale) };
   }
 
   // 어떤 회차가 이미 모임으로 만들어졌는지 (그룹 화면이 버튼 대신 링크를 보여준다)

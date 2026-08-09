@@ -1,7 +1,9 @@
 import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { categoryRequests, notifications, users } from './schema';
-import { resolveDisplayName, UNKNOWN_NAME } from '../store';
+import { LocalName, NameRow, nameOf, UNKNOWN_NAME } from '../store';
+import { Locale } from '../i18n';
+import { getLocale } from '../locale';
 import { notifyAdmins } from './admin-notify';
 import { sendPush } from '../push';
 import { pick, toLocale } from '../i18n';
@@ -42,16 +44,13 @@ export interface CategoryRequestView {
   createdAt: string;
 }
 
-function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined): string {
-  if (!row) return UNKNOWN_NAME;
-  return resolveDisplayName(
-    { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] },
-    UNKNOWN_NAME
-  );
+function displayNameOf(row: NameRow | undefined, locale: Locale): string {
+  return nameOf(row, UNKNOWN_NAME, locale);
 }
 
 /** 제안 목록. userId를 주면 그 사람 것만 (일반 사용자), 없으면 전체 (관리자). */
 export async function listCategoryRequests(userId?: string): Promise<CategoryRequestView[]> {
+  const locale = await getLocale();
   const db = await getDb();
   const rows = userId
     ? await db
@@ -67,7 +66,7 @@ export async function listCategoryRequests(userId?: string): Promise<CategoryReq
   return rows.map((r) => ({
     id: r.id,
     userId: r.userId,
-    userName: displayNameOf(userById.get(r.userId)),
+    userName: displayNameOf(userById.get(r.userId), locale),
     name: r.name,
     color: r.color,
     description: r.description,
@@ -86,7 +85,8 @@ export async function getCategoryRequest(id: string) {
 /** 제안 접수 + 관리자에게 알림 (인앱 + 카톡). 알림 실패는 접수를 막지 않는다. */
 export async function createCategoryRequest(input: {
   userId: string;
-  userName: string;
+  /** 관리자 알림 문구에 실린다 — 받는 관리자의 언어로 정해진다 */
+  userName: LocalName;
   name: string;
   color: string;
   description: string;
@@ -106,7 +106,7 @@ export async function createCategoryRequest(input: {
 
   await notifyAdmins({
     exclude: input.userId,
-    message: (locale) => pick(locale, N.newRequest, { name: input.name, by: input.userName }),
+    message: (locale) => pick(locale, N.newRequest, { name: input.name, by: input.userName(locale) }),
     button: (locale) => pick(locale, N.btnReview),
     linkUrl: `${input.origin}/admin`,
     tag: 'category-request',

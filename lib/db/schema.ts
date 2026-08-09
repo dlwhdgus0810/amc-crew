@@ -5,6 +5,14 @@ export const users = pgTable('users', {
   id: text('id').primaryKey(), // 카카오 회원번호
   kakaoName: text('kakao_name').notNull(),
   nickname: text('nickname'), // null이면 카카오 닉네임 폴백
+  /**
+   * 영어 이름 — 한국어가 아닌 언어로 보는 사람에게 이 이름이 먼저 나온다.
+   *
+   * 이름이 카카오 닉네임에서 오다 보니 대부분 한글이고, 한국어가 아직 익숙하지 않은
+   * 회원에게는 명단이 읽을 수 없는 글자로만 남는다. 별명이 아니라 같은 사람의 이름을
+   * 다른 글자로 적어 둔 것이라, 실명만 쓰는 모임(allow_nicknames=false)에서도 그대로 나온다.
+   */
+  nameEn: text('name_en'),
   // 프로필 사진 — 브라우저에서 256px로 줄인 data URL. 친구 규모라 별도 저장소를 두지 않는다.
   avatar: text('avatar'),
   kakaoNameHistory: jsonb('kakao_name_history').$type<{ name: string; at: string }[]>().notNull().default([]),

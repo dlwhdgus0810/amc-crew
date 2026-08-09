@@ -1,5 +1,6 @@
 import {Redis} from '@upstash/redis';
 import {DaySchedule, Profiles, Selections, Showtime, UserProfile, UserSelection} from './types';
+import { Locale } from './i18n';
 import {seedDay} from './seed';
 import {amcConfigured, fetchAmcDay, theatreId} from './amc';
 import {dbGetProfiles, dbUpdateProfile} from './db/users';
@@ -214,12 +215,11 @@ export async function getProfiles(): Promise<Profiles> {
 
 export async function updateProfile(
   userId: string,
-  patch: { kakaoName?: string; nickname?: string | null }
+  patch: { kakaoName?: string; nickname?: string | null; nameEn?: string | null }
 ): Promise<UserProfile> {
   return dbUpdateProfile(userId, patch);
 }
 
-/** 표시 이름 해석: 앱 닉네임 → 카카오 닉네임 → 저장 시점 스냅샷 */
 /**
  * 이름을 못 찾았을 때 그 자리에 두는 값.
  *
@@ -229,7 +229,82 @@ export async function updateProfile(
  */
 export const UNKNOWN_NAME = '—';
 
-export function resolveDisplayName(profile: UserProfile | undefined, fallback: string): string {
+/**
+ * 표시 이름 해석 — 보는 사람의 언어에 따라 답이 달라진다.
+ *
+ *   한국어로 볼 때  : 닉네임 → 카카오 닉네임 → 스냅샷
+ *   그 밖의 언어    : 영어 이름 → 닉네임 → 카카오 닉네임 → 스냅샷
+ *
+ * 이름이 카카오 닉네임에서 오다 보니 명단이 거의 한글인데, 한국어가 아직 익숙하지 않은
+ * 회원에게는 그게 읽을 수 없는 글자의 나열이다. 영어 이름을 적어 둔 사람은 그 사람들 화면에서
+ * 읽히는 이름으로 나온다.
+ *
+ * 영어 이름이 닉네임보다 앞이다. 닉네임도 본인이 정한 이름이지만, 그것 역시 한글인 경우가
+ * 대부분이라 뒤에 두면 이 기능이 하려던 일을 못 한다.
+ *
+ * locale을 안 주면 한국어로 본다. 사람이 보는 화면이 아니라 데이터에 이름을 박아 넣는
+ * 자리(크론·저장용 스냅샷)에서 그렇게 쓴다 — 그 자리에는 「보는 사람」이 없다.
+ */
+/** users 행에서 이름에 쓰는 칸만 — 어느 칸이 이름을 만드는지 아는 곳을 하나로 둔다 */
+export interface NameRow {
+  kakaoName: string;
+  nickname?: string | null;
+  nameEn?: string | null;
+}
+
+/**
+ * users 행을 그대로 받아 표시 이름을 만든다.
+ *
+ * 이름을 붙이는 자리가 열대여섯 군데인데, 예전에는 그때마다 프로필 모양의 객체를 손으로
+ * 지어 resolveDisplayName에 넘겼다. 이름에 쓰이는 칸이 하나 늘 때마다 그 열대여섯 군데를
+ * 빠짐없이 고쳐야 했고, 하나를 빠뜨려도 타입은 통과한다 — 그 화면만 조용히 예전 이름으로 남는다.
+ *
+ * dropNickname은 실명만 쓰는 모임(allowNicknames=false)에서 켠다. 영어 이름은 그때도 남는다 —
+ * 그건 다른 사람 행세가 아니라 같은 이름을 읽을 수 있는 글자로 적어 둔 것이다.
+ */
+export function nameOf(
+  row: NameRow | undefined,
+  fallback: string,
+  locale: Locale = 'ko',
+  dropNickname = false
+): string {
+  if (!row) return fallback;
+  return resolveDisplayName(
+    {
+      kakaoName: row.kakaoName,
+      ...(!dropNickname && row.nickname ? { nickname: row.nickname } : {}),
+      ...(row.nameEn ? { nameEn: row.nameEn } : {}),
+      kakaoNameHistory: [],
+    },
+    fallback,
+    locale
+  );
+}
+
+/**
+ * 아직 정해지지 않은 이름 — 받는 사람의 언어를 알게 될 때 비로소 정해진다.
+ *
+ * 알림은 받는 사람마다 그 사람의 언어로 문구를 만든다(buildNotice). 그런데 문구 안의
+ * 이름을 미리 문자열로 굳혀 넘기면 그 한 사람 몫만 맞는다 — 보내는 사람 화면이 한국어면
+ * 영어로 보는 친구에게도 한글 이름이 실려 간다. 그래서 이름도 「언어를 받으면 답하는 것」으로
+ * 넘긴다.
+ */
+export type LocalName = (locale: Locale) => string;
+
+/** users 행(또는 프로필)을 알림에 실을 수 있는 이름으로 감싼다 */
+export function localName(row: NameRow | undefined, fallback: string): LocalName {
+  return (locale) => nameOf(row, fallback, locale);
+}
+
+export function resolveDisplayName(
+  profile: UserProfile | undefined,
+  fallback: string,
+  locale: Locale = 'ko'
+): string {
+  if (locale !== 'ko') {
+    const nameEn = profile?.nameEn?.trim();
+    if (nameEn) return nameEn;
+  }
   const nickname = profile?.nickname?.trim();
   if (nickname) return nickname;
   if (profile?.kakaoName) return profile.kakaoName;

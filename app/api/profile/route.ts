@@ -6,6 +6,7 @@ import { resolveDisplayName } from '@/lib/store';
 import { dbGetUser, dbUpdateProfile, ensureUser } from '@/lib/db/users';
 import { todayLocal } from '@/lib/dates';
 import { isLocale, Locale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from '@/lib/i18n';
+import { getLocale } from '@/lib/locale';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,10 @@ const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 /** base64 기준 상한 — 256px로 줄이면 보통 30KB 안쪽이라 넉넉하다 */
 const AVATAR_MAX_CHARS = 400_000;
 
-/** 프로필 부분 업데이트: 닉네임(빈 값이면 해제) / 생년월일 / 성별 / 언어 */
+/** 영어 이름에 허용하는 글자 — 로마자와 이름에 실제로 쓰이는 구두점만 */
+const NAME_EN = /^[A-Za-z][A-Za-z .'-]*$/;
+
+/** 프로필 부분 업데이트: 닉네임·영어 이름(빈 값이면 해제) / 생년월일 / 성별 / 언어 */
 export async function PUT(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
@@ -28,7 +32,7 @@ export async function PUT(req: NextRequest) {
     return await errJson(E.badRequest, 400);
   }
 
-  const patch: { nickname?: string | null; birthday?: string; gender?: string; locale?: Locale; avatar?: string | null; venmo?: string | null; zelle?: string | null } = {};
+  const patch: { nickname?: string | null; nameEn?: string | null; birthday?: string; gender?: string; locale?: Locale; avatar?: string | null; venmo?: string | null; zelle?: string | null } = {};
 
   if (body.venmo !== undefined) {
     const venmo = typeof body.venmo === 'string' ? body.venmo.trim().replace(/^@/, '') : '';
@@ -57,6 +61,27 @@ export async function PUT(req: NextRequest) {
       return await errJson(E.nickname, 400);
     }
     patch.nickname = nickname || null;
+  }
+
+  /*
+   * 영어 이름.
+   *
+   * 글자 종류를 좁게 잡는다 — 한글을 여기에 적어 두면 영어로 보는 사람 화면에서
+   * 이 칸이 하려던 일을 정확히 못 하게 된다. 빈 값이면 지운다.
+   */
+  if (body.nameEn !== undefined) {
+    if (typeof body.nameEn !== 'string') {
+      return await errJson(E.nameEnBad, 400);
+    }
+    // 가운데 두 칸 띄어쓰기 같은 것은 조용히 한 칸으로 모은다
+    const nameEn = body.nameEn.trim().replace(/\s+/g, ' ');
+    if (nameEn.length > 30) {
+      return await errJson(E.nameEn, 400);
+    }
+    if (nameEn && !NAME_EN.test(nameEn)) {
+      return await errJson(E.nameEnBad, 400);
+    }
+    patch.nameEn = nameEn || null;
   }
 
   if (body.birthday !== undefined) {
@@ -110,8 +135,13 @@ export async function PUT(req: NextRequest) {
   const row = await dbGetUser(user.id);
   const res = NextResponse.json({
     ok: true,
-    name: resolveDisplayName(profile, user.name),
+    /*
+     * 방금 언어를 바꿨다면 그 언어로 답한다 — 쿠키는 이 응답에 실려 나가는 참이라
+     * getLocale()이 읽으면 아직 바꾸기 전 값이다.
+     */
+    name: resolveDisplayName(profile, user.name, patch.locale ?? (await getLocale())),
     nickname: profile.nickname ?? null,
+    nameEn: profile.nameEn ?? null,
     kakaoName: profile.kakaoName || user.name,
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,

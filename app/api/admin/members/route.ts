@@ -4,7 +4,8 @@ import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
-import { resolveDisplayName } from '@/lib/store';
+import { nameOf } from '@/lib/store';
+import { getLocale } from '@/lib/locale';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,15 +24,16 @@ export async function GET() {
   if (!isAdmin(user)) {
     return await errJson(E.adminOnly, 403);
   }
+  const locale = await getLocale();
   const db = await getDb();
   const rows = await db
-    .select({ id: users.id, kakaoName: users.kakaoName, avatar: users.avatar })
+    .select({ id: users.id, kakaoName: users.kakaoName, nameEn: users.nameEn, avatar: users.avatar })
     .from(users)
     .orderBy(asc(users.kakaoName));
   return NextResponse.json({
     members: rows.map((r) => ({
       id: r.id,
-      name: resolveDisplayName({ kakaoName: r.kakaoName, kakaoNameHistory: [] }, r.kakaoName),
+      name: nameOf(r, r.kakaoName, locale, true),
       avatar: r.avatar,
     })),
   });

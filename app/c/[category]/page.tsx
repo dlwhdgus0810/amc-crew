@@ -12,7 +12,7 @@ import { dbGetUser } from '@/lib/db/users';
 import { listSignups } from '@/lib/db/signups';
 import { getSubscriptions, listPosts } from '@/lib/db/posts';
 import { friendsOf, incomingOf, listFriendships, outgoingOf } from '@/lib/db/friends';
-import { resolveDisplayName } from '@/lib/store';
+import { nameOf } from '@/lib/store';
 import CategoryClient from './category-client';
 import { LOADING, PostCardsSkeleton } from '@/app/skeleton';
 
@@ -20,14 +20,15 @@ export const dynamic = 'force-dynamic';
 
 /** 회원 전체 (관리자 전용) — /api/admin/members와 같은 모양 */
 async function adminMembers() {
+  const locale = await getLocale();
   const db = await getDb();
   const rows = await db
-    .select({ id: users.id, kakaoName: users.kakaoName, avatar: users.avatar })
+    .select({ id: users.id, kakaoName: users.kakaoName, nameEn: users.nameEn, avatar: users.avatar })
     .from(users)
     .orderBy(asc(users.kakaoName));
   return rows.map((r) => ({
     id: r.id,
-    name: resolveDisplayName({ kakaoName: r.kakaoName, kakaoNameHistory: [] }, r.kakaoName),
+    name: nameOf(r, r.kakaoName, locale, true),
     avatar: r.avatar,
   }));
 }

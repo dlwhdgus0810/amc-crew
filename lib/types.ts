@@ -45,6 +45,7 @@ export interface UserSelection {
 export interface UserProfile {
   kakaoName: string; // 최신 카카오 닉네임 (로그인마다 갱신)
   nickname?: string; // 사용자가 앱에서 설정한 닉네임 (있으면 표시에 우선 사용)
+  nameEn?: string; // 영어 이름 (한국어가 아닌 언어에서 가장 먼저 쓴다)
   kakaoNameHistory: { name: string; at: string }[]; // 카카오 닉네임 변경 이력 (보관용)
 }
 

@@ -12,7 +12,8 @@ import {
   settlementMembers,
   users,
 } from './schema';
-import { resolveDisplayName, UNKNOWN_NAME } from '../store';
+import { localName, NameRow, nameOf, UNKNOWN_NAME } from '../store';
+import { getLocale } from '../locale';
 import { catName, getCategory } from '../categories';
 import { adminIds } from '../auth';
 import { formatCents, payNote, shortCode, splitWithExtras, venmoLink } from '../money';
@@ -88,12 +89,8 @@ const N = {
   },
 };
 
-function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined, fallback: string): string {
-  if (!row) return fallback;
-  return resolveDisplayName(
-    { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] },
-    fallback
-  );
+function displayNameOf(row: NameRow | undefined, fallback: string, locale: Locale = DEFAULT_LOCALE): string {
+  return nameOf(row, fallback, locale);
 }
 
 /**
@@ -178,6 +175,7 @@ function headsOf(
 
 /** 모임의 정산 (없으면 null) */
 export async function getSettlement(postId: string): Promise<SettlementView | null> {
+  const locale = await getLocale();
   const db = await getDb();
   const [row] = await db.select().from(settlements).where(eq(settlements.postId, postId));
   if (!row) return null;
@@ -226,7 +224,7 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
     .filter(([, cents]) => cents > 0)
     .map(([userId, cents]) => ({
       userId,
-      name: displayNameOf(userById.get(userId), UNKNOWN_NAME),
+      name: displayNameOf(userById.get(userId), UNKNOWN_NAME, locale),
       avatar: userById.get(userId)?.avatar ?? null,
       cents,
     }))
@@ -236,14 +234,14 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
   return {
     payee: {
       id: row.payeeId,
-      name: displayNameOf(payee, UNKNOWN_NAME),
+      name: displayNameOf(payee, UNKNOWN_NAME, locale),
       venmo: payee?.venmo ?? null,
       zelle: payee?.zelle ?? null,
     },
     items,
     shares,
     totalCents: items.reduce((n, i) => n + i.amountCents, 0),
-    extraMembers: extras.map((id) => ({ id, name: displayNameOf(userById.get(id), UNKNOWN_NAME) })),
+    extraMembers: extras.map((id) => ({ id, name: displayNameOf(userById.get(id), UNKNOWN_NAME, locale) })),
     shortCode: row.shortCode ?? null,
     createdAt: row.createdAt.toISOString(),
   };
@@ -345,6 +343,19 @@ export async function notifySettlement(
   const [post] = await db.select().from(posts).where(eq(posts.id, postId));
   if (!post) return { sent: 0 };
 
+  /*
+   * 받을 사람 이름은 여기서 다시 짓는다.
+   *
+   * view.payee.name은 이 요청을 낸 사람(정산을 저장하거나 다시 보내기를 누른 호스트)의
+   * 언어로 이미 정해져 있다. 그 이름이 그대로 실려 나가면, 영어로 보는 사람에게도
+   * 호스트 화면에서 보이던 한글 이름이 간다 — 문구는 영어인데 이름만 한글인 줄이 된다.
+   */
+  const [payeeRow] = await db
+    .select({ kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn })
+    .from(users)
+    .where(eq(users.id, view.payee.id));
+  const payeeName = localName(payeeRow, view.payee.name);
+
   // 다시 보내는 것이면 받을 사람 사본은 안 나간다 — 처음 저장했을 때 이미 받았다
   const reminder = onlyUserIds !== undefined;
   const pick_ = reminder ? new Set(onlyUserIds) : null;
@@ -400,7 +411,7 @@ export async function notifySettlement(
 
     const plain = `${cat?.emoji ?? ''} ${pick(locale, N.ask as Msg, {
       cat: catName(post.category, locale),
-      payee: view.payee.name,
+      payee: payeeName(locale),
       amount: formatCents(target.cents),
       when: whenLabelShort(post.date, post.startTime, locale),
       place: post.location,

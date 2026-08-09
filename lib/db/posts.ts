@@ -3,7 +3,8 @@ import { cache } from 'react';
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { commentLikes, favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
-import { resolveDisplayName, UNKNOWN_NAME } from '../store';
+import { LocalName, NameRow, nameOf, UNKNOWN_NAME } from '../store';
+import { getLocale } from '../locale';
 import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendPush } from '../push';
@@ -96,15 +97,12 @@ export interface CommentView {
  * 같은 사람이 모임마다 다른 이름으로 보일 수 있다는 뜻이고, 그게 이 설정의 목적이다.
  */
 function displayNameOf(
-  row: { kakaoName: string; nickname: string | null } | undefined,
+  row: NameRow | undefined,
   fallback: string,
+  locale: Locale,
   allowNicknames = false
 ): string {
-  if (!row) return fallback;
-  return resolveDisplayName(
-    { kakaoName: row.kakaoName, ...(allowNicknames && row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] },
-    fallback
-  );
+  return nameOf(row, fallback, locale, !allowNicknames);
 }
 
 /**
@@ -207,11 +205,17 @@ const NAME_COLS = {
   id: users.id,
   kakaoName: users.kakaoName,
   nickname: users.nickname,
+  nameEn: users.nameEn,
   avatar: users.avatar,
 };
 
 async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: string): Promise<PostView[]> {
   if (postRows.length === 0) return [];
+  /*
+   * 이름은 보는 사람의 언어에 따라 달라진다 (영어 이름을 적어 둔 회원).
+   * 이 함수를 부르는 곳은 전부 요청 안이라 쿠키를 읽을 수 있고, cache로 묶여 한 번만 읽는다.
+   */
+  const locale = await getLocale();
   const db = await getDb();
   const postIds = postRows.map((p) => p.id);
 
@@ -298,7 +302,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     if (!byPost.has(p.postId)) byPost.set(p.postId, []);
     byPost.get(p.postId)!.push({
       id: p.userId,
-      name: displayNameOf(userById.get(p.userId), UNKNOWN_NAME, nickOk.get(p.postId) ?? false),
+      name: displayNameOf(userById.get(p.userId), UNKNOWN_NAME, locale, nickOk.get(p.postId) ?? false),
       avatar: userById.get(p.userId)?.avatar ?? null,
       hostCount: hostCounts.get(p.userId) ?? 0,
     });
@@ -319,7 +323,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     commentsByPost.get(c.postId)!.push({
       id: c.id,
       userId: c.userId,
-      name: hideName ? null : displayNameOf(userById.get(c.userId), UNKNOWN_NAME, nickOk.get(c.postId) ?? false),
+      name: hideName ? null : displayNameOf(userById.get(c.userId), UNKNOWN_NAME, locale, nickOk.get(c.postId) ?? false),
       anonymous: c.anonymous,
       body: c.body,
       createdAt: c.createdAt.toISOString(),
@@ -331,9 +335,9 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
 
   return postRows.map((p) => ({
     ...shellOf(p),
-    authorName: displayNameOf(userById.get(p.authorId), UNKNOWN_NAME, p.allowNicknames),
+    authorName: displayNameOf(userById.get(p.authorId), UNKNOWN_NAME, locale, p.allowNicknames),
     coHost: p.coHostId
-      ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), UNKNOWN_NAME, p.allowNicknames) }
+      ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), UNKNOWN_NAME, locale, p.allowNicknames) }
       : null,
     participants: byPost.get(p.id) ?? [],
     participantCount: (byPost.get(p.id) ?? []).length,
@@ -415,7 +419,7 @@ export async function toggleCommentLike(
 export async function notifyComment(
   post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
   commenterId: string,
-  commenterName: string,
+  commenterName: LocalName,
   body: string,
   origin: string,
   /** 답글이면 원 댓글 작성자 — 참가자가 아니어도 알려준다 */
@@ -450,7 +454,7 @@ export async function notifyComment(
          * 이 문자열 하나가 인앱·카톡·푸시로 그대로 나가므로(sendNotice), 여기서 막으면 세 곳이 함께 막힌다.
          * 화면에서는 가려지는데 알림에는 이름이 찍히면, 익명으로 적은 사람은 가려진 줄 알고 적는다.
          */
-        name: anonymous ? pick(locale, N.anon) : commenterName,
+        name: anonymous ? pick(locale, N.anon) : commenterName(locale),
         body: snippet,
       })}`,
     N.btnComment
@@ -614,7 +618,7 @@ export async function notifyFriendJoin(
     title?: string | null;
     visibility?: string | null;
   },
-  joinerName: string,
+  joinerName: LocalName,
   recipientIds: string[],
   /**
    * 참가한 사람의 id — 관리자면 알리지 않는다.
@@ -633,7 +637,7 @@ export async function notifyFriendJoin(
     NOTIF.friendJoin,
     (locale) =>
       `🤝 ${pick(locale, N.friendJoinLine, {
-        name: joinerName,
+        name: joinerName(locale),
         text: describeForNotification(post.category, N.meetup, post.date, post.startTime, post.location, post.title, locale),
       })}`
   );
@@ -642,7 +646,7 @@ export async function notifyFriendJoin(
 /** 남이 나를 모임에 넣었을 때 — 넣긴 사람에게 한 줄 */
 export async function notifyAddedToPost(
   post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
-  actorName: string,
+  actorName: LocalName,
   addedUserId: string
 ): Promise<void> {
   await insertInAppNotice(
@@ -651,7 +655,7 @@ export async function notifyAddedToPost(
     NOTIF.added,
     (locale) =>
       `🤝 ${pick(locale, N.addedLine, {
-        name: actorName,
+        name: actorName(locale),
         text: describeForNotification(post.category, N.meetup, post.date, post.startTime, post.location, post.title, locale),
       })}`
   );
@@ -665,7 +669,7 @@ export async function notifyAddedToPost(
  */
 export async function notifyCoHost(
   post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
-  actorName: string,
+  actorName: LocalName,
   coHostId: string
 ): Promise<void> {
   await insertInAppNotice(
@@ -674,7 +678,7 @@ export async function notifyCoHost(
     NOTIF.added,
     (locale) =>
       `🤝 ${pick(locale, N.coHostLine, {
-        name: actorName,
+        name: actorName(locale),
         text: describeForNotification(post.category, N.meetup, post.date, post.startTime, post.location, post.title, locale),
       })}`
   );
@@ -721,7 +725,8 @@ function postsChanged(): void {
 export async function createPost(input: {
   category: string;
   authorId: string;
-  authorName: string;
+  /** 알림 문구에 실을 이름 — 받는 사람의 언어로 정해진다 */
+  authorName: LocalName;
   /** 같이 여는 사람 (최대 한 명) — 참가자로도 함께 들어간다 */
   coHostId?: string | null;
   /** 이 모임에서 닉네임으로 보여도 되는지 (기본 실명) */
@@ -776,7 +781,7 @@ export async function createPost(input: {
           input.title,
           locale
         ),
-        name: input.authorName,
+        name: input.authorName(locale),
       })
   );
 
@@ -814,7 +819,7 @@ export async function createPost(input: {
     input.visibility === 'link' && !input.silent && (input.inviteFriendIds?.length ?? 0) > 0
       ? await buildNotice(input.inviteFriendIds!, (locale) =>
           `🤝 ${pick(locale, N.inviteLine, {
-            name: input.authorName,
+            name: input.authorName(locale),
             text: describeForNotification(
               input.category,
               N.meetup,
@@ -942,7 +947,8 @@ export async function updatePost(input: {
   postId: string;
   category: string;
   actorId: string;
-  actorName: string;
+  /** 알림 문구에 실을 이름 — 받는 사람의 언어로 정해진다 */
+  actorName: LocalName;
   title: string | null;
   titleMeta: TitleMeta | null;
   /** null이면 날짜 미정 — 나중에 날짜를 정하면 여기로 값이 들어온다 */
@@ -980,7 +986,7 @@ export async function updatePost(input: {
         input.title,
         locale
       ),
-      name: input.actorName,
+      name: input.actorName(locale),
     })
   );
 
@@ -1049,7 +1055,7 @@ export async function updatePost(input: {
 export async function deletePost(
   post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
   actorId: string,
-  actorName: string,
+  actorName: LocalName,
   origin?: string,
   /**
    * 취소 알림을 보내지 않는다.
@@ -1069,7 +1075,7 @@ export async function deletePost(
     (locale) =>
       pick(locale, N.byActor, {
         text: describeForNotification(post.category, N.cancelled, post.date, post.startTime, post.location, post.title, locale),
-        name: actorName,
+        name: actorName(locale),
       }),
     N.btnOther
   );
@@ -1353,6 +1359,7 @@ export async function restoreNotification(id: string, userId: string): Promise<b
 
 /** 관리자 화면용 — 지워진 알림 목록 (누가 무엇을 지웠는지) */
 export async function listDeletedNotifications(limit = 100) {
+  const locale = await getLocale();
   const db = await getDb();
   const rows = await db
     .select({
@@ -1363,6 +1370,7 @@ export async function listDeletedNotifications(limit = 100) {
       userId: notifications.userId,
       kakaoName: users.kakaoName,
       nickname: users.nickname,
+      nameEn: users.nameEn,
     })
     .from(notifications)
     .innerJoin(users, eq(notifications.userId, users.id))
@@ -1372,7 +1380,7 @@ export async function listDeletedNotifications(limit = 100) {
   return rows.map((r) => ({
     id: r.id,
     message: r.message,
-    name: displayNameOf({ kakaoName: r.kakaoName, nickname: r.nickname }, UNKNOWN_NAME),
+    name: displayNameOf({ kakaoName: r.kakaoName, nickname: r.nickname, nameEn: r.nameEn }, UNKNOWN_NAME, locale),
     createdAt: r.createdAt.toISOString(),
     deletedAt: r.deletedAt!.toISOString(),
   }));

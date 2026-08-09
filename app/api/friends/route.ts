@@ -14,7 +14,7 @@ import {
   sharesMeetup,
 } from '@/lib/db/friends';
 import { ONLINE_WINDOW_MINUTES } from '@/lib/db/presence';
-import { getProfiles, resolveDisplayName } from '@/lib/store';
+import { getProfiles, localName } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const myName = resolveDisplayName((await getProfiles())[user.id], user.name);
+    const myName = localName((await getProfiles())[user.id], user.name);
     if (result === 'accepted') {
       // 상대가 먼저 보낸 요청이 있어서 그 자리에서 맺어졌다
       await notifyFriendAccepted(targetId, myName);

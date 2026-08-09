@@ -3,7 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
-import { getProfiles, getSelections, resolveDisplayName } from '@/lib/store';
+import { getProfiles, getSelections, localName } from '@/lib/store';
 import { addParticipants, createPost, findPostByShowtime } from '@/lib/db/posts';
 import { AMC_THEATRE_NAME } from '@/lib/amc';
 import { Showtime } from '@/lib/types';
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   const postId = await createPost({
     category: 'movienight',
     authorId: user.id,
-    authorName: resolveDisplayName(profiles[user.id], user.name),
+    authorName: localName(profiles[user.id], user.name),
     title: `${showtime.movieName} (${showtime.format})`,
     date: showtime.date,
     startTime: showtime.time,

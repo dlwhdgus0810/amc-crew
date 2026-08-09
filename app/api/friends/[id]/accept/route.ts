@@ -3,7 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { acceptFriend, notifyFriendAccepted } from '@/lib/db/friends';
-import { getProfiles, resolveDisplayName } from '@/lib/store';
+import { getProfiles, localName } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   }
 
   try {
-    const myName = resolveDisplayName((await getProfiles())[user.id], user.name);
+    const myName = localName((await getProfiles())[user.id], user.name);
     await notifyFriendAccepted(id, myName);
   } catch (e) {
     console.error('[friends] notify failed:', e);

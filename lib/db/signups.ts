@@ -1,7 +1,8 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { categorySignups, users } from './schema';
-import { resolveDisplayName } from '../store';
+import { nameOf } from '../store';
+import { getLocale } from '../locale';
 import { catName, getCategory } from '../categories';
 import { sendPush } from '../push';
 import { insertInAppNotice } from './posts';
@@ -37,6 +38,7 @@ export interface SignupView {
 
 /** 이 카테고리에 신청한 사람들 (신청한 순서대로) */
 export async function listSignups(category: string): Promise<SignupView[]> {
+  const locale = await getLocale();
   const db = await getDb();
   const rows = await db
     .select({
@@ -44,6 +46,7 @@ export async function listSignups(category: string): Promise<SignupView[]> {
       createdAt: categorySignups.createdAt,
       kakaoName: users.kakaoName,
       nickname: users.nickname,
+      nameEn: users.nameEn,
       avatar: users.avatar,
     })
     .from(categorySignups)
@@ -53,10 +56,7 @@ export async function listSignups(category: string): Promise<SignupView[]> {
 
   return rows.map((r) => ({
     userId: r.userId,
-    name: resolveDisplayName(
-      { kakaoName: r.kakaoName, ...(r.nickname ? { nickname: r.nickname } : {}), kakaoNameHistory: [] },
-      r.kakaoName
-    ),
+    name: nameOf(r, r.kakaoName, locale),
     avatar: r.avatar,
     createdAt: r.createdAt.toISOString(),
   }));

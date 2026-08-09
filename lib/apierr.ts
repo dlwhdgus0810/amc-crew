@@ -48,6 +48,12 @@ export const E = {
   requestNotFound: { ko: '제안을 찾을 수 없어요.', en: 'Suggestion not found.', es: 'Propuesta no encontrada.' },
   nickname: { ko: '닉네임은 20자 이하로 입력해주세요.', en: 'Nickname must be 20 characters or fewer.', es: 'El apodo admite 20 caracteres como máximo.' },
   nicknameBad: { ko: '닉네임 형식이 올바르지 않아요.', en: 'That nickname isn’t valid.', es: 'Ese apodo no es válido.' },
+  nameEn: { ko: '영어 이름은 30자 이하로 입력해주세요.', en: 'English name must be 30 characters or fewer.', es: 'El nombre en inglés admite 30 caracteres como máximo.' },
+  nameEnBad: {
+    ko: '영어 이름에는 로마자와 공백, - . \' 만 쓸 수 있어요.',
+    en: 'English name can use Latin letters, spaces, and - . \' only.',
+    es: 'El nombre en inglés solo admite letras latinas, espacios y - . \'.',
+  },
   birthday: { ko: '생년월일을 올바르게 입력해주세요.', en: 'Enter a valid date of birth.', es: 'Introduce una fecha de nacimiento válida.' },
   gender: { ko: '성별을 선택해주세요.', en: 'Choose a gender.', es: 'Elige un género.' },
   locale: { ko: '지원하지 않는 언어입니다.', en: 'Unsupported language.', es: 'Idioma no admitido.' },

@@ -48,6 +48,15 @@ const T = {
     es: 'Déjalo vacío para usar tu apodo de Kakao ({name}).',
   },
   kakaoNamePrefix: { ko: '카카오: {name}', en: 'Kakao: {name}', es: 'Kakao: {name}' },
+  nameEn: { ko: '영어 이름', en: 'English name', es: 'Nombre en inglés' },
+  nameEnPh: { ko: 'English name', en: 'English name', es: 'English name' },
+  nameEnSaved: { ko: '영어 이름을 저장했어요.', en: 'English name saved.', es: 'Nombre en inglés guardado.' },
+  nameEnHint: {
+    ko: '한국어가 아닌 언어로 보는 사람에게는 이 이름이 먼저 보여요. 비워두면 위 이름이 그대로 보여요.',
+    en: 'Anyone reading the app in a language other than Korean sees this name first. Leave it empty to keep the name above.',
+    es: 'Quien use la app en un idioma que no sea coreano verá este nombre primero. Déjalo vacío para mantener el de arriba.',
+  },
+  nameEnNone: { ko: '아직 없어요', en: 'Not set', es: 'Sin definir' },
   venmo: { ko: 'Venmo 아이디', en: 'Venmo username', es: 'Usuario de Venmo' },
   venmoDesc: {
     ko: '모임 정산에서 다른 사람이 바로 보낼 수 있게 해줘요. 돈은 앱을 거치지 않고 Venmo에서 직접 오갑니다.',
@@ -184,6 +193,9 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
   const [user, setUser] = useState<{ id: string; name: string } | null>(viewer.user);
   const isAdmin = viewer.isAdmin;
   const [nickname, setNickname] = useState<string | null>(viewer.nickname);
+  const [nameEn, setNameEn] = useState<string | null>(viewer.nameEn);
+  const [nameEnInput, setNameEnInput] = useState('');
+  const [editingNameEn, setEditingNameEn] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(viewer.avatar);
   const [kakaoName, setKakaoName] = useState(viewer.kakaoName);
   const [birthday, setBirthday] = useState(viewer.birthday ?? '');
@@ -269,6 +281,8 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
       if (!res.ok) throw new Error(data.error ?? t(T.saveFailed));
       setUser((u) => (u ? { ...u, name: data.name } : u));
       setNickname(data.nickname ?? null);
+      if (data.nameEn !== undefined) setNameEn(data.nameEn ?? null);
+      setEditingNameEn(false);
       if (data.avatar !== undefined) setAvatar(data.avatar);
       if (data.venmo !== undefined) setVenmo(data.venmo ?? '');
       if (data.zelle !== undefined) setZelle(data.zelle ?? '');
@@ -486,6 +500,49 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
               onClick={() => {
                 setNameInput(nickname ?? '');
                 setEditingName(true);
+              }}
+            >
+              {t(T.edit)}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <h2>{t(T.nameEn)}</h2>
+      <div className="card">
+        {editingNameEn ? (
+          <div>
+            <div className="field-row">
+              <input
+                type="text"
+                placeholder={t(T.nameEnPh)}
+                value={nameEnInput}
+                maxLength={30}
+                onChange={(e) => setNameEnInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !saving && saveProfile({ nameEn: nameEnInput }, t(T.nameEnSaved))}
+                autoFocus
+              />
+              <button className="secondary" disabled={saving} onClick={() => saveProfile({ nameEn: nameEnInput }, t(T.nameEnSaved))}>
+                {saving ? t(T.saving) : t(T.save)}
+              </button>
+              <button className="secondary" disabled={saving} onClick={() => setEditingNameEn(false)}>
+                {t(T.cancel)}
+              </button>
+            </div>
+            <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '10px 2px 0' }}>
+              {t(T.nameEnHint)}
+            </p>
+          </div>
+        ) : (
+          <div className="field-row" style={{ justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 600, fontSize: 17, color: nameEn ? undefined : 'var(--text-dim)' }}>
+              {nameEn ?? t(T.nameEnNone)}
+            </span>
+            <button
+              className="secondary"
+              onClick={() => {
+                setNameEnInput(nameEn ?? '');
+                setEditingNameEn(true);
               }}
             >
               {t(T.edit)}

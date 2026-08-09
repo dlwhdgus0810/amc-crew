@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
-import { getProfiles, resolveDisplayName } from '@/lib/store';
+import { getProfiles, localName } from '@/lib/store';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { addParticipants, createPost, getPost, listPosts, notifyAddedToPost } from '@/lib/db/posts';
 import { clearSignups, listSignups } from '@/lib/db/signups';
@@ -109,7 +109,8 @@ export async function POST(req: NextRequest) {
 
   await ensureUser(user);
   const profile = (await getProfiles())[user.id];
-  const authorName = resolveDisplayName(profile, user.name);
+  // 알림에 실을 이름 — 받는 사람마다 그 사람의 언어로 정해진다
+  const authorName = localName(profile, user.name);
   /*
    * 같이 여는 사람. 화면에서 친구만 고르게 되어 있지만 서버에서 다시 확인한다 —
    * 오래 열어 둔 화면이 예전 목록을 들고 있을 수 있고, 점수가 걸린 값이라 더 그렇다.

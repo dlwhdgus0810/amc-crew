@@ -31,6 +31,29 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-09T11:00',
+    notable: true,
+    title: { ko: '영어 이름을 적어 둘 수 있어요', en: 'You can add an English name' },
+    items: [
+      {
+        ko: '이름이 카카오 닉네임에서 오다 보니 명단이 거의 한글이에요. 한국어가 아직 익숙하지 않은 분들에게는 그게 읽을 수 없는 글자로만 보여요.',
+        en: 'Names come from Kakao, so most of them are in Hangul — which, if you don’t read Korean yet, is just shapes.',
+      },
+      {
+        ko: '프로필 → 영어 이름에 적어 두면, 앱을 English나 Español로 보는 분들에게 그 이름으로 보여요. 한국어로 보는 분들에게는 지금 이름 그대로예요.',
+        en: 'Profile → English name. Anyone reading the app in English or Spanish sees that name instead. Korean readers see your name exactly as before.',
+      },
+      {
+        ko: '모임 명단, 댓글, 친구, 순위표, 정산은 물론 알림 문구 속 이름까지 각자 보는 언어로 나와요.',
+        en: 'Rosters, comments, friends, rankings, settlements — and the names inside notifications — all follow the language each person is reading in.',
+      },
+      {
+        ko: '안 적어도 괜찮아요. 비워 두면 지금과 똑같아요.',
+        en: 'Leaving it blank is fine — nothing changes.',
+      },
+    ],
+  },
+  {
     at: '2026-08-07T14:20',
     title: { ko: '앱 이야기는 건의함으로 해주세요', en: 'Ask about the app inside the app' },
     items: [

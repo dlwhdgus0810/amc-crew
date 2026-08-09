@@ -2,7 +2,7 @@ import { and, eq, gte, inArray } from 'drizzle-orm';
 import { getDb } from './index';
 import { posts, recurringRules } from './schema';
 import { createPost } from './posts';
-import { getProfiles, resolveDisplayName, UNKNOWN_NAME } from '../store';
+import { getProfiles, LocalName, localName, UNKNOWN_NAME } from '../store';
 import { addDays, nextWeekdayOnOrAfter, todayLocal, weekdayOf } from '../dates';
 import type { Msg } from '../i18n';
 
@@ -16,7 +16,8 @@ const HORIZON_DAYS = 7;
 export interface RuleInput {
   category: string;
   authorId: string;
-  authorName: string;
+  /** 알림 문구에 실을 이름 — 받는 사람의 언어로 정해진다 */
+  authorName: LocalName;
   /** 같이 여는 사람 — 다음 주 회차에도 그대로 이어진다 */
   coHostId?: string | null;
   /** 닉네임 허용 여부도 다음 주 회차로 이어진다 */
@@ -127,7 +128,7 @@ export async function materializeDueOccurrences(origin: string): Promise<{ creat
       await createPost({
         category: rule.category,
         authorId: rule.authorId,
-        authorName: resolveDisplayName(profiles[rule.authorId], UNKNOWN_NAME),
+        authorName: localName(profiles[rule.authorId], UNKNOWN_NAME),
         ...(rule.coHostId ? { coHostId: rule.coHostId } : {}),
         ...(rule.allowNicknames ? { allowNicknames: true } : {}),
         ...(rule.title ? { title: rule.title } : {}),

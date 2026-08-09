@@ -2,6 +2,7 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { getSessionUser, IMPERSONATOR_COOKIE, isAdmin, verifySessionToken } from './auth';
 import { resolveDisplayName } from './store';
+import { getLocale } from './locale';
 import { dbGetUser } from './db/users';
 import { toState, type BanState } from './db/bans';
 import { unreadCount } from './db/posts';
@@ -19,6 +20,8 @@ import { unreadCount } from './db/posts';
 export interface Viewer {
   user: { id: string; name: string } | null;
   nickname: string | null;
+  /** 영어 이름 — 프로필에서 고치고, 한국어가 아닌 언어에서 이 이름이 먼저 나온다 */
+  nameEn: string | null;
   avatar: string | null;
   venmo: string | null;
   zelle: string | null;
@@ -40,6 +43,7 @@ export interface Viewer {
 const EMPTY: Viewer = {
   user: null,
   nickname: null,
+  nameEn: null,
   avatar: null,
   venmo: null,
   zelle: null,
@@ -59,9 +63,14 @@ export const getViewer = cache(async (): Promise<Viewer> => {
   const realUser = verifySessionToken((await cookies()).get(IMPERSONATOR_COOKIE)?.value);
   if (!user) return EMPTY;
 
-  const [row, unread] = await Promise.all([dbGetUser(user.id), unreadCount(user.id)]);
+  const [row, unread, locale] = await Promise.all([dbGetUser(user.id), unreadCount(user.id), getLocale()]);
   const profile = row
-    ? { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] }
+    ? {
+        kakaoName: row.kakaoName,
+        ...(row.nickname ? { nickname: row.nickname } : {}),
+        ...(row.nameEn ? { nameEn: row.nameEn } : {}),
+        kakaoNameHistory: [],
+      }
     : undefined;
 
   /*
@@ -70,8 +79,9 @@ export const getViewer = cache(async (): Promise<Viewer> => {
    * 브라우저까지 그대로 간다. 칸이 늘어날 때마다 여기서 다시 정해야 한다.
    */
   return {
-    user: { id: user.id, name: resolveDisplayName(profile, user.name) },
+    user: { id: user.id, name: resolveDisplayName(profile, user.name, locale) },
     nickname: row?.nickname ?? null,
+    nameEn: row?.nameEn ?? null,
     avatar: row?.avatar ?? null,
     venmo: row?.venmo ?? null,
     zelle: row?.zelle ?? null,

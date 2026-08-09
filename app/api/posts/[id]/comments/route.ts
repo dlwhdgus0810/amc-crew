@@ -4,7 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { addComment, getComment, getPost, notifyComment } from '@/lib/db/posts';
-import { getProfiles, resolveDisplayName } from '@/lib/store';
+import { getProfiles, localName } from '@/lib/store';
 import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await notifyComment(
       post,
       user.id,
-      resolveDisplayName(profile, user.name),
+      localName(profile, user.name),
       text,
       siteUrl(req.nextUrl.origin),
       parentAuthorId,

@@ -8,7 +8,7 @@ import { getViewer } from '@/lib/session';
 import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
 import { friendsOf, listFriendships } from '@/lib/db/friends';
-import { resolveDisplayName } from '@/lib/store';
+import { nameOf } from '@/lib/store';
 import { siteUrl } from '@/lib/site';
 import { catName } from '@/lib/categories';
 import { getLocale } from '@/lib/locale';
@@ -65,14 +65,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 /** 회원 전체 (관리자 전용) — /api/admin/members와 같은 모양 */
 async function adminMembers() {
+  const locale = await getLocale();
   const db = await getDb();
   const rows = await db
-    .select({ id: users.id, kakaoName: users.kakaoName, avatar: users.avatar })
+    .select({ id: users.id, kakaoName: users.kakaoName, nameEn: users.nameEn, avatar: users.avatar })
     .from(users)
     .orderBy(asc(users.kakaoName));
   return rows.map((r) => ({
     id: r.id,
-    name: resolveDisplayName({ kakaoName: r.kakaoName, kakaoNameHistory: [] }, r.kakaoName),
+    name: nameOf(r, r.kakaoName, locale, true),
     avatar: r.avatar,
   }));
 }

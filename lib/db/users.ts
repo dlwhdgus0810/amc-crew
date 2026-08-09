@@ -9,8 +9,8 @@ const KAKAO_NAME_HISTORY_MAX = 50;
 /**
  * 이름을 붙이는 데 쓰는 회원 명부.
  *
- * 세 칸만 읽는다. 예전에는 select *였는데, 소비자인 resolveDisplayName은 nickname과
- * kakaoName만 보면서 아바타(256px data URL)와 카카오 토큰까지 매번 끌고 왔다.
+ * 이름에 쓰는 칸만 읽는다. 예전에는 select *였는데, 소비자인 resolveDisplayName은
+ * 이름 칸들만 보면서 아바타(256px data URL)와 카카오 토큰까지 매번 끌고 왔다.
  * kakaoNameHistory는 보관용이라 화면에 쓰는 곳이 없다 — 이력이 필요한 dbUpdateProfile은
  * 자기 행을 따로 읽으므로 여기서 빠져도 이력은 그대로 쌓인다.
  *
@@ -19,13 +19,14 @@ const KAKAO_NAME_HISTORY_MAX = 50;
 export const dbGetProfiles = cache(async (): Promise<Profiles> => {
   const db = await getDb();
   const rows = await db
-    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname })
+    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn })
     .from(users);
   const out: Profiles = {};
   for (const row of rows) {
     out[row.id] = {
       kakaoName: row.kakaoName,
       ...(row.nickname ? { nickname: row.nickname } : {}),
+      ...(row.nameEn ? { nameEn: row.nameEn } : {}),
       kakaoNameHistory: [],
     };
   }
@@ -57,17 +58,19 @@ export async function setShowPresence(userId: string, on: boolean): Promise<void
 
 /**
  * 프로필 upsert. nickname: null 이면 커스텀 닉네임 해제(카카오 닉네임 폴백 복귀).
+ * nameEn: null 이면 영어 이름 지우기 — 그러면 어느 언어에서든 다시 한국어 이름이 나온다.
  * kakaoName이 직전 이력과 다르면 kakaoNameHistory에 스냅샷을 쌓는다.
  */
 export async function dbUpdateProfile(
   userId: string,
-  patch: { kakaoName?: string; nickname?: string | null; birthday?: string; gender?: string; locale?: string; avatar?: string | null; venmo?: string | null; zelle?: string | null }
+  patch: { kakaoName?: string; nickname?: string | null; nameEn?: string | null; birthday?: string; gender?: string; locale?: string; avatar?: string | null; venmo?: string | null; zelle?: string | null }
 ): Promise<UserProfile> {
   const db = await getDb();
   const existing = (await db.select().from(users).where(eq(users.id, userId)))[0];
 
   let kakaoName = existing?.kakaoName ?? '';
   let nickname: string | null = existing?.nickname ?? null;
+  let nameEn: string | null = existing?.nameEn ?? null;
   let history = existing?.kakaoNameHistory ?? [];
   const birthday = patch.birthday ?? existing?.birthday ?? null;
   const gender = patch.gender ?? existing?.gender ?? null;
@@ -91,16 +94,21 @@ export async function dbUpdateProfile(
   } else if (patch.nickname !== undefined) {
     nickname = patch.nickname;
   }
+  if (patch.nameEn === null) {
+    nameEn = null;
+  } else if (patch.nameEn !== undefined) {
+    nameEn = patch.nameEn;
+  }
 
   await db
     .insert(users)
-    .values({ id: userId, kakaoName, nickname, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo, zelle })
+    .values({ id: userId, kakaoName, nickname, nameEn, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo, zelle })
     .onConflictDoUpdate({
       target: users.id,
-      set: { kakaoName, nickname, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo, zelle },
+      set: { kakaoName, nickname, nameEn, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo, zelle },
     });
 
-  return { kakaoName, ...(nickname ? { nickname } : {}), kakaoNameHistory: history };
+  return { kakaoName, ...(nickname ? { nickname } : {}), ...(nameEn ? { nameEn } : {}), kakaoNameHistory: history };
 }
 
 /**

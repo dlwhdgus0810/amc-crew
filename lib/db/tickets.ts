@@ -1,7 +1,8 @@
 import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { notifications, tickets, users } from './schema';
-import { resolveDisplayName, UNKNOWN_NAME } from '../store';
+import { LocalName, nameOf, UNKNOWN_NAME } from '../store';
+import { getLocale } from '../locale';
 import { notifyAdmins } from './admin-notify';
 import { sendPush } from '../push';
 import { Msg, pick, toLocale } from '../i18n';
@@ -52,6 +53,7 @@ async function localeOf(userId: string) {
 
 /** userId를 주면 그 사람 것만 (건의함), 없으면 전체 (관리자) */
 export async function listTickets(userId?: string): Promise<TicketView[]> {
+  const locale = await getLocale();
   const db = await getDb();
   const rows = userId
     ? await db.select().from(tickets).where(eq(tickets.userId, userId)).orderBy(desc(tickets.createdAt))
@@ -59,7 +61,7 @@ export async function listTickets(userId?: string): Promise<TicketView[]> {
   if (rows.length === 0) return [];
 
   const profiles = await db
-    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname })
+    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn })
     .from(users);
   const nameById = new Map(profiles.map((p) => [p.id, p]));
 
@@ -69,12 +71,7 @@ export async function listTickets(userId?: string): Promise<TicketView[]> {
       id: r.id,
       number: r.number,
       userId: r.userId,
-      userName: p
-        ? resolveDisplayName(
-            { kakaoName: p.kakaoName, ...(p.nickname ? { nickname: p.nickname } : {}), kakaoNameHistory: [] },
-            UNKNOWN_NAME
-          )
-        : UNKNOWN_NAME,
+      userName: nameOf(p, UNKNOWN_NAME, locale),
       kind: r.kind as TicketKind,
       title: r.title,
       body: r.body,
@@ -93,7 +90,8 @@ export async function getTicket(id: string) {
 /** 티켓 발급 + 관리자 알림. 발급 번호를 돌려준다. */
 export async function createTicket(input: {
   userId: string;
-  userName: string;
+  /** 관리자 알림 문구에 실린다 — 받는 관리자의 언어로 정해진다 */
+  userName: LocalName;
   kind: TicketKind;
   title: string;
   body?: string;
@@ -119,7 +117,7 @@ export async function createTicket(input: {
       pick(locale, input.kind === 'cheer' ? N.newCheer : N.newTicket, {
         n: String(row?.number ?? 0),
         title: input.title,
-        by: input.userName,
+        by: input.userName(locale),
       }),
     button: (locale) => pick(locale, N.btnReview),
     linkUrl: `${input.origin}/admin`,

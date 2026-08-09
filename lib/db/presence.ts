@@ -2,7 +2,8 @@ import { and, desc, isNotNull, gte } from 'drizzle-orm';
 import { eq, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { pushSubscriptions, users } from './schema';
-import { resolveDisplayName } from '../store';
+import { nameOf } from '../store';
+import { getLocale } from '../locale';
 import { addDays, instantAt, localStamp } from '../dates';
 
 /**
@@ -123,6 +124,7 @@ export interface PresenceStat {
  * 여기서는 보기 좋은 기본 순서(7일 많은 순)만 정해 준다.
  */
 export async function listPresenceStats(): Promise<PresenceStat[]> {
+  const locale = await getLocale();
   const db = await getDb();
   const min = sql`(${MIN_SESSION_MINUTES} * interval '1 minute')`;
   const { start, end } = activeWindow();
@@ -132,6 +134,7 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
     SELECT
       u.id,
       u.kakao_name,
+      u.name_en,
       u.nickname,
       u.avatar,
       u.last_seen,
@@ -149,7 +152,7 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
     FROM users u
     LEFT JOIN presence_sessions s
       ON s.user_id = u.id AND s.ended_at > now() - interval '7 days'
-    GROUP BY u.id, u.kakao_name, u.nickname, u.avatar, u.last_seen
+    GROUP BY u.id, u.kakao_name, u.name_en, u.nickname, u.avatar, u.last_seen
     ORDER BY week_seconds DESC, u.kakao_name ASC
   `);
 
@@ -172,13 +175,14 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
 
   return list.map((r) => ({
     id: String(r.id),
-    name: resolveDisplayName(
+    name: nameOf(
       {
         kakaoName: String(r.kakao_name),
         ...(r.nickname ? { nickname: String(r.nickname) } : {}),
-        kakaoNameHistory: [],
+        ...(r.name_en ? { nameEn: String(r.name_en) } : {}),
       },
-      String(r.kakao_name)
+      String(r.kakao_name),
+      locale
     ),
     avatar: (r.avatar as string) ?? null,
     activeSeconds: Math.round(Number(r.active_seconds)),
@@ -200,6 +204,7 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
  * 켜졌는지 꺼졌는지 확인할 방법이 없어진다. 친구 화면에서 빼는 것은 friends.ts가 한다.
  */
 export async function listOnline(): Promise<OnlineUser[]> {
+  const locale = await getLocale();
   const db = await getDb();
   const since = new Date(Date.now() - ONLINE_WINDOW_MINUTES * 60_000);
   const rows = await db
@@ -207,6 +212,7 @@ export async function listOnline(): Promise<OnlineUser[]> {
       id: users.id,
       kakaoName: users.kakaoName,
       nickname: users.nickname,
+      nameEn: users.nameEn,
       avatar: users.avatar,
       lastSeen: users.lastSeen,
       showPresence: users.showPresence,
@@ -218,10 +224,7 @@ export async function listOnline(): Promise<OnlineUser[]> {
   const now = Date.now();
   return rows.map((r) => ({
     id: r.id,
-    name: resolveDisplayName(
-      { kakaoName: r.kakaoName, ...(r.nickname ? { nickname: r.nickname } : {}), kakaoNameHistory: [] },
-      r.kakaoName
-    ),
+    name: nameOf(r, r.kakaoName, locale),
     avatar: r.avatar,
     secondsAgo: Math.max(0, Math.round((now - new Date(r.lastSeen!).getTime()) / 1000)),
     hidden: !r.showPresence,

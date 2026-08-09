@@ -6,7 +6,8 @@ import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
 import { BAN_DURATIONS, notifyBan, setBan, toState, type BannedUser } from '@/lib/db/bans';
 import { siteUrl } from '@/lib/site';
-import { resolveDisplayName } from '@/lib/store';
+import { nameOf } from '@/lib/store';
+import { getLocale } from '@/lib/locale';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,7 @@ export async function GET() {
   if (!user) return await errJson(E.loginRequired, 401);
   if (!isAdmin(user)) return await errJson(E.adminOnly, 403);
 
+  const locale = await getLocale();
   const db = await getDb();
   const rows = await db.select().from(users).orderBy(desc(users.bannedUntil), users.kakaoName);
   const admins = adminIds();
@@ -24,10 +26,7 @@ export async function GET() {
     .filter((r) => !admins.includes(r.id))
     .map((r) => {
       const state = toState(r.bannedUntil, r.banReason);
-      const name = resolveDisplayName(
-        { kakaoName: r.kakaoName, ...(r.nickname ? { nickname: r.nickname } : {}), kakaoNameHistory: [] },
-        r.kakaoName
-      );
+      const name = nameOf(r, r.kakaoName, locale);
       return { id: r.id, name, avatar: r.avatar, ...(state ?? {}) } as Partial<BannedUser> & { id: string; name: string };
     });
 

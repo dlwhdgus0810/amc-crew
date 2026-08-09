@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
 import { getViewer } from '@/lib/session';
-import { hostRanking, joinRanking } from '@/lib/db/hosting';
+import { hostRanking, joinRanking, rankNames } from '@/lib/db/hosting';
 import LeaderboardClient from './leaderboard-client';
 import { Bar, Block, LOADING_LEADERBOARD, Skeleton } from '../skeleton';
 
@@ -22,8 +22,12 @@ async function LeaderboardData() {
   const { user } = await getViewer();
   if (!user) return <LeaderboardClient initial={null} />;
 
-  const [hosts, joiners] = await Promise.all([hostRanking(TOP), joinRanking(TOP)]);
-  return <LeaderboardClient initial={{ hosts, joiners }} />;
+  /*
+   * 이름은 담아 둔 것을 꺼낸 **뒤에** 고른다 — 순위 집계는 누가 보든 같지만
+   * 이름은 보는 사람의 언어에 따라 다르다 (lib/db/hosting.ts의 RankSeed 참고).
+   */
+  const [hosts, joiners, locale] = await Promise.all([hostRanking(TOP), joinRanking(TOP), getLocale()]);
+  return <LeaderboardClient initial={{ hosts: rankNames(hosts, locale), joiners: rankNames(joiners, locale) }} />;
 }
 
 export default async function LeaderboardPage() {

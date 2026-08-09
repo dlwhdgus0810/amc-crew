@@ -3,7 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
-import { getProfiles, resolveDisplayName } from '@/lib/store';
+import { getProfiles, localName } from '@/lib/store';
 import { createCategoryRequest, listCategoryRequests } from '@/lib/db/category-requests';
 import { isExistingCategoryName } from '@/lib/categories';
 import { siteUrl } from '@/lib/site';
@@ -57,9 +57,11 @@ export async function POST(req: NextRequest) {
 
   await ensureUser(user);
   const profile = (await getProfiles())[user.id];
+  // 관리자 알림 문구에 실릴 이름 — 받는 관리자의 언어로 정해진다
+  const byName = localName(profile, user.name);
   const id = await createCategoryRequest({
     userId: user.id,
-    userName: resolveDisplayName(profile, user.name),
+    userName: byName,
     name,
     color,
     description,

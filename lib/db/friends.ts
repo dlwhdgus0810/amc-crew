@@ -2,7 +2,8 @@ import { and, eq, inArray, ne, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
 import { friendships, postParticipants, users } from './schema';
-import { resolveDisplayName } from '../store';
+import { LocalName, nameOf } from '../store';
+import { getLocale } from '../locale';
 import { ONLINE_WINDOW_MINUTES } from './presence';
 import { insertInAppNotice } from './posts';
 import { NOTIF } from '../notif-kinds';
@@ -216,6 +217,7 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
       id: users.id,
       kakaoName: users.kakaoName,
       nickname: users.nickname,
+      nameEn: users.nameEn,
       avatar: users.avatar,
       lastSeen: users.lastSeen,
       showPresence: users.showPresence,
@@ -226,6 +228,7 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
 
   const now = Date.now();
   const onlineFrom = now - ONLINE_WINDOW_MINUTES * 60_000;
+  const locale = await getLocale();
 
   return links.flatMap((l) => {
     const otherId = l.a === me ? l.b : l.a;
@@ -240,10 +243,7 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
     return [
       {
         id: p.id,
-        name: resolveDisplayName(
-          { kakaoName: p.kakaoName, ...(p.nickname ? { nickname: p.nickname } : {}), kakaoNameHistory: [] },
-          p.kakaoName
-        ),
+        name: nameOf(p, p.kakaoName, locale),
         avatar: p.avatar,
         status:
           l.status === 'accepted' ? ('friends' as const) : l.requestedBy === me ? ('outgoing' as const) : ('incoming' as const),
@@ -311,16 +311,16 @@ export async function sharesMeetup(a: string, b: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-function line(msg: Msg, name: string) {
-  return (locale: Locale) => `🤝 ${pick(locale, msg, { name })}`;
+function line(msg: Msg, name: LocalName) {
+  return (locale: Locale) => `🤝 ${pick(locale, msg, { name: name(locale) })}`;
 }
 
 /** 요청이 왔다고 알린다 (인앱 한 줄, 폰은 울리지 않는다) */
-export async function notifyFriendRequest(toId: string, fromName: string): Promise<void> {
+export async function notifyFriendRequest(toId: string, fromName: LocalName): Promise<void> {
   await insertInAppNotice([toId], null, NOTIF.friendReq, line(N.reqLine, fromName));
 }
 
 /** 친구가 됐다고 알린다 */
-export async function notifyFriendAccepted(toId: string, byName: string): Promise<void> {
+export async function notifyFriendAccepted(toId: string, byName: LocalName): Promise<void> {
   await insertInAppNotice([toId], null, NOTIF.friendOk, line(N.okLine, byName));
 }
