@@ -11,7 +11,7 @@ import { todayLocal } from '@/lib/dates';
 import { pick } from '@/lib/i18n';
 import HomeClient from './home-client';
 import WhatsNewCard from './whats-new-card';
-import { CategoryCardsSkeleton } from './skeleton';
+import { CategoryCardsSkeleton, LOADING } from './skeleton';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +80,7 @@ export default async function HubPage() {
 
       <WhatsNewCard />
 
-      <Suspense fallback={<CategoryCardsSkeleton n={3} label="불러오는 중" />}>
+      <Suspense fallback={<CategoryCardsSkeleton n={3} label={pick(locale, LOADING)} />}>
         <HomeData />
       </Suspense>
     </>

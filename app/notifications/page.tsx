@@ -1,9 +1,11 @@
 import { Suspense } from 'react';
+import { getLocale } from '@/lib/locale';
+import { pick } from '@/lib/i18n';
 import { getViewer } from '@/lib/session';
 import { listNotifications } from '@/lib/db/posts';
 import { pendingIncomingCount } from '@/lib/db/friends';
 import NotificationsClient from './notifications-client';
-import { Bar, Block, Skeleton } from '../skeleton';
+import { Bar, Block, LOADING_NOTIFICATIONS, Skeleton } from '../skeleton';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,18 +27,18 @@ async function NotificationsData() {
   return <NotificationsClient initial={{ items, pendingFriends, unread }} />;
 }
 
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
   return (
-    <Suspense fallback={<NotificationsSkeleton />}>
+    <Suspense fallback={<NotificationsSkeleton label={pick(await getLocale(), LOADING_NOTIFICATIONS)} />}>
       <NotificationsData />
     </Suspense>
   );
 }
 
 /** 제목 · 친구 줄 · 알림 몇 줄 — 실제로 그려질 자리와 같은 크기로 깔아 둔다 */
-function NotificationsSkeleton() {
+function NotificationsSkeleton({ label }: { label: string }) {
   return (
-    <Skeleton label="알림을 불러오는 중">
+    <Skeleton label={label}>
       <Bar w={96} h={24} />
       <Bar w={220} h={13} mt={10} />
       <Block h={62}>

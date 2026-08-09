@@ -9,6 +9,27 @@
  * 자기 자리에서 같은 걸 그린다. Stage 4에서 SSR로 옮기면 뒤쪽 쓰임만 사라진다.
  */
 
+import type { Msg } from '@/lib/i18n';
+
+/*
+ * 뼈대의 안내 문구.
+ *
+ * 이 파일은 서버 컴포넌트라 t()를 못 쓴다 — 부르는 쪽(전부 서버 컴포넌트다)이
+ * pick(locale, LOADING)으로 골라서 넘긴다. 문구를 여기 두는 것은 열 군데가
+ * 같은 말을 하게 하려는 것이다.
+ */
+export const LOADING: Msg = { ko: '불러오는 중', en: 'Loading', es: 'Cargando' };
+export const LOADING_LEADERBOARD: Msg = {
+  ko: '순위표를 불러오는 중',
+  en: 'Loading the leaderboard',
+  es: 'Cargando la clasificación',
+};
+export const LOADING_NOTIFICATIONS: Msg = {
+  ko: '알림을 불러오는 중',
+  en: 'Loading notifications',
+  es: 'Cargando las notificaciones',
+};
+
 /** 회색 덩어리 하나 */
 export function Bar({ w = '100%', h = 14, mt = 0 }: { w?: string | number; h?: number; mt?: number }) {
   return <span className="sk-bar" style={{ width: w, height: h, marginTop: mt }} aria-hidden />;

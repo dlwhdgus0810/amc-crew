@@ -220,6 +220,15 @@ export async function updateProfile(
 }
 
 /** 표시 이름 해석: 앱 닉네임 → 카카오 닉네임 → 저장 시점 스냅샷 */
+/**
+ * 이름을 못 찾았을 때 그 자리에 두는 값.
+ *
+ * 탈퇴했거나 지워진 회원이라 users 행이 없을 때만 나온다. 예전에는 「알 수 없음」이었는데,
+ * 이 값은 서버가 데이터에 박아 보내는 것이라 보는 사람의 언어를 알 수가 없다 —
+ * 크론도 같은 함수를 쓴다. 어느 언어에서도 어색하지 않은 줄표로 둔다.
+ */
+export const UNKNOWN_NAME = '—';
+
 export function resolveDisplayName(profile: UserProfile | undefined, fallback: string): string {
   const nickname = profile?.nickname?.trim();
   if (nickname) return nickname;

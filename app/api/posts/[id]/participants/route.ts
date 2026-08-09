@@ -6,7 +6,7 @@ import { ensureUser } from '@/lib/db/users';
 import { getPost, isParticipant, joinPost, leavePost, notifyAddedToPost, notifyFriendJoin } from '@/lib/db/posts';
 import { areFriends, friendIds } from '@/lib/db/friends';
 import { isPastSlot } from '@/lib/dates';
-import { getProfiles, resolveDisplayName } from '@/lib/store';
+import { getProfiles, resolveDisplayName, UNKNOWN_NAME } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       const profiles = await getProfiles();
       const actorName = resolveDisplayName(profiles[user.id], user.name);
-      const friendName = resolveDisplayName(profiles[friendId], '알 수 없음');
+      const friendName = resolveDisplayName(profiles[friendId], UNKNOWN_NAME);
       await notifyAddedToPost(post, actorName, friendId);
       // 넣긴 사람의 다른 친구들에게도 알린다. 누른 사람만 뺀다 — 방금 자기가 한 일이다.
       const others = (await friendIds(friendId)).filter((uid) => uid !== user.id);

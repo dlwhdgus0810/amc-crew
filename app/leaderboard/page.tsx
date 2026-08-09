@@ -1,8 +1,10 @@
 import { Suspense } from 'react';
+import { getLocale } from '@/lib/locale';
+import { pick } from '@/lib/i18n';
 import { getViewer } from '@/lib/session';
 import { hostRanking, joinRanking } from '@/lib/db/hosting';
 import LeaderboardClient from './leaderboard-client';
-import { Bar, Block, Skeleton } from '../skeleton';
+import { Bar, Block, LOADING_LEADERBOARD, Skeleton } from '../skeleton';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,18 +26,18 @@ async function LeaderboardData() {
   return <LeaderboardClient initial={{ hosts, joiners }} />;
 }
 
-export default function LeaderboardPage() {
+export default async function LeaderboardPage() {
   return (
-    <Suspense fallback={<LeaderboardSkeleton />}>
+    <Suspense fallback={<LeaderboardSkeleton label={pick(await getLocale(), LOADING_LEADERBOARD)} />}>
       <LeaderboardData />
     </Suspense>
   );
 }
 
 /** 제목 · 설명 두 줄 · 탭 · 순위 다섯 줄 */
-function LeaderboardSkeleton() {
+function LeaderboardSkeleton({ label }: { label: string }) {
   return (
-    <Skeleton label="순위표를 불러오는 중">
+    <Skeleton label={label}>
       <Bar w={110} h={24} />
       <Bar w="88%" h={13} mt={10} />
       <Bar w={240} h={12} mt={6} />

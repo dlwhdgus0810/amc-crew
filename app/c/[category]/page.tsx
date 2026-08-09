@@ -1,4 +1,6 @@
 import { Suspense } from 'react';
+import { getLocale } from '@/lib/locale';
+import { pick } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 import { asc } from 'drizzle-orm';
 import { getCategory } from '@/lib/categories';
@@ -12,7 +14,7 @@ import { getSubscriptions, listPosts } from '@/lib/db/posts';
 import { friendsOf, incomingOf, listFriendships, outgoingOf } from '@/lib/db/friends';
 import { resolveDisplayName } from '@/lib/store';
 import CategoryClient from './category-client';
-import { PostCardsSkeleton } from '@/app/skeleton';
+import { LOADING, PostCardsSkeleton } from '@/app/skeleton';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +86,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   if (!cat || cat.kind !== 'posts') notFound();
   // 이름·라벨은 클라이언트가 현재 언어로 직접 고른다
   return (
-    <Suspense fallback={<PostCardsSkeleton n={3} label="불러오는 중" />}>
+    <Suspense fallback={<PostCardsSkeleton n={3} label={pick(await getLocale(), LOADING)} />}>
       <CategoryData slug={cat.slug} />
     </Suspense>
   );

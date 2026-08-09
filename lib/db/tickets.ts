@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { notifications, tickets, users } from './schema';
-import { resolveDisplayName } from '../store';
+import { resolveDisplayName, UNKNOWN_NAME } from '../store';
 import { notifyAdmins } from './admin-notify';
 import { sendPush } from '../push';
 import { Msg, pick, toLocale } from '../i18n';
@@ -72,9 +72,9 @@ export async function listTickets(userId?: string): Promise<TicketView[]> {
       userName: p
         ? resolveDisplayName(
             { kakaoName: p.kakaoName, ...(p.nickname ? { nickname: p.nickname } : {}), kakaoNameHistory: [] },
-            '알 수 없음'
+            UNKNOWN_NAME
           )
-        : '알 수 없음',
+        : UNKNOWN_NAME,
       kind: r.kind as TicketKind,
       title: r.title,
       body: r.body,

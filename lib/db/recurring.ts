@@ -2,7 +2,7 @@ import { and, eq, gte, inArray } from 'drizzle-orm';
 import { getDb } from './index';
 import { posts, recurringRules } from './schema';
 import { createPost } from './posts';
-import { getProfiles, resolveDisplayName } from '../store';
+import { getProfiles, resolveDisplayName, UNKNOWN_NAME } from '../store';
 import { addDays, nextWeekdayOnOrAfter, todayLocal, weekdayOf } from '../dates';
 import type { Msg } from '../i18n';
 
@@ -127,7 +127,7 @@ export async function materializeDueOccurrences(origin: string): Promise<{ creat
       await createPost({
         category: rule.category,
         authorId: rule.authorId,
-        authorName: resolveDisplayName(profiles[rule.authorId], '알 수 없음'),
+        authorName: resolveDisplayName(profiles[rule.authorId], UNKNOWN_NAME),
         ...(rule.coHostId ? { coHostId: rule.coHostId } : {}),
         ...(rule.allowNicknames ? { allowNicknames: true } : {}),
         ...(rule.title ? { title: rule.title } : {}),

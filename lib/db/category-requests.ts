@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { categoryRequests, notifications, users } from './schema';
-import { resolveDisplayName } from '../store';
+import { resolveDisplayName, UNKNOWN_NAME } from '../store';
 import { notifyAdmins } from './admin-notify';
 import { sendPush } from '../push';
 import { pick, toLocale } from '../i18n';
@@ -43,10 +43,10 @@ export interface CategoryRequestView {
 }
 
 function displayNameOf(row: { kakaoName: string; nickname: string | null } | undefined): string {
-  if (!row) return '알 수 없음';
+  if (!row) return UNKNOWN_NAME;
   return resolveDisplayName(
     { kakaoName: row.kakaoName, ...(row.nickname ? { nickname: row.nickname } : {}), kakaoNameHistory: [] },
-    '알 수 없음'
+    UNKNOWN_NAME
   );
 }
 

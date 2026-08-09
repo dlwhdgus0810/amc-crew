@@ -3,7 +3,7 @@ import { cache } from 'react';
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { commentLikes, favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
-import { resolveDisplayName } from '../store';
+import { resolveDisplayName, UNKNOWN_NAME } from '../store';
 import { catName, getCategory } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendPush } from '../push';
@@ -298,7 +298,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     if (!byPost.has(p.postId)) byPost.set(p.postId, []);
     byPost.get(p.postId)!.push({
       id: p.userId,
-      name: displayNameOf(userById.get(p.userId), '알 수 없음', nickOk.get(p.postId) ?? false),
+      name: displayNameOf(userById.get(p.userId), UNKNOWN_NAME, nickOk.get(p.postId) ?? false),
       avatar: userById.get(p.userId)?.avatar ?? null,
       hostCount: hostCounts.get(p.userId) ?? 0,
     });
@@ -319,7 +319,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     commentsByPost.get(c.postId)!.push({
       id: c.id,
       userId: c.userId,
-      name: hideName ? null : displayNameOf(userById.get(c.userId), '알 수 없음', nickOk.get(c.postId) ?? false),
+      name: hideName ? null : displayNameOf(userById.get(c.userId), UNKNOWN_NAME, nickOk.get(c.postId) ?? false),
       anonymous: c.anonymous,
       body: c.body,
       createdAt: c.createdAt.toISOString(),
@@ -331,9 +331,9 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
 
   return postRows.map((p) => ({
     ...shellOf(p),
-    authorName: displayNameOf(userById.get(p.authorId), '알 수 없음', p.allowNicknames),
+    authorName: displayNameOf(userById.get(p.authorId), UNKNOWN_NAME, p.allowNicknames),
     coHost: p.coHostId
-      ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), '알 수 없음', p.allowNicknames) }
+      ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), UNKNOWN_NAME, p.allowNicknames) }
       : null,
     participants: byPost.get(p.id) ?? [],
     participantCount: (byPost.get(p.id) ?? []).length,
@@ -1372,7 +1372,7 @@ export async function listDeletedNotifications(limit = 100) {
   return rows.map((r) => ({
     id: r.id,
     message: r.message,
-    name: displayNameOf({ kakaoName: r.kakaoName, nickname: r.nickname }, '알 수 없음'),
+    name: displayNameOf({ kakaoName: r.kakaoName, nickname: r.nickname }, UNKNOWN_NAME),
     createdAt: r.createdAt.toISOString(),
     deletedAt: r.deletedAt!.toISOString(),
   }));

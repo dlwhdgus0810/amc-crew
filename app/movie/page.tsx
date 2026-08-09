@@ -1,7 +1,9 @@
 import { Suspense } from 'react';
+import { getLocale } from '@/lib/locale';
+import { pick } from '@/lib/i18n';
 import { scheduleDay } from '@/lib/schedule-day';
 import MovieClient from './movie-client';
-import { PostCardsSkeleton } from '../skeleton';
+import { LOADING, PostCardsSkeleton } from '../skeleton';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +20,9 @@ async function MovieData() {
   return <MovieClient initial={await scheduleDay()} />;
 }
 
-export default function PickPage() {
+export default async function PickPage() {
   return (
-    <Suspense fallback={<PostCardsSkeleton n={4} label="불러오는 중" />}>
+    <Suspense fallback={<PostCardsSkeleton n={4} label={pick(await getLocale(), LOADING)} />}>
       <MovieData />
     </Suspense>
   );

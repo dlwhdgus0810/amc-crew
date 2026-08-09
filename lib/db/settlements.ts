@@ -12,7 +12,7 @@ import {
   settlementMembers,
   users,
 } from './schema';
-import { resolveDisplayName } from '../store';
+import { resolveDisplayName, UNKNOWN_NAME } from '../store';
 import { catName, getCategory } from '../categories';
 import { adminIds } from '../auth';
 import { formatCents, payNote, shortCode, splitWithExtras, venmoLink } from '../money';
@@ -226,7 +226,7 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
     .filter(([, cents]) => cents > 0)
     .map(([userId, cents]) => ({
       userId,
-      name: displayNameOf(userById.get(userId), '알 수 없음'),
+      name: displayNameOf(userById.get(userId), UNKNOWN_NAME),
       avatar: userById.get(userId)?.avatar ?? null,
       cents,
     }))
@@ -236,14 +236,14 @@ export async function getSettlement(postId: string): Promise<SettlementView | nu
   return {
     payee: {
       id: row.payeeId,
-      name: displayNameOf(payee, '알 수 없음'),
+      name: displayNameOf(payee, UNKNOWN_NAME),
       venmo: payee?.venmo ?? null,
       zelle: payee?.zelle ?? null,
     },
     items,
     shares,
     totalCents: items.reduce((n, i) => n + i.amountCents, 0),
-    extraMembers: extras.map((id) => ({ id, name: displayNameOf(userById.get(id), '알 수 없음') })),
+    extraMembers: extras.map((id) => ({ id, name: displayNameOf(userById.get(id), UNKNOWN_NAME) })),
     shortCode: row.shortCode ?? null,
     createdAt: row.createdAt.toISOString(),
   };

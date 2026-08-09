@@ -3,7 +3,7 @@ import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
 import { postParticipants, posts, users } from './schema';
-import { resolveDisplayName } from '../store';
+import { resolveDisplayName, UNKNOWN_NAME } from '../store';
 import { adminIds } from '../auth';
 import { openEndCutoffTime, pastCutoff } from '../dates';
 import { POSTS_TAG } from '../cache-tags';
@@ -182,9 +182,9 @@ async function withProfiles(rows: { id: string; n: number }[], limit: number): P
       name: p
         ? resolveDisplayName(
             { kakaoName: p.kakaoName, ...(p.nickname ? { nickname: p.nickname } : {}), kakaoNameHistory: [] },
-            '알 수 없음'
+            UNKNOWN_NAME
           )
-        : '알 수 없음',
+        : UNKNOWN_NAME,
       avatar: p?.avatar ?? null,
       count: Number(r.n),
     };

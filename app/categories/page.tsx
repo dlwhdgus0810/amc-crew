@@ -1,4 +1,6 @@
 import { Suspense } from 'react';
+import { getLocale } from '@/lib/locale';
+import { pick } from '@/lib/i18n';
 import { getViewer } from '@/lib/session';
 import { getFavorites, getSubscriptions } from '@/lib/db/posts';
 import { nextMeetupByCategory } from '@/lib/db/next-meetups';
@@ -7,7 +9,7 @@ import { hiddenSlugs } from '@/lib/db/hidden';
 import { POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { todayLocal } from '@/lib/dates';
 import CategoriesClient from './categories-client';
-import { CategoryCardsSkeleton } from '../skeleton';
+import { CategoryCardsSkeleton, LOADING } from '../skeleton';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,9 +33,9 @@ async function CategoriesData() {
   return <CategoriesClient initial={{ subs, favs, summaries: { today: todayLocal(), summaries, signups } , hidden }} />;
 }
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
   return (
-    <Suspense fallback={<CategoryCardsSkeleton n={4} label="불러오는 중" />}>
+    <Suspense fallback={<CategoryCardsSkeleton n={4} label={pick(await getLocale(), LOADING)} />}>
       <CategoriesData />
     </Suspense>
   );
