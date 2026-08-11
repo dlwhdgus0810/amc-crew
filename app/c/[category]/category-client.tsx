@@ -961,7 +961,12 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             <CatIcon slug={slug} />
           </h1>
         </div>
-        {/* 소리는 이 카테고리에만 — 켜고 끄는 자리는 구독 토글 옆이다 */}
+        {/*
+          * 이 화면을 켜고 끄는 것들은 오른쪽 끝에 모아 둔다.
+          * feed-head가 space-between이라 따로 두면 소리 버튼이 제목과 구독 사이
+          * 한가운데에 떠서, 무엇에 딸린 버튼인지 알 수 없는 자리에 놓인다.
+          */}
+        <div className="feed-head-actions">
         {category?.bgm && <SkyBgm />}
         <button
           className={`sub-text ${subscribed ? 'on' : ''}`}
@@ -975,6 +980,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           </svg>
           {subscribed ? t(T.subscribed) : t(T.subscribe)}
         </button>
+        </div>
       </div>
 
       {category?.tool && (

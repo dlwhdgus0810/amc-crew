@@ -38,8 +38,10 @@ const SCALE = [587.33, 659.25, 739.99, 880.0, 987.77, 1174.66]; // D 장5음계
 const PAD = [146.83, 220.0, 293.66]; // D3 · A3 · D4
 
 const T = {
-  on: { ko: '소리 끄기', en: 'Sound off', es: 'Silenciar' },
-  off: { ko: '소리 켜기', en: 'Sound on', es: 'Activar sonido' },
+  /** 칩에 늘 적혀 있는 말 — 무엇에 대한 버튼인지 (상태는 색이 말한다) */
+  label: { ko: '소리', en: 'Sound', es: 'Sonido' },
+  on: { ko: '소리 끄기', en: 'Turn sound off', es: 'Silenciar' },
+  off: { ko: '소리 켜기', en: 'Turn sound on', es: 'Activar sonido' },
 };
 
 /** 잔향 — 파일을 받지 않고 잡음을 지수로 깎아 만든다 */
@@ -289,6 +291,14 @@ export default function SkyBgm() {
     });
   }
 
+  /*
+   * 글리프만 있던 것을 글자까지 붙인 칩으로 바꿨다. 음표 하나로는 「이게 뭐지」가 되고,
+   * 껐다는 표시로 쓰던 ♪̸(결합 빗금)는 기기마다 다르게 그려졌다.
+   * 지금은 구독 토글과 같은 꼴이다 — 아이콘 + 글자, 켜지면 색이 붙는다.
+   *
+   * ♪ 뒤의 \uFE0E는 「이건 그림이 아니라 글자」라는 표시다. 안 붙이면 기기에 따라
+   * 컬러 이모지로 그려져서 색을 바꿀 수 없게 된다.
+   */
   return (
     <button
       type="button"
@@ -297,7 +307,10 @@ export default function SkyBgm() {
       aria-pressed={on}
       title={t(on ? T.on : T.off)}
     >
-      <span aria-hidden="true">{on ? '♪' : '♪̸'}</span>
+      <span className="sky-bgm-note" aria-hidden="true">
+        {'\u266A\uFE0E'}
+      </span>
+      <span aria-hidden="true">{t(T.label)}</span>
       <span className="sr-only">{t(on ? T.on : T.off)}</span>
     </button>
   );
