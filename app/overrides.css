@@ -1657,3 +1657,17 @@ h2 {
   white-space: nowrap;
   border: 0;
 }
+
+/*
+ * 「친구 n명이 지금 앱을 보고 있어요」 — 이름 없이 숫자 한 줄.
+ * 제목이 아니라 부제 자리라, 위 subtitle과 같은 크기로 흐리게 둔다.
+ */
+.online-count {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: -2px 0 18px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-dim);
+}

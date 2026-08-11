@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne, notInArray, or, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNotNull, ne, notInArray, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
 import { friendships, postParticipants, posts, users } from './schema';
@@ -246,7 +246,7 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
      * 화면에서만 가리고 값은 그대로 보내면 개발자 도구로 「지금 누가 앱을 보고 있나」가
      * 그대로 읽힌다 — 가릴 거면 보내지도 않는다.
      */
-    const online = FRIEND_PRESENCE && otherShowsMe && seen >= onlineFrom;
+    const online = FRIEND_PRESENCE === 'list' && otherShowsMe && seen >= onlineFrom;
     return [
       {
         id: p.id,
@@ -261,6 +261,45 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
       },
     ];
   });
+}
+
+/**
+ * 지금 접속 중인 친구가 몇 명인지 — 숫자만.
+ *
+ * 누구인지는 세는 쪽에서도 안 나간다. 목록을 만들어 길이를 재지 않고 count(*)로 세는 이유가
+ * 그것이다 — 이름이 담긴 배열이 만들어지면 어딘가에서 그대로 응답에 실릴 길이 생긴다.
+ *
+ * 세는 조건은 목록과 같다: 맺어진 친구이고, 그 사람이 나에게 접속을 감추지 않았고
+ * (친구별 스위치와 users.showPresence 둘 다), 마지막 신호가 접속 창 안에 있을 것.
+ */
+export async function onlineFriendCount(me: string): Promise<number> {
+  if (FRIEND_PRESENCE === 'off') return 0;
+  const db = await getDb();
+  const since = new Date(Date.now() - ONLINE_WINDOW_MINUTES * 60_000);
+  const rows = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(friendships)
+    .innerJoin(
+      users,
+      or(
+        and(eq(friendships.userA, me), eq(users.id, friendships.userB)),
+        and(eq(friendships.userB, me), eq(users.id, friendships.userA))
+      )
+    )
+    .where(
+      and(
+        eq(friendships.status, 'accepted'),
+        eq(users.showPresence, true),
+        isNotNull(users.lastSeen),
+        gte(users.lastSeen, since),
+        // 상대가 나에게만 감춘 경우 — 내가 A면 상대(B)의 스위치는 bShowsPresence다
+        or(
+          and(eq(friendships.userA, me), eq(friendships.bShowsPresence, true)),
+          and(eq(friendships.userB, me), eq(friendships.aShowsPresence, true))
+        )
+      )
+    );
+  return Number(rows[0]?.n ?? 0);
 }
 
 /** 지금 접속 중인 친구 (최근 신호순) */

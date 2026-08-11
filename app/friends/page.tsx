@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { getViewer } from '@/lib/session';
-import { friendsOf, incomingOf, listFriendships, outgoingOf } from '@/lib/db/friends';
+import { friendsOf, incomingOf, listFriendships, onlineFriendCount, outgoingOf } from '@/lib/db/friends';
 import FriendsClient from './friends-client';
 
 export const dynamic = 'force-dynamic';
@@ -14,13 +14,15 @@ export const dynamic = 'force-dynamic';
 async function FriendsData() {
   const { user } = await getViewer();
   if (!user) {
-    return <FriendsClient initial={{ data: { friends: [], incoming: [], outgoing: [] }, needLogin: true }} />;
+    return (
+      <FriendsClient initial={{ data: { friends: [], incoming: [], outgoing: [], onlineCount: 0 }, needLogin: true }} />
+    );
   }
-  const all = await listFriendships(user.id);
+  const [all, onlineCount] = await Promise.all([listFriendships(user.id), onlineFriendCount(user.id)]);
   return (
     <FriendsClient
       initial={{
-        data: { friends: friendsOf(all), incoming: incomingOf(all), outgoing: outgoingOf(all) },
+        data: { friends: friendsOf(all), incoming: incomingOf(all), outgoing: outgoingOf(all), onlineCount },
         needLogin: false,
       }}
     />

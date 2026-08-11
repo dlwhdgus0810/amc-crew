@@ -7,6 +7,7 @@ import {
   friendsOf,
   incomingOf,
   listFriendships,
+  onlineFriendCount,
   notifyFriendAccepted,
   notifyFriendRequest,
   outgoingOf,
@@ -26,11 +27,13 @@ export async function GET() {
   }
   const banned = await banGuard(user);
   if (banned) return banned;
-  const all = await listFriendships(user.id);
+  // 숫자는 따로 센다 — 사람별 접속 여부는 응답에 실리지 않는다 (lib/flags.ts)
+  const [all, onlineCount] = await Promise.all([listFriendships(user.id), onlineFriendCount(user.id)]);
   return NextResponse.json({
     friends: friendsOf(all),
     incoming: incomingOf(all),
     outgoing: outgoingOf(all),
+    onlineCount,
     windowMinutes: ONLINE_WINDOW_MINUTES,
   });
 }

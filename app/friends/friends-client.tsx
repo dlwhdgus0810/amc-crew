@@ -25,6 +25,17 @@ const T = {
 
   online: { ko: '지금 접속 중', en: 'Online now', es: 'En línea ahora' },
   onlineNone: { ko: '지금 앱을 보고 있는 친구가 없어요.', en: 'No friends are in the app right now.', es: 'Ahora mismo no hay amigos en la app.' },
+  // 숫자만 — 누구인지는 일부러 안 적는다 (lib/flags.ts)
+  onlineCount: {
+    ko: '친구 {n}명이 지금 앱을 보고 있어요',
+    en: '{n} of your friends are in the app right now',
+    es: '{n} de tus amistades están en la app ahora mismo',
+  },
+  onlineCountNone: {
+    ko: '지금 앱을 보고 있는 친구가 없어요',
+    en: 'None of your friends are in the app right now',
+    es: 'Ninguna de tus amistades está en la app ahora mismo',
+  },
   justNow: { ko: '방금', en: 'just now', es: 'ahora mismo' },
   minsAgo: { ko: '{n}분 전', en: '{n}m ago', es: 'hace {n} min' },
 
@@ -67,10 +78,15 @@ interface Data {
   friends: Friend[];
   incoming: Friend[];
   outgoing: Friend[];
+  /** 지금 접속 중인 친구 수 — 누구인지는 안 내려온다 */
+  onlineCount: number;
 }
 
-/** 접속 판정 창이 3분이라, 열어 둔 화면은 금세 옛날 것이 된다 */
-const POLL_MS = 15_000;
+/**
+ * 접속 판정 창이 3분이라, 열어 둔 화면은 금세 옛날 것이 된다.
+ * 숫자 하나만 따라가면 되므로 예전(15초)보다 느긋하게 묻는다.
+ */
+const POLL_MS = 30_000;
 
 /** 서버가 첫 화면 몫으로 미리 읽어 둔 것 (page.tsx) */
 export interface FriendsInitial {
@@ -91,7 +107,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
     const res = await fetch('/api/friends', { cache: 'no-store' });
     if (res.status === 401) {
       setNeedLogin(true);
-      setData({ friends: [], incoming: [], outgoing: [] });
+      setData({ friends: [], incoming: [], outgoing: [], onlineCount: 0 });
       return;
     }
     if (res.ok) setData(await res.json());
@@ -103,7 +119,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
    * 친구 요청은 다음에 화면을 열 때 반영된다 (탭바 배지가 먼저 알려 준다).
    */
   useEffect(() => {
-    if (!FRIEND_PRESENCE) return;
+    if (FRIEND_PRESENCE === 'off') return;
     const timer = setInterval(load, POLL_MS);
     return () => clearInterval(timer);
   }, [load]);
@@ -150,7 +166,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
 
   const row = (f: Friend, actions: React.ReactNode) => (
     <li key={f.id} className="friend-row">
-      {FRIEND_PRESENCE && f.online && <span className="online-dot" aria-hidden="true" />}
+      {FRIEND_PRESENCE === 'list' && f.online && <span className="online-dot" aria-hidden="true" />}
       {face(f)}
       <span className="online-name">{f.name}</span>
       <span className="friend-actions">{actions}</span>
@@ -160,7 +176,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
   /** 맺어진 친구는 이름을 눌러 그 사람의 화면으로 간다 */
   const linkRow = (f: Friend, actions: React.ReactNode) => (
     <li key={f.id} className="friend-row">
-      {FRIEND_PRESENCE && f.online && <span className="online-dot" aria-hidden="true" />}
+      {FRIEND_PRESENCE === 'list' && f.online && <span className="online-dot" aria-hidden="true" />}
       <Link href={`/friends/${f.id}`} className="friend-link">
         {face(f)}
         <span className="online-name">{f.name}</span>
@@ -178,8 +194,25 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
 
       {error && <div className="msg err">{error}</div>}
 
-      {/* 접속 중 목록 — 지금은 내려 둔 기능이다 (lib/flags.ts) */}
-      {FRIEND_PRESENCE && (
+      {/*
+        * 숫자만 — 누가 있는지는 안 보여준다. 「누군가 있다」는 것만 알면 말을 걸어볼
+        * 이유로는 충분하고, 그 이상은 서로를 지켜보는 화면이 된다.
+        */}
+      {FRIEND_PRESENCE === 'count' && data.friends.length > 0 && (
+        <p className="online-count">
+          {data.onlineCount > 0 ? (
+            <>
+              <span className="online-dot" aria-hidden="true" />
+              {t(T.onlineCount, { n: data.onlineCount })}
+            </>
+          ) : (
+            t(T.onlineCountNone)
+          )}
+        </p>
+      )}
+
+      {/* 이름까지 보여주던 모양 — 지금은 내려 두었다 (lib/flags.ts) */}
+      {FRIEND_PRESENCE === 'list' && (
         <>
           <h2>{t(T.online)}</h2>
           <div className="card">
