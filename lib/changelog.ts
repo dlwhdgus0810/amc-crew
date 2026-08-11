@@ -33,7 +33,7 @@ const ENTRIES: ChangelogEntry[] = [
   {
     at: '2026-08-09T18:00',
     notable: true,
-    title: { ko: '8월 12일 일식 — 별보러가자 🌌', en: 'Eclipse tomorrow — Chasing the Eclipse 🌌' },
+    title: { ko: '8월 12일 일식 — 별보러가자 🌌', en: 'Aug 12 eclipse — Chasing the Eclipse 🌌' },
     items: [
       {
         ko: '내일 모레가 일식이라 하루짜리 카드를 하나 열었어요. 둘러보기 맨 끝에 있어요.',
