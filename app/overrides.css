@@ -1810,21 +1810,27 @@ h2 {
 
 .meteors b {
   position: absolute;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
+  width: 9px;
+  height: 9px;
   background: #f6f4ee;
+  /* 화면 배경의 별과 같은 네갈래 모양 (app/overrides.css의 .sky-twinkle 참고) */
+  clip-path: polygon(
+    50% 0%, 58% 42%, 100% 50%, 58% 58%,
+    50% 100%, 42% 58%, 0% 50%, 42% 42%
+  );
   opacity: 0.28;
   animation: star-twinkle 6s ease-in-out infinite;
 }
-.meteors b:nth-of-type(1) { top: 22%; left: 78%; animation-delay: 0s; }
-.meteors b:nth-of-type(2) { top: 62%; left: 88%; animation-delay: 2s; }
-.meteors b:nth-of-type(3) { top: 12%; left: 62%; animation-delay: 4s; width: 1.5px; height: 1.5px; }
+.meteors b:nth-of-type(1) { top: 20%; left: 78%; animation-delay: 0s; }
+.meteors b:nth-of-type(2) { top: 58%; left: 88%; animation-delay: 2s; width: 7px; height: 7px; }
+.meteors b:nth-of-type(3) { top: 10%; left: 60%; animation-delay: 4s; width: 6px; height: 6px; }
 
 /* 폭이 좁으면 그냥 켜져 있는 점으로 보인다 — 화면 배경 별과 같은 이유로 넓게 잡는다 */
 @keyframes star-twinkle {
-  0%, 100% { opacity: 0.12; }
-  50% { opacity: 0.85; }
+  /* 화면 배경 별과 같은 이유 — 제일 밝을 때 똑바로 선다 */
+  0% { opacity: 0.12; transform: scale(0.5) rotate(-22deg); }
+  50% { opacity: 0.85; transform: scale(1) rotate(0deg); }
+  100% { opacity: 0.12; transform: scale(0.5) rotate(22deg); }
 }
 
 /* 움직임을 줄여 달라고 해 둔 기기에서는 그림 자체를 안 그린다 */
@@ -1935,9 +1941,19 @@ h2 {
 }
 .sky-twinkle i {
   position: absolute;
-  border-radius: 50%;
   background: #f6f4ee;
-  box-shadow: 0 0 4px rgba(246, 244, 238, 0.5);
+  /*
+   * 네갈래 반짝임. 동그란 점은 아무리 키워도 그냥 점이라, 밝기가 오르내려도
+   * 「반짝인다」로 안 읽힌다. 가운데를 잘록하게 깎아 네 방향으로 뻗게 한다.
+   *
+   * box-shadow가 아니라 filter: drop-shadow를 쓴다 — box-shadow는 네모난 상자 기준이라
+   * clip-path로 깎아낸 모양 밖에 그려지고, 그러면 깎인 자리에서 잘려 안 보인다.
+   */
+  clip-path: polygon(
+    50% 0%, 58% 42%, 100% 50%, 58% 58%,
+    50% 100%, 42% 58%, 0% 50%, 42% 42%
+  );
+  filter: drop-shadow(0 0 3px rgba(246, 244, 238, 0.55));
   animation-name: star-blink;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
@@ -1945,15 +1961,24 @@ h2 {
 /* 몇 개는 따뜻한 빛으로 — 실제 하늘도 별빛 색이 한 가지가 아니다 */
 .sky-twinkle i.warm {
   background: #ffe9b8;
-  box-shadow: 0 0 5px rgba(255, 233, 184, 0.55);
+  filter: drop-shadow(0 0 4px rgba(255, 233, 184, 0.6));
 }
 /*
  * 거의 꺼졌다가 환해진다. 폭이 좁으면(예: 0.6 ↔ 0.9) 화면에서는 그냥 켜져 있는 점으로
  * 보이고 「반짝인다」는 느낌이 안 난다.
  */
+/*
+ * 밝아지면서 살짝 커진다. 네갈래 모양이라 커지는 것이 「빛이 뻗는다」로 보인다 —
+ * 동그란 점일 때는 같은 값이 그냥 커졌다 작아지는 점이었다.
+ */
 @keyframes star-blink {
-  0%, 100% { opacity: 0.12; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1); }
+  /*
+   * 가장 밝을 때 똑바로 선다. 회전을 0→45도로 두면 제일 밝은 순간에 45도가 되어
+   * 별이 아니라 ×로 보인다 — 밝아질수록 별 모양이 또렷해져야 맞다.
+   */
+  0% { opacity: 0.15; transform: scale(0.45) rotate(-22deg); }
+  50% { opacity: 1; transform: scale(1) rotate(0deg); }
+  100% { opacity: 0.15; transform: scale(0.45) rotate(22deg); }
 }
 
 .sky-meteors {
