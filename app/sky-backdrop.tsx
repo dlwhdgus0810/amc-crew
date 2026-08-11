@@ -9,13 +9,71 @@
  * 서버에서 그려지는 마크업이라 첫 화면부터 밤이다. 나중에 자바스크립트로 몸통에 클래스를
  * 붙이는 방식이었다면 크림색이 한 번 번쩍하고 지나간다.
  *
- * 별과 유성은 그림 파일이 아니라 CSS다. 유성은 자리·시각·빠르기가 다 다르고, 한 바퀴의
- * 앞부분만 보이므로 몇 초씩 비어 있다가 하나씩 지나간다.
+ * 하늘은 세 겹이다.
+ *  1. 촘촘한 잔별 — 배경 그림 한 겹. 가만히 있고, 수가 많아도 요소가 늘지 않는다.
+ *  2. 반짝이는 별 — 아래 STARS. 하나씩 따로 밝기가 오르내린다.
+ *  3. 유성 — 가끔 지나간다.
  */
+
+/**
+ * 반짝이는 별들. 자리와 박자를 여기에 적어 둔다.
+ *
+ * 무작위로 뽑지 않는 이유: 서버와 브라우저가 각자 다른 수를 뽑으면 화면이 어긋난다
+ * (hydration mismatch). 눈으로 흩어 놓은 값을 그대로 쓰면 그럴 일이 없다.
+ *
+ * dur(한 번 밝아졌다 어두워지는 데 걸리는 시간)와 delay를 서로 어긋나게 뒀다. 같으면
+ * 스물몇 개가 한 박자로 깜빡여서 별이 아니라 신호등이 된다.
+ * dim은 얼마나 어두워지는지 — 실제 하늘도 별마다 깜빡이는 폭이 다르다.
+ */
+const STARS: { top: number; left: number; size: number; delay: number; dur: number; warm?: boolean }[] = [
+  { top: 6, left: 9, size: 2.2, delay: 0, dur: 3.4, warm: true },
+  { top: 12, left: 46, size: 1.6, delay: 1.7, dur: 5.1 },
+  { top: 4, left: 72, size: 2, delay: 0.6, dur: 4.2 },
+  { top: 17, left: 24, size: 1.4, delay: 2.9, dur: 6.3 },
+  { top: 21, left: 88, size: 2.4, delay: 1.1, dur: 3.8, warm: true },
+  { top: 27, left: 58, size: 1.5, delay: 3.6, dur: 5.6 },
+  { top: 31, left: 14, size: 1.8, delay: 0.3, dur: 4.7 },
+  { top: 35, left: 79, size: 1.3, delay: 2.2, dur: 6.9 },
+  { top: 39, left: 38, size: 2.1, delay: 4.4, dur: 3.9, warm: true },
+  { top: 44, left: 66, size: 1.5, delay: 1.4, dur: 5.4 },
+  { top: 48, left: 5, size: 1.7, delay: 3.1, dur: 4.4 },
+  { top: 52, left: 92, size: 1.4, delay: 0.9, dur: 6.1 },
+  { top: 56, left: 30, size: 2.3, delay: 2.6, dur: 3.6, warm: true },
+  { top: 61, left: 71, size: 1.6, delay: 4.9, dur: 5.8 },
+  { top: 65, left: 18, size: 1.3, delay: 1.9, dur: 4.9 },
+  { top: 69, left: 50, size: 1.9, delay: 0.2, dur: 6.5 },
+  { top: 73, left: 85, size: 1.5, delay: 3.9, dur: 4.1 },
+  { top: 77, left: 34, size: 1.4, delay: 2.4, dur: 5.9 },
+  { top: 81, left: 62, size: 2.2, delay: 0.7, dur: 3.7, warm: true },
+  { top: 85, left: 11, size: 1.6, delay: 4.1, dur: 5.2 },
+  { top: 89, left: 76, size: 1.3, delay: 1.6, dur: 6.7 },
+  { top: 93, left: 43, size: 1.8, delay: 3.3, dur: 4.5 },
+  { top: 8, left: 60, size: 1.4, delay: 5.2, dur: 5.5 },
+  { top: 25, left: 41, size: 1.2, delay: 2.0, dur: 7.1 },
+  { top: 58, left: 47, size: 1.2, delay: 4.6, dur: 6.4 },
+  { top: 71, left: 3, size: 1.5, delay: 0.5, dur: 4.8 },
+];
+
 export default function SkyBackdrop() {
   return (
     <div className="sky-backdrop" aria-hidden="true">
-      <span className="sky-stars" />
+      <span className="sky-dust" />
+      <span className="sky-twinkle">
+        {STARS.map((s, i) => (
+          <i
+            key={i}
+            className={s.warm ? 'warm' : undefined}
+            style={{
+              top: `${s.top}%`,
+              left: `${s.left}%`,
+              width: `${s.size}px`,
+              height: `${s.size}px`,
+              animationDelay: `${s.delay}s`,
+              animationDuration: `${s.dur}s`,
+            }}
+          />
+        ))}
+      </span>
       <span className="sky-meteors">
         <i />
         <i />

@@ -1821,9 +1821,10 @@ h2 {
 .meteors b:nth-of-type(2) { top: 62%; left: 88%; animation-delay: 2s; }
 .meteors b:nth-of-type(3) { top: 12%; left: 62%; animation-delay: 4s; width: 1.5px; height: 1.5px; }
 
+/* 폭이 좁으면 그냥 켜져 있는 점으로 보인다 — 화면 배경 별과 같은 이유로 넓게 잡는다 */
 @keyframes star-twinkle {
-  0%, 100% { opacity: 0.18; }
-  50% { opacity: 0.55; }
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.85; }
 }
 
 /* 움직임을 줄여 달라고 해 둔 기기에서는 그림 자체를 안 그린다 */
@@ -1896,7 +1897,7 @@ h2 {
  * 별. 점 하나에 요소 하나씩 두면 수십 개가 되므로 배경 그림으로 그린다 —
  * 브라우저가 한 겹으로 칠하고 끝이라 요소가 늘지 않는다.
  */
-.sky-stars {
+.sky-dust {
   position: absolute;
   inset: -10%;
   background-image:
@@ -1911,12 +1912,48 @@ h2 {
     radial-gradient(1.2px 1.2px at 70% 30%, rgba(246, 244, 238, 0.65) 50%, transparent 51%);
   background-size: 460px 460px;
   background-repeat: repeat;
-  animation: sky-breathe 7s ease-in-out infinite;
+  /*
+   * 이 겹은 가만히 있는다. 예전에는 겹 전체를 밝혔다 어둡게 했는데, 그러면 화면의
+   * 모든 별이 한 박자로 같이 숨을 쉰다 — 별이 아니라 조명 스위치처럼 보인다.
+   * 반짝이는 일은 아래 .sky-twinkle이 별 하나씩 따로 맡는다.
+   */
+  opacity: 0.5;
 }
-/* 아주 옅게 밝아졌다 어두워진다 — 밤하늘이 완전히 정지해 있으면 사진처럼 보인다 */
-@keyframes sky-breathe {
-  0%, 100% { opacity: 0.75; }
-  50% { opacity: 1; }
+
+/*
+ * 하나씩 따로 반짝이는 별.
+ *
+ * 배경 그림으로는 이걸 할 수가 없다 — 한 겹은 통째로만 흐려지므로 점 하나만 밝힐 방법이
+ * 없다. 그래서 여기만 진짜 요소로 둔다. 스물여섯 개이고 움직이는 값은 opacity뿐이라
+ * (레이아웃을 다시 재지 않는다) 브라우저가 합성으로 처리한다.
+ *
+ * 자리·박자는 app/sky-backdrop.tsx가 인라인으로 준다. 별마다 달라야 해서다.
+ */
+.sky-twinkle {
+  position: absolute;
+  inset: 0;
+}
+.sky-twinkle i {
+  position: absolute;
+  border-radius: 50%;
+  background: #f6f4ee;
+  box-shadow: 0 0 4px rgba(246, 244, 238, 0.5);
+  animation-name: star-blink;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+/* 몇 개는 따뜻한 빛으로 — 실제 하늘도 별빛 색이 한 가지가 아니다 */
+.sky-twinkle i.warm {
+  background: #ffe9b8;
+  box-shadow: 0 0 5px rgba(255, 233, 184, 0.55);
+}
+/*
+ * 거의 꺼졌다가 환해진다. 폭이 좁으면(예: 0.6 ↔ 0.9) 화면에서는 그냥 켜져 있는 점으로
+ * 보이고 「반짝인다」는 느낌이 안 난다.
+ */
+@keyframes star-blink {
+  0%, 100% { opacity: 0.12; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 .sky-meteors {
@@ -1981,13 +2018,19 @@ body:has(.sky-scope) .tabbar a.active {
   background: #2a2f5c;
 }
 
-/* 움직임을 줄여 달라고 해 둔 기기: 하늘은 두고 흐르는 것만 멈춘다 */
+/*
+ * 움직임을 줄여 달라고 해 둔 기기: 하늘은 그대로 두고 움직이는 것만 멈춘다.
+ * 별은 사라지지 않는다 — 깜빡임만 멎고 켜진 채로 남는다.
+ */
 @media (prefers-reduced-motion: reduce) {
   .sky-meteors {
     display: none;
   }
-  .sky-stars {
+  .sky-dust {
+    opacity: 0.7;
+  }
+  .sky-twinkle i {
     animation: none;
-    opacity: 0.9;
+    opacity: 0.8;
   }
 }
