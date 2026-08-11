@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { getLocale } from '@/lib/locale';
 import SkyBackdrop from '@/app/sky-backdrop';
+import SkySundown from '@/app/sky-sundown';
 import { pick } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 import { asc } from 'drizzle-orm';
@@ -66,6 +67,9 @@ async function CategoryData({ slug }: { slug: string }) {
   ]);
 
   return (
+    <>
+    {/* 해가 지는 것은 본문이 도착한 뒤에 시작한다 (app/sky-sundown.tsx 주석 참고) */}
+    <SkySundown />
     <CategoryClient
       slug={slug}
       initial={{
@@ -79,6 +83,7 @@ async function CategoryData({ slug }: { slug: string }) {
         signups,
       }}
     />
+    </>
   );
 }
 

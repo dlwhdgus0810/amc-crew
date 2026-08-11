@@ -1,7 +1,3 @@
-'use client';
-
-import { useEffect, useRef } from 'react';
-
 /**
  * 별보러가자 화면의 밤하늘 배경.
  *
@@ -63,58 +59,14 @@ const STARS: { top: number; left: number; size: number; delay: number; dur: numb
 ];
 
 /**
- * 하늘을 그리고, sunset이면 해가 지는 것을 맡는다.
+ * 하늘을 그린다. 언제 저물지는 이 조각이 정하지 않는다 — app/sky-sundown.tsx가 맡는다.
  *
- * 화면 전체가 낮 색에서 밤 색으로 흐른다 — 배경뿐 아니라 글씨·카드·머리띠·탭바까지.
- * 서버는 낮 색 그대로 내려보내고(.sky-scope만), 화면에 한 프레임 뜬 뒤 .night을 얹는다.
- * 그 순간 CSS 변수가 밤 값으로 바뀌고, 잠깐 깔아 둔 transition을 타고 모든 색이 흐른다.
- *
- * 한 프레임을 기다리는 이유: 붙이는 것이 너무 이르면 브라우저가 낮 색을 한 번도 안 그린
- * 채로 밤 값과 함께 첫 화면을 만든다. 그러면 흐를 「출발점」이 없어서 처음부터 밤이 된다.
- *
- * 다만 requestAnimationFrame은 **화면이 안 보이는 동안 아예 안 불린다** — 뒤쪽 탭으로
- * 열었거나 그 사이 화면이 꺼졌으면 영영 안 온다. 그것만 믿고 있으면 그 사람 화면은
- * 낮 색인 채로 남는다. 그래서 타이머를 같이 걸고 먼저 오는 쪽을 쓴다.
- *
- * 다 지고 나면 transition을 걷는다. 남겨 두면 그 뒤로 버튼을 누를 때마다 색이 5초에 걸쳐
- * 바뀌어서 화면이 먹통처럼 느껴진다.
+ * 여기는 Suspense 바깥이라 첫 순간에 뜬다. 그래서 방아쇠를 여기 두면 아직 안 도착한
+ * 본문이 밤 색으로 그려진다 (그 조각의 주석 참고).
  */
 export default function SkyBackdrop({ sunset = false }: { sunset?: boolean }) {
-  const scope = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!sunset) return;
-    const el = scope.current?.closest('.sky-scope');
-    if (!el) return;
-
-    let raf2 = 0;
-    let started = false;
-    const start = () => {
-      if (started) return;
-      started = true;
-      document.body.classList.add('sky-sundown');
-      el.classList.add('night');
-    };
-
-    // 두 프레임을 기다린다 — 한 프레임은 낮 색이 실제로 그려질 시간이다
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(start);
-    });
-    // 화면이 안 보여서 프레임이 안 오는 경우의 대비책 (먼저 오는 쪽이 이긴다)
-    const fallback = setTimeout(start, 150);
-    const done = setTimeout(() => document.body.classList.remove('sky-sundown'), 6000);
-
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      clearTimeout(fallback);
-      clearTimeout(done);
-      document.body.classList.remove('sky-sundown');
-    };
-  }, [sunset]);
-
   return (
-    <div className="sky-backdrop" ref={scope} aria-hidden="true">
+    <div className="sky-backdrop" aria-hidden="true">
       <span className="sky-night" />
       {sunset && <span className="sky-dusk" />}
       <span className="sky-dust" />
