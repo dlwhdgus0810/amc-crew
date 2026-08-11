@@ -1819,7 +1819,8 @@ h2 {
     50% 100%, 42% 58%, 0% 50%, 42% 42%
   );
   opacity: 0.28;
-  animation: star-twinkle 6s ease-in-out infinite;
+  /* 화면 배경 별과 같은 이유로 느긋하게 (예전 6s) */
+  animation: star-twinkle 12s ease-in-out infinite;
 }
 .meteors b:nth-of-type(1) { top: 20%; left: 78%; animation-delay: 0s; }
 .meteors b:nth-of-type(2) { top: 58%; left: 88%; animation-delay: 2s; width: 7px; height: 7px; }
