@@ -33,11 +33,11 @@ const ENTRIES: ChangelogEntry[] = [
   {
     at: '2026-08-09T18:00',
     notable: true,
-    title: { ko: '내일 일식 — 별보러가자 🌌', en: 'Eclipse tomorrow — Chasing the Eclipse 🌌' },
+    title: { ko: '8월 12일 일식 — 별보러가자 🌌', en: 'Eclipse tomorrow — Chasing the Eclipse 🌌' },
     items: [
       {
-        ko: '내일 일식이라 하루짜리 카드를 하나 열었어요. 둘러보기 맨 끝에 있어요.',
-        en: 'There’s an eclipse tomorrow, so there’s a one-day card for it — last one in Browse.',
+        ko: '내일 모레가 일식이라 하루짜리 카드를 하나 열었어요. 둘러보기 맨 끝에 있어요.',
+        en: 'There’s an eclipse day after tomorrow, so there’s a one-day card for it — last one in Browse.',
       },
       {
         ko: '여기는 전부 익명이에요. 연 사람도, 명단도, 댓글도 「익명」으로만 보여요. 얼굴도 안 보이고요.',
