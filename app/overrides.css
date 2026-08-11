@@ -1819,19 +1819,21 @@ h2 {
     50% 100%, 42% 58%, 0% 50%, 42% 42%
   );
   opacity: 0.28;
-  /* 화면 배경 별과 같은 이유로 느긋하게 (예전 6s) */
-  animation: star-twinkle 12s ease-in-out infinite;
+  /* 화면 배경 별과 같은 이유로 느긋하게 (예전 6s). backwards는 시작 전 「켜져 있다 툭 꺼짐」을 막는다 */
+  animation: star-twinkle 12s ease-in-out infinite backwards;
 }
 .meteors b:nth-of-type(1) { top: 20%; left: 78%; animation-delay: 0s; }
 .meteors b:nth-of-type(2) { top: 58%; left: 88%; animation-delay: 2s; width: 7px; height: 7px; }
 .meteors b:nth-of-type(3) { top: 10%; left: 60%; animation-delay: 4s; width: 6px; height: 6px; }
 
 /* 폭이 좁으면 그냥 켜져 있는 점으로 보인다 — 화면 배경 별과 같은 이유로 넓게 잡는다 */
+/* 화면 배경 별(star-blink)과 같은 규칙 — 양 끝이 같고, 가운데를 더 짚는다 */
 @keyframes star-twinkle {
-  /* 화면 배경 별과 같은 이유 — 제일 밝을 때 똑바로 선다 */
-  0% { opacity: 0.12; transform: scale(0.5) rotate(-22deg); }
+  0% { opacity: 0.12; transform: scale(0.5) rotate(-16deg); }
+  25% { opacity: 0.3; transform: scale(0.72) rotate(-8deg); }
   50% { opacity: 0.85; transform: scale(1) rotate(0deg); }
-  100% { opacity: 0.12; transform: scale(0.5) rotate(22deg); }
+  75% { opacity: 0.3; transform: scale(0.72) rotate(-8deg); }
+  100% { opacity: 0.12; transform: scale(0.5) rotate(-16deg); }
 }
 
 /* 움직임을 줄여 달라고 해 둔 기기에서는 그림 자체를 안 그린다 */
@@ -1958,6 +1960,14 @@ h2 {
   animation-name: star-blink;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
+  /*
+   * backwards가 없으면 **시작 시각을 기다리는 동안 별이 활짝 켜져 있다.**
+   * 애니메이션이 아직 시작 안 했으니 그냥 요소의 기본값(opacity 1)이 보이는 것이고,
+   * 시작하는 순간 0%인 0.15로 뚝 떨어진다 — 켜져 있던 별이 한 번에 꺼지는 것처럼 보인다.
+   * 시작 시각이 0~5.2초로 흩어져 있어서 처음 몇 초 동안 하나씩 툭툭 꺼졌다.
+   * backwards는 기다리는 동안에도 0%(어두운 상태)를 보여준다.
+   */
+  animation-fill-mode: backwards;
 }
 /* 몇 개는 따뜻한 빛으로 — 실제 하늘도 별빛 색이 한 가지가 아니다 */
 .sky-twinkle i.warm {
@@ -1972,14 +1982,23 @@ h2 {
  * 밝아지면서 살짝 커진다. 네갈래 모양이라 커지는 것이 「빛이 뻗는다」로 보인다 —
  * 동그란 점일 때는 같은 값이 그냥 커졌다 작아지는 점이었다.
  */
+/*
+ * 어두운 데서 천천히 차올랐다가 다시 천천히 잦아든다.
+ *
+ * 처음과 끝이 **완전히 같은 값**이어야 한다. 예전에는 끝이 rotate(22deg), 처음이
+ * rotate(-22deg)라 한 바퀴 돌 때마다 44도가 한순간에 튀었다 — 그 순간이 「툭」 하고
+ * 끊기는 것처럼 보인다. 이제 양 끝이 같아서 이어 붙는 자리가 없다.
+ *
+ * 가운데를 두 단 더 짚어 준다. 세 점(어둡다-밝다-어둡다)만 두면 쉬지 않고 오르내려서
+ * 숨 쉬는 것처럼 보이는데, 실제 별은 대체로 어둑하게 있다가 잠깐 살아난다.
+ * 가장 밝을 때 똑바로 선다 — 밝아질수록 별 모양이 또렷해져야 맞다.
+ */
 @keyframes star-blink {
-  /*
-   * 가장 밝을 때 똑바로 선다. 회전을 0→45도로 두면 제일 밝은 순간에 45도가 되어
-   * 별이 아니라 ×로 보인다 — 밝아질수록 별 모양이 또렷해져야 맞다.
-   */
-  0% { opacity: 0.15; transform: scale(0.45) rotate(-22deg); }
+  0% { opacity: 0.14; transform: scale(0.5) rotate(-16deg); }
+  25% { opacity: 0.34; transform: scale(0.72) rotate(-8deg); }
   50% { opacity: 1; transform: scale(1) rotate(0deg); }
-  100% { opacity: 0.15; transform: scale(0.45) rotate(22deg); }
+  75% { opacity: 0.34; transform: scale(0.72) rotate(-8deg); }
+  100% { opacity: 0.14; transform: scale(0.5) rotate(-16deg); }
 }
 
 .sky-meteors {
