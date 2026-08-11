@@ -99,7 +99,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   if (!cat.meteors) return body;
   return (
     <div className="sky-scope">
-      <SkyBackdrop />
+      <SkyBackdrop sunset />
       {body}
     </div>
   );

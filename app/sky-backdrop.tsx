@@ -9,10 +9,11 @@
  * 서버에서 그려지는 마크업이라 첫 화면부터 밤이다. 나중에 자바스크립트로 몸통에 클래스를
  * 붙이는 방식이었다면 크림색이 한 번 번쩍하고 지나간다.
  *
- * 하늘은 세 겹이다.
- *  1. 촘촘한 잔별 — 배경 그림 한 겹. 가만히 있고, 수가 많아도 요소가 늘지 않는다.
- *  2. 반짝이는 별 — 아래 STARS. 네갈래 반짝임 모양이고, 하나씩 따로 밝기가 오르내린다.
- *  3. 유성 — 가끔 지나간다.
+ * 하늘은 네 겹이다.
+ *  1. 어스름 — 들어온 직후에만. 해가 넘어가듯 걷히면서 아래의 밤이 드러난다.
+ *  2. 촘촘한 잔별 — 배경 그림 한 겹. 가만히 있고, 수가 많아도 요소가 늘지 않는다.
+ *  3. 반짝이는 별 — 아래 STARS. 네갈래 반짝임 모양이고, 하나씩 따로 밝기가 오르내린다.
+ *  4. 유성 — 가끔 지나간다.
  */
 
 /**
@@ -57,9 +58,20 @@ const STARS: { top: number; left: number; size: number; delay: number; dur: numb
   { top: 71, left: 3, size: 8.5, delay: 0.5, dur: 9.6 },
 ];
 
-export default function SkyBackdrop() {
+/**
+ * sunset을 켜면 어스름에서 시작해 밤으로 내려간다 (5.5초).
+ *
+ * 낮에서 시작하지 않는 이유: 이 화면의 글씨는 이미 밤용 크림색이라, 배경이 밝으면
+ * 그동안 글이 안 읽힌다. 해가 막 넘어간 직후에서 시작하면 처음부터 끝까지 읽히면서도
+ * 「저물어 간다」는 느낌은 그대로 난다.
+ *
+ * 카테고리 화면에서만 켠다. 거기서 모임을 눌러 들어갈 때마다 다시 해가 지면,
+ * 한 번 볼 때는 멋있던 것이 두 번째부터는 기다리는 시간이 된다.
+ */
+export default function SkyBackdrop({ sunset = false }: { sunset?: boolean }) {
   return (
-    <div className="sky-backdrop" aria-hidden="true">
+    <div className={`sky-backdrop${sunset ? ' sunset' : ''}`} aria-hidden="true">
+      {sunset && <span className="sky-dusk" />}
       <span className="sky-dust" />
       <span className="sky-twinkle">
         {STARS.map((s, i) => (
