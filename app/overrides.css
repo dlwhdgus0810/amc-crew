@@ -1994,17 +1994,29 @@ body.sky-sundown .tabbar * {
   );
 }
 .sky-scope.night .sky-dusk {
-  animation: sky-sundown 5.5s ease-in-out forwards;
+  /* 박자는 아래 키프레임이 구간마다 따로 정한다 — 여기서는 linear로 두고 맡긴다 */
+  animation: sky-sundown 5.5s linear forwards;
 }
 /*
  * 노을만 오르내리는 모양이라 transition으로는 못 하고 animation을 쓴다.
- * 대신 한가운데(50%)에서 가장 붉게 두어 다른 겹과 걸음을 맞춘다 — 예전에는 30%에서
- * 먼저 치솟아서 노을만 혼자 앞서가는 것처럼 보였다.
+ *
+ * 올라오는 구간을 ease-in으로 둔 것이 요점이다. 다른 것들은 전부 ease-in으로 흐르는데
+ * 노을만 ease-in-out에 한가운데가 최고조였더니, 1.6초쯤에 색은 13%밖에 안 갔는데
+ * 노을은 57%까지 올라와 있었다 — 카드는 아직 흰데 뒤만 자줏빛인 그 상태다.
+ * 지금은 같은 시점에 색 13% / 노을 17%로 붙어 간다. 최고조도 0.85에서 0.6으로 낮췄다.
  */
 @keyframes sky-sundown {
-  0% { opacity: 0; }
-  50% { opacity: 0.85; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+    animation-timing-function: ease-in;
+  }
+  65% {
+    opacity: 0.6;
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /*
