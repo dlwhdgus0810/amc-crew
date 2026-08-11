@@ -546,10 +546,6 @@ const ENTRIES: ChangelogEntry[] = [
         en: 'Tap a name in Friends to see their upcoming and past meetups — the ones you both went to are marked “Together”.',
       },
       {
-        ko: '친구마다 내 모임을 어디까지 보여줄지 정할 수 있어요. 전부 · 예정만 · 숨김 중에 고르면 돼요.',
-        en: 'For each friend you choose how much of yours they see: all, upcoming only, or hidden.',
-      },
-      {
         ko: '비공개 모임은 어느 경우에도 친구에게 보이지 않아요.',
         en: 'Private meetups never appear there, whichever setting you pick.',
       },
@@ -570,24 +566,6 @@ const ENTRIES: ChangelogEntry[] = [
       {
         ko: '모임을 만들 때 누구 생일인지 적어두면 카드에 같이 보여요.',
         en: 'Note whose birthday it is when you create one, and it shows on the card.',
-      },
-    ],
-  },
-  {
-    at: '2026-08-01T16:50',
-    title: { ko: '접속 중인 걸 누구에게 보여줄지 고를 수 있어요', en: 'Choose who sees you online' },
-    items: [
-      {
-        ko: '친구 화면의 내 친구 목록에서 사람마다 「내 접속 보임」을 눌러 끌 수 있어요. 지금까지처럼 모두에게 보이는 게 기본이에요.',
-        en: 'In your friends list, tap “They see you” on anyone to turn it off. It stays on by default, as before.',
-      },
-      {
-        ko: '감춘 친구에게는 그냥 접속 중이 아닌 것으로 보여요. 감췄다는 건 알려지지 않아요.',
-        en: 'To them you simply look offline — they’re never told you hid it.',
-      },
-      {
-        ko: '한쪽 방향만 바뀌어요. 내가 감춰도 그 친구가 접속 중인 건 그대로 보여요.',
-        en: 'It only works one way — you still see them when they’re online.',
       },
     ],
   },
@@ -640,10 +618,6 @@ const ENTRIES: ChangelogEntry[] = [
       {
         ko: '같이 가기로 한 친구를 대신 넣어줄 수 있어요. 참가자 명단의 ＋친구를 누르세요.',
         en: 'You can put a friend into a meetup yourself — tap ＋친구 in the participant list.',
-      },
-      {
-        ko: '지금 앱을 보고 있는 친구가 누구인지 볼 수 있어요. 친구끼리만 보여요.',
-        en: 'See which of your friends are in the app right now — friends only.',
       },
       {
         ko: '비공개 모임을 만들 때 어떤 친구에게 알릴지 고를 수 있어요. 고른 친구에게만 링크가 담긴 알림이 가요.',
