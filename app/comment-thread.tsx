@@ -43,6 +43,11 @@ const T = {
   anonMine: { ko: '{name}(익명)', en: '{name} (anonymous)', es: '{name} (anónimo)' },
   anonToggle: { ko: '익명으로', en: 'Anonymously', es: 'En anónimo' },
   anonHint: { ko: '다른 사람에게 닉네임이 안 보여요', en: 'Others won’t see your nickname', es: 'Los demás no verán tu apodo' },
+  anonAlways: {
+    ko: '여기 댓글은 모두 익명이에요',
+    en: 'Every comment here is anonymous',
+    es: 'Aquí todos los comentarios van en anónimo',
+  },
   failed: { ko: '요청 실패', en: 'Something went wrong', es: 'Algo salió mal' },
   justNow: { ko: '방금', en: 'now', es: 'ahora' },
   minsAgo: { ko: '{n}분', en: '{n}m', es: '{n} min' },
@@ -63,6 +68,7 @@ export default function CommentThread({
   currentUserId,
   isAdmin,
   lockedCount,
+  alwaysAnonymous,
   onChanged,
   onError,
 }: {
@@ -70,6 +76,8 @@ export default function CommentThread({
   comments: CommentView[];
   currentUserId?: string;
   isAdmin?: boolean;
+  /** 카테고리가 통째로 익명이면 고를 것이 없다 — 체크칸 대신 그렇다고 알려준다 */
+  alwaysAnonymous?: boolean;
   /** 비로그인이라 내려오지 않은 댓글 수 — 있으면 "로그인 후 볼 수 있어요"로 알려준다 */
   lockedCount?: number;
   /** 서버 상태가 바뀌었으니 다시 불러오라는 신호 */
@@ -257,10 +265,15 @@ export default function CommentThread({
               {t(T.submit)}
             </button>
           </div>
-          <label className="comment-anon" title={t(T.anonHint)}>
-            <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
-            <span>{t(T.anonToggle)}</span>
-          </label>
+          {alwaysAnonymous ? (
+            // 끌 수 없는 것을 체크칸으로 두면 「끌 수 있나?」로 읽힌다 — 사실만 적는다
+            <p className="comment-anon">{t(T.anonAlways)}</p>
+          ) : (
+            <label className="comment-anon" title={t(T.anonHint)}>
+              <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+              <span>{t(T.anonToggle)}</span>
+            </label>
+          )}
         </div>
       ) : (
         <div className="comment-empty">{t(T.loginToComment)}</div>

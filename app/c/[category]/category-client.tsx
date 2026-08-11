@@ -370,6 +370,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const t = useT();
   const locale = useLocale();
   const category = getCategory(slug);
+  /** 이름이 하나도 안 보이는 카테고리 — 이름에 딸린 기능들을 화면에서도 내린다 */
+  const anonCat = category?.anonymous === true;
   const name = category ? t(catDisplayName(category.slug)) : slug;
   const color = category?.color ?? '#101010';
   const titleLabel = category?.titleLabel ? t(category.titleLabel) : undefined;
@@ -1668,9 +1670,17 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           aria-label={namesLine || undefined}
         >
           <span className="ava-stack" aria-hidden="true">
-            {shown.map((p) => (
-              <span className={`ava ${user && p.id === user.id ? 'me' : ''}`} key={p.id} title={p.name}>
-                {p.avatar ? <img src={p.avatar} alt="" /> : p.name.slice(0, 1)}
+            {shown.map((p, i) => (
+              <span
+                className={`ava ${user && p.id === user.id ? 'me' : ''}`}
+                key={`${p.id}-${i}`}
+                title={p.name}
+              >
+                {/*
+                  * 익명 카테고리에서는 얼굴 자리에 「익」이 줄줄이 서 버린다 (이름 첫 글자를 쓰므로).
+                  * 같은 글자 네 개는 가린 것처럼 보이지 않고 고장난 것처럼 보인다 — 점 하나로 둔다.
+                  */}
+                {anonCat ? '·' : p.avatar ? <img src={p.avatar} alt="" /> : p.name.slice(0, 1)}
                 {hostTier(p.hostCount) && (
                   <span className="host-sticker" title={t(hostTier(p.hostCount)!.label)}>
                     {hostTier(p.hostCount)!.sticker}
@@ -1693,12 +1703,17 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         </button>
         {peopleOpen && (
           <div className="people-list">
-            {post.participants.map((p) => {
+            {post.participants.map((p, i) => {
               const isMe = Boolean(user && p.id === user.id);
-              // 로그인한 사람에게만 눌리는 칩 — 비로그인은 애초에 명단을 못 본다
-              if (!user || isMe) {
+              /*
+               * 로그인한 사람에게만 눌리는 칩 — 비로그인은 애초에 명단을 못 본다.
+               * 이름이 안 보이는 카테고리에서는 아무도 안 눌린다: 누를 수 있으면 익명인
+               * 사람에게 친구 요청을 보낼 수 있고, 보내는 순간 누구인지 알게 된다.
+               * (서버도 같은 자리를 막지만, 눌리지 않는 편이 「왜 안 되지」를 안 만든다)
+               */
+              if (!user || isMe || anonCat) {
                 return (
-                  <span className="person-chip" key={p.id}>
+                  <span className="person-chip" key={`${p.id}-${i}`}>
                     {p.name}
                     {isMe ? ` (${t(T.me)})` : ''}
                   </span>
@@ -1718,7 +1733,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             })}
             {/* 대신 넣기 — 명단에 없는 친구를 부르는 입구라 참가자 칩과는 따로 둔다.
                 관리자는 언제든, 호스트는 지난 모임에서도 (그날 온 사람을 뒤늦게 적는다) */}
-            {user && (isAdmin || (past && (mine || isCoHost)) || (!past && !full)) && (
+            {user && !anonCat && (isAdmin || (past && (mine || isCoHost)) || (!past && !full)) && (
               <button className="person-chip add" onClick={() => setAddTo(post)}>
                 ＋ {t(T.friendChip)}
               </button>
@@ -1767,8 +1782,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                 </Link>
               )
             ))}
-          {/* 참가한 사람에게만 — 정산은 같이 낸 사람들 사이의 일이다 */}
-          {joined && (
+          {/* 참가한 사람에게만 — 정산은 같이 낸 사람들 사이의 일이다.
+              익명 카테고리에는 아예 안 띄운다: 정산 화면이 금액 옆에 명단을 펴 놓는다 */}
+          {joined && !anonCat && (
             <Link className={`link-btn ${post.settle?.myCents ? 'strong' : ''}`} href={`/p/${post.id}#settle`}>
               {post.settle?.myCents
                 ? t(T.settleOwe, { amount: formatCents(post.settle.myCents) })
@@ -1808,6 +1824,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             postId={post.id}
             comments={post.comments}
             lockedCount={post.commentCount - post.comments.length}
+            alwaysAnonymous={anonCat}
             {...(user ? { currentUserId: user.id } : {})}
             isAdmin={isAdmin}
             onChanged={reloadAll}

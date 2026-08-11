@@ -334,7 +334,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           * 캘린더나 공유 링크로 들어오면 이 화면이라, 명단을 고칠 자리가 여기에도 있어야 한다.
           * 지난 모임에서도 보인다 — 뒤늦게 바로잡는 일이 대부분 지난 모임이다.
           */}
-        {(isAdmin || (past && (mine || post.coHost?.id === user?.id))) && (
+        {!cat?.anonymous && (isAdmin || (past && (mine || post.coHost?.id === user?.id))) && (
           <button className="link-btn" style={{ marginTop: 8 }} onClick={() => setRosterOpen(true)}>
             {t(T.roster)}
           </button>
@@ -383,7 +383,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         </div>
       </div>
 
-      {rosterOpen && (
+      {rosterOpen && !cat?.anonymous && (
         <AddFriendSheet
           postId={post.id}
           candidates={(isAdmin ? members : friends).filter((m) => !post.participants.some((p) => p.id === m.id))}
@@ -431,6 +431,8 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
        * 〈 〉는 뺐다. 앱 화면에서는 제목을 감싸 주는 표시지만, 메모 한 줄에서는 자리만
        * 먹고 어떤 글꼴에서는 네모로 깨진다. 날짜도 짧은 쪽을 쓴다 (뒤에 항목이 붙는다).
        */}
+      {/* 익명 카테고리에는 정산이 없다 — 금액 옆에 명단이 통째로 나온다 (서버도 403) */}
+      {!cat?.anonymous && (
       <SettlementPanel
         postId={post.id}
         participants={post.participants.map((p) => ({ id: p.id, name: p.name }))}
@@ -440,12 +442,14 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         myZelle={myZelle}
         noteLabel={`${catLabel}${post.title ? ` ${post.title}` : ''} ${whenLabelShort(post.date, post.startTime, locale)}`}
       />
+      )}
 
       <h2>{t(T.comments)} {post.commentCount > 0 ? post.commentCount : ''}</h2>
       <CommentThread
         postId={post.id}
         comments={post.comments}
         lockedCount={post.commentCount - post.comments.length}
+        alwaysAnonymous={cat?.anonymous === true}
         {...(user ? { currentUserId: user.id } : {})}
         isAdmin={isAdmin}
         onChanged={loadPost}

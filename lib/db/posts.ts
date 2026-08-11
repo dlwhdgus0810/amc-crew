@@ -5,7 +5,7 @@ import { getDb } from './index';
 import { commentLikes, favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
 import { LocalName, NameRow, nameOf, UNKNOWN_NAME } from '../store';
 import { getLocale } from '../locale';
-import { catName, getCategory } from '../categories';
+import { catName, getCategory, isAnonymous } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendPush } from '../push';
 import { isPastSlot, openEndCutoffTime, pastCutoff, todayLocal } from '../dates';
@@ -297,14 +297,29 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
 
   // 모임마다 닉네임 허용 여부가 다르다 — 참가자 이름은 그 모임의 규칙으로 만든다
   const nickOk = new Map(postRows.map((p) => [p.id, p.allowNicknames]));
+  /*
+   * 이름이 하나도 안 나가는 모임 (별보러가자처럼 anonymous를 켠 카테고리).
+   *
+   * 이름만 「익명」으로 바꾸고 끝내면 안 된다 — 회원번호가 그대로 딸려 나가면
+   * 개발자 도구를 여는 것만으로 누구인지 읽힌다(친구 목록·관리자 명부에 같은 번호가 있다).
+   * 그래서 보고 있는 본인 것만 진짜 번호를 남기고, 남의 것은 자리 번호로 바꾼다.
+   * 본인 것을 남기는 이유: 명단의 「나」 표시와 참가/나가기 버튼이 그걸로 판단한다.
+   */
+  const anonPost = new Map(postRows.map((p) => [p.id, isAnonymous(p.category)]));
+  const anonLabel = pick(locale, N.anon);
   const byPost = new Map<string, { id: string; name: string; avatar: string | null; hostCount: number }[]>();
   for (const p of participantRows) {
     if (!byPost.has(p.postId)) byPost.set(p.postId, []);
-    byPost.get(p.postId)!.push({
-      id: p.userId,
-      name: displayNameOf(userById.get(p.userId), UNKNOWN_NAME, locale, nickOk.get(p.postId) ?? false),
-      avatar: userById.get(p.userId)?.avatar ?? null,
-      hostCount: hostCounts.get(p.userId) ?? 0,
+    const list = byPost.get(p.postId)!;
+    const hidden = (anonPost.get(p.postId) ?? false) && p.userId !== viewerId;
+    list.push({
+      id: hidden ? `anon:${list.length}` : p.userId,
+      name: anonPost.get(p.postId)
+        ? anonLabel
+        : displayNameOf(userById.get(p.userId), UNKNOWN_NAME, locale, nickOk.get(p.postId) ?? false),
+      // 얼굴과 주최 횟수 뱃지도 사람을 가리킨다 — 이름만 가리면 가린 게 아니다
+      avatar: hidden ? null : (userById.get(p.userId)?.avatar ?? null),
+      hostCount: anonPost.get(p.postId) ? 0 : (hostCounts.get(p.userId) ?? 0),
     });
   }
 
@@ -319,12 +334,15 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   for (const c of commentRows) {
     if (!commentsByPost.has(c.postId)) commentsByPost.set(c.postId, []);
     // 익명 댓글은 남의 화면에서 닉네임만 가린다 (쓴 본인에게는 그대로 보인다)
-    const hideName = c.anonymous && c.userId !== viewerId;
+    const mine = c.userId === viewerId;
+    const anon = c.anonymous || (anonPost.get(c.postId) ?? false);
+    const hideName = anon && !mine;
     commentsByPost.get(c.postId)!.push({
       id: c.id,
-      userId: c.userId,
+      // 참가자 명단과 같은 이유로 남의 회원번호는 안 내보낸다
+      userId: hideName ? '' : c.userId,
       name: hideName ? null : displayNameOf(userById.get(c.userId), UNKNOWN_NAME, locale, nickOk.get(c.postId) ?? false),
-      anonymous: c.anonymous,
+      anonymous: anon,
       body: c.body,
       createdAt: c.createdAt.toISOString(),
       parentId: c.parentId ?? null,
@@ -335,9 +353,21 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
 
   return postRows.map((p) => ({
     ...shellOf(p),
-    authorName: displayNameOf(userById.get(p.authorId), UNKNOWN_NAME, locale, p.allowNicknames),
+    /*
+     * 연 사람의 회원번호도 가린다 — 이름을 「익명」으로 바꿔 놓고 번호를 남기면
+     * 누가 열었는지 그대로 읽힌다. 본인에게는 남긴다: 수정·삭제 버튼이 이걸로 판단한다.
+     */
+    ...(anonPost.get(p.id) && p.authorId !== viewerId ? { authorId: '' } : {}),
+    authorName: anonPost.get(p.id)
+      ? anonLabel
+      : displayNameOf(userById.get(p.authorId), UNKNOWN_NAME, locale, p.allowNicknames),
     coHost: p.coHostId
-      ? { id: p.coHostId, name: displayNameOf(userById.get(p.coHostId), UNKNOWN_NAME, locale, p.allowNicknames) }
+      ? {
+          id: anonPost.get(p.id) && p.coHostId !== viewerId ? '' : p.coHostId,
+          name: anonPost.get(p.id)
+            ? anonLabel
+            : displayNameOf(userById.get(p.coHostId), UNKNOWN_NAME, locale, p.allowNicknames),
+        }
       : null,
     participants: byPost.get(p.id) ?? [],
     participantCount: (byPost.get(p.id) ?? []).length,
@@ -454,7 +484,7 @@ export async function notifyComment(
          * 이 문자열 하나가 인앱·카톡·푸시로 그대로 나가므로(sendNotice), 여기서 막으면 세 곳이 함께 막힌다.
          * 화면에서는 가려지는데 알림에는 이름이 찍히면, 익명으로 적은 사람은 가려진 줄 알고 적는다.
          */
-        name: anonymous ? pick(locale, N.anon) : commenterName(locale),
+        name: anonymous || isAnonymous(post.category) ? pick(locale, N.anon) : commenterName(locale),
         body: snippet,
       })}`,
     N.btnComment
@@ -629,7 +659,14 @@ export async function notifyFriendJoin(
    */
   joinerId?: string
 ): Promise<void> {
-  if (post.visibility === 'link' || recipientIds.length === 0) return;
+  /*
+   * 이름이 안 보이는 카테고리에서는 이 알림 자체가 나가지 않는다.
+   *
+   * 「○○님이 참가했어요 · 🌌 별보러가자」는 문구를 바꿔서 될 일이 아니다 —
+   * 이름을 「익명」으로 바꿔도 **받은 사람이 자기 친구 목록과 맞춰 보면** 누구인지 좁혀진다.
+   * 알림이 간다는 사실 자체가 「내 친구 중 누군가가 저기 있다」는 말이다.
+   */
+  if (post.visibility === 'link' || recipientIds.length === 0 || isAnonymous(post.category)) return;
   if (joinerId && adminIds().includes(joinerId)) return;
   await insertInAppNotice(
     recipientIds,
@@ -649,6 +686,8 @@ export async function notifyAddedToPost(
   actorName: LocalName,
   addedUserId: string
 ): Promise<void> {
+  // 이 카테고리에서는 대신 넣기 자체가 막혀 있지만(라우트), 여기서도 이름을 안 흘린다
+  if (isAnonymous(post.category)) return;
   await insertInAppNotice(
     [addedUserId],
     post.id,
@@ -781,7 +820,8 @@ export async function createPost(input: {
           input.title,
           locale
         ),
-        name: input.authorName(locale),
+        // 이름이 안 보이는 카테고리에서는 알림 문구에도 안 나간다
+        name: isAnonymous(input.category) ? pick(locale, N.anon) : input.authorName(locale),
       })
   );
 
@@ -819,7 +859,7 @@ export async function createPost(input: {
     input.visibility === 'link' && !input.silent && (input.inviteFriendIds?.length ?? 0) > 0
       ? await buildNotice(input.inviteFriendIds!, (locale) =>
           `🤝 ${pick(locale, N.inviteLine, {
-            name: input.authorName(locale),
+            name: isAnonymous(input.category) ? pick(locale, N.anon) : input.authorName(locale),
             text: describeForNotification(
               input.category,
               N.meetup,
@@ -986,7 +1026,7 @@ export async function updatePost(input: {
         input.title,
         locale
       ),
-      name: input.actorName(locale),
+      name: isAnonymous(input.category) ? pick(locale, N.anon) : input.actorName(locale),
     })
   );
 
@@ -1075,7 +1115,7 @@ export async function deletePost(
     (locale) =>
       pick(locale, N.byActor, {
         text: describeForNotification(post.category, N.cancelled, post.date, post.startTime, post.location, post.title, locale),
-        name: actorName(locale),
+        name: isAnonymous(post.category) ? pick(locale, N.anon) : actorName(locale),
       }),
     N.btnOther
   );

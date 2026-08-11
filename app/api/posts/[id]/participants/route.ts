@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { isAnonymous } from '@/lib/categories';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
@@ -30,6 +31,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const post = await getPost(id);
   if (!post) {
     return await errJson(E.postNotFound, 404);
+  }
+  /*
+   * 이름이 안 보이는 카테고리에서는 남을 넣을 수 없다 — 관리자도 마찬가지다.
+   * 넣으면 넣긴 사람에게 「◯◯님이 이 모임에 넣었어요」가 가고, 그건 「내가 저기 있다」를
+   * 남이 정해 준다는 뜻이다. 익명으로 갈 곳은 본인이 직접 누르고 들어간다.
+   */
+  if (isAnonymous(post.category)) {
+    return await errJson(E.anonNoFriendAdd, 403);
   }
 
   const body = await req.json().catch(() => null);

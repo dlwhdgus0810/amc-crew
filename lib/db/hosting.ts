@@ -1,9 +1,10 @@
 import { unstable_cache } from 'next/cache';
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
 import { postParticipants, posts, users } from './schema';
 import { NameRow, nameOf, UNKNOWN_NAME } from '../store';
+import { ANONYMOUS_SLUGS } from '../categories';
 import { Locale } from '../i18n';
 import { adminIds } from '../auth';
 import { openEndCutoffTime, pastCutoff } from '../dates';
@@ -26,6 +27,19 @@ import { POSTS_TAG } from '../cache-tags';
  * 관리자는 어느 집계에도 넣지 않는다. 운영하느라 시험 삼아 여는 모임이 섞여 있어서
  * 숫자가 실제 참여를 나타내지 않고, 관리자가 1등인 순위표는 순위표가 아니다.
  */
+
+/**
+ * 이름이 안 보이는 카테고리(별보러가자)는 어느 집계에도 넣지 않는다.
+ *
+ * 순위표는 사람 이름 옆에 숫자를 놓는 표다. 「전부 익명」이라고 해 놓고 다녀온 만큼
+ * 점수가 오르면 앞뒤가 안 맞는다 — 그 주에 누구 숫자가 올랐는지 견주면 좁혀지기도 한다.
+ * 아바타에 붙는 주최 뱃지(hostCountsFor)도 같은 이유로 이 집계를 쓴다.
+ */
+function notAnonymous() {
+  return ANONYMOUS_SLUGS.length === 0
+    ? sql`TRUE`
+    : sql`p.category NOT IN (${sql.join(ANONYMOUS_SLUGS.map((c) => sql`${c}`), sql`, `)})`;
+}
 
 /** drizzle의 execute 반환 형태가 드라이버마다 다르다 (neon-http는 { rows }, 배열인 경우도 있다) */
 function resultRows(res: unknown): Record<string, unknown>[] {
@@ -65,7 +79,7 @@ function points() {
       (SELECT count(*) FROM post_participants pp WHERE pp.post_id = p.id)::numeric AS people,
       CASE WHEN p.co_host_id IS NULL THEN 1 ELSE 2 END AS hosts
     FROM posts p
-    WHERE p.visibility = 'public' AND ${endedSql()}
+    WHERE p.visibility = 'public' AND ${notAnonymous()} AND ${endedSql()}
   ), shares AS (
     SELECT author_id AS user_id, people / hosts AS pts FROM hosted
     UNION ALL
@@ -153,7 +167,7 @@ async function joinQuery(limit: number): Promise<RankSeed[]> {
     .select({ id: postParticipants.userId, n: sql<number>`count(*)::int` })
     .from(postParticipants)
     .innerJoin(p, eq(p.id, postParticipants.postId))
-    .where(and(eq(p.visibility, 'public'), endedSql()))
+    .where(and(eq(p.visibility, 'public'), notInArray(p.category, ANONYMOUS_SLUGS), endedSql()))
     .groupBy(postParticipants.userId)
     .orderBy(desc(sql`count(*)`), asc(postParticipants.userId));
   return withProfiles(rows, limit);

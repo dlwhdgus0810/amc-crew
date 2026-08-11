@@ -48,6 +48,16 @@ export const E = {
   requestNotFound: { ko: '제안을 찾을 수 없어요.', en: 'Suggestion not found.', es: 'Propuesta no encontrada.' },
   nickname: { ko: '닉네임은 20자 이하로 입력해주세요.', en: 'Nickname must be 20 characters or fewer.', es: 'El apodo admite 20 caracteres como máximo.' },
   nicknameBad: { ko: '닉네임 형식이 올바르지 않아요.', en: 'That nickname isn’t valid.', es: 'Ese apodo no es válido.' },
+  anonNoSettle: {
+    ko: '여기는 모두 익명이라 정산을 열 수 없어요. 금액 옆에 이름이 그대로 나오거든요.',
+    en: 'Everyone here is anonymous, so settlements are off — they list names next to amounts.',
+    es: 'Aquí todos van en anónimo, así que no hay cuentas: mostrarían nombres junto a los importes.',
+  },
+  anonNoFriendAdd: {
+    ko: '여기는 모두 익명이라 명단에서 친구를 넣거나 요청할 수 없어요.',
+    en: 'Everyone here is anonymous — you can’t add or friend people from this roster.',
+    es: 'Aquí todos van en anónimo: no puedes añadir ni agregar a nadie desde esta lista.',
+  },
   nameEn: { ko: '영어 이름은 30자 이하로 입력해주세요.', en: 'English name must be 30 characters or fewer.', es: 'El nombre en inglés admite 30 caracteres como máximo.' },
   nameEnBad: {
     ko: '영어 이름에는 로마자와 공백, - . \' 만 쓸 수 있어요.',

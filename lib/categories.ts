@@ -54,6 +54,23 @@ export interface Category {
   };
   /** 카테고리 안에서 여는 도구 (무비나잇 → AMC 회차 고르기) */
   tool?: { href: string; label: Msg; desc: Msg };
+  /**
+   * 이 카테고리 안에서는 **아무 이름도 보이지 않는다.**
+   *
+   * 모임을 연 사람, 명단, 댓글이 전부 「익명」이다. 얼굴(아바타)도, 주최 횟수 뱃지도,
+   * 알림 문구 속 이름도 빠진다. 켠 사람만 자기 자신을 알아본다 — 명단에서 「나」로 보이고
+   * 자기가 쓴 댓글은 「이름(익명)」으로 보인다.
+   *
+   * 이름이 새는 통로도 함께 닫는다. 이걸 켜면 자동으로:
+   *  - 정산을 열 수 없다 (금액 옆에 이름이 줄줄이 나온다)
+   *  - 명단의 사람을 눌러 친구 요청을 보낼 수 없고, 친구를 대신 넣을 수도 없다
+   *  - 「친구가 참가했어요」 알림이 안 나간다
+   *  - 순위표(호스팅·참여) 집계에서 빠진다
+   *
+   * 브라우저로 내려가는 값에서도 남의 회원번호를 지운다 — 이름만 「익명」으로 바꾸고
+   * id를 그대로 두면 개발자 도구로 누구인지 그대로 읽힌다.
+   */
+  anonymous?: true;
 }
 
 /** 카테고리별로 지정하지 않았을 때 쓰는 장소 문구 */
@@ -301,7 +318,45 @@ export const CATEGORIES: Category[] = [
     locationLabel: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
     locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
   },
+  /*
+   * 일식 하루짜리 카드. 끝나면 관리자 화면에서 목록에 내린다 (지우지 않는다 —
+   * 그날 찍은 사진과 댓글은 그대로 남는다).
+   *
+   * 색만 이 카드가 위의 규칙에서 벗어난다. 열네 장이 OKLCH L .55 / C .13 한 가족으로
+   * 묶여 있는데 색상환이 이미 꽉 차서, 어디에 끼워 넣어도 옆 카드와 같은 색으로 보인다.
+   * 그래서 밝기를 내려(L .34) 밤하늘 쪽으로 뺐다 — 한 번 열고 내릴 카드가 가족처럼
+   * 보이지 않는 편이 오히려 맞다. 크림색 글씨 대비는 11:1이다.
+   */
+  {
+    slug: 'stargazing',
+    emoji: '🌌',
+    en: 'ECLIPSE',
+    color: '#292F6F',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    anonymous: true,
+    name: { ko: '별보러가자', en: 'Chasing the Eclipse', es: 'A ver el eclipse' },
+    description: {
+      ko: '일식 하루만 열어요 · 여기선 모두 익명이에요',
+      en: 'Open for eclipse day only — everyone here is anonymous.',
+      es: 'Solo el día del eclipse: aquí todos van en anónimo.',
+    },
+    locationLabel: { ko: '볼 곳', en: 'Viewing spot', es: 'Sitio para verlo' },
+    locationHint: {
+      ko: '예: 클린턴 호수 주차장',
+      en: 'e.g. Clinton Lake parking lot',
+      es: 'p. ej. aparcamiento de Clinton Lake',
+    },
+  },
 ];
+
+/** 이름이 하나도 안 보이는 카테고리 — 여러 곳에서 물어보므로 한 줄로 둔다 */
+export function isAnonymous(slug: string): boolean {
+  return getCategory(slug)?.anonymous === true;
+}
+
+/** 순위 집계에서 통째로 빼는 데 쓴다 (질의 안에서 쓰려면 목록이 필요하다) */
+export const ANONYMOUS_SLUGS = CATEGORIES.filter((c) => c.anonymous).map((c) => c.slug);
 
 /** 포스트/구독이 가능한 카테고리 슬러그 (영화 제외) */
 export const POST_CATEGORY_SLUGS = CATEGORIES.filter((c) => c.kind === 'posts').map((c) => c.slug);

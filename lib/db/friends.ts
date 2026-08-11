@@ -1,12 +1,13 @@
-import { and, eq, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, ne, notInArray, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
-import { friendships, postParticipants, users } from './schema';
+import { friendships, postParticipants, posts, users } from './schema';
 import { LocalName, nameOf } from '../store';
 import { getLocale } from '../locale';
 import { ONLINE_WINDOW_MINUTES } from './presence';
 import { insertInAppNotice } from './posts';
 import { NOTIF } from '../notif-kinds';
+import { ANONYMOUS_SLUGS } from '../categories';
 import { Locale, Msg, pick } from '../i18n';
 
 /**
@@ -297,6 +298,10 @@ export async function pendingIncomingCount(me: string): Promise<number> {
 /**
  * 같은 모임에 있었던 사이인지 — 친구 요청을 보낼 수 있는 유일한 조건이다.
  * 지난 모임도 센다. 주최자는 모임을 만들 때 참가자로 들어가므로 자동으로 포함된다.
+ *
+ * 이름이 안 보이는 카테고리(별보러가자)의 모임은 여기서 세지 않는다. 세면 이 함수가
+ * 「저 사람 거기 있었나?」를 물어보는 창구가 된다 — 요청을 던져 보고 403이 오는지 200이
+ * 오는지로 답을 읽을 수 있다. 익명으로 다녀온 자리가 친구 요청 자격이 되어서는 안 된다.
  */
 export async function sharesMeetup(a: string, b: string): Promise<boolean> {
   const db = await getDb();
@@ -306,7 +311,14 @@ export async function sharesMeetup(a: string, b: string): Promise<boolean> {
     .select({ postId: mine.postId })
     .from(mine)
     .innerJoin(theirs, eq(theirs.postId, mine.postId))
-    .where(and(eq(mine.userId, a), eq(theirs.userId, b)))
+    .innerJoin(posts, eq(posts.id, mine.postId))
+    .where(
+      and(
+        eq(mine.userId, a),
+        eq(theirs.userId, b),
+        ...(ANONYMOUS_SLUGS.length > 0 ? [notInArray(posts.category, ANONYMOUS_SLUGS)] : [])
+      )
+    )
     .limit(1);
   return rows.length > 0;
 }

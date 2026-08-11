@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { isAnonymous } from '@/lib/categories';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
@@ -41,7 +42,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   await ensureUser(user);
-  const anonymous = Boolean(body?.anonymous);
+  // 이 카테고리에서는 체크를 안 했어도 익명이다 — 화면이 아니라 여기서 정한다
+  const anonymous = Boolean(body?.anonymous) || isAnonymous(post.category);
   const commentId = await addComment(id, user.id, text, parentId, anonymous);
 
   // 참가자(작성자 제외)에게 댓글 알림 — 실패해도 댓글 작성은 성공 처리

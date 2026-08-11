@@ -31,6 +31,29 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-09T18:00',
+    notable: true,
+    title: { ko: '내일 일식 — 별보러가자 🌌', en: 'Eclipse tomorrow — Chasing the Eclipse 🌌' },
+    items: [
+      {
+        ko: '내일 일식이라 하루짜리 카드를 하나 열었어요. 둘러보기 맨 끝에 있어요.',
+        en: 'There’s an eclipse tomorrow, so there’s a one-day card for it — last one in Browse.',
+      },
+      {
+        ko: '여기는 전부 익명이에요. 연 사람도, 명단도, 댓글도 「익명」으로만 보여요. 얼굴도 안 보이고요.',
+        en: 'Everything here is anonymous — the host, the roster, the comments. No faces either.',
+      },
+      {
+        ko: '그래서 여기서는 정산을 못 열고, 명단에서 친구를 추가하거나 대신 넣을 수도 없어요. 순위표에도 안 들어가요. 전부 이름이 드러나는 길이라서요.',
+        en: 'So there are no settle-ups, no adding people from the roster, and it doesn’t count toward the rankings — each of those would put a name on screen.',
+      },
+      {
+        ko: '일식이 끝나면 이 카드는 목록에서 내려요. 그날 남긴 사진과 댓글은 그대로 있어요.',
+        en: 'The card comes down after the eclipse. Whatever you leave there stays.',
+      },
+    ],
+  },
+  {
     at: '2026-08-09T11:00',
     notable: true,
     title: { ko: '영어 이름을 적어 둘 수 있어요', en: 'You can add an English name' },

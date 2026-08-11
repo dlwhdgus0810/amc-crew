@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
+import { isAnonymous } from '@/lib/categories';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView } from '@/lib/db/posts';
@@ -62,6 +63,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const post = await getPostView(id, user.id);
   if (!post) return await errJson(E.postNotFound, 404);
+  /*
+   * 이름이 안 보이는 카테고리에서는 정산을 열 수 없다.
+   * 정산 화면은 「지훈 $12 · 민서 $8」처럼 금액 옆에 명단을 통째로 펴 놓는다 —
+   * 카테고리를 익명으로 해 놓고 이걸 열어 두면 가린 의미가 없다.
+   */
+  if (isAnonymous(post.category)) return await errJson(E.anonNoSettle, 403);
   if (!post.participants.some((p) => p.id === user.id)) {
     return await errJson(E.settleParticipantOnly, 403);
   }
