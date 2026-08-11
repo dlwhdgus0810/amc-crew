@@ -71,6 +71,11 @@ export interface Category {
    * id를 그대로 두면 개발자 도구로 누구인지 그대로 읽힌다.
    */
   anonymous?: true;
+  /**
+   * 이 카테고리 화면에서 밤하늘 소리를 깐다 (app/sky-bgm.tsx).
+   * 음원이 아니라 브라우저가 만들어내는 소리라 받아오는 파일이 없다.
+   */
+  bgm?: true;
 }
 
 /** 카테고리별로 지정하지 않았을 때 쓰는 장소 문구 */
@@ -335,6 +340,7 @@ export const CATEGORIES: Category[] = [
     fg: '#F6F4EE',
     kind: 'posts',
     anonymous: true,
+    bgm: true,
     name: { ko: '별보러가자', en: 'Chasing the Eclipse', es: 'A ver el eclipse' },
     description: {
       ko: '일식 하루만 열어요 · 여기선 모두 익명이에요',

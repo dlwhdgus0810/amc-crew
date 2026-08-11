@@ -48,6 +48,10 @@ const ENTRIES: ChangelogEntry[] = [
         en: 'So there are no settle-ups, no adding people from the roster, and it doesn’t count toward the rankings — each of those would put a name on screen.',
       },
       {
+        ko: '들어가면 밤하늘 소리가 깔려요. 오른쪽 위 ♪를 누르면 꺼지고, 한 번 끄면 다시 안 켜져요. 음원이 아니라 앱이 그 자리에서 만들어내는 소리예요.',
+        en: 'A night-sky ambience fades in when you open it. The ♪ at the top right turns it off for good. It isn’t a track — the app makes the sound on the spot.',
+      },
+      {
         ko: '일식이 끝나면 이 카드는 목록에서 내려요. 그날 남긴 사진과 댓글은 그대로 있어요.',
         en: 'The card comes down after the eclipse. Whatever you leave there stays.',
       },

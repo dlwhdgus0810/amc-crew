@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCategory } from '@/lib/categories';
 import PlaceLink from '@/app/place-link';
 import CatIcon from '@/app/cat-icon';
+import SkyBgm from '@/app/sky-bgm';
 import TermsPopup from '@/app/terms-popup';
 import { hostTier } from '@/lib/hosting';
 import {useLocale, useT} from '../../i18n';
@@ -960,6 +961,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             <CatIcon slug={slug} />
           </h1>
         </div>
+        {/* 소리는 이 카테고리에만 — 켜고 끄는 자리는 구독 토글 옆이다 */}
+        {category?.bgm && <SkyBgm />}
         <button
           className={`sub-text ${subscribed ? 'on' : ''}`}
           onClick={toggleSub}
