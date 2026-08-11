@@ -1747,3 +1747,86 @@ h2 {
     background: transparent;
   }
 }
+
+/*
+ * 별보러가자 카드 위로 지나가는 유성.
+ *
+ * 그림 한 장 없이 CSS만으로 그린다 — 카드가 목록에 여러 장 깔리는 자리라, 카드마다
+ * 자바스크립트 타이머를 돌리면 스크롤이 무거워진다. transform과 opacity만 움직여서
+ * 브라우저가 합성으로 처리한다 (레이아웃을 다시 재지 않는다).
+ *
+ * i는 흐르는 유성, b는 가만히 있는 별이다. 별을 몇 개 깔아 두는 이유는 그것들이 있어야
+ * 지나가는 줄이 「유성」으로 읽히기 때문이다 — 없으면 그냥 사선 하나가 지나간다.
+ */
+.meteors {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+/* 글이 유성 위에 오게 — 유성 층이 위치를 가진 요소라 그냥 두면 글자를 덮는다 */
+.car-card > *:not(.meteors) {
+  position: relative;
+  z-index: 1;
+}
+
+.meteors i {
+  position: absolute;
+  width: 88px;
+  height: 1.5px;
+  border-radius: 2px;
+  /* 머리가 오른쪽 끝, 꼬리는 왼쪽으로 사라진다 */
+  background: linear-gradient(90deg, rgba(255, 233, 184, 0), rgba(255, 233, 184, 0.72));
+  opacity: 0;
+  animation: meteor-fall 9s linear infinite;
+}
+/*
+ * 넷을 서로 다른 자리·시각·빠르기로 둔다. 같은 값을 쓰면 넷이 나란히 붙어 다녀서
+ * 별똥별이 아니라 무늬가 된다.
+ *
+ * 지나는 자리는 카드의 빈 쪽(왼쪽 위, 오른쪽)으로 몰아 뒀다. 글은 왼쪽에 세로로
+ * 쌓여 있어서, 그 위를 가로지르면 뒤에 깔려 있어도 설명 줄이 지저분해 보인다.
+ */
+.meteors i:nth-child(1) { top: -8%; left: -16%; animation-duration: 7.5s; animation-delay: 0s; }
+.meteors i:nth-child(2) { top: 2%; left: 34%; animation-duration: 11s; animation-delay: 2.6s; width: 62px; }
+.meteors i:nth-child(3) { top: -16%; left: 58%; animation-duration: 9.5s; animation-delay: 5.1s; }
+.meteors i:nth-child(4) { top: 34%; left: 66%; animation-duration: 13s; animation-delay: 7.8s; width: 48px; }
+
+/*
+ * 한 바퀴의 앞쪽 20%만 보이고 나머지는 깜깜하다. 유성우는 쉬지 않고 내리지 않는다 —
+ * 계속 흐르면 화면 보호기가 된다.
+ */
+@keyframes meteor-fall {
+  0% { opacity: 0; transform: rotate(28deg) translate3d(-60px, 0, 0); }
+  3% { opacity: 0.85; }
+  17% { opacity: 0.85; }
+  20% { opacity: 0; transform: rotate(28deg) translate3d(300px, 0, 0); }
+  100% { opacity: 0; transform: rotate(28deg) translate3d(300px, 0, 0); }
+}
+
+.meteors b {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #f6f4ee;
+  opacity: 0.28;
+  animation: star-twinkle 6s ease-in-out infinite;
+}
+.meteors b:nth-of-type(1) { top: 22%; left: 78%; animation-delay: 0s; }
+.meteors b:nth-of-type(2) { top: 62%; left: 88%; animation-delay: 2s; }
+.meteors b:nth-of-type(3) { top: 12%; left: 62%; animation-delay: 4s; width: 1.5px; height: 1.5px; }
+
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 0.55; }
+}
+
+/* 움직임을 줄여 달라고 해 둔 기기에서는 그림 자체를 안 그린다 */
+@media (prefers-reduced-motion: reduce) {
+  .meteors {
+    display: none;
+  }
+}

@@ -88,6 +88,22 @@ export default function CategoryCard({
       // 끄는 중인 카드에서 손을 떼면 링크가 눌린 것으로 처리되므로 막는다
       onClick={dragging ? (e) => e.preventDefault() : undefined}
     >
+      {/*
+        * 유성 — 밤하늘 카드에만. 그림일 뿐이라 손가락을 받지 않고(pointer-events:none),
+        * 화면 낭독기에도 안 읽힌다. 움직임을 줄여 달라고 해 둔 기기에서는 아예 안 나온다.
+        * 개수·길이·시작 시각은 CSS가 정한다 (app/overrides.css).
+        */}
+      {category.meteors && (
+        <span className="meteors" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+          <b />
+          <b />
+          <b />
+        </span>
+      )}
       <div className="car-top">
         <span className="car-idx">
           {dragHandle}

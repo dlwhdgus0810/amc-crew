@@ -76,6 +76,8 @@ export interface Category {
    * 음원이 아니라 브라우저가 만들어내는 소리라 받아오는 파일이 없다.
    */
   bgm?: true;
+  /** 카드 위로 유성이 지나간다 (app/category-card.tsx + overrides.css) */
+  meteors?: true;
 }
 
 /** 카테고리별로 지정하지 않았을 때 쓰는 장소 문구 */
@@ -341,6 +343,7 @@ export const CATEGORIES: Category[] = [
     kind: 'posts',
     anonymous: true,
     bgm: true,
+    meteors: true,
     name: { ko: '별보러가자', en: 'Chasing the Stars', es: 'Ver las estrellas' },
     description: {
       ko: '일식 하루만 열어요 · 여기선 모두 익명이에요',
