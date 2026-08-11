@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { FRIEND_PRESENCE } from '@/lib/flags';
 import { useT } from '../i18n';
 import { useRefreshSession } from '../session';
 
@@ -97,11 +98,12 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
   }, []);
 
   /*
-   * 첫 값은 서버가 줬으므로 바로 묻지 않는다 — 15초 뒤부터 따라간다.
-   * 폴링 자체는 남긴다. 이 화면의 핵심이 「지금 누가 접속해 있나」라서,
-   * 서버가 한 번 읽어 준 것만으로는 열어 둔 화면이 곧 옛날 것이 된다.
+   * 15초마다 다시 묻던 것은 「지금 누가 접속해 있나」 때문이었다. 그 목록을 내려 둔 지금은
+   * 물어봐야 답이 그대로라, 화면을 열어 둔 사람 수만큼 요청만 늘어난다.
+   * 친구 요청은 다음에 화면을 열 때 반영된다 (탭바 배지가 먼저 알려 준다).
    */
   useEffect(() => {
+    if (!FRIEND_PRESENCE) return;
     const timer = setInterval(load, POLL_MS);
     return () => clearInterval(timer);
   }, [load]);
@@ -148,7 +150,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
 
   const row = (f: Friend, actions: React.ReactNode) => (
     <li key={f.id} className="friend-row">
-      {f.online && <span className="online-dot" aria-hidden="true" />}
+      {FRIEND_PRESENCE && f.online && <span className="online-dot" aria-hidden="true" />}
       {face(f)}
       <span className="online-name">{f.name}</span>
       <span className="friend-actions">{actions}</span>
@@ -158,7 +160,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
   /** 맺어진 친구는 이름을 눌러 그 사람의 화면으로 간다 */
   const linkRow = (f: Friend, actions: React.ReactNode) => (
     <li key={f.id} className="friend-row">
-      {f.online && <span className="online-dot" aria-hidden="true" />}
+      {FRIEND_PRESENCE && f.online && <span className="online-dot" aria-hidden="true" />}
       <Link href={`/friends/${f.id}`} className="friend-link">
         {face(f)}
         <span className="online-name">{f.name}</span>
@@ -176,25 +178,30 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
 
       {error && <div className="msg err">{error}</div>}
 
-      <h2>{t(T.online)}</h2>
-      <div className="card">
-        {online.length === 0 ? (
-          <p className="hint">{t(T.onlineNone)}</p>
-        ) : (
-          <ul className="online-list">
-            {online.map((f) => (
-              <li key={f.id}>
-                <span className="online-dot" aria-hidden="true" />
-                {face(f)}
-                <span className="online-name">{f.name}</span>
-                <span className="online-ago">
-                  {(f.secondsAgo ?? 0) < 60 ? t(T.justNow) : t(T.minsAgo, { n: Math.floor((f.secondsAgo ?? 0) / 60) })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* 접속 중 목록 — 지금은 내려 둔 기능이다 (lib/flags.ts) */}
+      {FRIEND_PRESENCE && (
+        <>
+          <h2>{t(T.online)}</h2>
+          <div className="card">
+            {online.length === 0 ? (
+              <p className="hint">{t(T.onlineNone)}</p>
+            ) : (
+              <ul className="online-list">
+                {online.map((f) => (
+                  <li key={f.id}>
+                    <span className="online-dot" aria-hidden="true" />
+                    {face(f)}
+                    <span className="online-name">{f.name}</span>
+                    <span className="online-ago">
+                      {(f.secondsAgo ?? 0) < 60 ? t(T.justNow) : t(T.minsAgo, { n: Math.floor((f.secondsAgo ?? 0) / 60) })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
 
       {data.incoming.length > 0 && (
         <>

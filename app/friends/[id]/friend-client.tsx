@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { use, useCallback, useEffect, useState } from 'react';
 import { catDisplayName, getCategory } from '@/lib/categories';
 import { dateLabel, timeLabel } from '@/lib/datefmt';
+import { FRIEND_PRESENCE } from '@/lib/flags';
 import { useLocale, useT } from '../../i18n';
 
 /**
@@ -164,7 +165,7 @@ export default function FriendPage({ id, initial }: { id: string; initial: Frien
       <div className="fm-head">
         <span className="avatar-lg">{friend.avatar ? <img src={friend.avatar} alt="" /> : friend.name.slice(0, 1)}</span>
         <h1>{friend.name}</h1>
-        {friend.online && (
+        {FRIEND_PRESENCE && friend.online && (
           <span className="fm-online">
             <span className="online-dot" aria-hidden="true" />
             {t(T.online)}
@@ -213,21 +214,26 @@ export default function FriendPage({ id, initial }: { id: string; initial: Frien
           {t(T.settingsHint)}
         </p>
 
-        <div className="field-label">{t(T.presence)}</div>
-        <div className="seg-group">
-          {[true, false].map((v) => (
-            <button
-              key={String(v)}
-              className={`seg ${friend.showsPresence === v ? 'on' : ''}`}
-              disabled={busy}
-              onClick={() => save({ showPresence: v })}
-            >
-              {v ? t(T.presenceOn) : t(T.presenceOff)}
-            </button>
-          ))}
-        </div>
+        {/* 접속 표시를 내려 둔 동안에는 고를 것이 없다 — 보여줄 화면이 없는 스위치다 (lib/flags.ts) */}
+        {FRIEND_PRESENCE && (
+          <>
+            <div className="field-label">{t(T.presence)}</div>
+            <div className="seg-group">
+              {[true, false].map((v) => (
+                <button
+                  key={String(v)}
+                  className={`seg ${friend.showsPresence === v ? 'on' : ''}`}
+                  disabled={busy}
+                  onClick={() => save({ showPresence: v })}
+                >
+                  {v ? t(T.presenceOn) : t(T.presenceOff)}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
-        <div className="field-label" style={{ marginTop: 16 }}>
+        <div className="field-label" style={{ marginTop: FRIEND_PRESENCE ? 16 : 0 }}>
           {t(T.meetups)}
         </div>
         <div className="seg-group">

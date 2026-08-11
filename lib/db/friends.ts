@@ -8,6 +8,7 @@ import { ONLINE_WINDOW_MINUTES } from './presence';
 import { insertInAppNotice } from './posts';
 import { NOTIF } from '../notif-kinds';
 import { ANONYMOUS_SLUGS } from '../categories';
+import { FRIEND_PRESENCE } from '../flags';
 import { Locale, Msg, pick } from '../i18n';
 
 /**
@@ -240,7 +241,12 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
     // 감추는 방법이 둘이다 — 나에게만(친구별 스위치), 모두에게(users.showPresence). 어느 쪽이든 결과는 같다.
     const meIsA = l.a === me;
     const otherShowsMe = (meIsA ? l.bShows : l.aShows) && p.showPresence;
-    const online = otherShowsMe && seen >= onlineFrom;
+    /*
+     * 기능을 내려 둔 동안에는 아예 계산해서 내보내지 않는다 (lib/flags.ts).
+     * 화면에서만 가리고 값은 그대로 보내면 개발자 도구로 「지금 누가 앱을 보고 있나」가
+     * 그대로 읽힌다 — 가릴 거면 보내지도 않는다.
+     */
+    const online = FRIEND_PRESENCE && otherShowsMe && seen >= onlineFrom;
     return [
       {
         id: p.id,
