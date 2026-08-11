@@ -335,13 +335,13 @@ export const CATEGORIES: Category[] = [
   {
     slug: 'stargazing',
     emoji: '🌌',
-    en: 'ECLIPSE',
+    en: 'STARGAZING',
     color: '#292F6F',
     fg: '#F6F4EE',
     kind: 'posts',
     anonymous: true,
     bgm: true,
-    name: { ko: '별보러가자', en: 'Chasing the Eclipse', es: 'A ver el eclipse' },
+    name: { ko: '별보러가자', en: 'Stargazing', es: 'Ver las estrellas' },
     description: {
       ko: '일식 하루만 열어요 · 여기선 모두 익명이에요',
       en: 'Open for eclipse day only — everyone here is anonymous.',
