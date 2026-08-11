@@ -31,46 +31,9 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
-    at: '2026-08-10T21:30',
-    notable: true,
-    title: { ko: '친구 몇 명이 접속 중인지만 보여요', en: 'You only see how many friends are around' },
-    items: [
-      {
-        ko: '친구 화면에 「친구 2명이 지금 앱을 보고 있어요」 한 줄이 생겼어요. 누구인지는 아무에게도 안 보여요.',
-        en: 'The friends screen now says “2 of your friends are in the app right now.” Nobody sees who.',
-      },
-      {
-        ko: '전에는 이름까지 보이는 접속 중 목록이었고, 누구에게 보여줄지 고르는 설정도 있었어요. 목록도 설정도 없앴어요 — 8월 1일 소식에 적어 둔 그 설정은 이제 없어요.',
-        en: 'It used to be a list with names, and a setting for who could see you. Both are gone — the setting mentioned in the Aug 1 note no longer exists.',
-      },
-      {
-        ko: '이 숫자에서는 빠질 수 없어요. 숫자 하나라 누구도 지목되지 않으니, 빼는 스위치를 두면 숫자가 사람마다 달라져서 「지금 몇 명 있나」의 답이 아니게 되거든요.',
-        en: 'There’s no opting out of the number. It names nobody, and a per-person switch would make the count mean something different for everyone.',
-      },
-      {
-        ko: '다만 친구가 한두 명이면 숫자만으로도 누군지 짐작될 수 있어요. 그게 걸리면 말씀해주세요, 바로 내릴게요.',
-        en: 'If you only have a friend or two, the number can still give it away. Tell me if that bothers you and I’ll take it down.',
-      },
-    ],
-  },
-  {
-    at: '2026-08-10T21:20',
-    title: { ko: '독서나눔 명단은 모임을 만들면 비워져요', en: 'The Book Club sign-up list clears when the meetup is made' },
-    items: [
-      {
-        ko: '모아 둔 사람들이 그 모임의 참가자로 옮겨 가면, 명단은 할 일을 다 한 거라 비워져요. 다음 모임은 다시 모으는 것부터 시작해요.',
-        en: 'Once everyone moves into the meetup, the list has done its job and empties. The next one starts by gathering again.',
-      },
-      {
-        ko: '전에는 명단이 그대로 남아서 「모임 만들기」가 계속 떠 있었고, 누가 또 누르면 같은 사람들로 모임이 하나 더 생겼어요.',
-        en: 'It used to stay put, so “Create the meetup” kept showing and a second identical meetup could be made by accident.',
-      },
-    ],
-  },
-  {
     at: '2026-08-10T21:00',
     notable: true,
-    title: { ko: '한국어를 몰라도 읽을 수 있어요', en: 'Read it even if you don’t read Korean' },
+    title: { ko: '한국어를 몰라도 읽을 수 있어요', en: 'Translation feature is added.' },
     items: [
       {
         ko: '댓글이나 모임 설명 아래에 「번역 보기」가 생겼어요. 눌러야 나오고, 원문은 그대로 위에 남아 있어요.',
