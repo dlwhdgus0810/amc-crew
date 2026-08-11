@@ -1937,16 +1937,37 @@ body.sky-sundown .tabbar * {
   overflow: hidden;
   pointer-events: none;
 }
-/* 밤하늘 — 늦게 차오른다 (ease-in) */
+/*
+ * 하늘의 겹들은 **모두 같은 규칙으로 움직인다** — 낮에는 0, .night이 붙으면 제 값으로,
+ * 전부 5.5초 ease-in.
+ *
+ * 이걸 맞추지 않으면 한 겹만 먼저 도착해서 그 부분만 튄다. 특히 별과 잔별은 예전에
+ * 낮에도 켜져 있었다(기본 opacity가 각각 1과 0.5) — 크림색 위에 흰 점이 떠 있으니
+ * 시작부터 어둑해 보였다. 지금은 넷 다 0에서 출발한다.
+ *
+ * animation이 아니라 transition으로 맞춘 이유: 글씨·카드 색도 transition으로 흐르는데,
+ * 한쪽만 animation이면 시간 함수를 똑같이 적어도 시작하는 순간이 미묘하게 어긋난다.
+ */
+.sky-night,
+.sky-dust,
+.sky-twinkle,
+.sky-meteors {
+  opacity: 0;
+  transition: opacity 5.5s ease-in;
+}
 .sky-night {
   position: absolute;
   inset: 0;
-  opacity: 0;
   background: radial-gradient(120% 80% at 50% 0%, #232a63 0%, #161a3f 45%, #0d0f26 100%);
-  transition: opacity 5.5s ease-in;
 }
-.sky-scope.night .sky-night {
+.sky-scope.night .sky-night,
+.sky-scope.night .sky-twinkle,
+.sky-scope.night .sky-meteors {
   opacity: 1;
+}
+/* 잔별 겹은 다 떠도 0.5다 — 촘촘해서 진하게 두면 하늘이 지저분해진다 */
+.sky-scope.night .sky-dust {
+  opacity: 0.5;
 }
 
 /*
@@ -1975,10 +1996,14 @@ body.sky-sundown .tabbar * {
 .sky-scope.night .sky-dusk {
   animation: sky-sundown 5.5s ease-in-out forwards;
 }
+/*
+ * 노을만 오르내리는 모양이라 transition으로는 못 하고 animation을 쓴다.
+ * 대신 한가운데(50%)에서 가장 붉게 두어 다른 겹과 걸음을 맞춘다 — 예전에는 30%에서
+ * 먼저 치솟아서 노을만 혼자 앞서가는 것처럼 보였다.
+ */
 @keyframes sky-sundown {
   0% { opacity: 0; }
-  30% { opacity: 0.95; }
-  55% { opacity: 0.8; }
+  50% { opacity: 0.85; }
   100% { opacity: 0; }
 }
 
@@ -1986,28 +2011,6 @@ body.sky-sundown .tabbar * {
  * 해가 지는 동안 별이 서서히 돋는다. 밝을 때 이미 떠 있으면 별이 아니라 흰 점이다.
  * forwards로 끝난 자리에 머문다 (한 번만 돋고 그대로 있는다).
  */
-.sky-scope.night .sky-twinkle,
-.sky-scope.night .sky-meteors {
-  animation: sky-rise 5.5s ease-in forwards;
-}
-/*
- * 잔별 겹은 원래 opacity가 0.5다. 위와 같은 규칙을 쓰면 forwards가 1로 붙들어서
- * 해가 진 뒤 잔별이 두 배로 밝아진다 — 끝나는 자리를 제 값에 맞춰 따로 둔다.
- */
-.sky-scope.night .sky-dust {
-  animation: sky-rise-dust 5.5s ease-in forwards;
-}
-@keyframes sky-rise {
-  0% { opacity: 0; }
-  45% { opacity: 0.15; }
-  100% { opacity: 1; }
-}
-@keyframes sky-rise-dust {
-  0% { opacity: 0; }
-  45% { opacity: 0.08; }
-  100% { opacity: 0.5; }
-}
-
 /*
  * 별. 점 하나에 요소 하나씩 두면 수십 개가 되므로 배경 그림으로 그린다 —
  * 브라우저가 한 겹으로 칠하고 끝이라 요소가 늘지 않는다.
@@ -2031,8 +2034,8 @@ body.sky-sundown .tabbar * {
    * 이 겹은 가만히 있는다. 예전에는 겹 전체를 밝혔다 어둡게 했는데, 그러면 화면의
    * 모든 별이 한 박자로 같이 숨을 쉰다 — 별이 아니라 조명 스위치처럼 보인다.
    * 반짝이는 일은 아래 .sky-twinkle이 별 하나씩 따로 맡는다.
+   * (밝기는 위에서 .night과 함께 0 → 0.5로 흐른다)
    */
-  opacity: 0.5;
 }
 
 /*
@@ -2181,19 +2184,17 @@ body:has(.sky-scope.night) .tabbar a.active {
   .sky-dusk {
     display: none;
   }
-  .sky-scope.night .sky-dust,
-  .sky-scope.night .sky-twinkle,
-  .sky-scope.night .sky-meteors {
-    animation: none;
-  }
+  /* 연출 없이 곧장 밤 */
   .sky-night,
-  .sky-scope.night .sky-night {
-    opacity: 1;
+  .sky-dust,
+  .sky-twinkle,
+  .sky-meteors {
     transition: none;
   }
-  .sky-dust {
-    opacity: 0.7;
-  }
+  /*
+   * 잔별 겹의 밝기는 위 공통 규칙(낮 0 → 밤 0.5)이 그대로 맡는다.
+   * 여기서 0.7로 못 박아 두면 .night이 붙기 전 짧은 사이에 크림색 위로 점이 뜬다.
+   */
   .sky-twinkle i {
     animation: none;
     opacity: 0.8;
