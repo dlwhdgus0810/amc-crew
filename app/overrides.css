@@ -1850,7 +1850,19 @@ h2 {
  *
  * 서버가 그린 마크업에 이 클래스가 이미 붙어 있어서 첫 화면부터 밤이다.
  */
+/*
+ * 밤 색은 .night이 붙어 있을 때만 적용된다.
+ *
+ * 나눠 둔 이유: 카테고리 화면은 **낮 색으로 시작해서** 저물어야 한다. 서버가 밤을
+ * 박아 보내면 처음부터 밤이라 저물 것이 없다. 그래서 서버는 .sky-scope만 붙이고,
+ * 화면에 뜬 뒤 .night을 얹어 색이 흐르게 한다(app/sky-backdrop.tsx).
+ * 모임 화면은 이미 밤인 곳으로 들어가는 것이라 서버가 .night까지 붙여 보낸다.
+ */
 .sky-scope {
+  position: relative;
+  z-index: 0;
+}
+.sky-scope.night {
   --bg: #10122e;
   --surface: #1a1d40;
   --surface-2: #232750;
@@ -1870,18 +1882,40 @@ h2 {
   /* 기본 빨강(#c81e1e)은 밤 배경에서 어둡다 — 「삭제」가 읽혀야 한다 */
   --danger: #ff8f8f;
   --danger-border: #5b2b35;
-  position: relative;
-  z-index: 0;
+}
+
+/*
+ * 해가 지는 동안에만 색이 흐른다.
+ *
+ * CSS 변수는 그 자체로는 흐르지 않는다 — 값이 툭 바뀔 뿐이다. 하지만 변수를 쓰는
+ * 쪽(background-color·color·border-color)에 transition이 걸려 있으면, 변수가 바뀔 때
+ * 그 속성이 이어서 흐른다. 그래서 화면 전체에 잠깐 transition을 깔아 둔다.
+ *
+ * 끝나면 걷는다. 남겨 두면 그 뒤로 버튼을 누를 때마다 색이 5초에 걸쳐 바뀌어서
+ * 화면이 먹통처럼 느껴진다.
+ */
+body.sky-sundown .sky-scope,
+body.sky-sundown .sky-scope *,
+body.sky-sundown .site-header,
+body.sky-sundown .site-header *,
+body.sky-sundown .tabbar,
+body.sky-sundown .tabbar * {
+  transition:
+    background-color 5.5s ease-in,
+    color 5.5s ease-in,
+    border-color 5.5s ease-in,
+    fill 5.5s ease-in,
+    stroke 5.5s ease-in !important;
 }
 /*
  * 카테고리 색으로 찍는 점은 이 카드의 색(#292F6F)이 그대로 인라인으로 붙는데,
  * 그게 곧 밤하늘 색이라 배경에 묻힌다. 여기서만 별빛으로 바꾼다.
  */
-.sky-scope .feed-dot {
+.sky-scope.night .feed-dot {
   background: #ffe0a3 !important;
 }
 /* 같은 이유 — 모임 화면의 「n명 참여」도 카테고리 색이 인라인으로 붙는다 */
-.sky-scope .post-people {
+.sky-scope.night .post-people {
   color: #ffe0a3 !important;
 }
 /* 이 화면 안의 글씨는 위에서 정한 밤 색을 따른다 */
@@ -1892,44 +1926,59 @@ h2 {
 }
 
 /* 화면 전체를 덮는 밤 — 스크롤해도 하늘은 그대로 있는다 */
+/*
+ * 하늘을 담는 자리. 자기 색은 없다 — 밤과 노을을 각각 따로 켜고 꺼야 해서,
+ * 이 상자에 색을 두면 그 위에 얹힌 겹들의 투명도가 같이 곱해져 버린다.
+ */
 .sky-backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(120% 80% at 50% 0%, #232a63 0%, #161a3f 45%, #0d0f26 100%);
+}
+/* 밤하늘 — 늦게 차오른다 (ease-in) */
+.sky-night {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(120% 80% at 50% 0%, #232a63 0%, #161a3f 45%, #0d0f26 100%);
+  transition: opacity 5.5s ease-in;
+}
+.sky-scope.night .sky-night {
+  opacity: 1;
 }
 
 /*
- * 어스름 — 들어온 직후 5.5초 동안 걷히면서 아래의 밤이 드러난다.
+ * 노을 — 낮과 밤 사이를 이어 주는 겹.
  *
- * 그러데이션끼리 바로 이어 붙이지 않고 한 겹을 덮었다 걷는다. 그러데이션은 브라우저마다
- * 중간값을 다르게 잇거나 아예 못 잇는 경우가 있는데, opacity는 어디서나 똑같이 흐른다.
+ * 크림색에서 짙은 남색으로 곧장 건너뛰면 그냥 어두워지는 것이지 「해가 진다」가 아니다.
+ * 중간에 노을을 한 번 들렀다 가야 저무는 것으로 보인다. 그래서 이 겹은 떴다가(0→1)
+ * 다시 걷힌다(1→0) — 한가운데가 가장 붉다.
  *
- * 따뜻한 빛은 화면 아래 바깥(112%)에 둔다. 해가 지평선 너머로 넘어간 뒤라 하늘만
- * 물들어 있는 상태다 — 글이 놓이는 가운데·위쪽은 그동안에도 충분히 어둡다(대비 7:1 이상).
+ * 그러데이션끼리 바로 이어 붙이지 않고 겹을 덮었다 걷는 이유: 그러데이션은 브라우저마다
+ * 중간값을 다르게 잇거나 아예 못 잇는데, opacity는 어디서나 똑같이 흐른다.
  */
 .sky-dusk {
   position: absolute;
   inset: 0;
+  opacity: 0;
   background: radial-gradient(
     140% 100% at 50% 112%,
-    #a85a4e 0%,
-    #8c4f63 22%,
-    #6b4470 45%,
-    #4a3f74 68%,
-    #343a68 100%
+    #c9683a 0%,
+    #a2536a 24%,
+    #6b4470 48%,
+    #453c72 72%,
+    #2b2f5e 100%
   );
-  animation: sky-sundown 5.5s ease-in forwards;
 }
-/*
- * ease-in이라 처음엔 더디게, 뒤로 갈수록 빨리 걷힌다. 해도 그렇게 진다 —
- * 한동안 하늘이 물들어 있다가 마지막에 훅 어두워진다.
- */
+.sky-scope.night .sky-dusk {
+  animation: sky-sundown 5.5s ease-in-out forwards;
+}
 @keyframes sky-sundown {
-  0% { opacity: 1; }
+  0% { opacity: 0; }
+  30% { opacity: 0.95; }
+  55% { opacity: 0.8; }
   100% { opacity: 0; }
 }
 
@@ -1937,15 +1986,15 @@ h2 {
  * 해가 지는 동안 별이 서서히 돋는다. 밝을 때 이미 떠 있으면 별이 아니라 흰 점이다.
  * forwards로 끝난 자리에 머문다 (한 번만 돋고 그대로 있는다).
  */
-.sky-backdrop.sunset .sky-twinkle,
-.sky-backdrop.sunset .sky-meteors {
+.sky-scope.night .sky-twinkle,
+.sky-scope.night .sky-meteors {
   animation: sky-rise 5.5s ease-in forwards;
 }
 /*
  * 잔별 겹은 원래 opacity가 0.5다. 위와 같은 규칙을 쓰면 forwards가 1로 붙들어서
  * 해가 진 뒤 잔별이 두 배로 밝아진다 — 끝나는 자리를 제 값에 맞춰 따로 둔다.
  */
-.sky-backdrop.sunset .sky-dust {
+.sky-scope.night .sky-dust {
   animation: sky-rise-dust 5.5s ease-in forwards;
 }
 @keyframes sky-rise {
@@ -2100,22 +2149,22 @@ h2 {
  * 껍데기(머리띠·탭바)는 sky-scope 바깥에 있어서 변수 재정의가 닿지 않는다. 그래서
  * :has로 「이 화면에 밤이 깔려 있으면」을 조건으로 걸어 몸통 쪽에서 따로 칠한다.
  */
-body:has(.sky-scope) .site-header {
+body:has(.sky-scope.night) .site-header {
   background: rgba(16, 18, 46, 0.92);
   border-bottom-color: #262a55;
 }
 /* 로고는 --text(거의 검정)를 쓰고 있어서 밤 배경에서 안 보인다 */
-body:has(.sky-scope) .logo {
+body:has(.sky-scope.night) .logo {
   color: #f4f2ec;
 }
-body:has(.sky-scope) .tabbar {
+body:has(.sky-scope.night) .tabbar {
   background: rgba(26, 29, 64, 0.94);
   border-color: #2f3568;
 }
-body:has(.sky-scope) .tabbar a {
+body:has(.sky-scope.night) .tabbar a {
   color: #8f95bb;
 }
-body:has(.sky-scope) .tabbar a.active {
+body:has(.sky-scope.night) .tabbar a.active {
   color: #f4f2ec;
   background: #2a2f5c;
 }
@@ -2132,10 +2181,15 @@ body:has(.sky-scope) .tabbar a.active {
   .sky-dusk {
     display: none;
   }
-  .sky-backdrop.sunset .sky-dust,
-  .sky-backdrop.sunset .sky-twinkle,
-  .sky-backdrop.sunset .sky-meteors {
+  .sky-scope.night .sky-dust,
+  .sky-scope.night .sky-twinkle,
+  .sky-scope.night .sky-meteors {
     animation: none;
+  }
+  .sky-night,
+  .sky-scope.night .sky-night {
+    opacity: 1;
+    transition: none;
   }
   .sky-dust {
     opacity: 0.7;
