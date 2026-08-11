@@ -1830,3 +1830,159 @@ h2 {
     display: none;
   }
 }
+
+/* ── 별보러가자 화면: 밤하늘 ─────────────────────────────
+ *
+ * 색을 변수로 다시 정한다. 앱이 색을 전부 변수로 쓰고 있어서, 여기만 밤 값으로 바꾸면
+ * 글씨·카드·선·입력칸이 한꺼번에 따라온다. 화면 하나를 위해 규칙을 수십 개 적지 않아도 된다.
+ *
+ * 서버가 그린 마크업에 이 클래스가 이미 붙어 있어서 첫 화면부터 밤이다.
+ */
+.sky-scope {
+  --bg: #10122e;
+  --surface: #1a1d40;
+  --surface-2: #232750;
+  --border: #2f3568;
+  --border-soft: #262a55;
+  --text: #f4f2ec;
+  --text-mid: #b8bcd8;
+  --text-dim: #8f95bb;
+  /*
+   * 강조색도 다시 정한다. 기본값(--accent: #1f3d31)은 짙은 초록이라 밤 배경에서
+   * 대비가 1.5:1이다 — 「＋ 만들기」가 있는 줄 모르고 지나가게 된다.
+   * 이 화면의 강조는 별빛 금색으로 둔다.
+   */
+  --accent: #ffe0a3;
+  --accent-dark: #ffd27a;
+  --accent-soft: #2a2f5c;
+  /* 기본 빨강(#c81e1e)은 밤 배경에서 어둡다 — 「삭제」가 읽혀야 한다 */
+  --danger: #ff8f8f;
+  --danger-border: #5b2b35;
+  position: relative;
+  z-index: 0;
+}
+/*
+ * 카테고리 색으로 찍는 점은 이 카드의 색(#292F6F)이 그대로 인라인으로 붙는데,
+ * 그게 곧 밤하늘 색이라 배경에 묻힌다. 여기서만 별빛으로 바꾼다.
+ */
+.sky-scope .feed-dot {
+  background: #ffe0a3 !important;
+}
+/* 같은 이유 — 모임 화면의 「n명 참여」도 카테고리 색이 인라인으로 붙는다 */
+.sky-scope .post-people {
+  color: #ffe0a3 !important;
+}
+/* 이 화면 안의 글씨는 위에서 정한 밤 색을 따른다 */
+.sky-scope,
+.sky-scope h1,
+.sky-scope h2 {
+  color: var(--text);
+}
+
+/* 화면 전체를 덮는 밤 — 스크롤해도 하늘은 그대로 있는다 */
+.sky-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% 0%, #232a63 0%, #161a3f 45%, #0d0f26 100%);
+}
+
+/*
+ * 별. 점 하나에 요소 하나씩 두면 수십 개가 되므로 배경 그림으로 그린다 —
+ * 브라우저가 한 겹으로 칠하고 끝이라 요소가 늘지 않는다.
+ */
+.sky-stars {
+  position: absolute;
+  inset: -10%;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 18%, rgba(246, 244, 238, 0.85) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 78% 12%, rgba(246, 244, 238, 0.7) 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 34% 42%, rgba(255, 233, 184, 0.8) 50%, transparent 51%),
+    radial-gradient(1.1px 1.1px at 62% 62%, rgba(246, 244, 238, 0.6) 50%, transparent 51%),
+    radial-gradient(1.3px 1.3px at 88% 48%, rgba(246, 244, 238, 0.75) 50%, transparent 51%),
+    radial-gradient(1px 1px at 22% 72%, rgba(246, 244, 238, 0.55) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 52% 88%, rgba(255, 233, 184, 0.7) 50%, transparent 51%),
+    radial-gradient(1.1px 1.1px at 8% 54%, rgba(246, 244, 238, 0.6) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 70% 30%, rgba(246, 244, 238, 0.65) 50%, transparent 51%);
+  background-size: 460px 460px;
+  background-repeat: repeat;
+  animation: sky-breathe 7s ease-in-out infinite;
+}
+/* 아주 옅게 밝아졌다 어두워진다 — 밤하늘이 완전히 정지해 있으면 사진처럼 보인다 */
+@keyframes sky-breathe {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+.sky-meteors {
+  position: absolute;
+  inset: 0;
+}
+.sky-meteors i {
+  position: absolute;
+  width: 150px;
+  height: 1.6px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 233, 184, 0), rgba(255, 240, 205, 0.85));
+  opacity: 0;
+  animation: sky-fall 12s linear infinite;
+}
+/* 여섯을 서로 다른 자리·시각·빠르기로 — 같은 값이면 줄이 나란히 붙어 다닌다 */
+.sky-meteors i:nth-child(1) { top: 4%; left: -12%; animation-duration: 9s; animation-delay: 0.4s; }
+.sky-meteors i:nth-child(2) { top: -4%; left: 32%; animation-duration: 13s; animation-delay: 3.2s; width: 110px; }
+.sky-meteors i:nth-child(3) { top: 18%; left: 62%; animation-duration: 10.5s; animation-delay: 6s; }
+.sky-meteors i:nth-child(4) { top: 44%; left: 8%; animation-duration: 15s; animation-delay: 8.4s; width: 90px; }
+.sky-meteors i:nth-child(5) { top: 36%; left: 74%; animation-duration: 11.5s; animation-delay: 11s; }
+.sky-meteors i:nth-child(6) { top: 66%; left: 40%; animation-duration: 16s; animation-delay: 14.5s; width: 120px; }
+
+/*
+ * 한 바퀴의 앞 16%만 보인다. 유성우도 쉬지 않고 내리지는 않는다 —
+ * 계속 흐르면 화면 보호기가 되고, 글을 읽는 화면에서는 눈이 그쪽으로 끌려간다.
+ */
+@keyframes sky-fall {
+  0% { opacity: 0; transform: rotate(24deg) translate3d(-140px, 0, 0); }
+  2% { opacity: 0.9; }
+  13% { opacity: 0.9; }
+  16% { opacity: 0; transform: rotate(24deg) translate3d(72vw, 0, 0); }
+  100% { opacity: 0; transform: rotate(24deg) translate3d(72vw, 0, 0); }
+}
+
+/*
+ * 밤 화면에서는 위아래 껍데기도 밤으로 — 크림색 띠가 남아 있으면 하늘이 잘린다.
+ *
+ * 껍데기(머리띠·탭바)는 sky-scope 바깥에 있어서 변수 재정의가 닿지 않는다. 그래서
+ * :has로 「이 화면에 밤이 깔려 있으면」을 조건으로 걸어 몸통 쪽에서 따로 칠한다.
+ */
+body:has(.sky-scope) .site-header {
+  background: rgba(16, 18, 46, 0.92);
+  border-bottom-color: #262a55;
+}
+/* 로고는 --text(거의 검정)를 쓰고 있어서 밤 배경에서 안 보인다 */
+body:has(.sky-scope) .logo {
+  color: #f4f2ec;
+}
+body:has(.sky-scope) .tabbar {
+  background: rgba(26, 29, 64, 0.94);
+  border-color: #2f3568;
+}
+body:has(.sky-scope) .tabbar a {
+  color: #8f95bb;
+}
+body:has(.sky-scope) .tabbar a.active {
+  color: #f4f2ec;
+  background: #2a2f5c;
+}
+
+/* 움직임을 줄여 달라고 해 둔 기기: 하늘은 두고 흐르는 것만 멈춘다 */
+@media (prefers-reduced-motion: reduce) {
+  .sky-meteors {
+    display: none;
+  }
+  .sky-stars {
+    animation: none;
+    opacity: 0.9;
+  }
+}

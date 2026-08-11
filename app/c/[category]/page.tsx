@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { getLocale } from '@/lib/locale';
+import SkyBackdrop from '@/app/sky-backdrop';
 import { pick } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 import { asc } from 'drizzle-orm';
@@ -86,9 +87,20 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const cat = getCategory(category);
   if (!cat || cat.kind !== 'posts') notFound();
   // 이름·라벨은 클라이언트가 현재 언어로 직접 고른다
-  return (
+  const body = (
     <Suspense fallback={<PostCardsSkeleton n={3} label={pick(await getLocale(), LOADING)} />}>
       <CategoryData slug={cat.slug} />
     </Suspense>
+  );
+  /*
+   * 밤하늘 카테고리는 화면째 밤이 된다. 서버가 그린 마크업에 이미 붙어 있으므로
+   * 첫 화면부터 밤이다 — 나중에 자바스크립트로 붙이면 크림색이 한 번 번쩍한다.
+   */
+  if (!cat.meteors) return body;
+  return (
+    <div className="sky-scope">
+      <SkyBackdrop />
+      {body}
+    </div>
   );
 }

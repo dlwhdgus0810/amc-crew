@@ -10,7 +10,8 @@ import { users } from '@/lib/db/schema';
 import { friendsOf, listFriendships } from '@/lib/db/friends';
 import { nameOf } from '@/lib/store';
 import { siteUrl } from '@/lib/site';
-import { catName } from '@/lib/categories';
+import { catName, getCategory } from '@/lib/categories';
+import SkyBackdrop from '@/app/sky-backdrop';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
 import { whenLabelShort } from '@/lib/datefmt';
@@ -123,10 +124,18 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
    */
   const photos = post?.photos ? await listPhotos(id) : [];
 
-  return (
+  const body = (
     <PostClient
       id={id}
       initial={{ post, members, friends: friendsOf(friendships), origin, ratings, photos }}
     />
+  );
+  // 모임을 눌러 들어와도 하늘은 이어진다 — 카테고리에서만 밤이면 한 걸음 만에 크림색으로 돌아온다
+  if (!post || !getCategory(post.category)?.meteors) return body;
+  return (
+    <div className="sky-scope">
+      <SkyBackdrop />
+      {body}
+    </div>
   );
 }
