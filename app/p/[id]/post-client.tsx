@@ -55,6 +55,7 @@ import type { PostView } from '@/lib/db/posts';
 import { TMDB_IMG } from '@/lib/tmdb';
 import CommentThread from '../../comment-thread';
 import SettlementPanel from '../../settlement-panel';
+import TranslateLine from '../../translate-line';
 import RatingPanel from '../../rating-panel';
 import PhotoPanel from '../../photo-panel';
 import TermsPopup from '../../terms-popup';
@@ -319,6 +320,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         {post.description && (
           <div style={{ marginTop: 8, color: 'var(--text-dim)' }}>“{post.description}”</div>
         )}
+        <TranslateLine text={[post.title, post.description].filter(Boolean).join('\n')} />
         <div style={{ marginTop: 14, fontWeight: 700, color }}>
           {post.capacity != null
             ? t(T.peopleCap, { n: post.participantCount, cap: post.capacity })

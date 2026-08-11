@@ -180,6 +180,15 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS notifications_user_read_idx ON notifications (user_id, read);
 
+CREATE TABLE IF NOT EXISTS translations (
+  hash text NOT NULL,
+  target text NOT NULL,
+  source text NOT NULL,
+  text text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (hash, target)
+);
+
 CREATE TABLE IF NOT EXISTS hidden_categories (
   category text PRIMARY KEY,
   created_at timestamptz NOT NULL DEFAULT now()

@@ -17,6 +17,7 @@ import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCateg
 import PlaceLink from '@/app/place-link';
 import CatIcon from '@/app/cat-icon';
 import SkyBgm from '@/app/sky-bgm';
+import TranslateLine from '@/app/translate-line';
 import TermsPopup from '@/app/terms-popup';
 import { hostTier } from '@/lib/hosting';
 import {useLocale, useT} from '../../i18n';
@@ -1654,6 +1655,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
               )}
             </div>
             {post.description && <div className="post-desc">“{post.description}”</div>}
+            {/* 제목과 설명을 함께 — 카드 하나에 번역 줄이 둘씩 붙으면 시끄럽다 */}
+            <TranslateLine text={[post.title, post.description].filter(Boolean).join('\n')} />
           </div>
           {art && (
             /* 눌러서 크게 볼 수 있다 — 카드에 실리는 건 62px짜리라 얼굴을 알아보기 어렵다 */

@@ -524,6 +524,30 @@ export const settlementItemMembers = pgTable(
  * 홈과 둘러보기가 지금 굴러가는 것들로 좁혀진다. 카테고리 자체는 코드에 그대로 남고
  * 주소(/c/<slug>)로도 열리므로, 이건 지우는 것이 아니라 목록에서 빼는 것이다.
  */
+/**
+ * 번역 캐시 — 같은 글을 두 번 번역해 값을 두 번 치르지 않으려고 둔다.
+ *
+ * 글에 붙이지 않고 **글자 자체**에 붙인다(원문 해시 + 대상 언어). 그래서 서로 다른 모임에
+ * 같은 댓글이 달려도 한 번만 번역되고, 원문이 고쳐지면 해시가 달라져 저절로 새 줄이 된다 —
+ * 낡은 번역이 남아 원문과 어긋날 일이 없다. 지워야 할 옛 줄은 그냥 안 읽히고 남는다.
+ *
+ * 원문(source)도 같이 담는다. 해시만으로는 무엇이 번역된 것인지 사람이 알아볼 수 없고,
+ * 만에 하나 해시가 부딪혔을 때 알아차릴 방법도 없다.
+ */
+export const translations = pgTable(
+  'translations',
+  {
+    /** 원문의 sha256 (hex) */
+    hash: text('hash').notNull(),
+    /** 어느 언어로 옮긴 것인지 — 'ko' | 'en' | 'es' */
+    target: text('target').notNull(),
+    source: text('source').notNull(),
+    text: text('text').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.hash, t.target] })]
+);
+
 export const hiddenCategories = pgTable('hidden_categories', {
   category: text('category').primaryKey(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

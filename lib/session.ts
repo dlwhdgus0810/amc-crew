@@ -6,6 +6,7 @@ import { getLocale } from './locale';
 import { dbGetUser } from './db/users';
 import { toState, type BanState } from './db/bans';
 import { unreadCount } from './db/posts';
+import { translateEnabled } from './translate';
 
 /**
  * 화면을 그리는 데 필요한 「지금 보고 있는 사람」.
@@ -38,6 +39,11 @@ export interface Viewer {
   viewingAs?: { backTo: string };
   /** 안 읽은 알림 수 — 탭바 배지의 첫 값 */
   unread: number;
+  /**
+   * 번역기를 부를 수 있는지 (키가 꽂혀 있는지).
+   * 화면은 이 값으로 「번역 보기」를 띄울지 정한다 — 키 없이 배포하면 그 줄이 아예 안 뜬다.
+   */
+  canTranslate: boolean;
 }
 
 const EMPTY: Viewer = {
@@ -55,6 +61,7 @@ const EMPTY: Viewer = {
   isAdmin: false,
   ban: null,
   unread: 0,
+  canTranslate: false,
 };
 
 export const getViewer = cache(async (): Promise<Viewer> => {
@@ -94,5 +101,6 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     ban: toState(row?.bannedUntil ?? null, row?.banReason ?? null),
     ...(realUser ? { viewingAs: { backTo: realUser.name } } : {}),
     unread,
+    canTranslate: translateEnabled(),
   };
 });

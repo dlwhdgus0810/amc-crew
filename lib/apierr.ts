@@ -58,6 +58,16 @@ export const E = {
     en: 'Everyone here is anonymous — you can’t add or friend people from this roster.',
     es: 'Aquí todos van en anónimo: no puedes añadir ni agregar a nadie desde esta lista.',
   },
+  translateOff: {
+    ko: '번역은 아직 준비 중이에요.',
+    en: 'Translation isn’t set up yet.',
+    es: 'La traducción aún no está configurada.',
+  },
+  translateFailed: {
+    ko: '번역이 지금은 안 되네요. 잠시 뒤 다시 눌러보세요.',
+    en: 'Couldn’t translate that just now — try again in a moment.',
+    es: 'No se ha podido traducir ahora mismo; inténtalo en un momento.',
+  },
   nameEn: { ko: '영어 이름은 30자 이하로 입력해주세요.', en: 'English name must be 30 characters or fewer.', es: 'El nombre en inglés admite 30 caracteres como máximo.' },
   nameEnBad: {
     ko: '영어 이름에는 로마자와 공백, - . \' 만 쓸 수 있어요.',

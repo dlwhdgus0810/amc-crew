@@ -31,6 +31,25 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-10T21:00',
+    notable: true,
+    title: { ko: '한국어를 몰라도 읽을 수 있어요', en: 'Read it even if you don’t read Korean' },
+    items: [
+      {
+        ko: '댓글이나 모임 설명 아래에 「번역 보기」가 생겼어요. 눌러야 나오고, 원문은 그대로 위에 남아 있어요.',
+        en: 'There’s a “See translation” line under comments and meetup descriptions. You tap it, and the original stays right above.',
+      },
+      {
+        ko: '읽는 언어와 글자가 다를 때만 보여요. 한국어로 보는 분에게 한국어 댓글마다 붙어 있으면 시끄러우니까요.',
+        en: 'It only shows when the writing isn’t in the language you’re reading in.',
+      },
+      {
+        ko: '한 번 옮긴 글은 저장해 둬서, 다음 사람은 누르자마자 바로 나와요.',
+        en: 'Once something has been translated, the next person sees it instantly.',
+      },
+    ],
+  },
+  {
     at: '2026-08-09T18:00',
     notable: true,
     title: { ko: '8월 12일 일식 — 별보러가자 🌌', en: 'Aug 12 eclipse — Chasing the Stars 🌌' },

@@ -10,6 +10,7 @@
    ============================================================ */
 
 import { useState } from 'react';
+import TranslateLine from './translate-line';
 import { useT } from './i18n';
 import { useNow } from './use-now';
 
@@ -205,6 +206,8 @@ export default function CommentThread({
           </button>
         </div>
         <div className="comment-body">{c.body}</div>
+        {/* 읽는 사람 언어와 글자가 다를 때만 뜬다 (app/translate-line.tsx) */}
+        <TranslateLine text={c.body} />
         {(currentUserId || mine || isAdmin) && (
           <div className="comment-actions">
             {currentUserId && (

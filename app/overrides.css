@@ -1705,3 +1705,45 @@ h2 {
   font-weight: 500;
   color: var(--text-dim);
 }
+
+/*
+ * 사람이 쓴 글 아래 붙는 번역 줄.
+ *
+ * 원문보다 한 단 낮게 둔다 — 이건 곁들인 것이지 본문이 아니다.
+ * 왼쪽 선은 「위 글에서 나온 것」이라는 표시고, 원문과 번역이 잇달아 나올 때
+ * 어디까지가 옮긴 말인지 눈으로 끊어 준다.
+ */
+.translated {
+  margin: 6px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+  color: var(--text-mid);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.translate-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  margin: 2px 0 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.translate-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+@media (hover: hover) {
+  .translate-btn:hover:not(:disabled) {
+    color: var(--text);
+    background: transparent;
+  }
+}
