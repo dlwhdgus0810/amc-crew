@@ -15,14 +15,14 @@ export const dynamic = 'force-dynamic';
  */
 async function ProfileData() {
   const { user } = await getViewer();
-  if (!user) return <ProfileClient initial={{ subs: [], newsAlerts: false, showPastPrivate: false, showPresence: true }} />;
+  if (!user) return <ProfileClient initial={{ subs: [], newsAlerts: false, showPastPrivate: false }} />;
   const [subs, newsAlerts, row] = await Promise.all([
     getSubscriptions(user.id),
     getNewsAlerts(user.id),
     dbGetUser(user.id),
   ]);
   return (
-    <ProfileClient initial={{ subs, newsAlerts, showPastPrivate: row?.showPastPrivate ?? false, showPresence: row?.showPresence ?? true }} />
+    <ProfileClient initial={{ subs, newsAlerts, showPastPrivate: row?.showPastPrivate ?? false }} />
   );
 }
 

@@ -198,7 +198,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
         * 숫자만 — 누가 있는지는 안 보여준다. 「누군가 있다」는 것만 알면 말을 걸어볼
         * 이유로는 충분하고, 그 이상은 서로를 지켜보는 화면이 된다.
         */}
-      {FRIEND_PRESENCE === 'count' && data.friends.length > 0 && (
+      {FRIEND_PRESENCE === 'count' && (
         <p className="online-count">
           {data.onlineCount > 0 ? (
             <>

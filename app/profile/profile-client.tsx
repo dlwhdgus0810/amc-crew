@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CATEGORIES, catDisplayName, getCategory } from '@/lib/categories';
-import { FRIEND_PRESENCE } from '@/lib/flags';
 import { useLocale, useT } from '../i18n';
 import { PROFILE_UPDATED } from '../nav';
 import { useRefreshSession, useViewer } from '../session';
@@ -115,16 +114,6 @@ const T = {
   privacyOff: { ko: '지난 비공개 모임 숨김', en: 'Past private meetups hidden', es: 'Privadas pasadas ocultas' },
   privacyShow: { ko: '보이기', en: 'Show', es: 'Mostrar' },
   privacyHide: { ko: '숨기기', en: 'Hide', es: 'Ocultar' },
-  presenceTitle: { ko: '접속 표시', en: 'Showing you’re around', es: 'Mostrar que estás' },
-  presenceDesc: {
-    ko: '친구 화면에 「친구 n명이 지금 앱을 보고 있어요」로만 나와요. 누구인지는 아무에게도 안 보여요.',
-    en: 'Friends only see “n of your friends are in the app right now.” Nobody sees who.',
-    es: 'Tus amistades solo ven «n están en la app ahora mismo». Nadie ve quién.',
-  },
-  presenceOn: { ko: '이 숫자에 들어가요', en: 'Counted in that number', es: 'Se te cuenta en ese número' },
-  presenceOff: { ko: '이 숫자에 안 들어가요', en: 'Not counted', es: 'No se te cuenta' },
-  presenceShow: { ko: '들어가기', en: 'Count me', es: 'Contarme' },
-  presenceHide: { ko: '빠지기', en: 'Leave me out', es: 'No contarme' },
   newsAlertsOn: { ko: '새 소식 알림 받는 중', en: 'Getting update alerts', es: 'Recibes avisos de novedades' },
   newsAlertsOff: { ko: '새 소식 알림 꺼짐', en: 'Update alerts off', es: 'Avisos de novedades desactivados' },
   newsAlertsEnable: { ko: '알림 켜기', en: 'Turn on', es: 'Activar' },
@@ -190,8 +179,6 @@ export interface ProfileInitial {
   subs: string[];
   newsAlerts: boolean;
   showPastPrivate: boolean;
-  /** 친구 화면의 「친구 n명」에 내가 들어가는지 */
-  showPresence: boolean;
 }
 
 export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
@@ -218,8 +205,6 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
   const [newsAlerts, setNewsAlerts] = useState(initial.newsAlerts);
   const [pastPrivate, setPastPrivate] = useState(initial.showPastPrivate);
   const [pastPrivateBusy, setPastPrivateBusy] = useState(false);
-  const [presence, setPresence] = useState(initial.showPresence);
-  const [presenceBusy, setPresenceBusy] = useState(false);
   const [newsBusy, setNewsBusy] = useState(false);
   const [testBusy, setTestBusy] = useState(false);
   const [venmo, setVenmo] = useState(viewer.venmo ?? '');
@@ -244,7 +229,6 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
     setSubs(new Set(initial.subs));
     setNewsAlerts(initial.newsAlerts);
     setPastPrivate(initial.showPastPrivate);
-    setPresence(initial.showPresence);
   }, [initial]);
 
   /** 고른 사진을 정사각형으로 잘라 256px JPEG data URL로 줄인다 (원본을 그대로 담지 않기 위해) */
@@ -356,24 +340,6 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
       setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
     } finally {
       setNewsBusy(false);
-    }
-  }
-
-  async function togglePresence() {
-    const next = !presence;
-    setPresenceBusy(true);
-    try {
-      const res = await fetch('/api/my-presence', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ on: next }),
-      });
-      if (!res.ok) throw new Error(t(T.failed));
-      setPresence(next);
-    } catch (e) {
-      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(T.failed) });
-    } finally {
-      setPresenceBusy(false);
     }
   }
 
@@ -768,26 +734,6 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
           </button>
         </div>
       </div>
-
-      {/* 숫자에서 빠지는 문 — 화면에 나오는 것이 숫자 하나뿐이라 스위치도 하나면 된다 */}
-      {FRIEND_PRESENCE !== 'off' && (
-        <>
-          <h2>{t(T.presenceTitle)}</h2>
-          <div className="card">
-            <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>
-              {t(T.presenceDesc)}
-            </p>
-            <div className="field-row" style={{ justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 500, color: presence ? undefined : 'var(--text-dim)' }}>
-                {presence ? t(T.presenceOn) : t(T.presenceOff)}
-              </span>
-              <button className={presence ? 'danger' : 'secondary'} disabled={presenceBusy} onClick={togglePresence}>
-                {presence ? t(T.presenceHide) : t(T.presenceShow)}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
 
       <h2>{t(T.news)}</h2>
       <div className="card">

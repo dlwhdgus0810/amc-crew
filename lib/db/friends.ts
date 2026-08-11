@@ -269,8 +269,10 @@ export async function listFriendships(me: string): Promise<FriendView[]> {
  * 누구인지는 세는 쪽에서도 안 나간다. 목록을 만들어 길이를 재지 않고 count(*)로 세는 이유가
  * 그것이다 — 이름이 담긴 배열이 만들어지면 어딘가에서 그대로 응답에 실릴 길이 생긴다.
  *
- * 세는 조건은 목록과 같다: 맺어진 친구이고, 그 사람이 나에게 접속을 감추지 않았고
- * (친구별 스위치와 users.showPresence 둘 다), 마지막 신호가 접속 창 안에 있을 것.
+ * **감추는 스위치들을 보지 않는다.** 이름이 나가는 목록이었다면 「나는 빼줘」가 있어야 하지만,
+ * 여기서 나가는 것은 숫자 하나다 — 누구도 지목되지 않으므로 빠질 것도 없다.
+ * 스위치를 두면 숫자가 사람마다 다르게 보여서, 「지금 몇 명 있나」라는 물음의 답이 아니게 된다.
+ * (친구별 스위치와 users.show_presence는 그대로 남는다 — 이름까지 보여주는 'list'에서 쓴다)
  */
 export async function onlineFriendCount(me: string): Promise<number> {
   if (FRIEND_PRESENCE === 'off') return 0;
@@ -286,19 +288,7 @@ export async function onlineFriendCount(me: string): Promise<number> {
         and(eq(friendships.userB, me), eq(users.id, friendships.userA))
       )
     )
-    .where(
-      and(
-        eq(friendships.status, 'accepted'),
-        eq(users.showPresence, true),
-        isNotNull(users.lastSeen),
-        gte(users.lastSeen, since),
-        // 상대가 나에게만 감춘 경우 — 내가 A면 상대(B)의 스위치는 bShowsPresence다
-        or(
-          and(eq(friendships.userA, me), eq(friendships.bShowsPresence, true)),
-          and(eq(friendships.userB, me), eq(friendships.aShowsPresence, true))
-        )
-      )
-    );
+    .where(and(eq(friendships.status, 'accepted'), isNotNull(users.lastSeen), gte(users.lastSeen, since)));
   return Number(rows[0]?.n ?? 0);
 }
 
