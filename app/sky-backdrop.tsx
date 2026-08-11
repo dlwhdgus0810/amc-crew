@@ -23,6 +23,9 @@ export default function SkyBackdrop() {
         <i />
         <i />
         <i />
+        <i />
+        <i />
+        <i />
       </span>
     </div>
   );

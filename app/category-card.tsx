@@ -99,6 +99,8 @@ export default function CategoryCard({
           <i />
           <i />
           <i />
+          <i />
+          <i />
           <b />
           <b />
           <b />

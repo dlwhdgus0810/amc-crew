@@ -1789,10 +1789,12 @@ h2 {
  * 지나는 자리는 카드의 빈 쪽(왼쪽 위, 오른쪽)으로 몰아 뒀다. 글은 왼쪽에 세로로
  * 쌓여 있어서, 그 위를 가로지르면 뒤에 깔려 있어도 설명 줄이 지저분해 보인다.
  */
-.meteors i:nth-child(1) { top: -8%; left: -16%; animation-duration: 7.5s; animation-delay: 0s; }
-.meteors i:nth-child(2) { top: 2%; left: 34%; animation-duration: 11s; animation-delay: 2.6s; width: 62px; }
-.meteors i:nth-child(3) { top: -16%; left: 58%; animation-duration: 9.5s; animation-delay: 5.1s; }
-.meteors i:nth-child(4) { top: 34%; left: 66%; animation-duration: 13s; animation-delay: 7.8s; width: 48px; }
+.meteors i:nth-of-type(1) { top: -8%; left: -16%; animation-duration: 7.5s; animation-delay: 0s; }
+.meteors i:nth-of-type(2) { top: 2%; left: 34%; animation-duration: 11s; animation-delay: 2.6s; width: 62px; }
+.meteors i:nth-of-type(3) { top: -16%; left: 58%; animation-duration: 9.5s; animation-delay: 5.1s; }
+.meteors i:nth-of-type(4) { top: 34%; left: 66%; animation-duration: 13s; animation-delay: 7.8s; width: 48px; }
+.meteors i:nth-of-type(5) { top: -4%; left: 12%; animation-duration: 8.5s; animation-delay: 4s; width: 54px; }
+.meteors i:nth-of-type(6) { top: 20%; left: 80%; animation-duration: 12s; animation-delay: 9.4s; width: 70px; }
 
 /*
  * 한 바퀴의 앞쪽 20%만 보이고 나머지는 깜깜하다. 유성우는 쉬지 않고 내리지 않는다 —
@@ -1931,12 +1933,15 @@ h2 {
   animation: sky-fall 12s linear infinite;
 }
 /* 여섯을 서로 다른 자리·시각·빠르기로 — 같은 값이면 줄이 나란히 붙어 다닌다 */
-.sky-meteors i:nth-child(1) { top: 4%; left: -12%; animation-duration: 9s; animation-delay: 0.4s; }
-.sky-meteors i:nth-child(2) { top: -4%; left: 32%; animation-duration: 13s; animation-delay: 3.2s; width: 110px; }
-.sky-meteors i:nth-child(3) { top: 18%; left: 62%; animation-duration: 10.5s; animation-delay: 6s; }
-.sky-meteors i:nth-child(4) { top: 44%; left: 8%; animation-duration: 15s; animation-delay: 8.4s; width: 90px; }
-.sky-meteors i:nth-child(5) { top: 36%; left: 74%; animation-duration: 11.5s; animation-delay: 11s; }
-.sky-meteors i:nth-child(6) { top: 66%; left: 40%; animation-duration: 16s; animation-delay: 14.5s; width: 120px; }
+.sky-meteors i:nth-of-type(1) { top: 4%; left: -12%; animation-duration: 9s; animation-delay: 0.4s; }
+.sky-meteors i:nth-of-type(2) { top: -4%; left: 32%; animation-duration: 13s; animation-delay: 3.2s; width: 110px; }
+.sky-meteors i:nth-of-type(3) { top: 18%; left: 62%; animation-duration: 10.5s; animation-delay: 6s; }
+.sky-meteors i:nth-of-type(4) { top: 44%; left: 8%; animation-duration: 15s; animation-delay: 8.4s; width: 90px; }
+.sky-meteors i:nth-of-type(5) { top: 36%; left: 74%; animation-duration: 11.5s; animation-delay: 11s; }
+.sky-meteors i:nth-of-type(6) { top: 66%; left: 40%; animation-duration: 16s; animation-delay: 14.5s; width: 120px; }
+.sky-meteors i:nth-of-type(7) { top: 10%; left: 18%; animation-duration: 12.5s; animation-delay: 1.8s; width: 130px; }
+.sky-meteors i:nth-of-type(8) { top: 54%; left: 56%; animation-duration: 14s; animation-delay: 7s; width: 100px; }
+.sky-meteors i:nth-of-type(9) { top: 78%; left: 16%; animation-duration: 10s; animation-delay: 12.6s; width: 115px; }
 
 /*
  * 한 바퀴의 앞 16%만 보인다. 유성우도 쉬지 않고 내리지는 않는다 —
