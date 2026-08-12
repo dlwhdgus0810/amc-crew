@@ -97,15 +97,12 @@ body[data-chrome='hidden'] nav.tabbar {
  * 잘못 적으면 돈이 남에게 가는 자리에만 쓴다 (받을 계좌 두 곳).
  *
  * .hint와 같은 흐린 회색으로 두면 그냥 설명문으로 보고 지나간다 — 실제로 그래서
- * Venmo 칸에 「Zelle」이라고 적힌 채로 정산이 나갔다. 오류 배너(.msg.err)와 같은
- * 색을 쓰되 배너만큼 크지는 않게, 칸 바로 아래 붙는 한 줄이다.
+ * Venmo 칸에 「Zelle」이라고 적힌 채로 정산이 나갔다. 색과 굵기만으로 세운다:
+ * 바탕과 테두리까지 두르면 칸 아래 붙는 한 줄이 경고창처럼 커져서, 그 자리에서
+ * 제일 중요한 입력칸보다 눈에 먼저 들어온다.
  */
 .warn-line {
   margin: 10px 0 0;
-  padding: 8px 10px;
-  border: 1px solid var(--danger-border);
-  border-radius: var(--r-sm);
-  background: #fdf4f4;
   color: var(--danger);
   font-size: 12.5px;
   font-weight: 600;
