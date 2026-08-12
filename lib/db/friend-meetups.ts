@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, posts } from './schema';
 import { isPastSlot } from '../dates';
@@ -55,7 +55,7 @@ export async function friendMeetups(viewerId: string, ownerId: string): Promise<
     })
     .from(posts)
     .innerJoin(postParticipants, eq(postParticipants.postId, posts.id))
-    .where(and(eq(postParticipants.userId, ownerId), eq(posts.visibility, 'public')))
+    .where(and(eq(postParticipants.userId, ownerId), eq(posts.visibility, 'public'), isNull(posts.deletedAt)))
     .orderBy(asc(posts.date), asc(posts.startTime));
 
   // 내가 함께 있었던 모임 표시 — 한 번에 모아 온다

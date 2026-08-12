@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS posts (
   location text NOT NULL,
   description text,
   capacity integer,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS posts_category_date_idx ON posts (category, date);
 
@@ -82,7 +83,8 @@ CREATE TABLE IF NOT EXISTS post_comments (
   parent_id uuid,
   body text NOT NULL,
   anonymous boolean NOT NULL DEFAULT false,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS post_comments_post_idx ON post_comments (post_id, created_at);
 
@@ -100,7 +102,8 @@ CREATE TABLE IF NOT EXISTS post_photos (
   pathname text NOT NULL,
   width integer,
   height integer,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS post_photos_post_idx ON post_photos (post_id, created_at);
 
@@ -212,7 +215,8 @@ CREATE TABLE IF NOT EXISTS notices (
   targets jsonb NOT NULL DEFAULT '[]',
   active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz
 );
 
 CREATE TABLE IF NOT EXISTS notice_reads (
@@ -244,7 +248,8 @@ CREATE TABLE IF NOT EXISTS settlements (
   short_code text UNIQUE,
   post_id uuid NOT NULL UNIQUE REFERENCES posts(id) ON DELETE CASCADE,
   payee_id text NOT NULL REFERENCES users(id),
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz
 );
 
 CREATE TABLE IF NOT EXISTS settlement_items (

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from '@/lib/db/index';
 import { posts, settlements, users } from '@/lib/db/schema';
 import { getSettlement } from '@/lib/db/settlements';
@@ -22,7 +22,10 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const db = await getDb();
-  const [row] = await db.select().from(settlements).where(eq(settlements.shortCode, code));
+  const [row] = await db
+    .select()
+    .from(settlements)
+    .where(and(eq(settlements.shortCode, code), isNull(settlements.deletedAt)));
   // 지워졌거나 없는 코드 — 홈으로 보낸다 (없는 페이지를 보여줄 이유가 없다)
   if (!row) return NextResponse.redirect(new URL('/', req.nextUrl.origin));
 
@@ -39,7 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
   );
   if (cents <= 0) return NextResponse.redirect(new URL(`/p/${row.postId}`, req.nextUrl.origin));
 
-  const [post] = await db.select().from(posts).where(eq(posts.id, row.postId));
+  const [post] = await db.select().from(posts).where(and(eq(posts.id, row.postId), isNull(posts.deletedAt)));
   const head = post
     ? `${catName(post.category, DEFAULT_LOCALE)} ${whenLabelShort(post.date, post.startTime, DEFAULT_LOCALE)}`
     : 'Kansas Korean';

@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { and, asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { getDb } from './index';
 import { postParticipants, posts, users } from './schema';
@@ -79,7 +79,7 @@ function points() {
       (SELECT count(*) FROM post_participants pp WHERE pp.post_id = p.id)::numeric AS people,
       CASE WHEN p.co_host_id IS NULL THEN 1 ELSE 2 END AS hosts
     FROM posts p
-    WHERE p.visibility = 'public' AND ${notAnonymous()} AND ${endedSql()}
+    WHERE p.visibility = 'public' AND p.deleted_at IS NULL AND ${notAnonymous()} AND ${endedSql()}
   ), shares AS (
     SELECT author_id AS user_id, people / hosts AS pts FROM hosted
     UNION ALL
@@ -167,7 +167,7 @@ async function joinQuery(limit: number): Promise<RankSeed[]> {
     .select({ id: postParticipants.userId, n: sql<number>`count(*)::int` })
     .from(postParticipants)
     .innerJoin(p, eq(p.id, postParticipants.postId))
-    .where(and(eq(p.visibility, 'public'), notInArray(p.category, ANONYMOUS_SLUGS), endedSql()))
+    .where(and(eq(p.visibility, 'public'), isNull(p.deletedAt), notInArray(p.category, ANONYMOUS_SLUGS), endedSql()))
     .groupBy(postParticipants.userId)
     .orderBy(desc(sql`count(*)`), asc(postParticipants.userId));
   return withProfiles(rows, limit);

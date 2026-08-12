@@ -14,8 +14,8 @@ import { POSTS_TAG } from '../cache-tags';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
 import { ratingSummaries, type RatingSummary } from './ratings';
-import { photoStrips, photoPathsForPost } from './photos';
-import { deleteBlobs, signedUrls } from '../blob';
+import { photoStrips } from './photos';
+import { signedUrls } from '../blob';
 import { ratable } from '../ratings';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 import { NOTIF } from '../notif-kinds';
@@ -176,13 +176,13 @@ export const listPosts = cache(
     ? await db
         .select()
         .from(posts)
-        .where(and(eq(posts.category, category), ended, visible))
+        .where(and(eq(posts.category, category), ended, visible, isNull(posts.deletedAt)))
         .orderBy(desc(posts.date), desc(posts.startTime))
         .limit(30)
     : await db
         .select()
         .from(posts)
-        .where(and(eq(posts.category, category), upcoming, visible))
+        .where(and(eq(posts.category, category), upcoming, visible, isNull(posts.deletedAt)))
         .orderBy(sql`${posts.date} ASC NULLS FIRST`, sql`${posts.startTime} ASC NULLS FIRST`);
     return buildViews(postRows, viewerId);
   }
@@ -198,7 +198,8 @@ export const getPostView = cache(async (postId: string, viewerId?: string): Prom
   // 외부에서 들어오는 id이므로 uuid 형태가 아니면 캐스팅 에러 대신 404 처리
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) return null;
   const db = await getDb();
-  const row = (await db.select().from(posts).where(eq(posts.id, postId)))[0];
+  // 지운 모임은 링크를 알고 있어도 404다 (되살리기 전까지)
+  const row = (await db.select().from(posts).where(and(eq(posts.id, postId), isNull(posts.deletedAt))))[0];
   if (!row) return null;
   return (await buildViews([row], viewerId))[0];
 });
@@ -239,7 +240,11 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const ruleIds = [...new Set(postRows.map((p) => p.recurringRuleId).filter((id): id is string => Boolean(id)))];
   const [participantRows, commentRows, liveRules] = await Promise.all([
     db.select().from(postParticipants).where(inArray(postParticipants.postId, postIds)),
-    db.select().from(postComments).where(inArray(postComments.postId, postIds)).orderBy(asc(postComments.createdAt)),
+    db
+      .select()
+      .from(postComments)
+      .where(and(inArray(postComments.postId, postIds), isNull(postComments.deletedAt)))
+      .orderBy(asc(postComments.createdAt)),
     ruleIds.length
       ? db
           .select({ id: recurringRules.id })
@@ -520,12 +525,19 @@ export async function notifyComment(
 
 export async function getComment(commentId: string) {
   const db = await getDb();
-  return (await db.select().from(postComments).where(eq(postComments.id, commentId)))[0];
+  return (await db.select().from(postComments).where(and(eq(postComments.id, commentId), isNull(postComments.deletedAt))))[0];
 }
 
+/**
+ * 댓글 지우기 — 표시만 한다.
+ *
+ * 하트(comment_likes)와 답글은 그대로 남는다. 답글은 parent_id로 붙는데, 지운 댓글은
+ * 목록에서 빠지므로 답글이 부모 없이 뜬다 — 지금도 원 댓글이 없으면 같은 줄에 그냥
+ * 놓이는 모양이라 화면이 깨지지는 않는다.
+ */
 export async function deleteComment(commentId: string): Promise<void> {
   const db = await getDb();
-  await db.delete(postComments).where(eq(postComments.id, commentId));
+  await db.update(postComments).set({ deletedAt: new Date() }).where(eq(postComments.id, commentId));
 }
 
 /** 리마인더 알림 식별용 접두사 — 중복 발송 방지에 쓰이므로 메시지 앞부분을 바꾸지 말 것 */
@@ -944,7 +956,7 @@ export async function findPostByShowtime(showtimeId: string): Promise<{ id: stri
   const [row] = await db
     .select({ id: posts.id })
     .from(posts)
-    .where(eq(posts.amcShowtimeId, showtimeId))
+    .where(and(eq(posts.amcShowtimeId, showtimeId), isNull(posts.deletedAt)))
     .limit(1);
   return row ?? null;
 }
@@ -956,7 +968,7 @@ export async function postIdsByShowtime(showtimeIds: string[]): Promise<Record<s
   const rows = await db
     .select({ id: posts.id, showtimeId: posts.amcShowtimeId })
     .from(posts)
-    .where(inArray(posts.amcShowtimeId, showtimeIds));
+    .where(and(inArray(posts.amcShowtimeId, showtimeIds), isNull(posts.deletedAt)));
   return Object.fromEntries(rows.filter((r) => r.showtimeId).map((r) => [r.showtimeId as string, r.id]));
 }
 
@@ -971,9 +983,13 @@ export async function addParticipants(postId: string, userIds: string[]): Promis
   postsChanged();
 }
 
+/**
+ * 단건 조회 — 라우트들이 권한과 정원을 보는 데 쓴다.
+ * 지운 모임은 없는 것으로 친다. 부르는 쪽이 전부 「없으면 404」라 그대로 맞는다.
+ */
 export async function getPost(postId: string) {
   const db = await getDb();
-  return (await db.select().from(posts).where(eq(posts.id, postId)))[0];
+  return (await db.select().from(posts).where(and(eq(posts.id, postId), isNull(posts.deletedAt))))[0];
 }
 
 export async function countParticipants(postId: string): Promise<number> {
@@ -1113,7 +1129,15 @@ export async function updatePost(input: {
 
 /**
  * 모임 삭제(취소) + 참가자(취소자 제외)에게 취소 알림.
- * 취소 알림은 postId를 null로 저장해 포스트 삭제 CASCADE에 지워지지 않게 한다.
+ *
+ * 행을 지우지 않고 deleted_at에 시각을 적는다. 예전에는 진짜로 지웠고, CASCADE가
+ * 그 모임의 참가 명단·댓글·사진·정산·평점까지 함께 데려갔다. 잘못 누르면 끝이었다.
+ * 이제 자식들은 자리에 그대로 있고, 모임이 안 보이니 따라서 안 보인다. 되살리면 같이 돌아온다.
+ *
+ * 사진 파일도 지우지 않는다 — 지우면 되살려 봐야 깨진 그림이다.
+ *
+ * 취소 알림의 postId는 여전히 null이다. 없어진 화면으로 보내지 않으려는 것이라
+ * 소프트 딜리트가 되어도 이유가 그대로다 (getPostView가 지운 모임에 404를 준다).
  */
 export async function deletePost(
   post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
@@ -1129,9 +1153,6 @@ export async function deletePost(
   silent = false
 ): Promise<void> {
   const db = await getDb();
-  // 지울 파일 경로를 행이 사라지기 전에 모아 둔다 (CASCADE는 행만 지우고 저장소는 모른다)
-  const urls = await photoPathsForPost(post.id);
-
   const recipients = silent ? [] : await participantIdsExcept(post.id, actorId);
   const notice = await buildNotice(
     recipients,
@@ -1149,25 +1170,20 @@ export async function deletePost(
     message: r.message,
   }));
 
+  const softDelete = db.update(posts).set({ deletedAt: new Date() }).where(eq(posts.id, post.id));
   const anyDb = db as any;
   if (typeof anyDb.batch === 'function') {
-    const statements: unknown[] = [db.delete(posts).where(eq(posts.id, post.id))]; // 참가·기존 알림은 CASCADE
+    const statements: unknown[] = [softDelete];
     if (notificationValues.length > 0) statements.unshift(db.insert(notifications).values(notificationValues));
     await anyDb.batch(statements);
   } else {
     await anyDb.transaction(async (tx: typeof db) => {
       if (notificationValues.length > 0) await tx.insert(notifications).values(notificationValues);
-      await tx.delete(posts).where(eq(posts.id, post.id));
+      await tx.update(posts).set({ deletedAt: new Date() }).where(eq(posts.id, post.id));
     });
   }
 
   postsChanged();
-
-  /*
-   * 저장소에 있는 파일은 CASCADE가 모른다 — 행만 지워지고 파일은 남는다.
-   * 지울 목록은 행이 사라지기 전에 모아 뒀다 (아래 urls).
-   */
-  await deleteBlobs(urls);
 
   // 취소된 모임은 상세 페이지가 사라지므로 카테고리 피드로 링크
   if (origin && recipients.length > 0) {
@@ -1188,7 +1204,7 @@ export async function sendTodayReminders(
 ): Promise<{ posts: number; recipients: number; skipped: number }> {
   const db = await getDb();
   const today = todayLocal();
-  const todayPosts = await db.select().from(posts).where(eq(posts.date, today));
+  const todayPosts = await db.select().from(posts).where(and(eq(posts.date, today), isNull(posts.deletedAt)));
   if (todayPosts.length === 0) return { posts: 0, recipients: 0, skipped: 0 };
 
   const todayPostIds = todayPosts.map((p) => p.id);
@@ -1326,7 +1342,12 @@ export async function listNotifications(userId: string) {
   const rows = await db
     .select({
       id: notifications.id,
-      postId: notifications.postId,
+      /*
+       * 알림에 적힌 id가 아니라 **붙은 모임의 id**를 쓴다. 지워진 모임은 아래 join이
+       * 걸러내므로 여기가 null이 되고, 화면은 그 줄을 눌리지 않게 둔다 — 눌러 봐야
+       * 없는 모임 화면이다. 예전 하드 딜리트에서 저절로 그랬던 것과 같은 모양이다.
+       */
+      postId: posts.id,
       kind: notifications.kind,
       message: notifications.message,
       read: notifications.read,
@@ -1334,7 +1355,7 @@ export async function listNotifications(userId: string) {
       category: posts.category,
     })
     .from(notifications)
-    .leftJoin(posts, eq(notifications.postId, posts.id))
+    .leftJoin(posts, and(eq(notifications.postId, posts.id), isNull(posts.deletedAt)))
     .where(and(eq(notifications.userId, userId), isNull(notifications.deletedAt)))
     .orderBy(desc(notifications.createdAt))
     .limit(50);

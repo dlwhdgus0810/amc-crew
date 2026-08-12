@@ -1,6 +1,24 @@
 import { boolean, index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import type { TitleMeta } from '../tmdb';
 
+/**
+ * 지운 시각 — null이면 살아 있다.
+ *
+ * 사람이 쓴 것(모임·댓글·사진·공지·정산)은 행을 지우지 않고 이 칸에 시각을 적는다.
+ * 모임 하나를 지우면 CASCADE로 그 모임의 댓글·사진·정산·평점까지 같이 사라졌고,
+ * 사진은 저장소의 파일까지 지웠다 — 잘못 누르면 되돌릴 방법이 없었다.
+ *
+ * **읽는 자리마다 `isNull(...deletedAt)`을 붙여야 한다.** 한 곳만 빠뜨리면 지운 것이
+ * 도로 보인다. 알림(notifications)이 먼저 쓰던 방식과 같다.
+ *
+ * 껐다 켜는 것(참가·구독·즐겨찾기·평점·명단·친구)에는 붙이지 않는다. 그쪽은 남길
+ * 내용이 없고, (모임,사람)이 기본키라 죽은 행이 남으면 다시 참가할 때 부딪힌다.
+ *
+ * 함수인 이유: drizzle의 칸 빌더는 테이블마다 새로 만들어야 한다. 하나를 여러 테이블에
+ * 나눠 쓰면 상태가 섞인다.
+ */
+const deletedAt = () => timestamp('deleted_at', { withTimezone: true });
+
 export const users = pgTable('users', {
   id: text('id').primaryKey(), // 카카오 회원번호
   kakaoName: text('kakao_name').notNull(),
@@ -142,6 +160,7 @@ export const posts = pgTable(
     description: text('description'),
     capacity: integer('capacity'), // 정원. null이면 무제한
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: deletedAt(),
   },
   (t) => [index('posts_category_date_idx').on(t.category, t.date)]
 );
@@ -182,6 +201,7 @@ export const postComments = pgTable(
      */
     anonymous: boolean('anonymous').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: deletedAt(),
   },
   (t) => [index('post_comments_post_idx').on(t.postId, t.createdAt)]
 );
@@ -228,6 +248,8 @@ export const postPhotos = pgTable(
     width: integer('width'),
     height: integer('height'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** 지워도 저장소의 파일은 남긴다 — 되살릴 때 깨진 그림이 되지 않도록 (lib/db/photos.ts) */
+    deletedAt: deletedAt(),
   },
   (t) => [index('post_photos_post_idx').on(t.postId, t.createdAt)]
 );
@@ -459,6 +481,12 @@ export const settlements = pgTable('settlements', {
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * post_id가 unique라 한 모임에 정산은 하나뿐이다. 그래서 지운 뒤 다시 만들면 새 행이
+   * 아니라 이 행을 되살려 쓴다 (saveSettlement). 항목은 저장할 때마다 통째로 갈아끼우므로,
+   * 되살릴 수 있는 것은 「다시 정산을 만들기 전까지」다.
+   */
+  deletedAt: deletedAt(),
 });
 
 /**
@@ -617,6 +645,11 @@ export const notices = pgTable('notices', {
    * 한 번 닫았던 사람에게도 다시 뜬다. 고쳤다는 건 다시 읽혀야 한다는 뜻이다.
    */
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * active와는 다른 칸이다. active=false는 「내렸다」 — 관리자 목록에는 그대로 남는다.
+   * 이건 「지웠다」 — 관리자 목록에서도 사라진다. 되살릴 수 있다는 점만 달라진다.
+   */
+  deletedAt: deletedAt(),
 });
 
 /**

@@ -346,6 +346,10 @@ export async function sharesMeetup(a: string, b: string): Promise<boolean> {
     .select({ postId: mine.postId })
     .from(mine)
     .innerJoin(theirs, eq(theirs.postId, mine.postId))
+    /*
+     * 지워진 모임도 센다 (isNull을 붙이지 않는다). 모임이 지워졌다고 둘이 만난 적이
+     * 없어지는 것은 아니고, 그 사실만으로 친구 요청을 막을 이유도 없다.
+     */
     .innerJoin(posts, eq(posts.id, mine.postId))
     .where(
       and(

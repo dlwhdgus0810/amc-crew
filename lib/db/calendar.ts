@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte, or } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, posts } from './schema';
 import { isPastSlot, todayLocal } from '../dates';
@@ -74,7 +74,7 @@ export async function listMeetupsBetween(
       visibility: posts.visibility,
     })
     .from(posts)
-    .where(and(inRange, visible))
+    .where(and(inRange, visible, isNull(posts.deletedAt)))
     .orderBy(asc(posts.date), asc(posts.startTime));
 
   if (rows.length === 0) return [];

@@ -108,7 +108,12 @@ export async function materializeDueOccurrences(origin: string): Promise<{ creat
   const today = todayLocal();
   const horizonEnd = addDays(today, HORIZON_DAYS - 1);
 
-  // 기존 회차를 한 번에 조회해 (규칙id|날짜) 집합으로 만든다
+  /*
+   * 기존 회차를 한 번에 조회해 (규칙id|날짜) 집합으로 만든다.
+   *
+   * **여기는 일부러 지워진 회차까지 센다.** 이번 주 회차를 지운 것은 「이번 주는 쉰다」는
+   * 뜻인데, 안 세면 다음 크론이 그 자리를 다시 채워 놓는다 (예전에는 진짜로 그랬다).
+   */
   const existing = await db
     .select({ ruleId: posts.recurringRuleId, date: posts.date })
     .from(posts)

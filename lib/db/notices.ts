@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import { getDb } from './index';
 import { noticeReads, notices } from './schema';
@@ -60,7 +60,7 @@ async function activeQuery(): Promise<NoticeView[]> {
   const rows = await db
     .select()
     .from(notices)
-    .where(eq(notices.active, true))
+    .where(and(eq(notices.active, true), isNull(notices.deletedAt)))
     .orderBy(desc(notices.createdAt))
     .limit(ACTIVE_LIMIT);
   return rows.map(view);
@@ -137,7 +137,7 @@ export async function readsFor(noticeIds: string[]): Promise<Map<string, NoticeR
  */
 export async function listNotices(): Promise<(NoticeView & { reads: NoticeRead[] })[]> {
   const db = await getDb();
-  const rows = await db.select().from(notices).orderBy(desc(notices.createdAt));
+  const rows = await db.select().from(notices).where(isNull(notices.deletedAt)).orderBy(desc(notices.createdAt));
   const reads = await readsFor(rows.map((r) => r.id));
   return rows.map((r) => {
     const v = view(r);
@@ -174,7 +174,7 @@ export async function setNoticeActive(id: string, active: boolean): Promise<Noti
     // updatedAt은 건드리지 않는다 — 내렸다 다시 올린 것을 "고쳤다"로 보면
     // 이미 읽고 닫은 사람들에게 같은 공지가 다시 뜬다
     .set({ active })
-    .where(eq(notices.id, id))
+    .where(and(eq(notices.id, id), isNull(notices.deletedAt)))
     .returning();
   return row ? view(row) : null;
 }
@@ -190,13 +190,23 @@ export async function editNotice(id: string, input: NoticeInput & { targets: str
   const [row] = await db
     .update(notices)
     .set({ ...input, updatedAt: new Date() })
-    .where(eq(notices.id, id))
+    .where(and(eq(notices.id, id), isNull(notices.deletedAt)))
     .returning();
   return row ? view(row) : null;
 }
 
+/**
+ * 공지 지우기 — 표시만 한다. 관리자 목록에서도 사라진다.
+ *
+ * 「내리기」(active=false)와는 다르다. 그쪽은 회원 화면에서만 빠지고 목록에는 남는다.
+ * 이미 지운 공지를 다시 지우면 false — 부르는 쪽이 404를 준다.
+ */
 export async function deleteNotice(id: string): Promise<boolean> {
   const db = await getDb();
-  const rows = await db.delete(notices).where(eq(notices.id, id)).returning();
+  const rows = await db
+    .update(notices)
+    .set({ deletedAt: new Date() })
+    .where(and(eq(notices.id, id), isNull(notices.deletedAt)))
+    .returning();
   return rows.length > 0;
 }

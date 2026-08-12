@@ -1,6 +1,6 @@
 // 모임 정산 — 한 모임에 하나. 돈을 받을 사람이 항목을 적으면 각자 낼 금액이 계산되고 알림이 나간다.
 
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from './index';
 import {
   notifications,
@@ -108,7 +108,10 @@ async function payerIds(postId: string, extras: string[]): Promise<string[]> {
 /** 이 정산을 볼 수 있는 사람 (참가자 + 정산에 들어간 사람). 라우트의 접근 확인에 쓴다 */
 export async function settlementViewers(postId: string): Promise<string[]> {
   const db = await getDb();
-  const [row] = await db.select({ id: settlements.id }).from(settlements).where(eq(settlements.postId, postId));
+  const [row] = await db
+    .select({ id: settlements.id })
+    .from(settlements)
+    .where(and(eq(settlements.postId, postId), isNull(settlements.deletedAt)));
   const extras = row ? await extraMemberIds(row.id) : [];
   return payerIds(postId, extras);
 }
@@ -177,7 +180,10 @@ function headsOf(
 export async function getSettlement(postId: string): Promise<SettlementView | null> {
   const locale = await getLocale();
   const db = await getDb();
-  const [row] = await db.select().from(settlements).where(eq(settlements.postId, postId));
+  const [row] = await db
+    .select()
+    .from(settlements)
+    .where(and(eq(settlements.postId, postId), isNull(settlements.deletedAt)));
   if (!row) return null;
 
   const itemRows = await db
@@ -259,6 +265,11 @@ export async function saveSettlement(input: {
   extraMemberIds?: string[];
 }): Promise<void> {
   const db = await getDb();
+  /*
+   * **여기는 일부러 지워진 정산까지 찾는다** (isNull을 붙이지 않는다).
+   * post_id가 unique라 지운 행이 자리를 잡고 있어서, 거르면 새로 만들 때 키가 부딪힌다.
+   * 찾으면 아래에서 deletedAt을 지우며 그 자리에 다시 쓴다.
+   */
   const [existing] = await db.select().from(settlements).where(eq(settlements.postId, input.postId));
 
   const settlementId = existing?.id ?? crypto.randomUUID();
@@ -268,7 +279,8 @@ export async function saveSettlement(input: {
     await db
       .update(settlements)
       // 예전에 만든 정산은 코드가 없다 — 저장할 때 채운다
-      .set({ payeeId: input.payeeId, ...(existing.shortCode ? {} : { shortCode: shortCode() }) })
+      // deletedAt: null — 지웠던 자리에 다시 만드는 경우다 (post_id가 unique라 행은 하나뿐)
+      .set({ payeeId: input.payeeId, deletedAt: null, ...(existing.shortCode ? {} : { shortCode: shortCode() }) })
       .where(eq(settlements.id, settlementId));
   } else {
     await db.insert(settlements).values({
@@ -306,15 +318,25 @@ export async function saveSettlement(input: {
   }
 }
 
+/**
+ * 정산 지우기 — 표시만 한다. 항목·명단은 그대로 붙어 있다.
+ *
+ * post_id가 unique라 한 모임에 정산 행은 하나뿐이다. 그래서 지운 뒤 다시 만들면
+ * 새 행이 아니라 이 행을 되살려 쓰고(saveSettlement), 그때 항목이 통째로 갈린다.
+ * 되살릴 수 있는 것은 「다시 정산을 만들기 전까지」다.
+ */
 export async function deleteSettlement(postId: string): Promise<void> {
   const db = await getDb();
-  await db.delete(settlements).where(eq(settlements.postId, postId));
+  await db.update(settlements).set({ deletedAt: new Date() }).where(eq(settlements.postId, postId));
 }
 
 /** 정산을 만든 사람 (수정·삭제 권한 확인용) */
 export async function settlementPayee(postId: string): Promise<string | null> {
   const db = await getDb();
-  const [row] = await db.select({ payeeId: settlements.payeeId }).from(settlements).where(eq(settlements.postId, postId));
+  const [row] = await db
+    .select({ payeeId: settlements.payeeId })
+    .from(settlements)
+    .where(and(eq(settlements.postId, postId), isNull(settlements.deletedAt)));
   return row?.payeeId ?? null;
 }
 
@@ -340,7 +362,7 @@ export async function notifySettlement(
   if (!view) return { sent: 0 };
 
   const db = await getDb();
-  const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+  const [post] = await db.select().from(posts).where(and(eq(posts.id, postId), isNull(posts.deletedAt)));
   if (!post) return { sent: 0 };
 
   /*
@@ -539,7 +561,10 @@ export async function settlementSummaries(
   if (postIds.length === 0) return out;
 
   const db = await getDb();
-  const rows = await db.select().from(settlements).where(inArray(settlements.postId, postIds));
+  const rows = await db
+    .select()
+    .from(settlements)
+    .where(and(inArray(settlements.postId, postIds), isNull(settlements.deletedAt)));
   if (rows.length === 0) return out;
 
   const byId = new Map(rows.map((r) => [r.id, r]));

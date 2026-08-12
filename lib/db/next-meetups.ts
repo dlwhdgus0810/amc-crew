@@ -53,7 +53,7 @@ async function query(categories: string[]): Promise<Record<string, NextMeetup>> 
     })
     .from(posts)
     // 비공개(link) 모임은 카드 요약에도 올리지 않는다 — 링크 없는 사람 눈에 띄면 안 된다
-    .where(and(inArray(posts.category, categories), upcoming, eq(posts.visibility, 'public')))
+    .where(and(inArray(posts.category, categories), upcoming, eq(posts.visibility, 'public'), isNull(posts.deletedAt)))
     .orderBy(asc(posts.date), asc(posts.startTime));
 
   // 날짜순으로 왔으므로 카테고리마다 처음 만난 행이 곧 다음 모임이다

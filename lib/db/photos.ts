@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from './index';
 import { postPhotos } from './schema';
 import { signedUrls } from '../blob';
@@ -39,7 +39,7 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, { urls
   const rows = await db
     .select({ postId: postPhotos.postId, pathname: postPhotos.pathname })
     .from(postPhotos)
-    .where(inArray(postPhotos.postId, postIds))
+    .where(and(inArray(postPhotos.postId, postIds), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
 
   const byPost = new Map<string, string[]>();
@@ -67,7 +67,7 @@ export async function listPhotos(postId: string): Promise<PhotoView[]> {
   const rows = await db
     .select()
     .from(postPhotos)
-    .where(eq(postPhotos.postId, postId))
+    .where(and(eq(postPhotos.postId, postId), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
   const signed = await signedUrls(rows.map((r) => r.pathname));
   return rows
@@ -84,7 +84,10 @@ export async function listPhotos(postId: string): Promise<PhotoView[]> {
 
 export async function countPhotos(postId: string): Promise<number> {
   const db = await getDb();
-  const rows = await db.select({ id: postPhotos.id }).from(postPhotos).where(eq(postPhotos.postId, postId));
+  const rows = await db
+    .select({ id: postPhotos.id })
+    .from(postPhotos)
+    .where(and(eq(postPhotos.postId, postId), isNull(postPhotos.deletedAt)));
   return rows.length;
 }
 
@@ -104,7 +107,7 @@ export async function addPhoto(input: {
 /** 지울 사진 한 장 — 없거나 남의 것이면 null (부르는 쪽이 권한을 확인한다) */
 export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: string; pathname: string }) | null> {
   const db = await getDb();
-  const [r] = await db.select().from(postPhotos).where(eq(postPhotos.id, photoId));
+  const [r] = await db.select().from(postPhotos).where(and(eq(postPhotos.id, photoId), isNull(postPhotos.deletedAt)));
   if (!r) return null;
   return {
     id: r.id,
@@ -119,19 +122,23 @@ export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: 
   };
 }
 
+/**
+ * 사진 지우기 — 행에 표시만 하고 저장소의 파일은 그대로 둔다.
+ *
+ * 파일까지 지우면 되살려도 깨진 그림만 남는다. 아래 allPhotoPaths가 지워진 사진도
+ * 「주인 있는 파일」로 세기 때문에, 청소(blob-sweep)가 그 파일을 가져가지도 않는다.
+ */
 export async function deletePhotoRow(photoId: string): Promise<void> {
   const db = await getDb();
-  await db.delete(postPhotos).where(and(eq(postPhotos.id, photoId)));
+  await db.update(postPhotos).set({ deletedAt: new Date() }).where(eq(postPhotos.id, photoId));
 }
 
-/** 모임을 지울 때 같이 지울 파일 경로들 — CASCADE는 행만 지우고 저장소는 모른다 */
-export async function photoPathsForPost(postId: string): Promise<string[]> {
-  const db = await getDb();
-  const rows = await db.select({ pathname: postPhotos.pathname }).from(postPhotos).where(eq(postPhotos.postId, postId));
-  return rows.map((r) => r.pathname);
-}
-
-/** 청소가 「주인 있는 파일」을 가려내는 데 쓴다 */
+/**
+ * 청소가 「주인 있는 파일」을 가려내는 데 쓴다.
+ *
+ * **지워진 사진도 센다 (isNull을 붙이지 않는다).** 붙이면 청소가 그 파일을 주인 없는
+ * 것으로 보고 지워버려서, 되살릴 수 있다는 말이 거짓이 된다.
+ */
 export async function allPhotoPaths(): Promise<string[]> {
   const db = await getDb();
   const rows = await db.select({ pathname: postPhotos.pathname }).from(postPhotos);
