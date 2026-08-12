@@ -19,6 +19,24 @@ export function formatCents(cents: number): string {
 }
 
 /**
+ * Zelle 값을 읽기 좋게 — 4345311138 → 434-531-1138.
+ *
+ * 저장된 값은 손대지 않는다. 사람이 적은 그대로 두고 **보여줄 때만** 끊는다.
+ * 열 자리(또는 1로 시작하는 열한 자리) 숫자일 때만 끊는다 — 이메일이나 이미 끊어
+ * 적은 번호는 그대로 나간다. 옮겨 적다 한 자리를 놓치면 남의 계좌로 가는 값이라,
+ * 세 자리씩 끊어 두면 눈으로 맞춰보기가 쉽다.
+ */
+export function formatZelle(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (!/^\d+$/.test(value.trim())) return value; // 숫자만 적은 경우에만 손댄다 (이메일 등은 그대로)
+  if (digits.length === 10) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `1-${digits.slice(1, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return value;
+}
+
+/**
  * 금액을 사람들에게 나눈다. 나머지 센트는 버리지 않고 앞사람부터 1센트씩 더 얹는다 —
  * 합계가 반드시 원금과 같아야 한다 ($10을 셋이 나누면 3.34 / 3.33 / 3.33).
  *

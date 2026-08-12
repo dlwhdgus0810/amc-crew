@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from './i18n';
-import { formatCents, myShareParts, parseAmountCents, payNote, splitWithExtras, venmoLink } from '@/lib/money';
+import { formatCents, formatZelle, myShareParts, parseAmountCents, payNote, splitWithExtras, venmoLink } from '@/lib/money';
 import { timeAgo } from '@/lib/datefmt';
 
 const T = {
@@ -563,9 +563,9 @@ export default function SettlementPanel({
                     {settlement.payee.zelle && (
                       <div className="pay-zelle">
                         <span className="pay-zelle-label">{t(T.zelleLabel)}</span>
-                        <span className="pay-zelle-value">{settlement.payee.zelle}</span>
-                        <button className="link-btn" onClick={() => copyText(settlement.payee.zelle!)}>
-                          {copied === settlement.payee.zelle ? t(T.copied) : t(T.copy)}
+                        <span className="pay-zelle-value">{formatZelle(settlement.payee.zelle)}</span>
+                        <button className="link-btn" onClick={() => copyText(formatZelle(settlement.payee.zelle!))}>
+                          {copied === formatZelle(settlement.payee.zelle) ? t(T.copied) : t(T.copy)}
                         </button>
                       </div>
                     )}
@@ -613,9 +613,9 @@ export default function SettlementPanel({
                 {settlement.payee.zelle && (
                   <div className="pay-zelle">
                     <span className="pay-zelle-label">{t(T.zelleLabel)}</span>
-                    <span className="pay-zelle-value">{settlement.payee.zelle}</span>
-                    <button className="link-btn" onClick={() => copyText(settlement.payee.zelle!)}>
-                      {copied === settlement.payee.zelle ? t(T.copied) : t(T.copy)}
+                    <span className="pay-zelle-value">{formatZelle(settlement.payee.zelle)}</span>
+                    <button className="link-btn" onClick={() => copyText(formatZelle(settlement.payee.zelle!))}>
+                      {copied === formatZelle(settlement.payee.zelle) ? t(T.copied) : t(T.copy)}
                     </button>
                   </div>
                 )}
@@ -974,7 +974,7 @@ export default function SettlementPanel({
                   maxLength={60}
                   onChange={(e) => setZelleInput(e.target.value)}
                 />
-                <p className="hint">{t(T.payBlankHint)}</p>
+                <p className="warn-line">{t(T.payBlankHint)}</p>
                 {/* 넣지 않아도 위의 "확인하고 보내기"로 그냥 보낼 수 있다 (현금으로 받는 경우) */}
               </div>
             )}

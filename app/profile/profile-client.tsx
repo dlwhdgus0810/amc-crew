@@ -8,6 +8,7 @@ import { useLocale, useT } from '../i18n';
 import { PROFILE_UPDATED } from '../nav';
 import { useRefreshSession, useViewer } from '../session';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
+import { formatZelle } from '@/lib/money';
 import PushToggle from '../push-toggle';
 
 /** 저장할 사진 한 변의 길이 (px) */
@@ -565,26 +566,27 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
         <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>{t(T.payDesc)}</p>
         <div className="pay-label">{t(T.venmo)}</div>
         {editingVenmo ? (
-          <div className="field-row">
-            <input
-              type="text"
-              placeholder={t(T.venmoPh)}
-              value={venmo}
-              maxLength={30}
-              onChange={(e) => setVenmo(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !saving && saveProfile({ venmo }, t(T.venmoSaved))}
-              autoFocus
-            />
-            <button className="secondary" disabled={saving} onClick={() => saveProfile({ venmo }, t(T.venmoSaved))}>
-              {saving ? t(T.saving) : t(T.save)}
-            </button>
-            <button className="secondary" disabled={saving} onClick={() => setEditingVenmo(false)}>
-              {t(T.cancel)}
-            </button>
-            <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, flexBasis: '100%', margin: '2px 2px 0' }}>
-              {t(T.venmoBlank)}
-            </p>
-          </div>
+          <>
+            <div className="field-row">
+              <input
+                type="text"
+                placeholder={t(T.venmoPh)}
+                value={venmo}
+                maxLength={30}
+                onChange={(e) => setVenmo(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !saving && saveProfile({ venmo }, t(T.venmoSaved))}
+                autoFocus
+              />
+              <button className="secondary" disabled={saving} onClick={() => saveProfile({ venmo }, t(T.venmoSaved))}>
+                {saving ? t(T.saving) : t(T.save)}
+              </button>
+              <button className="secondary" disabled={saving} onClick={() => setEditingVenmo(false)}>
+                {t(T.cancel)}
+              </button>
+            </div>
+            {/* 줄 바깥에 둔다 — .field-row는 flex라 안에 넣으면 버튼 옆에 끼어 좁아진다 */}
+            <p className="warn-line">{t(T.venmoBlank)}</p>
+          </>
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ fontWeight: 500, color: venmo ? undefined : 'var(--text-dim)' }}>
@@ -618,7 +620,7 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ fontWeight: 500, color: zelle ? undefined : 'var(--text-dim)' }}>
-              {zelle || t(T.venmoNone)}
+              {zelle ? formatZelle(zelle) : t(T.venmoNone)}
             </span>
             <button className="secondary" onClick={() => setEditingZelle(true)}>
               {t(T.edit)}

@@ -93,6 +93,26 @@ body[data-chrome='hidden'] nav.tabbar {
   color: var(--text-dim);
 }
 
+/*
+ * 잘못 적으면 돈이 남에게 가는 자리에만 쓴다 (받을 계좌 두 곳).
+ *
+ * .hint와 같은 흐린 회색으로 두면 그냥 설명문으로 보고 지나간다 — 실제로 그래서
+ * Venmo 칸에 「Zelle」이라고 적힌 채로 정산이 나갔다. 오류 배너(.msg.err)와 같은
+ * 색을 쓰되 배너만큼 크지는 않게, 칸 바로 아래 붙는 한 줄이다.
+ */
+.warn-line {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--r-sm);
+  background: #fdf4f4;
+  color: var(--danger);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
 /* ── 홈 화면에 추가 안내 ────────────────────────────────────
    iOS는 설치 버튼을 만들 수 없어 누를 곳을 순서대로 적어준다. */
 .install-steps {
@@ -1012,8 +1032,12 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
 .settle-pay-ask strong { display: block; font-size: 14.5px; margin-bottom: 4px; }
 .settle-pay-ask p { color: var(--text-dim); font-size: 12.5px; margin: 0 0 10px; }
 .settle-pay-ask input + input { margin-top: 8px; }
-/* 칸 아래 한 줄 — 위의 설명문(p)과 달리 아래가 아니라 위로 띄운다 */
-.settle-pay-ask p.hint { margin: 10px 0 0; }
+/*
+ * 칸 아래 경고 한 줄 — 위의 설명문(p)과 달리 아래가 아니라 위로 띄운다.
+ * 색도 여기서 다시 적는다: 바로 위 `.settle-pay-ask p`가 흐린 회색을 쥐고 있어서
+ * (선택자가 더 구체적이라) .warn-line의 빨강이 그냥 지면 경고가 설명문처럼 보인다.
+ */
+.settle-pay-ask p.warn-line { margin: 10px 0 0; color: var(--danger); }
 
 /* 정산: 실시간 1인당 금액 + 보내기 전 확인 */
 .settle-live {
