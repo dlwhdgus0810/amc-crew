@@ -53,6 +53,15 @@ const T = {
   },
   venmoPh: { ko: 'Venmo 아이디 (@ 없이)', en: 'Venmo username (no @)', es: 'Usuario de Venmo (sin @)' },
   zellePh: { ko: 'Zelle 전화번호 또는 이메일', en: 'Zelle phone or email', es: 'Teléfono o correo de Zelle' },
+  /**
+   * 실제로 있었던 일이다 — Zelle만 쓰는 분이 Venmo 칸에 「Zelle」이라고 적었고,
+   * 그 값으로 만든 링크가 @Zelle이라는 남의 Venmo 계정으로 갔다.
+   */
+  payBlankHint: {
+    ko: '안 쓰는 쪽은 빈칸으로 두세요. Venmo 칸에 「Zelle」처럼 적으면 그 아이디를 쓰는 다른 사람에게 링크가 걸립니다.',
+    en: 'Leave the one you don’t use empty. Typing “Zelle” in the Venmo box links to a stranger who owns that username.',
+    es: 'Deja vacío el que no uses. Si escribes «Zelle» en Venmo, el enlace irá a un desconocido con ese usuario.',
+  },
   savePayAndSend: { ko: '저장하고 알림 보내기', en: 'Save and notify', es: 'Guardar y avisar' },
   skipPay: { ko: '나중에 넣고 그냥 보내기', en: 'Skip and notify anyway', es: 'Saltar y avisar igualmente' },
   livePerHead: { ko: '{heads}명이 나눠 · 1인당 {each}', en: 'Split {heads} ways · {each} each', es: 'Entre {heads} · {each} cada uno' },
@@ -965,6 +974,7 @@ export default function SettlementPanel({
                   maxLength={60}
                   onChange={(e) => setZelleInput(e.target.value)}
                 />
+                <p className="hint">{t(T.payBlankHint)}</p>
                 {/* 넣지 않아도 위의 "확인하고 보내기"로 그냥 보낼 수 있다 (현금으로 받는 경우) */}
               </div>
             )}

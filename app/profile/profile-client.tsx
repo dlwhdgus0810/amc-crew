@@ -64,6 +64,15 @@ const T = {
     es: 'Permite que te paguen con un toque cuando se divide una cuenta. El dinero nunca pasa por esta app.',
   },
   venmoPh: { ko: '@ 없이 입력', en: 'without the @', es: 'sin la @' },
+  /**
+   * Venmo를 안 쓰는 분이 이 칸에 「Zelle」이라고 적은 일이 있었다. 글자로는 멀쩡한
+   * 아이디라 서버도 통과시켰고, 정산 링크가 @Zelle이라는 남의 계정으로 갔다.
+   */
+  venmoBlank: {
+    ko: 'Venmo를 안 쓰시면 빈칸으로 두세요 — 여기에 「Zelle」처럼 적으면 그 아이디를 쓰는 다른 사람에게 링크가 걸립니다.',
+    en: 'No Venmo? Leave it blank — typing something like “Zelle” here links to a stranger who owns that username.',
+    es: '¿Sin Venmo? Déjalo vacío: escribir algo como «Zelle» enlaza a un desconocido con ese usuario.',
+  },
   venmoNone: { ko: '등록 안 함', en: 'Not set', es: 'Sin definir' },
   venmoSaved: { ko: 'Venmo 아이디를 저장했어요.', en: 'Venmo username saved.', es: 'Usuario de Venmo guardado.' },
   pay: { ko: '받을 계좌', en: 'How you get paid', es: 'Dónde te pagan' },
@@ -572,6 +581,9 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
             <button className="secondary" disabled={saving} onClick={() => setEditingVenmo(false)}>
               {t(T.cancel)}
             </button>
+            <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, flexBasis: '100%', margin: '2px 2px 0' }}>
+              {t(T.venmoBlank)}
+            </p>
           </div>
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>

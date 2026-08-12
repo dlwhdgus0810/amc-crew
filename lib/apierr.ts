@@ -197,6 +197,11 @@ export const E = {
     en: 'A Venmo username is 1–30 characters of letters, numbers, underscores or hyphens.',
     es: 'Un usuario de Venmo tiene de 1 a 30 caracteres: letras, números, guiones o guiones bajos.',
   },
+  venmoNotId: {
+    ko: '여기는 Venmo 아이디만 넣는 칸이에요. Venmo를 안 쓰시면 비워두세요 — 적어두면 그 아이디를 쓰는 다른 사람에게 돈이 갈 수 있어요.',
+    en: 'This box takes a Venmo username only. If you don’t use Venmo, leave it empty — otherwise money can go to a stranger with that username.',
+    es: 'Aquí va solo el usuario de Venmo. Si no usas Venmo, déjalo vacío: si no, el dinero puede ir a un desconocido con ese usuario.',
+  },
   zelleId: {
     ko: 'Zelle은 전화번호나 이메일로 60자 이내로 입력해주세요.',
     en: 'Zelle takes a phone number or email, up to 60 characters.',
