@@ -696,8 +696,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     // 명단으로 만드는 모임은 정원이 정해져 있다 — 미리 채워 두되 고칠 수는 있게 둔다
     if (fromSignups && category?.signup) setFCapacity(String(category.signup.limit));
     if (date) setFDate(date);
-    // 비공개로 바꾸면 바로 쓸 수 있도록 친구를 미리 전부 골라 둔다
-    setFInvite(new Set(friends.friends.map((f) => f.id)));
+    // 초대는 아무도 안 고른 채로 시작한다 (resetForm이 비워 둔 그대로) —
+    // 미리 전부 골라 두면 뺄 사람을 빼지 않고 그냥 만들어서, 부를 생각이 없던 친구에게 알림이 간다
     setShowForm(true);
   }
 
@@ -1497,8 +1497,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             </label>
 
             {/*
-             * 비공개 모임은 구독자에게 알리지 않으니, 아무에게도 안 알리면 아무도 모른다.
-             * 그래서 친구를 전부 고른 상태로 띄우고, 뺄 사람만 빼게 한다.
+             * 비공개 모임은 구독자에게 알리지 않으니, 여기서 고른 사람 말고는 아무도 모른다.
+             * 그래도 아무도 안 고른 채로 시작한다 — 알림은 부를 사람을 고르는 일이지 빼는 일이 아니고,
+             * 전부 골라 두면 손대지 않고 만든 사람이 부를 생각도 없던 친구까지 부르게 된다.
              * 매주 반복은 첫 회차만 초대가 나가 헷갈리므로 그때는 아예 숨긴다.
              */}
             {isCreate && fPrivate && !fRepeat && (
