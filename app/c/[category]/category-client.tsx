@@ -300,6 +300,8 @@ interface PostView {
   title: string | null;
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null;
+  /** 반복이 아직 도는지 — 중단해도 회차의 recurringRuleId는 남는다 */
+  repeatsOn: boolean;
   isPast: boolean;
   /** null이면 「날짜 미정」 — 사람부터 모으는 모임 */
   date: string | null;
@@ -1625,7 +1627,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                 t(T.gatheringCount, { n: post.participantCount })
               )}
               {post.visibility === 'link' && <span className="repeat-badge private">{t(T.privateBadge)}</span>}
-              {post.recurringRuleId && post.date && (
+              {/* 규칙이 살아 있을 때만 — 중단한 뒤에도 회차에는 규칙 id가 남는다 */}
+              {post.repeatsOn && post.date && (
                 <span className="repeat-badge">{t(T.repeatBadge, { day: weekdayLabel(post.date) })}</span>
               )}
             </div>
@@ -1820,7 +1823,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         {/* 지난 모임에서 남는 건 관리자의 삭제뿐이다 — 그것도 없으면 빈 칸이라 통째로 뺀다 */}
         {(isAdmin || (mine && !past)) && (
           <div className="post-owner-actions">
-            {!past && post.recurringRuleId && (
+            {/* 이미 중단한 반복에는 이 버튼이 없다 (누르면 404다) */}
+            {!past && post.repeatsOn && (
               <button className="link-btn" disabled={busy} onClick={() => stopRepeat(post)}>
                 {t(T.stopRepeat)}
               </button>

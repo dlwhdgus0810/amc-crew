@@ -301,7 +301,8 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
             <>
               {dateLabel(post.date)} {to12h(post.startTime)}
               {post.endTime ? ` ~ ${to12h(post.endTime)}` : ''}
-              {post.recurringRuleId && (
+              {/* 규칙이 살아 있을 때만 — 중단한 뒤에도 회차에는 규칙 id가 남는다 */}
+              {post.repeatsOn && (
                 <span className="repeat-badge">{t(T.repeatBadge, { day: fmtWeekday(post.date, locale) })}</span>
               )}
             </>

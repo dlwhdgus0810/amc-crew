@@ -2,7 +2,7 @@ import { revalidateTag } from 'next/cache';
 import { cache } from 'react';
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, like, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from './index';
-import { commentLikes, favorites, notifications, postComments, postParticipants, posts, subscriptions, users } from './schema';
+import { commentLikes, favorites, notifications, postComments, postParticipants, posts, recurringRules, subscriptions, users } from './schema';
 import { LocalName, NameRow, nameOf, UNKNOWN_NAME } from '../store';
 import { getLocale } from '../locale';
 import { catName, getCategory, isAnonymous } from '../categories';
@@ -30,6 +30,15 @@ export interface PostView {
   title: string | null;
   titleMeta: TitleMeta | null;
   recurringRuleId: string | null; // 정기 모임 회차면 규칙 id
+  /**
+   * 그 규칙이 아직 살아 있는지 — 「매주 수」 딱지와 「반복 중단」 버튼은 이걸 본다.
+   *
+   * recurringRuleId로 판단하면 안 된다. 반복을 중단해도 이미 열린 회차의 id는 그대로
+   * 남기 때문에(규칙만 끄고 회차는 살려 둔다), 끊고 나서도 딱지와 중단 버튼이 계속 보인다.
+   * id는 id대로 필요하다 — 정기 회차의 주최자는 그 주만 빠질 수 있어서, 참가 버튼이
+   * 「내가 연 모임인가」가 아니라 「정기 회차인가」로 갈린다.
+   */
+  repeatsOn: boolean;
   /** 같이 연 사람 — 없으면 null. 이름은 화면에 그대로 쓴다 */
   coHost: { id: string; name: string } | null;
   /** 이 모임에서 닉네임으로 보여도 되는지 (수정 화면이 그대로 되살리려면 필요하다) */
@@ -223,10 +232,23 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
    * neon-http는 쿼리 하나에 왕복 하나다(파이프라이닝이 없다). 그래서 순서가 곧 지연이다 —
    * 서로를 안 기다리는 것끼리 묶어 두 파로 나눈다. 예전에는 여섯 번을 줄줄이 기다렸다.
    */
-  const [participantRows, commentRows] = await Promise.all([
+  /*
+   * 정기 회차가 하나도 없으면 규칙을 물어보지 않는다 — 대부분의 목록이 그렇다.
+   * 물어볼 때도 이 파에 같이 실어서 왕복은 그대로 한 번이다.
+   */
+  const ruleIds = [...new Set(postRows.map((p) => p.recurringRuleId).filter((id): id is string => Boolean(id)))];
+  const [participantRows, commentRows, liveRules] = await Promise.all([
     db.select().from(postParticipants).where(inArray(postParticipants.postId, postIds)),
     db.select().from(postComments).where(inArray(postComments.postId, postIds)).orderBy(asc(postComments.createdAt)),
+    ruleIds.length
+      ? db
+          .select({ id: recurringRules.id })
+          .from(recurringRules)
+          .where(and(inArray(recurringRules.id, ruleIds), eq(recurringRules.active, true)))
+      : [],
   ]);
+  const liveRuleIds = new Set(liveRules.map((r) => r.id));
+  const repeatsOn = (p: typeof posts.$inferSelect) => Boolean(p.recurringRuleId && liveRuleIds.has(p.recurringRuleId));
 
   /*
    * 로그인하지 않은 사람에게는 사람에 관한 것을 내려보내지 않는다 —
@@ -252,7 +274,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
    */
   if (!signedIn) {
     return postRows.map((p) => ({
-      ...shellOf(p),
+      ...shellOf(p, repeatsOn(p)),
       authorName: null,
       coHost: null,
       participants: [],
@@ -283,7 +305,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   }
   const commentIds = commentRows.map((c) => c.id);
   // 평점은 끝난 무비나잇에만 붙는다 — 나머지 모임까지 세면 대부분 빈 답을 받으러 가는 셈이다
-  const ratableIds = postRows.filter((p) => ratable(shellOf(p))).map((p) => p.id);
+  const ratableIds = postRows.filter((p) => ratable(shellOf(p, repeatsOn(p)))).map((p) => p.id);
 
   const [userRows, hostCounts, settleByPost, likeRows, ratingByPost, photoByPost] = await Promise.all([
     nameIds.size ? db.select(NAME_COLS).from(users).where(inArray(users.id, [...nameIds])) : [],
@@ -352,7 +374,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   }
 
   return postRows.map((p) => ({
-    ...shellOf(p),
+    ...shellOf(p, repeatsOn(p)),
     /*
      * 연 사람의 회원번호도 가린다 — 이름을 「익명」으로 바꿔 놓고 번호를 남기면
      * 누가 열었는지 그대로 읽힌다. 본인에게는 남긴다: 수정·삭제 버튼이 이걸로 판단한다.
@@ -385,7 +407,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
  * 로그아웃 뷰어용 응답과 로그인 뷰어용 응답이 같은 모양이어야 해서 한 군데서 만든다.
  * 두 군데에 적어 두면 칸을 하나 더할 때 한쪽만 고치게 된다.
  */
-function shellOf(p: typeof posts.$inferSelect) {
+function shellOf(p: typeof posts.$inferSelect, repeatsOn: boolean) {
   return {
     id: p.id,
     category: p.category,
@@ -393,6 +415,7 @@ function shellOf(p: typeof posts.$inferSelect) {
     title: p.title,
     titleMeta: p.titleMeta ?? null,
     recurringRuleId: p.recurringRuleId ?? null,
+    repeatsOn,
     allowNicknames: p.allowNicknames,
     date: p.date,
     startTime: p.startTime,
