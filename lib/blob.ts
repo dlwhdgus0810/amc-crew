@@ -1,4 +1,4 @@
-import { del, issueSignedToken, presignUrl, type IssuedSignedToken } from '@vercel/blob';
+import { del, getDownloadUrl, issueSignedToken, presignUrl, type IssuedSignedToken } from '@vercel/blob';
 
 /**
  * 저장소 다루기. 서버 전용.
@@ -81,6 +81,24 @@ export async function signedUrls(pathnames: string[]): Promise<Map<string, strin
     }
   }
   return out;
+}
+
+/**
+ * 「원본 받기」에 쓸 주소 — 열지 말고 **받게** 한다.
+ *
+ * 저장소가 다른 도메인이라 <a download>는 무시된다. 브라우저가 파일로 떨구게 하려면
+ * 저장소가 그렇게 내려보내야 하고, 그 스위치가 ?download=1이다.
+ * 서명 주소에는 이미 물음표 뒤가 붙어 있는데, SDK가 searchParams로 얹어 주므로 안전하다.
+ *
+ * 화면에 그리는 주소에는 붙이지 않는다 — 그림이 안 뜨고 받아지기만 한다.
+ */
+export function asDownload(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    return getDownloadUrl(url);
+  } catch {
+    return url; // 주소를 못 읽으면 원래 것을 준다 (열리기라도 한다)
+  }
 }
 
 /** 한 장짜리 편의 함수 */

@@ -53,8 +53,6 @@ export interface PhotoItem {
   url: string;
   /** 원본 주소 — 없으면 「원본 받기」가 안 뜬다 (예전에 올린 사진) */
   originalUrl?: string | null;
-  /** 그 원본을 화면에 그대로 띄워도 되는지 (HEIC면 false) */
-  originalRenderable?: boolean;
 }
 
 export default function PhotoPanel({
@@ -93,8 +91,6 @@ export default function PhotoPanel({
     name: label,
     by: t(T.by, { name: nameOf(p.userId) }),
     originalUrl: p.originalUrl ?? null,
-    // 크게 볼 때는 올린 그대로를 띄운다 — 길게 눌러 저장하는 것이 그 그림이라서다
-    fullSrc: p.originalRenderable ? (p.originalUrl ?? null) : null,
   }));
 
   async function pick(files: FileList | null) {

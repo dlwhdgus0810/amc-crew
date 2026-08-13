@@ -49,21 +49,6 @@ export const ORIGINAL_TYPES = [
 /** 원본 경로에 허용하는 확장자 — 위 형식과 짝이 맞아야 한다 */
 const ORIGINAL_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'avif'];
 
-/**
- * 이 원본을 화면에 그대로 띄워도 되는지.
- *
- * 크게 보기는 줄인 사진 대신 원본을 띄운다 — 폰에서 길게 눌러 저장하면 보이는 그림이
- * 저장되기 때문에, 줄인 걸 띄우면 「올린 그대로 받기」가 안 된다.
- *
- * 다만 HEIC는 크롬·안드로이드가 못 연다. 그런 원본은 띄우지 않고 줄인 사진을 그대로 두되,
- * 「원본 받기」로는 여전히 내려받을 수 있다 — 받아서 여는 것은 폰이 할 일이다.
- */
-export function originalRenderable(pathname: string | null | undefined): boolean {
-  if (!pathname) return false;
-  const ext = pathname.split('.').pop()?.toLowerCase() ?? '';
-  return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'].includes(ext);
-}
-
 /** 파일 이름에서 확장자만 — 모르는 것이면 jpg로 둔다 (경로 규칙을 깨지 않게) */
 export function originalExt(fileName: string): string {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
