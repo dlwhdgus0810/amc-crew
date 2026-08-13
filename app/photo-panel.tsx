@@ -45,6 +45,12 @@ const T = {
   del: { ko: '지우기', en: 'Remove', es: 'Quitar' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.', es: 'No se pudo quitar.' },
   by: { ko: '{name} 올림', en: 'by {name}', es: 'de {name}' },
+  all: { ko: '{n}장 전부 받기', en: 'Download all {n}', es: 'Descargar las {n}' },
+  allHint: {
+    ko: 'ZIP 한 파일로 묶여요. 사진이 많으면 시작까지 조금 걸려요.',
+    en: 'You’ll get one ZIP file. With a lot of photos it takes a moment to start.',
+    es: 'Recibirás un único archivo ZIP. Con muchas fotos tarda un poco en empezar.',
+  },
 
   /* 사진 공개 스위치 — 호스트와 관리자에게만 보인다 */
   openTitle: { ko: '이 사진을 볼 수 있는 사람', en: 'Who can see these photos', es: 'Quién ve estas fotos' },
@@ -241,6 +247,20 @@ export default function PhotoPanel({
           </div>
         )}
 
+        {/*
+          * 전부 받기 — 두 장 이상일 때만. 한 장짜리 모임에서는 사진을 눌러 받는 것과
+          * 같은 일이라, 버튼만 하나 늘고 고를 것이 생긴다.
+          *
+          * 올리기와 같은 줄에 둔다. 받는 사람이 곧 올리는 사람이라 서로 멀리 둘 이유가 없다.
+          */}
+        {photos.length > 1 && (
+          <div className="field-row" style={{ marginTop: 12 }}>
+            <a className="secondary" href={`/api/posts/${postId}/photos/download-all`} download>
+              {t(T.all, { n: photos.length })}
+            </a>
+          </div>
+        )}
+
         {canAdd ? (
           <div className="field-row" style={{ marginTop: 12 }}>
             <label className="secondary photo-pick">
@@ -259,6 +279,12 @@ export default function PhotoPanel({
         ) : (
           <p className="hint" style={{ marginBottom: 0 }}>
             {t(T.onlyThere)}
+          </p>
+        )}
+
+        {photos.length > 1 && (
+          <p className="hint" style={{ margin: '8px 0 0' }}>
+            {t(T.allHint)}
           </p>
         )}
 
