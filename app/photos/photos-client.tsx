@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { catDisplayName, getCategory } from '@/lib/categories';
 import { whenLabelShort } from '@/lib/datefmt';
 import { useLocale, useT } from '../i18n';
+import { useSavePhotos } from '../save-photos';
 import { usePosterZoom, type Zoomed } from '../poster-zoom';
 
 /**
@@ -49,6 +51,8 @@ export interface PhotoWallGroupView {
 }
 
 export default function PhotosClient({ initial }: { initial: { groups: PhotoWallGroupView[] } | null }) {
+  const [err, setErr] = useState<string | null>(null);
+  const saveAll = useSavePhotos(setErr);
   const t = useT();
   const locale = useLocale();
   const zoom = usePosterZoom();
@@ -70,6 +74,7 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
       <p className="subtitle">{t(T.subtitle)}</p>
 
       {groups.length === 0 && <div className="card">{t(T.empty)}</div>}
+      {err && <div className="msg err">{err}</div>}
 
       {groups.map((g) => {
         const cat = getCategory(g.category);
@@ -91,6 +96,31 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
               <span className="wall-when">{whenLabelShort(g.date, g.startTime, locale)}</span>
               {g.title && <span className="wall-title">〈{g.title}〉</span>}
             </Link>
+
+            {/*
+              * 이 모임 사진 전부 받기.
+              *
+              * 여기 실린 것은 앞의 스무 장뿐이라, 주소는 눌렀을 때 서버에서 받아 온다 —
+              * 미리 다 실으면 안 누를 사람 몫까지 응답이 무거워진다.
+              *
+              * 한 장짜리 모임에는 안 붙인다. 사진을 눌러 받는 것과 같은 일이라서다.
+              */}
+            {g.count > 1 && (
+              <button
+                className="wall-save"
+                disabled={saveAll.busy}
+                onClick={() =>
+                  saveAll.run(async () => {
+                    const res = await fetch(`/api/posts/${g.postId}/photos`, { cache: 'no-store' });
+                    if (!res.ok) throw new Error(String(res.status));
+                    const data = await res.json();
+                    return (data.photos as { downloadUrl: string }[]).map((p) => p.downloadUrl);
+                  })
+                }
+              >
+                {saveAll.label(g.count)}
+              </button>
+            )}
 
             <div className="wall-grid">
               {/*

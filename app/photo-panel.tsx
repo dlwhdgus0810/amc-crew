@@ -5,14 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useT } from './i18n';
 import { usePosterZoom, type Zoomed } from './poster-zoom';
 import { UnreadableImageError, uploadPhoto } from '@/lib/photo-client';
-import {
-  canShareFiles,
-  downloadFiles,
-  fetchFiles,
-  saveFile,
-  shareFiles,
-  ShareNotAllowedError,
-} from '@/lib/download-client';
+import { saveFile } from '@/lib/download-client';
+import { useSavePhotos } from './save-photos';
 import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST } from '@/lib/photos';
 
 /**
@@ -53,11 +47,6 @@ const T = {
   del: { ko: '지우기', en: 'Remove', es: 'Quitar' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.', es: 'No se pudo quitar.' },
   by: { ko: '{name} 올림', en: 'by {name}', es: 'de {name}' },
-  all: { ko: '{n}장 전부 받기', en: 'Download all {n}', es: 'Descargar las {n}' },
-  allBusy: { ko: '{done}/{total} 받는 중…', en: 'Getting {done}/{total}…', es: 'Descargando {done}/{total}…' },
-  /* 다 받아 놓고 시트만 못 연 상태 — 한 번 더 누르면 열린다 */
-  allReady: { ko: '{n}장 저장하기', en: 'Save {n} photos', es: 'Guardar {n} fotos' },
-  allFailed: { ko: '받지 못했어요. 다시 눌러주세요.', en: 'Couldn’t download. Try again.', es: 'No se pudo descargar. Inténtalo otra vez.' },
   allHint: {
     ko: '사진 앱에 그대로 저장돼요. 사진이 많으면 조금 걸려요.',
     en: 'They save straight to your photos. With a lot of them it takes a moment.',
@@ -140,9 +129,7 @@ export default function PhotoPanel({
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openBusy, setOpenBusy] = useState(false);
-  /** 전부 받기: 없음 → 받는 중 → (시트를 못 열었으면) 들고 있는 상태 */
-  const [allBusy, setAllBusy] = useState<{ done: number; total: number } | null>(null);
-  const [ready, setReady] = useState<File[] | null>(null);
+  const saveAll = useSavePhotos(setError);
   const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const zoom = usePosterZoom();
@@ -222,52 +209,6 @@ export default function PhotoPanel({
     router.refresh();
   }
 
-  /**
-   * 사진 전부를 폰(또는 컴퓨터)에 저장한다. ZIP으로 묶지 않는다 —
-   * 받고 나서 풀어야 하는 파일은 폰에서 사진 앱에 들어가지도 않는다.
-   *
-   * 두 번 눌러야 할 때가 있다. 공유 시트는 **누른 직후에만** 열리는데 사진을 여러 장
-   * 받아 오는 동안 그 자격이 풀리기 때문이다. 그때는 받아 둔 것을 들고 「n장 저장하기」로
-   * 바뀌고, 그 두 번째 누름이 시트를 연다 (lib/download-client.ts).
-   */
-  async function saveAll() {
-    setError(null);
-
-    // 이미 받아 뒀으면 곧바로 시트로 — 이 누름은 갓 누른 것이라 열린다
-    if (ready) {
-      try {
-        await shareFiles(ready);
-      } catch {
-        downloadFiles(ready);
-      }
-      setReady(null);
-      return;
-    }
-
-    setAllBusy({ done: 0, total: photos.length });
-    try {
-      const urls = photos.map((p) => p.downloadUrl).filter((u): u is string => Boolean(u));
-      const files = await fetchFiles(
-        urls,
-        (i) => `photo-${i + 1}.jpg`,
-        (done, total) => setAllBusy({ done, total })
-      );
-
-      if (!canShareFiles(files)) return downloadFiles(files); // 데스크톱 — 한 장씩 받아진다
-      try {
-        await shareFiles(files);
-      } catch (e) {
-        // 시트를 못 열었을 뿐이다. 받아 둔 것은 그대로 들고 한 번 더 누르게 한다
-        if (e instanceof ShareNotAllowedError) return setReady(files);
-        throw e;
-      }
-    } catch {
-      setError(t(T.allFailed));
-    } finally {
-      setAllBusy(null);
-    }
-  }
-
   async function remove(photo: PhotoItem) {
     setError(null);
     const res = await fetch(`/api/posts/${postId}/photos/${photo.id}`, { method: 'DELETE' });
@@ -321,12 +262,12 @@ export default function PhotoPanel({
           */}
         {photos.length > 1 && (
           <div className="field-row" style={{ marginTop: 12 }}>
-            <button className="secondary" disabled={Boolean(allBusy)} onClick={saveAll}>
-              {allBusy
-                ? t(T.allBusy, { done: allBusy.done, total: allBusy.total })
-                : ready
-                  ? t(T.allReady, { n: ready.length })
-                  : t(T.all, { n: photos.length })}
+            <button
+              className="secondary"
+              disabled={saveAll.busy}
+              onClick={() => saveAll.run(() => photos.map((p) => p.downloadUrl!).filter(Boolean))}
+            >
+              {saveAll.label(photos.length)}
             </button>
           </div>
         )}

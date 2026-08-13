@@ -3,6 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView, isParticipant } from '@/lib/db/posts';
+import { isAnonymous } from '@/lib/categories';
 import { addPhoto, countPhotos, listPhotos } from '@/lib/db/photos';
 import { MAX_PHOTOS_PER_POST, originalPathAllowed, pathAllowed, thumbPathAllowed } from '@/lib/photos';
 
@@ -23,6 +24,14 @@ export const dynamic = 'force-dynamic';
  * 모임 상세는 서버가 그리면서 이미 들고 내려가므로 이걸 안 쓴다. 수정 시트가 쓴다 —
  * 거기서는 넣고 빼는 즉시 목록이 달라져야 하는데, 서명된 주소는 서버만 만들 수 있다.
  */
+/**
+ * 이 모임의 사진 목록. 모아보기의 「전부 받기」가 쓴다 — 거기에는 앞의 스무 장만
+ * 실려 있어서, 전부 받으려면 나머지 주소를 여기서 받아 가야 한다.
+ *
+ * **자격은 post.photos 하나로 가린다.** 예전에는 여기서 참가자·관리자를 따로 봤는데,
+ * 그러면 호스트가 사진을 열어 둔 모임(photosPublic)이 화면에는 보이고 이 목록에서는
+ * 403이 된다 — 판정하는 자리가 둘이면 언젠가 어긋난다.
+ */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getSessionUser();
@@ -30,11 +39,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const post = await getPostView(id, user.id);
   if (!post) return await errJson(E.postNotFound, 404);
-  if (!(await isParticipant(id, user.id)) && !isAdmin(user)) {
-    return await errJson(E.photoParticipantOnly, 403);
-  }
-  const photos = await listPhotos(id);
-  return NextResponse.json({ photos: photos.map((p) => ({ id: p.id, url: p.url })) });
+  if (!post.photos) return await errJson(E.photoParticipantOnly, 403);
+
+  const photos = await listPhotos(id, { anonymous: isAnonymous(post.category), viewerId: user.id });
+  return NextResponse.json({
+    photos: photos.map((p) => ({ id: p.id, url: p.url, downloadUrl: p.downloadUrl })),
+  });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
