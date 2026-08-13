@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useT } from './i18n';
 import { usePosterZoom, type Zoomed } from './poster-zoom';
 import { UnreadableImageError, uploadPhoto } from '@/lib/photo-client';
+import { saveFile } from '@/lib/download-client';
 import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST } from '@/lib/photos';
 
 /**
@@ -46,6 +47,8 @@ const T = {
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.', es: 'No se pudo quitar.' },
   by: { ko: '{name} 올림', en: 'by {name}', es: 'de {name}' },
   all: { ko: '{n}장 전부 받기', en: 'Download all {n}', es: 'Descargar las {n}' },
+  allBusy: { ko: '묶는 중…', en: 'Zipping…', es: 'Comprimiendo…' },
+  allFailed: { ko: '받지 못했어요. 다시 눌러주세요.', en: 'Couldn’t download. Try again.', es: 'No se pudo descargar. Inténtalo otra vez.' },
   allHint: {
     ko: 'ZIP 한 파일로 묶여요. 사진이 많으면 시작까지 조금 걸려요.',
     en: 'You’ll get one ZIP file. With a lot of photos it takes a moment to start.',
@@ -125,6 +128,7 @@ export default function PhotoPanel({
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openBusy, setOpenBusy] = useState(false);
+  const [zipBusy, setZipBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const zoom = usePosterZoom();
@@ -255,8 +259,25 @@ export default function PhotoPanel({
           */}
         {photos.length > 1 && (
           <div className="field-row" style={{ marginTop: 12 }}>
-            <a className="secondary" href={`/api/posts/${postId}/photos/download-all`} download>
-              {t(T.all, { n: photos.length })}
+            {/*
+              * 눌러도 화면을 안 떠난다 — 받아 와서 공유 시트나 받기로 넘긴다
+              * (lib/download-client.ts). href는 자바스크립트가 죽었을 때를 위해 남긴다.
+              */}
+            <a
+              className="secondary"
+              href={`/api/posts/${postId}/photos/download-all`}
+              aria-busy={zipBusy}
+              onClick={(e) => {
+                e.preventDefault();
+                if (zipBusy) return;
+                setError(null);
+                setZipBusy(true);
+                saveFile(`/api/posts/${postId}/photos/download-all`, 'photos.zip')
+                  .catch(() => setError(t(T.allFailed)))
+                  .finally(() => setZipBusy(false));
+              }}
+            >
+              {zipBusy ? t(T.allBusy) : t(T.all, { n: photos.length })}
             </a>
           </div>
         )}
