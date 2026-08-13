@@ -141,43 +141,27 @@ function useSession() {
 }
 
 /**
- * 모아보기 탭의 NEW 딱지 — **한 번 들어가 보면 사라진다.**
+ * 모아보기 탭의 NEW 딱지 — **날짜로만 끊는다. 8월 16일까지 모두에게 붙어 있는다.**
  *
- * 날짜로만 끊으면 그 사이에 앱을 안 연 사람은 딱지를 못 보고, 이미 본 사람에게는
- * 남은 기간 내내 붙어 있는다. 「봤나」로 끊어야 사람마다 맞는다.
+ * 처음에는 「한 번 들어가 보면 사라진다」로 했다가 되돌렸다. 사람마다 맞는 대신
+ * 올린 쪽에서 지금 딱지가 붙어 있는지를 알 수 없고(자기 기기에서는 이미 사라진다),
+ * 새 화면을 알리는 사흘 동안은 눌러 본 사람에게 한 번 더 보여도 손해가 없다.
  *
- * 그래도 끝나는 날을 함께 둔다. 그게 없으면 다음 달에 들어온 회원에게 이 탭이
- * 여전히 새 것으로 보인다 — 그 사람에게는 앱 전체가 새 것이라 딱지가 뜻을 잃는다.
+ * 끝나는 날을 코드에 적어 두는 것은 일부러다. 이 딱지는 사흘 뒤에 지워야 하는
+ * 임시 표시라, 지우는 것을 기억에 맡기지 않고 날짜가 대신 지우게 한다.
  *
- * 기기마다 따로 센다(localStorage). 서버에 남길 만한 일이 아니고, 폰에서 봤는데
- * 노트북에 딱지가 남아 있는 정도는 이 딱지가 감당할 수 있는 어긋남이다.
- *
- * 첫 그림에서는 늘 안 보인다 — 서버에는 localStorage가 없어서, 켜 둔 채로 그리면
- * 서버와 브라우저의 첫 그림이 어긋나 하이드레이션이 깨진다.
+ * 첫 그림에서는 늘 안 보인다. 서버 시계와 브라우저 시계가 자정 언저리에서 하루씩
+ * 어긋날 수 있어서, 켜 둔 채로 그리면 서버와 브라우저의 첫 그림이 달라진다
+ * (하이드레이션이 깨진다). 그려진 뒤에 브라우저 시계로 정한다.
  */
-const KEEP_NEW_KEY = 'kk-keep-seen';
-const KEEP_NEW_UNTIL = '2026-09-13';
+const KEEP_NEW_UNTIL = '2026-08-16';
 
-function useKeepNew(pathname: string): boolean {
+function useKeepNew(): boolean {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (new Date().toISOString().slice(0, 10) > KEEP_NEW_UNTIL) return setShow(false);
-    // 들어와 있는 동안 지운다 — 나갈 때까지 기다리면 자기가 보고 있는 화면에 NEW가 붙어 있다
-    if (pathname.startsWith('/photos') || pathname.startsWith('/reviews')) {
-      try {
-        localStorage.setItem(KEEP_NEW_KEY, '1');
-      } catch {
-        // 저장소를 못 쓰면 딱지가 계속 붙는다 — 기능이 막히는 것보다 낫다
-      }
-      return setShow(false);
-    }
-    try {
-      setShow(localStorage.getItem(KEEP_NEW_KEY) !== '1');
-    } catch {
-      setShow(false);
-    }
-  }, [pathname]);
+    setShow(new Date().toISOString().slice(0, 10) <= KEEP_NEW_UNTIL);
+  }, []);
 
   return show;
 }
@@ -185,7 +169,7 @@ function useKeepNew(pathname: string): boolean {
 /** 떠 있는 하단 탭바 — 좁은 폰에서도 줄바꿈되지 않고, 콘텐츠 위에 얹힌다 */
 export default function NavLinks() {
   const { loggedIn, name, avatar, unread, pathname } = useSession();
-  const showKeepNew = useKeepNew(pathname);
+  const showKeepNew = useKeepNew();
   const t = useT();
 
   return (
