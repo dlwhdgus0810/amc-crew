@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { AddFriendSheet, Person } from '../../friend-sheet';
 import PlaceLink from '@/app/place-link';
 import { useEffect, useState } from 'react';
-import { catDisplayName, getCategory } from '@/lib/categories';
+import { catDisplayName, getCategory, isAnonymous } from '@/lib/categories';
 import { useLocale, useT } from '../../i18n';
 import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday, whenLabelShort, WHEN_TBD } from '@/lib/datefmt';
 import { effectiveEnd } from '@/lib/dates';
@@ -420,7 +420,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         * 없는 모임에서 패널이 통째로 사라져 첫 장을 올릴 길이 없어진다(그 값은 「볼 수 있느냐」가
         * 아니라 「있느냐」다). 서버도 같은 기준으로 사진을 내려준다.
         */}
-      {user && (joined || isAdmin) && (
+      {user && (joined || isAdmin || post.photosPublic) && (
         <PhotoPanel
           postId={post.id}
           photos={initial.photos}
@@ -429,6 +429,13 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           isAdmin={isAdmin}
           currentUserId={user.id}
           label={`${catLabel}${post.title ? ` 〈${post.title}〉` : ''}`}
+          photosPublic={post.photosPublic}
+          isPrivate={post.visibility === 'link'}
+          /* 익명 카테고리는 아무에게도 안 그린다 — 사진에는 얼굴이 그대로 찍힌다 */
+          canOpen={
+            !isAnonymous(post.category) &&
+            (post.authorId === user.id || post.coHost?.id === user.id || isAdmin)
+          }
         />
       )}
 

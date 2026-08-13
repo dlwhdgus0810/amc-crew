@@ -446,7 +446,20 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
 
   return (
     <>
-      <h1>{t(T.title)}</h1>
+      {/*
+        * 제목 줄 오른쪽에 알림함 버튼.
+        *
+        * 탭바에서 내려온 뒤로는 프로필 한참 아래에 있었다. 알림은 「왔나 보러」 오는 곳이라
+        * 프로필을 끝까지 내려야 닿는 자리에 두면, 화면을 옮긴 것이 아니라 감춘 것이 된다.
+        * 안 읽은 수는 숫자로 함께 얹는다 — 탭바의 점은 「뭔가 왔다」까지만 말해 준다.
+        */}
+      <div className="page-head">
+        <h1>{t(T.title)}</h1>
+        <Link href="/notifications" className="head-btn" aria-label={t(T.notifTitle)}>
+          🔔 {t(T.notifTitle)}
+          {initial.unread > 0 && <span className="head-btn-count">{initial.unread}</span>}
+        </Link>
+      </div>
       <p className="subtitle">{t(T.subtitle)}</p>
 
       <h2>{t(T.photo)}</h2>
@@ -737,21 +750,10 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
       </div>
 
       {/*
-        * 알림함으로 가는 줄 — 탭바에서 내려온 자리다.
-        *
-        * 알림 관련이 여기 모여 있다: 이 줄(온 것) → 앱 푸시(오는 길) → 새 소식 알림.
-        * 묶음 모양은 알림 화면의 친구 줄에서 그대로 가져왔다 (a.friend-entry).
+        * 알림함으로 가는 줄은 제목 옆 버튼으로 올라갔다 (이 파일 위쪽).
+        * 여기 남은 것은 알림이 **오는 길** — 앱 푸시와 새 소식 알림이다.
         */}
       <h2>{t(T.notifTitle)}</h2>
-      <Link href="/notifications" className="card friend-entry">
-        <span className="friend-entry-text">
-          <span className="friend-entry-title">🔔 {t(T.notifTitle)}</span>
-          <span className="friend-entry-hint">{t(T.notifHint)}</span>
-        </span>
-        {initial.unread > 0 && <span className="friend-count">{initial.unread}</span>}
-        <span className="friend-chev" aria-hidden="true">›</span>
-      </Link>
-
       <PushToggle />
 
       <h2>{t(T.privacyTitle)}</h2>

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, postPhotos, posts } from './schema';
 import { asDownload, signedUrls } from '../blob';
@@ -115,27 +115,45 @@ export interface PhotoWallGroup {
   count: number;
 }
 
-/** 모아보기에 싣는 모임 수 · 모임당 장수 — 이 저장소에는 무한 스크롤이 없다 (전부 자른다) */
+/**
+ * 모아보기에 싣는 모임 수 · 모임당 장수 — 이 저장소에는 무한 스크롤이 없다 (전부 자른다).
+ *
+ * 한 모임에 6장만 싣고 나머지는 「+n장 더」로 상세에 미뤘었는데, 모아보기는 사진을
+ * 보러 오는 화면이라 여섯 장에서 끊고 다른 화면으로 보내면 온 이유가 없어진다.
+ * 한 모임에 올릴 수 있는 상한이 MAX_PHOTOS_PER_POST(60장)라 전부 싣지는 않고,
+ * 스무 장까지 늘린다 — 그보다 많은 모임에서만 「+n장 더」가 남는다.
+ */
 const WALL_POSTS = 20;
-const WALL_PER_POST = 6;
+const WALL_PER_POST = 20;
 
 /**
- * 내가 다녀온 모임들의 사진 — 최근 모임부터.
+ * 모아보기에 실리는 모임들의 사진 — 최근 모임부터.
  *
- * **내가 참가한 모임만 본다.** 사진은 같이 논 사람들 사이의 것이라, 모임 상세에서도
+ * **기본은 내가 참가한 모임이다.** 사진은 같이 논 사람들 사이의 것이라, 모임 상세에서도
  * 참가자·관리자에게만 붙고 그 밖에는 사진이 있다는 사실조차 응답에 안 나간다
- * (lib/db/posts.ts의 myPostIds). 모아보는 화면이라고 그 전제를 넓히지 않는다 —
- * 이미 올라간 사진들이 올릴 때의 약속보다 넓게 공개되는 일이 된다.
+ * (lib/db/posts.ts의 photoPostIds). 모아보는 화면이라고 그 전제를 혼자 넓히지 않는다.
  *
- * 비공개(link) 모임도 들어온다. 내가 갔던 모임이고 나만 보는 화면이라 샐 곳이 없다 —
- * 후기 모아보기(lib/db/reviews.ts)가 공개 모임만 싣는 것과는 자리가 다르다.
+ * 넓히는 길은 하나뿐이다 — 그 모임의 호스트나 관리자가 photosPublic을 켠 경우
+ * (schema.ts의 주석). 그때는 안 갔던 사람도, 로그인만 했으면 그 모임 사진을 본다.
+ * 비공개(link) 모임도 켤 수 있다: 켠 사람이 그걸 알고 켠다.
+ *
+ * 사진이 한 장도 없는 모임은 스무 개 자리를 차지하지 않는다. 예전에는 최근 스무 개를
+ * 먼저 고르고 그중 사진 있는 것만 남겼는데, 요즘 모임에 사진이 없으면 더 옛날 모임에
+ * 사진이 있어도 화면이 통째로 비었다.
  */
 export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
   const db = await getDb();
   /*
-   * 내가 참가한 모임을 최근 순으로 먼저 고른다. 사진부터 읽어 오면 남의 모임 사진까지
-   * 가져온 뒤에 버리는 셈이라, 「내 것」을 먼저 좁히는 순서를 지킨다.
+   * 실을 수 있는 모임을 최근 순으로 먼저 고른다. 사진부터 읽어 오면 못 보여줄 모임의
+   * 사진까지 가져온 뒤에 버리는 셈이라, 「보여줘도 되는 것」을 먼저 좁히는 순서를 지킨다.
    */
+  const [joined, withPhotos] = await Promise.all([
+    db.select({ postId: postParticipants.postId }).from(postParticipants).where(eq(postParticipants.userId, viewerId)),
+    db.selectDistinct({ postId: postPhotos.postId }).from(postPhotos).where(isNull(postPhotos.deletedAt)),
+  ]);
+  if (withPhotos.length === 0) return [];
+
+  const joinedIds = new Set(joined.map((j) => j.postId));
   const mine = await db
     .select({
       id: posts.id,
@@ -145,8 +163,14 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       startTime: posts.startTime,
     })
     .from(posts)
-    .innerJoin(postParticipants, eq(postParticipants.postId, posts.id))
-    .where(and(eq(postParticipants.userId, viewerId), isNull(posts.deletedAt)))
+    .where(
+      and(
+        isNull(posts.deletedAt),
+        inArray(posts.id, withPhotos.map((p) => p.postId)),
+        // 내가 갔던 모임이거나, 호스트가 사진을 열어 둔 모임
+        joinedIds.size ? or(inArray(posts.id, [...joinedIds]), eq(posts.photosPublic, true)) : eq(posts.photosPublic, true)
+      )
+    )
     .orderBy(desc(posts.date), desc(posts.startTime))
     .limit(WALL_POSTS);
   if (mine.length === 0) return [];

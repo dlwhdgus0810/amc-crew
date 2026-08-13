@@ -44,6 +44,16 @@ export const E = {
   },
   notParticipant: { ko: '그 사람은 이 모임 명단에 없어요.', en: 'They aren’t in this meetup.', es: 'Esa persona no está en esta quedada.' },
   adminOnly: { ko: '관리자만 사용할 수 있어요.', en: 'Admins only.', es: 'Solo para administradores.' },
+  photosPublicHostOnly: {
+    ko: '사진 공개는 이 모임을 연 사람이나 관리자만 바꿀 수 있어요.',
+    en: 'Only this meetup’s host or an admin can change who sees the photos.',
+    es: 'Solo el anfitrión de esta quedada o un administrador puede cambiar quién ve las fotos.',
+  },
+  photosPublicAnon: {
+    ko: '여기는 모두 익명이라 사진을 공개할 수 없어요. 사진에는 얼굴이 그대로 찍히거든요.',
+    en: 'Everyone here is anonymous, so photos can’t be opened up — faces show in photos.',
+    es: 'Aquí todos van en anónimo, así que las fotos no se pueden abrir: en ellas se ven las caras.',
+  },
   adminOnlyReview: { ko: '관리자만 검토할 수 있어요.', en: 'Only admins can review suggestions.', es: 'Solo un administrador puede revisar las propuestas.' },
   requestNotFound: { ko: '제안을 찾을 수 없어요.', en: 'Suggestion not found.', es: 'Propuesta no encontrada.' },
   nickname: { ko: '닉네임은 20자 이하로 입력해주세요.', en: 'Nickname must be 20 characters or fewer.', es: 'El apodo admite 20 caracteres como máximo.' },

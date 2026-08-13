@@ -58,6 +58,11 @@ export interface PostView {
   capacity: number | null;
   /** 'link'면 링크를 아는 사람만 볼 수 있는 비공개 모임 */
   visibility: 'public' | 'link';
+  /**
+   * 켜져 있으면 이 모임 사진을 회원 누구나 본다 (아래 photos가 참가자 밖으로도 나간다).
+   * 켜고 끄는 것은 호스트·같이 연 사람·관리자뿐이다 — schema.ts의 주석 참고.
+   */
+  photosPublic: boolean;
   isPast: boolean; // 종료 후 유예가 지났는지 (앱 시간대 기준, 서버가 판정)
   createdAt: string;
   /** avatar는 모임 카드에서 접힌 상태로 얼굴만 보여줄 때 쓴다 (없으면 이름 첫 글자) */
@@ -311,6 +316,18 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const myPostIds = viewerIsAdmin
     ? postIds
     : [...new Set(participantRows.filter((p) => p.userId === viewerId).map((p) => p.postId))];
+  /*
+   * 사진만 여기서 한 번 더 넓어진다 — 호스트가 photosPublic을 켠 모임(schema.ts).
+   *
+   * 정산은 안 넓힌다. 켜는 스위치의 이름이 「사진」이고, 돈 이야기까지 딸려 열리는 것은
+   * 켜는 사람이 뜻한 바가 아니다. 그래서 myPostIds를 고치지 않고 이 목록을 따로 만든다.
+   *
+   * 모아보기(photos.ts의 myPhotoWall)와 같은 기준이어야 한다. 한쪽만 넓히면 모아보기에는
+   * 보이는데 눌러 들어간 모임 화면에는 사진이 없는 꼴이 된다.
+   */
+  const photoPostIds = [
+    ...new Set([...myPostIds, ...postRows.filter((p) => p.photosPublic).map((p) => p.id)]),
+  ];
   // 이름이 필요한 사람만 모은다 — 참가자, 댓글 쓴 사람, 주최자, 같이 여는 사람
   const nameIds = new Set<string>();
   for (const p of participantRows) nameIds.add(p.userId);
@@ -332,7 +349,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
       settlementSummaries(myPostIds, viewerId),
       commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
       ratingSummaries(ratableIds, viewerId),
-      photoStrips(myPostIds),
+      photoStrips(photoPostIds),
       reviewCounts(pastIds),
     ]);
   const userById = new Map(userRows.map((u) => [u.id, u]));
@@ -445,6 +462,7 @@ function shellOf(p: typeof posts.$inferSelect, repeatsOn: boolean) {
     description: p.description,
     capacity: p.capacity,
     visibility: (p.visibility === 'link' ? 'link' : 'public') as 'link' | 'public',
+    photosPublic: p.photosPublic,
     isPast: isPastSlot(p.date, p.startTime, p.endTime),
     createdAt: p.createdAt.toISOString(),
   };

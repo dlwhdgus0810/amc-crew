@@ -45,6 +45,25 @@ const T = {
   del: { ko: '지우기', en: 'Remove', es: 'Quitar' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.', es: 'No se pudo quitar.' },
   by: { ko: '{name} 올림', en: 'by {name}', es: 'de {name}' },
+
+  /* 사진 공개 스위치 — 호스트와 관리자에게만 보인다 */
+  openTitle: { ko: '이 사진을 볼 수 있는 사람', en: 'Who can see these photos', es: 'Quién ve estas fotos' },
+  openOff: { ko: '이 모임에 참가한 사람만', en: 'Only people who were in the meetup', es: 'Solo quien estuvo en la quedada' },
+  openOn: { ko: '회원 누구나', en: 'Any member', es: 'Cualquier miembro' },
+  openDo: { ko: '모두에게 열기', en: 'Open to everyone', es: 'Abrir a todos' },
+  openUndo: { ko: '참가자만으로 되돌리기', en: 'Back to participants only', es: 'Volver a solo participantes' },
+  openHint: {
+    ko: '열면 모아보기의 사진 페이지에서 회원 누구나 이 모임 사진을 봐요. 안 열면 다녀온 사람과 관리자만 봐요.',
+    en: 'Open, and any member sees these in the Photos page. Otherwise only people who were there, and admins.',
+    es: 'Si la abres, cualquier miembro las ve en la página de Fotos. Si no, solo quienes estuvieron y los administradores.',
+  },
+  /* 비공개 모임에서만 덧붙는다 — 켜면 모임이 있었다는 사실까지 나간다 */
+  openHintPrivate: {
+    ko: '이 모임은 비공개예요. 사진을 열면 안 부른 사람에게도 이 모임이 있었다는 것과 찍힌 얼굴들이 보여요.',
+    en: 'This meetup is private. Opening the photos also shows people you didn’t invite that it happened, and who was there.',
+    es: 'Esta quedada es privada. Abrir las fotos también muestra a quien no invitaste que ocurrió y quién estuvo.',
+  },
+  openFailed: { ko: '바꾸지 못했어요.', en: 'Couldn’t change that.', es: 'No se pudo cambiar.' },
 };
 
 export interface PhotoItem {
@@ -65,6 +84,9 @@ export default function PhotoPanel({
   isAdmin,
   currentUserId,
   label,
+  photosPublic,
+  isPrivate,
+  canOpen,
 }: {
   postId: string;
   photos: PhotoItem[];
@@ -75,9 +97,19 @@ export default function PhotoPanel({
   currentUserId?: string;
   /** 확대했을 때 위에 적을 이름 (모임 제목) */
   label: string;
+  /** 지금 회원 누구나 볼 수 있는 상태인지 */
+  photosPublic: boolean;
+  /** 비공개(link) 모임인지 — 켤 때 한 줄 더 일러 준다 */
+  isPrivate: boolean;
+  /**
+   * 스위치를 그릴지. 호스트·같이 연 사람·관리자만이고, 익명 카테고리에서는 아무에게도
+   * 안 그린다 (서버가 다시 확인한다 — app/api/posts/[id]/photos-public).
+   */
+  canOpen: boolean;
 }) {
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openBusy, setOpenBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const zoom = usePosterZoom();
@@ -137,6 +169,22 @@ export default function PhotoPanel({
     }
     setBusy(null);
     if (fileRef.current) fileRef.current.value = '';
+    router.refresh();
+  }
+
+  async function toggleOpen() {
+    setError(null);
+    setOpenBusy(true);
+    const res = await fetch(`/api/posts/${postId}/photos-public`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ public: !photosPublic }),
+    });
+    setOpenBusy(false);
+    if (!res.ok) {
+      setError((await res.json().catch(() => null))?.error ?? t(T.openFailed));
+      return;
+    }
     router.refresh();
   }
 
@@ -207,6 +255,26 @@ export default function PhotoPanel({
 
         {error && <div className="msg err">{error}</div>}
       </div>
+
+      {/*
+        * 사진 공개 스위치 — 사진이 한 장이라도 있을 때만 그린다.
+        * 빈 격자 아래에 「누가 볼 수 있나」가 먼저 붙어 있으면 물어보는 순서가 뒤집힌다.
+        */}
+      {canOpen && photos.length > 0 && (
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="field-row" style={{ justifyContent: 'space-between', gap: 12 }}>
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+              <span className="hint" style={{ margin: 0 }}>{t(T.openTitle)}</span>
+              <span style={{ fontWeight: 500 }}>{photosPublic ? t(T.openOn) : t(T.openOff)}</span>
+            </span>
+            <button className={photosPublic ? 'danger' : 'secondary'} disabled={openBusy} onClick={toggleOpen}>
+              {photosPublic ? t(T.openUndo) : t(T.openDo)}
+            </button>
+          </div>
+          <p className="hint" style={{ margin: '10px 0 0' }}>{t(T.openHint)}</p>
+          {isPrivate && !photosPublic && <p className="warn-line" style={{ margin: '6px 0 0' }}>{t(T.openHintPrivate)}</p>}
+        </div>
+      )}
 
       {zoom.overlay}
     </>

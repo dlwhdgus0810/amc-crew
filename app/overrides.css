@@ -69,6 +69,51 @@ main.container > .segbar {
   margin-bottom: var(--title-gap);
 }
 
+/*
+ * 제목 줄 오른쪽에 버튼 하나 (프로필의 알림함).
+ *
+ * h1을 감싸도 위 여백은 안 흐트러진다 — 위의 `h1 { margin-top: 0 }`이 자식 선택자가
+ * 아니라 요소 선택자라서다. 아래 여백만 이 묶음이 대신 낸다.
+ *
+ * align-items를 baseline이 아니라 center로 둔다: 제목이 두 줄로 접히는 좁은 화면에서
+ * baseline이면 버튼이 첫 줄에 매달려 제목 옆이 아니라 위쪽에 붙어 보인다.
+ */
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: var(--title-gap);
+}
+.page-head h1 {
+  margin-bottom: 0;
+}
+.head-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  background: var(--surface);
+}
+/* 안 읽은 수 — 탭바의 점이 「뭔가 왔다」까지라면 이쪽은 몇 개인지까지 말한다 */
+.head-btn-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
 /* ── 스크롤하면 상·하단 바 치우기 ───────────────────────────
    내릴 때 감추고 올릴 때 되돌린다. 상태는 app/chrome-autohide.tsx가
    body[data-chrome]에 적어준다. */
