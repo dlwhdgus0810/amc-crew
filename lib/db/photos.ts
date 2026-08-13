@@ -42,32 +42,60 @@ export interface PhotoView {
  */
 const STRIP_LIMIT = 10;
 
-export async function photoStrips(postIds: string[]): Promise<Map<string, { urls: string[]; count: number }>> {
-  const out = new Map<string, { urls: string[]; count: number }>();
+export interface PhotoStrip {
+  /** 카드에 실리는 그림들 (앞의 몇 장) */
+  urls: string[];
+  /**
+   * 위 urls와 **같은 순서**의 받기 주소. 카드에서 사진을 눌러 크게 봤을 때 쓴다.
+   *
+   * 처음에는 안 실었는데, 그래서 카드에서 연 확대 창에만 받기 버튼이 없었다 —
+   * 모임에 들어가서 열면 있고 목록에서 열면 없으니, 쓰는 사람에게는 고장으로 보인다.
+   */
+  downloads: { url: string; isOriginal: boolean }[];
+  /** 자른 수가 아니라 실제 전체 장수 */
+  count: number;
+}
+
+export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoStrip>> {
+  const out = new Map<string, PhotoStrip>();
   if (postIds.length === 0) return out;
 
   const db = await getDb();
   const rows = await db
-    .select({ postId: postPhotos.postId, pathname: postPhotos.pathname })
+    .select({ postId: postPhotos.postId, pathname: postPhotos.pathname, originalPathname: postPhotos.originalPathname })
     .from(postPhotos)
     .where(and(inArray(postPhotos.postId, postIds), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
 
-  const byPost = new Map<string, string[]>();
+  const byPost = new Map<string, { pathname: string; originalPathname: string | null }[]>();
   for (const r of rows) {
     const list = byPost.get(r.postId) ?? [];
-    list.push(r.pathname);
+    list.push({ pathname: r.pathname, originalPathname: r.originalPathname });
     byPost.set(r.postId, list);
   }
 
-  // 서명은 실을 것만 — 자른 뒤의 것까지 서명하면 그만큼이 그대로 낭비다
-  const toSign = [...byPost.values()].flatMap((list) => list.slice(0, STRIP_LIMIT));
-  const signed = await signedUrls(toSign);
+  /*
+   * 서명은 실을 것만 — 자른 뒤의 것까지 서명하면 그만큼이 그대로 낭비다.
+   * 원본은 있는 것만 서명한다. 없으면 받기 주소로 그림 자체를 쓴다.
+   */
+  const shown = [...byPost.values()].flatMap((list) => list.slice(0, STRIP_LIMIT));
+  const signed = await signedUrls([
+    ...shown.map((p) => p.pathname),
+    ...shown.map((p) => p.originalPathname).filter((p): p is string => Boolean(p)),
+  ]);
 
   for (const [postId, list] of byPost) {
-    const urls = list.slice(0, STRIP_LIMIT).map((p) => signed.get(p)).filter((u): u is string => Boolean(u));
-    // 한 장도 서명을 못 만들었으면 아예 안 내보낸다 — 깨진 그림을 띄우는 것보다 낫다
-    if (urls.length) out.set(postId, { urls, count: list.length });
+    const urls: string[] = [];
+    const downloads: PhotoStrip['downloads'] = [];
+    for (const p of list.slice(0, STRIP_LIMIT)) {
+      const url = signed.get(p.pathname);
+      if (!url) continue; // 서명을 못 만든 장은 통째로 뺀다 (깨진 그림보다 낫다)
+      urls.push(url);
+      const orig = p.originalPathname ? signed.get(p.originalPathname) : null;
+      downloads.push({ url: asDownload(orig ?? url) ?? url, isOriginal: Boolean(orig) });
+    }
+    // 한 장도 서명을 못 만들었으면 아예 안 내보낸다
+    if (urls.length) out.set(postId, { urls, downloads, count: list.length });
   }
   return out;
 }

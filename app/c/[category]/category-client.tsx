@@ -320,7 +320,12 @@ interface PostView {
   /** 우리 평점 요약 — 끝난 무비나잇에만 붙는다 */
   rating: { average: number | null; count: number; mine: number | null } | null;
   /** 이 모임의 사진 — 넘겨 볼 몇 장과 실제 전체 장수 */
-  photos: { urls: string[]; count: number } | null;
+  photos: {
+    urls: string[];
+    /** urls와 같은 순서 — 카드에서 크게 봤을 때 받기 버튼이 쓴다 */
+    downloads: { url: string; isOriginal: boolean }[];
+    count: number;
+  } | null;
   comments: CommentView[];
 }
 
@@ -1590,7 +1595,16 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
       post.photos
         ? {
             thumb: post.photos.urls[0]!,
-            items: [...post.photos.urls.map((src) => ({ src, name: label })), ...extras],
+            items: [
+              ...post.photos.urls.map((src, i) => ({
+                src,
+                name: label,
+                // 카드에서 열어도 모임 안에서 연 것과 같은 받기 버튼이 붙는다
+                downloadUrl: post.photos!.downloads[i]?.url ?? null,
+                downloadIsOriginal: post.photos!.downloads[i]?.isOriginal ?? false,
+              })),
+              ...extras,
+            ],
             // 배지는 실제 전체 장수다 — 카드가 들고 온 것보다 많을 수 있다
             count: post.photos.count,
           }

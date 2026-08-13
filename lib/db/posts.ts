@@ -14,7 +14,7 @@ import { POSTS_TAG } from '../cache-tags';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
 import { ratingSummaries, type RatingSummary } from './ratings';
-import { photoStrips } from './photos';
+import { photoStrips, type PhotoStrip } from './photos';
 import { signedUrls } from '../blob';
 import { ratable } from '../ratings';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
@@ -78,7 +78,7 @@ export interface PostView {
    * urls는 카드에서 넘겨 볼 몇 장이고(앞에서 자른다), count는 실제 전체 장수다.
    * 서명된 주소라 유효기간이 있다 — 담아 두지 말 것.
    */
-  photos: { urls: string[]; count: number } | null;
+  photos: PhotoStrip | null;
   comments: CommentView[];
 }
 
