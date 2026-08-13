@@ -129,6 +129,25 @@ body[data-chrome='hidden'] nav.tabbar {
   font-weight: 600;
 }
 
+/* ── 홈 화면 앱에서는 상단 바를 뺀다 ────────────────────────
+   「Kansas Korean」 한 줄뿐인 막대인데, 설치해서 쓰는 사람에게는 앱 이름이 이미 아이콘과
+   상태 표시줄에 있다. 홈으로 가는 길도 아래 탭바에 있으니 이 막대가 하는 일이 없다.
+   폰 화면에서 58px은 모임 카드 반쪽이다.
+
+   브라우저 탭에서는 그대로 둔다 — 거기서는 이게 「여기가 무슨 사이트인가」를 말해 준다.
+
+   상단 바가 넘겨받던 노치 자리를 본문이 대신 받는다. 안 넘기면 첫 줄이 상태 표시줄 밑으로
+   들어간다 (viewport-fit=cover라 화면 끝까지 그린다).
+
+   설치 여부는 CSS만으로 보지 않는다 — 아이폰에서 display-mode가 틀리게 나오는 일이 있어서
+   app/chrome-autohide.tsx가 두 가지를 다 보고 body에 적어 준다. */
+body[data-standalone='yes'] .site-header {
+  display: none;
+}
+body[data-standalone='yes'] main.container {
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+}
+
 /* ── 만들기·수정 패널이 떠 있는 동안은 탭바를 치운다 ────────
    패널은 화면을 통째로 덮는 창이라(inset 0, z-index 40) 그 위에 탭이 보일 이유가 없고,
    나가는 길은 패널 자신의 ← 버튼이다.
