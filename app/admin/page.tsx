@@ -314,6 +314,17 @@ export default function AdminPage() {
   // 관리자 화면의 긴 목록들은 다 접어 둔다 — 볼 일이 있을 때 열어 보는 것들이다
   const [reqOpen, setReqOpen] = useState(false);
   const [ticketOpen, setTicketOpen] = useState(false);
+  /*
+   * 나머지 묶음도 전부 접는다 — 관리자 화면이 한 화면에 다 안 들어와서, 아래쪽 것을
+   * 쓰려면 매번 한참을 내려야 했다. 기본은 닫힘이다: 열어 두면 접는 의미가 없다.
+   */
+  const [viewAsOpen, setViewAsOpen] = useState(false);
+  const [newsOpen, setNewsOpen] = useState(false);
+  const [hideOpen, setHideOpen] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [onlineOpen, setOnlineOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
+  const [thumbOpen, setThumbOpen] = useState(false);
   const [banBusy, setBanBusy] = useState<string | null>(null);
   const [banReason, setBanReason] = useState('');
   const [members, setMembers] = useState<
@@ -885,7 +896,16 @@ export default function AdminPage() {
             </>
           )}
 
-          <h1 style={{ marginTop: 80 }}>{t(T.viewAsTitle)}</h1>
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={viewAsOpen} onClick={() => setViewAsOpen((v) => !v)}>
+              {t(T.viewAsTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {viewAsOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {viewAsOpen && (
+            <>
           <p className="subtitle">{t(T.viewAsDesc)}</p>
           <div className="card">
             <div className="seg-group" style={{ flexWrap: 'wrap' }}>
@@ -897,8 +917,10 @@ export default function AdminPage() {
             </div>
             <p className="hint" style={{ marginTop: 12 }}>{t(T.viewAsWarn)}</p>
           </div>
+            </>
+          )}
 
-          <h1 style={{ marginTop: 80 }}>
+          <h1 className="admin-sec">
             <button className="collapse-h1" aria-expanded={ticketOpen} onClick={() => setTicketOpen((v) => !v)}>
               {t(T.ticketTitle)}
               {tickets.length > 0 ? ` ${tickets.length}` : ''}
@@ -951,45 +973,87 @@ export default function AdminPage() {
         </>
       )}
 
-      {isKakaoAdmin && (
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>{t(T.dataTitle)}</h2>
-          <p className="subtitle" style={{ marginBottom: 14 }}>
-            {t(T.dataDesc)}
-          </p>
-          <button className="danger" disabled={busy} onClick={clearAllSelections}>
-            {t(T.clearAll)}
-          </button>
-        </div>
-      )}
-
       {/*
-        * 썸네일 백필 — 한 번 돌리고 나면 쓸 일이 없다. 그래도 남겨 둔다:
-        * 올릴 때 썸네일만 실패한 사진이 생길 수 있고(회선이 끊기면 그렇다) 그때 다시 돌린다.
+        * 이 둘만 카드 안의 h2였다. 접는 모양을 다른 묶음과 맞춘다 — 열두 개 중 둘만
+        * 안 접히면 「접을 수 있는 것」과 「없는 것」을 매번 기억해야 한다.
         */}
       {isKakaoAdmin && (
-        <div className="card">
-          <h2 style={{ marginTop: 0 }}>{t(T.thumbTitle)}</h2>
-          <p className="subtitle" style={{ marginBottom: 14 }}>
-            {t(T.thumbHint)}
-          </p>
-          <button className="secondary" disabled={Boolean(thumbBusy)} onClick={backfillThumbs}>
-            {thumbBusy ? t(T.thumbBusy, { done: thumbBusy.done, total: thumbBusy.total }) : t(T.thumbRun)}
-          </button>
-        </div>
+        <>
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={dataOpen} onClick={() => setDataOpen((v) => !v)}>
+              {t(T.dataTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {dataOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {dataOpen && (
+            <>
+              <p className="subtitle">{t(T.dataDesc)}</p>
+              <div className="card">
+                <button className="danger" disabled={busy} onClick={clearAllSelections}>
+                  {t(T.clearAll)}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/*
+            * 썸네일 백필 — 한 번 돌리고 나면 쓸 일이 없다. 그래도 남겨 둔다:
+            * 올릴 때 썸네일만 실패한 사진이 생길 수 있고(회선이 끊기면 그렇다) 그때 다시 돌린다.
+            */}
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={thumbOpen} onClick={() => setThumbOpen((v) => !v)}>
+              {t(T.thumbTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {thumbOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {thumbOpen && (
+            <>
+              <p className="subtitle">{t(T.thumbHint)}</p>
+              <div className="card">
+                <button className="secondary" disabled={Boolean(thumbBusy)} onClick={backfillThumbs}>
+                  {thumbBusy ? t(T.thumbBusy, { done: thumbBusy.done, total: thumbBusy.total }) : t(T.thumbRun)}
+                </button>
+              </div>
+            </>
+          )}
+        </>
       )}
 
       {isKakaoAdmin && (
         <>
-          <h1 style={{ marginTop: 80 }}>{t(T.newsTitle)}</h1>
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={newsOpen} onClick={() => setNewsOpen((v) => !v)}>
+              {t(T.newsTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {newsOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {newsOpen && (
+            <>
           <p className="subtitle">{t(T.newsDesc)}</p>
           <div className="card">
             <button className="secondary" disabled={newsBusy} onClick={sendNews}>
               {newsBusy ? t(T.newsSending) : t(T.newsSend)}
             </button>
           </div>
+            </>
+          )}
 
-          <h1 style={{ marginTop: 80 }}>{t(T.hideTitle)}</h1>
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={hideOpen} onClick={() => setHideOpen((v) => !v)}>
+              {t(T.hideTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {hideOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {hideOpen && (
+            <>
           <p className="subtitle">{t(T.hideDesc)}</p>
           <div className="card">
             <div className="seg-group" style={{ flexWrap: 'wrap' }}>
@@ -1012,8 +1076,19 @@ export default function AdminPage() {
               <p className="hint" style={{ marginTop: 12, marginBottom: 0 }}>{t(T.hideNone)}</p>
             )}
           </div>
+            </>
+          )}
 
-          <h1 style={{ marginTop: 80 }}>{t(T.noticeTitle)}</h1>
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={noticeOpen} onClick={() => setNoticeOpen((v) => !v)}>
+              {t(T.noticeTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {noticeOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {noticeOpen && (
+            <>
           <p className="subtitle">{t(T.noticeDesc)}</p>
           <div className="card">
             <div className="field-label">{t(T.noticeKo)}</div>
@@ -1215,8 +1290,10 @@ export default function AdminPage() {
 
             </>
           )}
+            </>
+          )}
 
-          <h1 style={{ marginTop: 80 }}>
+          <h1 className="admin-sec">
             <button className="collapse-h1" aria-expanded={banOpen} onClick={() => setBanOpen((v) => !v)}>
               {t(T.banTitle)}
               {(members ?? []).some((m) => m.until) ? ` ${(members ?? []).filter((m) => m.until).length}` : ''}
@@ -1287,7 +1364,7 @@ export default function AdminPage() {
             </>
           )}
 
-          <h1 style={{ marginTop: 80 }}>
+          <h1 className="admin-sec">
             <button className="collapse-h1" aria-expanded={deletedOpen} onClick={() => setDeletedOpen((v) => !v)}>
               {t(T.deletedTitle)}
               {deleted !== null && deleted.length > 0 ? ` ${deleted.length}` : ''}
@@ -1330,7 +1407,16 @@ export default function AdminPage() {
             </>
           )}
 
-          <h1 style={{ marginTop: 80 }}>{t(T.onlineTitle)}</h1>
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={onlineOpen} onClick={() => setOnlineOpen((v) => !v)}>
+              {t(T.onlineTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {onlineOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {onlineOpen && (
+            <>
           <p className="subtitle">{t(T.onlineDesc, { n: presence?.windowMinutes ?? 3 })}</p>
           <div className="card">
             {presence === null ? (
@@ -1381,8 +1467,10 @@ export default function AdminPage() {
               {t(T.minePresenceNote)}
             </p>
           </div>
+            </>
+          )}
 
-          <h1 style={{ marginTop: 80 }}>
+          <h1 className="admin-sec">
             <button className="collapse-h1" aria-expanded={statsOpen} onClick={() => setStatsOpen((v) => !v)}>
               {t(T.statsTitle)}
               <span className="collapse-caret" aria-hidden>
