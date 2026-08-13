@@ -4,7 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView, isParticipant } from '@/lib/db/posts';
 import { addPhoto, countPhotos, listPhotos } from '@/lib/db/photos';
-import { MAX_PHOTOS_PER_POST, pathAllowed } from '@/lib/photos';
+import { MAX_PHOTOS_PER_POST, originalPathAllowed, pathAllowed } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +66,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     postId: id,
     userId: user.id,
     pathname: body.pathname,
+    /*
+     * 원본은 있으면 붙이고 없으면 만다. 규칙이 화면용과 달라(형식·크기) 따로 본다.
+     * 자기 자리가 아니면 조용히 없는 것으로 친다 — 사진 자체는 이미 멀쩡히 올라왔다.
+     */
+    originalPathname:
+      typeof body.originalPathname === 'string' && originalPathAllowed(body.originalPathname, user.id)
+        ? body.originalPathname
+        : null,
     width: num(body.width),
     height: num(body.height),
   });

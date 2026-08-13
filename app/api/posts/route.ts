@@ -6,7 +6,7 @@ import { getProfiles, localName } from '@/lib/store';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { addParticipants, createPost, getPost, listPosts, notifyAddedToPost } from '@/lib/db/posts';
 import { clearSignups, listSignups } from '@/lib/db/signups';
-import { pathAllowed } from '@/lib/photos';
+import { originalPathAllowed, pathAllowed } from '@/lib/photos';
 import { addPhoto } from '@/lib/db/photos';
 import { friendIds } from '@/lib/db/friends';
 import { createRecurringRule } from '@/lib/db/recurring';
@@ -16,6 +16,14 @@ import { isPastSlot } from '@/lib/dates';
 import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * 브라우저가 보낸 원본 경로를 그대로 믿지 않는다 — 자기 자리가 아니면 없는 것으로 친다.
+ * 화면용(photoPath)은 이미 pathAllowed로 보고 있고, 원본은 규칙이 달라 따로 본다.
+ */
+function ownedOriginal(value: unknown, userId: string): string | null {
+  return typeof value === 'string' && originalPathAllowed(value, userId) ? value : null;
+}
 
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category') ?? '';
@@ -156,7 +164,14 @@ export async function POST(req: NextRequest) {
     const { ruleId, postId } = await createRecurringRule({ ...common, startDate: date });
     // 첫 회차에만 붙인다 — 다음 주 회차는 그 주의 사진을 각자 올리면 된다
     if (typeof body?.photoPath === 'string' && pathAllowed(body.photoPath, user.id)) {
-      await addPhoto({ postId, userId: user.id, pathname: body.photoPath, width: null, height: null });
+      await addPhoto({
+        postId,
+        userId: user.id,
+        pathname: body.photoPath,
+        originalPathname: ownedOriginal(body?.photoOriginalPath, user.id),
+        width: null,
+        height: null,
+      });
     }
     return NextResponse.json({ ok: true, postId, ruleId, repeatWeekly: true });
   }
@@ -183,7 +198,14 @@ export async function POST(req: NextRequest) {
    * 브라우저가 보내는 값이라 그대로 믿으면 남의 파일을 자기 모임에 걸 수 있다.
    */
   if (typeof body?.photoPath === 'string' && pathAllowed(body.photoPath, user.id)) {
-    await addPhoto({ postId, userId: user.id, pathname: body.photoPath, width: null, height: null });
+    await addPhoto({
+      postId,
+      userId: user.id,
+      pathname: body.photoPath,
+      originalPathname: ownedOriginal(body?.photoOriginalPath, user.id),
+      width: null,
+      height: null,
+    });
   }
 
   /*

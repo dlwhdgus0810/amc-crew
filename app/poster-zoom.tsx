@@ -20,6 +20,7 @@ const T = {
   prev: { ko: '이전 사진', en: 'Previous', es: 'Anterior' },
   next: { ko: '다음 사진', en: 'Next', es: 'Siguiente' },
   count: { ko: '{i} / {n}', en: '{i} / {n}', es: '{i} / {n}' },
+  original: { ko: '원본 받기', en: 'Download original', es: 'Descargar original' },
 };
 
 export interface Zoomed {
@@ -27,6 +28,13 @@ export interface Zoomed {
   name: string;
   /** 사진이면 올린 사람 — 상영표 포스터에는 없다 */
   by?: string;
+  /**
+   * 손대지 않은 파일의 주소. 있으면 「원본 받기」가 뜬다.
+   *
+   * 화면에 보이는 src는 올릴 때 줄여 구운 것이라 화질이 원본과 다르다. 이 기능이
+   * 생기기 전에 올린 사진과 상영표 포스터에는 없다.
+   */
+  originalUrl?: string | null;
 }
 
 export function usePosterZoom() {
@@ -99,7 +107,28 @@ export function usePosterZoom() {
         <div className="poster-zoom-inner" role="dialog" aria-modal="true" aria-label={cur.name}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={cur.src} alt={cur.name} />
-          <span className="poster-zoom-name">{cur.by ? `${cur.name} · ${cur.by}` : cur.name}</span>
+          <span className="poster-zoom-name">
+            {cur.by ? `${cur.name} · ${cur.by}` : cur.name}
+            {cur.originalUrl && (
+              <>
+                {' · '}
+                {/*
+                 * 저장소가 다른 도메인이라 download 속성은 무시된다 — 브라우저가 열거나
+                 * 받는 것은 저장소가 보내는 헤더가 정한다. 새 창으로 띄워 두면 어느 쪽이든
+                 * 보던 화면이 날아가지 않는다.
+                 */}
+                <a
+                  href={cur.originalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="poster-zoom-orig"
+                >
+                  {t(T.original)}
+                </a>
+              </>
+            )}
+          </span>
         </div>
         {many && (
           <>

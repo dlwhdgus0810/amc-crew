@@ -245,6 +245,16 @@ export const postPhotos = pgTable(
       .references(() => users.id),
     /** 저장소 안의 경로. 서명(읽기)과 삭제 둘 다 이걸 쓴다 */
     pathname: text('pathname').notNull(),
+    /**
+     * 고른 파일 그대로의 경로 — 「원본 받기」가 이걸 준다.
+     *
+     * 위 pathname은 브라우저가 올리면서 줄여 구운 것이라 화면에 뿌리기 좋고,
+     * 이건 손대지 않은 파일이라 화질이 그대로다. HEIC일 수도 있어서 화면에는 못 쓴다
+     * (크롬·안드로이드가 못 연다) — 그래서 두 벌이 필요하다.
+     *
+     * 이 칸이 생기기 전에 올린 사진은 null이다. 그때는 「원본 받기」가 안 뜬다.
+     */
+    originalPathname: text('original_pathname'),
     width: integer('width'),
     height: integer('height'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

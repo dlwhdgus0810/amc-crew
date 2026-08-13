@@ -16,6 +16,13 @@ export interface PhotoView {
   id: string;
   userId: string;
   url: string;
+  /**
+   * 손대지 않은 파일의 주소 — 「원본 받기」가 이걸 연다.
+   *
+   * null인 경우가 둘이다: 이 기능이 생기기 전에 올린 사진, 그리고 서명이 실패한 경우.
+   * 어느 쪽이든 화면은 그 줄을 안 그린다 — 눌러도 안 되는 링크를 두지 않는다.
+   */
+  originalUrl: string | null;
   width: number | null;
   height: number | null;
   createdAt: string;
@@ -69,12 +76,17 @@ export async function listPhotos(postId: string): Promise<PhotoView[]> {
     .from(postPhotos)
     .where(and(eq(postPhotos.postId, postId), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
-  const signed = await signedUrls(rows.map((r) => r.pathname));
+  // 화면용과 원본을 한 번에 서명한다 — 장마다 두 번 부르면 왕복이 두 배가 된다
+  const signed = await signedUrls([
+    ...rows.map((r) => r.pathname),
+    ...rows.map((r) => r.originalPathname).filter((p): p is string => Boolean(p)),
+  ]);
   return rows
     .map((r) => ({
       id: r.id,
       userId: r.userId,
       url: signed.get(r.pathname) ?? '',
+      originalUrl: (r.originalPathname && signed.get(r.originalPathname)) || null,
       width: r.width,
       height: r.height,
       createdAt: r.createdAt.toISOString(),
@@ -95,6 +107,8 @@ export async function addPhoto(input: {
   postId: string;
   userId: string;
   pathname: string;
+  /** 고른 파일 그대로의 경로. 원본을 못 올렸으면 null — 화면용만 있어도 사진은 남는다 */
+  originalPathname?: string | null;
   width: number | null;
   height: number | null;
 }): Promise<string> {
@@ -115,6 +129,7 @@ export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: 
     userId: r.userId,
     // 지울 때 쓰는 값이라 서명하지 않는다 (del은 경로를 받는다)
     url: '',
+    originalUrl: null,
     pathname: r.pathname,
     width: r.width,
     height: r.height,
@@ -138,9 +153,14 @@ export async function deletePhotoRow(photoId: string): Promise<void> {
  *
  * **지워진 사진도 센다 (isNull을 붙이지 않는다).** 붙이면 청소가 그 파일을 주인 없는
  * 것으로 보고 지워버려서, 되살릴 수 있다는 말이 거짓이 된다.
+ *
+ * **원본도 같이 센다.** 한 장이 파일 두 개(화면용·원본)라, 화면용만 세면 청소가 원본을
+ * 주인 없는 것으로 보고 전부 걷어간다 — 「원본 받기」가 조용히 죽는 길이 정확히 이것이다.
  */
 export async function allPhotoPaths(): Promise<string[]> {
   const db = await getDb();
-  const rows = await db.select({ pathname: postPhotos.pathname }).from(postPhotos);
-  return rows.map((r) => r.pathname);
+  const rows = await db
+    .select({ pathname: postPhotos.pathname, originalPathname: postPhotos.originalPathname })
+    .from(postPhotos);
+  return rows.flatMap((r) => (r.originalPathname ? [r.pathname, r.originalPathname] : [r.pathname]));
 }

@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS post_photos (
   post_id uuid NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   user_id text NOT NULL REFERENCES users(id),
   pathname text NOT NULL,
+  original_pathname text,
   width integer,
   height integer,
   created_at timestamptz NOT NULL DEFAULT now(),

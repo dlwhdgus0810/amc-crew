@@ -2,11 +2,10 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { upload } from '@vercel/blob/client';
 import { useT } from './i18n';
 import { usePosterZoom, type Zoomed } from './poster-zoom';
-import { shrinkToJpeg, UnreadableImageError } from '@/lib/photo-client';
-import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST, photoPath } from '@/lib/photos';
+import { UnreadableImageError, uploadPhoto } from '@/lib/photo-client';
+import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST } from '@/lib/photos';
 
 /**
  * 모임 사진 — 가기 전 안내문도, 다녀와서 찍은 것도 여기 같이 쌓인다.
@@ -46,6 +45,8 @@ export interface PhotoItem {
   id: string;
   userId: string;
   url: string;
+  /** 원본 주소 — 없으면 「원본 받기」가 안 뜬다 (예전에 올린 사진) */
+  originalUrl?: string | null;
 }
 
 export default function PhotoPanel({
@@ -79,7 +80,12 @@ export default function PhotoPanel({
   const nameOf = (userId: string) => participants.find((p) => p.id === userId)?.name ?? t(T.unknown);
 
   // 확대 창에 넘길 목록 — 격자 순서 그대로다
-  const items: Zoomed[] = photos.map((p) => ({ src: p.url, name: label, by: t(T.by, { name: nameOf(p.userId) }) }));
+  const items: Zoomed[] = photos.map((p) => ({
+    src: p.url,
+    name: label,
+    by: t(T.by, { name: nameOf(p.userId) }),
+    originalUrl: p.originalUrl ?? null,
+  }));
 
   async function pick(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -98,19 +104,18 @@ export default function PhotoPanel({
     setBusy({ done: 0, total: list.length });
     for (let i = 0; i < list.length; i++) {
       try {
-        const { blob, width, height } = await shrinkToJpeg(list[i]!);
-        const path = photoPath(currentUserId!, crypto.randomUUID());
-        const put = await upload(path, blob, {
-          access: 'private',
-          handleUploadUrl: '/api/blob/upload',
-          contentType: 'image/jpeg',
-          clientPayload: JSON.stringify({ kind: 'photo', postId }),
-        });
+        const up = await uploadPhoto(list[i]!, currentUserId!, postId);
         // 바이트는 저장소에 갔고, 모임에 매다는 것은 여기서
         const res = await fetch(`/api/posts/${postId}/photos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pathname: put.pathname, width, height }),
+          // display는 미리보기용 Blob이라 서버로 보내지 않는다
+          body: JSON.stringify({
+            pathname: up.pathname,
+            originalPathname: up.originalPathname,
+            width: up.width,
+            height: up.height,
+          }),
         });
         if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? t(T.failed));
       } catch (e) {

@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
-import { MAX_UPLOAD_BYTES, pathAllowed } from '@/lib/photos';
+import {
+  MAX_ORIGINAL_BYTES,
+  MAX_UPLOAD_BYTES,
+  ORIGINAL_TYPES,
+  originalPathAllowed,
+  pathAllowed,
+} from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +37,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         if (!user) throw new Error('로그인이 필요합니다');
         if (await banGuard(user)) throw new Error('지금은 올릴 수 없습니다');
 
-        // 토큰은 이 경로에 묶인다 — 안 막으면 저장소 아무 데나 쓸 수 있다
-        if (!pathAllowed(pathname, user.id)) throw new Error('경로가 올바르지 않습니다');
+        /*
+         * 토큰은 이 경로에 묶인다 — 안 막으면 저장소 아무 데나 쓸 수 있다.
+         *
+         * 한 장이 두 벌로 올라온다: 화면에 뿌릴 것(브라우저가 줄여 구운 JPEG)과
+         * 받아갈 원본(고른 파일 그대로). 경로 모양으로 갈리고, 붙는 규칙도 다르다 —
+         * 원본은 HEIC일 수 있고 훨씬 크다.
+         */
+        const isOriginal = originalPathAllowed(pathname, user.id);
+        if (!isOriginal && !pathAllowed(pathname, user.id)) {
+          throw new Error('경로가 올바르지 않습니다');
+        }
 
         return {
           /*
@@ -41,9 +56,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
            * 서버가 서명해 준다 (lib/blob.ts).
            */
           access: 'private' as const,
-          // 브라우저가 canvas로 항상 다시 굽는다 — 고른 파일이 그대로 올라가는 일은 없다
-          allowedContentTypes: ['image/jpeg'],
-          maximumSizeInBytes: MAX_UPLOAD_BYTES,
+          // 화면용은 브라우저가 canvas로 항상 다시 굽는다 — 그 자리에는 JPEG만 온다
+          allowedContentTypes: isOriginal ? [...ORIGINAL_TYPES] : ['image/jpeg'],
+          maximumSizeInBytes: isOriginal ? MAX_ORIGINAL_BYTES : MAX_UPLOAD_BYTES,
           addRandomSuffix: true,
           tokenPayload: JSON.stringify({ userId: user.id }),
         };

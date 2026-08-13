@@ -38,8 +38,8 @@ import {siteUrl} from '@/lib/site';
 import {formatCents} from '@/lib/money';
 import { formatScore } from '@/lib/ratings';
 import { upload } from '@vercel/blob/client';
-import { shrinkToJpeg, UnreadableImageError } from '@/lib/photo-client';
-import { MAX_PER_BATCH, photoPath } from '@/lib/photos';
+import { UnreadableImageError, uploadPhoto } from '@/lib/photo-client';
+import { MAX_PER_BATCH } from '@/lib/photos';
 import {useRefreshSession, useViewer} from '../../session';
 import {usePosterZoom} from '../../poster-zoom';
 
@@ -437,7 +437,10 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
    * 미리보기는 따로 둔다: 새로 올린 것은 방금 고른 파일로, 수정 화면에서는 서버가 서명해
    * 준 주소로 그린다. 저장 전에는 경로만으로 그림을 띄울 수 없다(비공개 스토어라서).
    */
-  const [fPhoto, setFPhoto] = useState<string | null | undefined>(undefined);
+  /** 만들면서 고른 사진 — 저장할 때 서버가 붙인다. 원본 경로도 같이 들고 간다 */
+  const [fPhoto, setFPhoto] = useState<{ pathname: string; originalPathname: string | null } | null | undefined>(
+    undefined
+  );
   const [fPhotoPreview, setFPhotoPreview] = useState<string | null>(null);
   const [fPhotoBusy, setFPhotoBusy] = useState(false);
   /** 수정 중인 모임에 이미 붙어 있는 사진 — 넣고 빼는 즉시 서버에 반영된다 */
@@ -457,21 +460,22 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     try {
       // 만들 때는 한 장만 — 나머지는 만든 뒤에 올린다
       for (const file of editId ? list.slice(0, MAX_PER_BATCH) : list.slice(0, 1)) {
-        const { blob, width, height } = await shrinkToJpeg(file);
-        const put = await upload(photoPath(user!.id, crypto.randomUUID()), blob, {
-          access: 'private',
-          handleUploadUrl: '/api/blob/upload',
-          contentType: 'image/jpeg',
-        });
+        const up = await uploadPhoto(file, user!.id, editId ?? undefined);
         if (!editId) {
-          setFPhoto(put.pathname);
-          setFPhotoPreview(URL.createObjectURL(blob));
+          setFPhoto({ pathname: up.pathname, originalPathname: up.originalPathname });
+          // 미리보기는 구운 JPEG로 — 고른 파일이 HEIC면 브라우저가 못 그린다
+          setFPhotoPreview(URL.createObjectURL(up.display));
           break;
         }
         const res = await fetch(`/api/posts/${editId}/photos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pathname: put.pathname, width, height }),
+          body: JSON.stringify({
+            pathname: up.pathname,
+            originalPathname: up.originalPathname,
+            width: up.width,
+            height: up.height,
+          }),
         });
         if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? t(T.photoFailed));
       }
@@ -722,7 +726,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           capacity: fCapacity || undefined,
           ...(fCoHost ? { coHostId: fCoHost } : {}),
           allowNicknames: fNick,
-          ...(fPhoto ? { photoPath: fPhoto } : {}),
+          ...(fPhoto ? { photoPath: fPhoto.pathname, photoOriginalPath: fPhoto.originalPathname } : {}),
           repeatWeekly: fRepeat,
           ...(fromSignups ? { fromSignups: true } : {}),
           visibility: fPrivate ? 'link' : 'public',

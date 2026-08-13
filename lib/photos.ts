@@ -10,10 +10,44 @@ export const MAX_PHOTOS_PER_POST = 60;
 /** 한 번에 고를 수 있는 장수 — 순차로 올리므로 너무 많으면 기다림이 길어진다 */
 export const MAX_PER_BATCH = 10;
 /**
- * 한 장의 상한. 브라우저에서 긴 변 1600으로 줄여 보내면 보통 200~500KB다.
+ * 화면용 한 장의 상한. 브라우저에서 긴 변 1600으로 줄여 보내면 보통 200~500KB다.
  * 토큰에도 같은 값을 걸어 두므로, 줄이기를 건너뛴 요청은 저장소가 거절한다.
  */
 export const MAX_UPLOAD_BYTES = 4_000_000;
+
+/**
+ * 원본 한 장의 상한.
+ *
+ * 아이폰 48MP JPEG가 6~10MB, 파노라마나 스크린샷 묶음이 그보다 크다. 25MB면 폰으로
+ * 찍은 것은 사실상 다 들어오고, 그 위는 대개 사진이 아니라 다른 것이다.
+ */
+export const MAX_ORIGINAL_BYTES = 25_000_000;
+
+/**
+ * 원본으로 받아 주는 형식.
+ *
+ * 화면용(pathname)은 브라우저가 항상 JPEG로 구워 보내지만, 원본은 고른 파일 그대로라
+ * 폰이 주는 형식이 그대로 온다 — 아이폰 기본이 HEIC다. 화면에 그릴 수 있는지는 안 따진다.
+ * 이건 보여주려는 파일이 아니라 **받아가라고 두는 파일**이다.
+ */
+export const ORIGINAL_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/gif',
+  'image/avif',
+] as const;
+
+/** 원본 경로에 허용하는 확장자 — 위 형식과 짝이 맞아야 한다 */
+const ORIGINAL_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'avif'];
+
+/** 파일 이름에서 확장자만 — 모르는 것이면 bin으로 둔다 (경로 규칙을 깨지 않게) */
+export function originalExt(fileName: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+  return ORIGINAL_EXTS.includes(ext) ? ext : 'jpg';
+}
 
 /*
  * 저장 경로 — 올린 사람 아래에 둔다.
@@ -34,6 +68,14 @@ export function photoPath(userId: string, uuid: string): string {
 }
 
 /**
+ * 원본 자리. 같은 uuid에 `-orig`를 붙여 화면용과 짝을 이룬다 —
+ * 행이 사라져도 어느 화면용 사진의 원본인지 경로만 보고 알 수 있다.
+ */
+export function originalPath(userId: string, uuid: string, ext: string): string {
+  return `photos/${userId}/${uuid}-orig.${ext}`;
+}
+
+/**
  * 경로가 자기 자리인지 확인한다. 두 번 쓴다 — 토큰을 내주기 전(그 경로에 토큰이 묶인다)과
  * 「이 사진을 이 모임에 붙여 주세요」를 받을 때. 뒤쪽은 브라우저가 보내는 값이라 꼭 다시 본다.
  * 남의 자리에 쓰거나 남이 올린 것을 자기 모임에 매다는 것을 여기서 막는다.
@@ -46,4 +88,18 @@ export function pathAllowed(pathname: string, ownerId: string): boolean {
   const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
   const suffix = '(-[A-Za-z0-9]+)?';
   return new RegExp(`^photos\\/${ownerId}\\/${uuid}${suffix}\\.jpg$`).test(pathname);
+}
+
+/**
+ * 원본 자리인지. 화면용과 **따로** 본다 — 붙는 상한과 형식이 다르기 때문이다.
+ * (화면용은 JPEG 4MB, 원본은 아무 사진 형식 25MB)
+ *
+ * `-orig`가 uuid와 무작위 접미사 사이에 오는 것에 주의. 저장소가 접미사를 맨 뒤,
+ * 확장자 앞에 붙이므로 `<uuid>-orig-a1b2c3.heic` 같은 모양이 된다.
+ */
+export function originalPathAllowed(pathname: string, ownerId: string): boolean {
+  const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+  const suffix = '(-[A-Za-z0-9]+)?';
+  const ext = ORIGINAL_EXTS.join('|');
+  return new RegExp(`^photos\\/${ownerId}\\/${uuid}-orig${suffix}\\.(${ext})$`).test(pathname);
 }
