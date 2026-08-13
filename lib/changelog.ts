@@ -31,6 +31,128 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-13T15:00',
+    notable: true,
+    title: { ko: '모임 후기를 남기고, 모아 볼 수 있어요', en: 'Leave a review, and read everyone else’s' },
+    items: [
+      {
+        ko: '다녀온 모임에 한 줄씩 남길 수 있어요. 모임 화면 아래에 칸이 생겼어요. 점수는 안 매겨요 — 열두어 명이 서로 아는 사이라, 모임에 점수를 붙이기 시작하면 서로 눈치를 보게 되니까요.',
+        en: 'You can leave a line on a meetup you went to — there’s a box at the bottom of the meetup page. No scores: we all know each other here, and rating each other’s meetups would just make everyone careful.',
+      },
+      {
+        ko: '쓰는 건 다녀온 사람만, 읽는 건 회원 모두예요. 「저기 재미있었대」를 보고 다음에 가보는 게 후기의 쓸모라서요.',
+        en: 'Only people who were there can write one, but everyone can read them — the point is that you see “that one was fun” and go next time.',
+      },
+      {
+        ko: '아래 탭바의 알림이 프로필 안으로 들어갔어요. 알림이 오면 프로필 칸에 점이 하나 뜨고, 프로필 → 알림에서 지금처럼 볼 수 있어요.',
+        en: 'Alerts moved into Profile. A dot appears on the Profile tab when something arrives, and Profile → Alerts is the same screen as before.',
+      },
+      {
+        ko: '비워진 자리는 「모아보기」예요. 사진과 후기를 따로 모아 봐요. 사진은 지금 규칙 그대로 — 내가 갔던 모임 것만 보여요.',
+        en: 'That tab is now Keepsakes — photos and reviews, each on its own page. Photos follow the same rule as always: only from meetups you were at.',
+      },
+      {
+        ko: '모임 카드에도 「후기 2」처럼 보여요. 아직 하나도 없으면 다녀오신 분에게만 「후기 남기기」가 떠요.',
+        en: 'Meetup cards show a count like “Reviews 2”. When there are none yet, only people who were there see “Leave a review”.',
+      },
+      {
+        ko: '별보러가자처럼 익명인 곳의 후기는 「익명」으로만 보여요. 얼굴도 안 보이고요.',
+        en: 'Reviews from anonymous categories show as “Anonymous”, with no face.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-13T13:20',
+    title: { ko: '모임이 바뀌면 무엇이 바뀌었는지 알려줘요', en: 'Edit alerts now say what changed' },
+    items: [
+      {
+        ko: '전에는 「모임이 변경됐어요」 한 줄뿐이라, 열어보기 전에는 뭐가 달라졌는지 알 수 없었어요.',
+        en: 'It used to just say “this meetup changed”, so you had to open it to find out what.',
+      },
+      {
+        ko: '이제 시간·장소·제목처럼 실제로 바뀐 것만 알림에 같이 적어줘요.',
+        en: 'Now the alert lists what actually changed — the time, the place, the title.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-13T12:30',
+    notable: true,
+    title: { ko: '사진을 올린 그대로 받을 수 있어요', en: 'Photos download exactly as they were uploaded' },
+    items: [
+      {
+        ko: '사진을 크게 보고 「원본 받기」를 누르면, 올린 분이 올린 파일 그대로 받아요. 앱이 줄이거나 다시 저장하지 않은 파일이에요.',
+        en: 'Open a photo and tap “Download original” to get the exact file the uploader picked — not resized, not re-saved by the app.',
+      },
+      {
+        ko: '화면에 보이는 사진은 지금처럼 줄여서 보여줘요. 넘길 때 빨리 떠야 하니까요. 줄이는 건 보여줄 때뿐이고, 받을 때는 원본이에요.',
+        en: 'What you see on screen is still the smaller version, so it loads fast. The shrinking is only for showing — downloads are the original.',
+      },
+      {
+        ko: '올린 사람이 아니어도 받을 수 있어요. 같이 갔던 모임의 사진이면 다 받을 수 있어요.',
+        en: 'You don’t have to be the one who uploaded it — any photo from a meetup you were at.',
+      },
+      {
+        ko: '이 기능이 생기기 전에 올라간 사진은 원본이 따로 없어서 「사진 받기」로 나와요. 그때는 보이는 크기 그대로 받아요.',
+        en: 'Photos uploaded before this exists have no stored original, so the button reads “Download photo” and gives you the size you see.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-13T11:30',
+    title: { ko: '설치한 앱에서 화면을 더 넓게 써요', en: 'The installed app uses more of the screen' },
+    items: [
+      {
+        ko: '홈 화면에 추가해서 쓰시는 분들은 맨 위 「Kansas Korean」 줄이 이제 안 보여요. 아래 탭바만으로 다 다닐 수 있어서, 그 줄은 자리만 차지하고 있었어요.',
+        en: 'If you added the app to your home screen, the “Kansas Korean” bar at the top is gone — the tabs at the bottom already get you everywhere.',
+      },
+      {
+        ko: '페이지마다 제각각이던 제목 위아래 여백을 하나로 맞췄어요.',
+        en: 'The spacing above and below page titles is the same everywhere now.',
+      },
+      {
+        ko: '모임을 만들거나 고칠 때, 그리고 사진을 크게 볼 때는 아래 탭바가 안 나와요. 저장 버튼을 가리고 있었거든요.',
+        en: 'The bottom tabs hide while you’re creating or editing a meetup, and while a photo is zoomed — they were covering the save button.',
+      },
+      {
+        ko: '둘러보기를 격자로 볼 때 아이콘이 제목 위로 올라타던 것도 고쳤어요.',
+        en: 'Fixed the Browse grid, where the icons were landing on top of the titles.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-12T12:20',
+    title: { ko: 'Venmo·Zelle은 안 쓰는 칸을 비워두세요', en: 'Leave the payment box you don’t use empty' },
+    items: [
+      {
+        ko: '둘 중 하나만 쓰신다면 안 쓰는 칸은 그냥 비워두세요. 비워두면 정산 화면에서 그 줄이 아예 안 나와요.',
+        en: 'If you only use one of them, leave the other box blank — that line simply won’t appear on the settle-up screen.',
+      },
+      {
+        ko: '얼마 전에 Zelle만 쓰시는 분이 Venmo 칸에 「Zelle」이라고 적어두셔서, 보내기 링크가 실제로 @Zelle이라는 모르는 사람에게 걸린 적이 있어요. 그래서 프로필과 정산 화면에 안내를 적어뒀어요.',
+        en: 'Someone who only uses Zelle typed “Zelle” into the Venmo box, and the pay link pointed at a stranger whose handle really is @Zelle. There’s a note about it on both screens now.',
+      },
+      {
+        ko: '저장해 둔 Zelle 전화번호는 숫자를 끊어서 보여줘요 — 옮겨 적을 때 틀리지 않게요.',
+        en: 'Saved Zelle phone numbers are shown with dashes, so they’re harder to mistype.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-12T10:45',
+    title: { ko: '비공개 모임 초대는 빈 채로 시작해요', en: 'Private invites start with nobody picked' },
+    items: [
+      {
+        ko: '전에는 친구가 전부 선택된 채로 열려서, 그대로 만들면 친구 모두에게 초대가 갔어요.',
+        en: 'It used to open with every friend already checked, so making the meetup invited all of them.',
+      },
+      {
+        ko: '이제 아무도 선택되지 않은 채로 열려요. 부를 사람만 골라주세요.',
+        en: 'Now it opens empty — pick only the people you want there.',
+      },
+    ],
+  },
+  {
     at: '2026-08-10T21:00',
     notable: true,
     title: { ko: '한국어를 몰라도 읽을 수 있어요', en: 'Translation feature is added.' },
