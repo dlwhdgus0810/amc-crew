@@ -88,6 +88,8 @@ const T = {
     es: '— solo quien tenga el enlace la ve. No sale en la lista ni en los avisos a suscriptores',
   },
   ourRating: { ko: '우리 평점 {score}', en: 'Our rating {score}', es: 'Nuestra nota {score}' },
+  reviewsN: { ko: '후기 {n}', en: '{n} reviews', es: '{n} reseñas' },
+  reviewIt: { ko: '후기 남기기', en: 'Leave a review', es: 'Dejar reseña' },
   rateIt: { ko: '평점 매기기', en: 'Rate it', es: 'Puntuar' },
   settleOwe: { ko: '정산 {amount}', en: 'Settle {amount}', es: 'Cuentas {amount}' },
   settleSee: { ko: '정산 보기', en: 'Settle-up', es: 'Cuentas' },
@@ -319,6 +321,8 @@ interface PostView {
   settle: { exists: boolean; myCents: number | null; iAmPayee: boolean } | null;
   /** 우리 평점 요약 — 끝난 무비나잇에만 붙는다 */
   rating: { average: number | null; count: number; mine: number | null } | null;
+  /** 이 모임에 달린 후기 수 — 끝난 모임에만 (그 밖에는 0) */
+  reviewCount: number;
   /** 이 모임의 사진 — 넘겨 볼 몇 장과 실제 전체 장수 */
   photos: {
     urls: string[];
@@ -1802,6 +1806,22 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
               {t(T.edit)}
             </button>
           )}
+          {/*
+            * 끝난 모임의 후기 — 몇 개인지 보여주고 그 자리로 보낸다.
+            * 하나도 없으면 다녀온 사람에게만 권한다 (아래 평점과 같은 규칙).
+            */}
+          {past &&
+            (post.reviewCount > 0 ? (
+              <Link className="link-btn" href={`/p/${post.id}#reviews`}>
+                {t(T.reviewsN, { n: post.reviewCount })}
+              </Link>
+            ) : (
+              joined && (
+                <Link className="link-btn" href={`/p/${post.id}#reviews`}>
+                  {t(T.reviewIt)}
+                </Link>
+              )
+            ))}
           {/* 끝난 무비나잇 — 우리 평점 한 줄. 아직 아무도 안 매겼으면 참가자에게만 권한다 */}
           {post.rating &&
             (post.rating.average != null ? (

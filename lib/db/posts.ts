@@ -14,6 +14,7 @@ import { POSTS_TAG } from '../cache-tags';
 import { hostCountsFor } from './hosting';
 import { settlementSummaries, type SettlementSummary } from './settlements';
 import { ratingSummaries, type RatingSummary } from './ratings';
+import { reviewCounts } from './reviews';
 import { photoStrips, type PhotoStrip } from './photos';
 import { signedUrls } from '../blob';
 import { ratable } from '../ratings';
@@ -73,6 +74,14 @@ export interface PostView {
   settle: SettlementSummary | null;
   /** 무비나잇이고 끝난 모임일 때만 — 우리 평점 요약 (그 밖에는 null) */
   rating: RatingSummary | null;
+  /**
+   * 이 모임에 달린 후기 수 — 끝난 모임에만 붙는다 (그 밖에는 0).
+   *
+   * 사진과 달리 참가자로 좁히지 않는다. 후기는 회원끼리 읽는 글이라 카드에서도
+   * 「여기 다녀온 사람들이 뭐라고 했나」가 보여야 눌러볼 마음이 생긴다.
+   * 다만 로그아웃에게는 개수조차 안 나간다 (아래 signedIn 분기).
+   */
+  reviewCount: number;
   /**
    * 이 모임의 사진 — **참가자와 관리자에게만**. 그 밖에는 null (비로그인 포함).
    * urls는 카드에서 넘겨 볼 몇 장이고(앞에서 자른다), count는 실제 전체 장수다.
@@ -286,6 +295,8 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
       participantCount: countOf(partByPostId as Map<string, unknown[]>, p.id),
       settle: null,
       rating: null,
+      // 후기는 회원끼리 읽는 글이다 — 로그아웃에게는 개수도 안 내보낸다
+      reviewCount: 0,
       photos: null,
       comments: [],
       commentCount: countOf(cmtByPostId, p.id),
@@ -311,15 +322,19 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const commentIds = commentRows.map((c) => c.id);
   // 평점은 끝난 무비나잇에만 붙는다 — 나머지 모임까지 세면 대부분 빈 답을 받으러 가는 셈이다
   const ratableIds = postRows.filter((p) => ratable(shellOf(p, repeatsOn(p)))).map((p) => p.id);
+  // 후기도 끝난 모임에만 달린다 (평점과 달리 카테고리는 안 가린다)
+  const pastIds = postRows.filter((p) => shellOf(p, repeatsOn(p)).isPast).map((p) => p.id);
 
-  const [userRows, hostCounts, settleByPost, likeRows, ratingByPost, photoByPost] = await Promise.all([
-    nameIds.size ? db.select(NAME_COLS).from(users).where(inArray(users.id, [...nameIds])) : [],
-    hostCountsFor([...new Set(participantRows.map((p) => p.userId))]),
-    settlementSummaries(myPostIds, viewerId),
-    commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
-    ratingSummaries(ratableIds, viewerId),
-    photoStrips(myPostIds),
-  ]);
+  const [userRows, hostCounts, settleByPost, likeRows, ratingByPost, photoByPost, reviewByPost] =
+    await Promise.all([
+      nameIds.size ? db.select(NAME_COLS).from(users).where(inArray(users.id, [...nameIds])) : [],
+      hostCountsFor([...new Set(participantRows.map((p) => p.userId))]),
+      settlementSummaries(myPostIds, viewerId),
+      commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
+      ratingSummaries(ratableIds, viewerId),
+      photoStrips(myPostIds),
+      reviewCounts(pastIds),
+    ]);
   const userById = new Map(userRows.map((u) => [u.id, u]));
 
   // 모임마다 닉네임 허용 여부가 다르다 — 참가자 이름은 그 모임의 규칙으로 만든다
@@ -400,6 +415,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
     participantCount: (byPost.get(p.id) ?? []).length,
     settle: settleByPost.get(p.id) ?? null,
     rating: ratingByPost.get(p.id) ?? null,
+    reviewCount: reviewByPost.get(p.id) ?? 0,
     photos: photoByPost.get(p.id) ?? null,
     comments: commentsByPost.get(p.id) ?? [],
     commentCount: (commentsByPost.get(p.id) ?? []).length,
