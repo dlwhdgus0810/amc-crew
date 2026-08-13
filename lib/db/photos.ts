@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from './index';
 import { postPhotos } from './schema';
 import { signedUrls } from '../blob';
+import { originalRenderable } from '../photos';
 
 /**
  * 모임 사진 — DB 쪽.
@@ -23,6 +24,13 @@ export interface PhotoView {
    * 어느 쪽이든 화면은 그 줄을 안 그린다 — 눌러도 안 되는 링크를 두지 않는다.
    */
   originalUrl: string | null;
+  /**
+   * 크게 보기에서 원본을 그대로 띄워도 되는지 (HEIC면 false).
+   *
+   * 폰에서는 보이는 그림을 길게 눌러 저장한다 — 줄인 사진을 띄워 두면 「올린 그대로 받기」가
+   * 안 된다. 그래서 그릴 수 있는 원본이면 확대 창이 그쪽을 띄운다.
+   */
+  originalRenderable: boolean;
   width: number | null;
   height: number | null;
   createdAt: string;
@@ -87,6 +95,7 @@ export async function listPhotos(postId: string): Promise<PhotoView[]> {
       userId: r.userId,
       url: signed.get(r.pathname) ?? '',
       originalUrl: (r.originalPathname && signed.get(r.originalPathname)) || null,
+      originalRenderable: originalRenderable(r.originalPathname),
       width: r.width,
       height: r.height,
       createdAt: r.createdAt.toISOString(),
@@ -130,6 +139,7 @@ export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: 
     // 지울 때 쓰는 값이라 서명하지 않는다 (del은 경로를 받는다)
     url: '',
     originalUrl: null,
+    originalRenderable: false,
     pathname: r.pathname,
     width: r.width,
     height: r.height,

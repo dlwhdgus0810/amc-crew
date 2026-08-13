@@ -31,10 +31,19 @@ export interface Zoomed {
   /**
    * 손대지 않은 파일의 주소. 있으면 「원본 받기」가 뜬다.
    *
-   * 화면에 보이는 src는 올릴 때 줄여 구운 것이라 화질이 원본과 다르다. 이 기능이
-   * 생기기 전에 올린 사진과 상영표 포스터에는 없다.
+   * 이 기능이 생기기 전에 올린 사진과 상영표 포스터에는 없다.
    */
   originalUrl?: string | null;
+  /**
+   * 크게 볼 때 띄울 그림 — 있으면 src 대신 이걸 쓴다.
+   *
+   * 폰에서는 보이는 그림을 길게 눌러 저장한다. 줄인 사진을 띄워 두면 아무리 「원본 받기」를
+   * 달아 놔도 사람들이 실제로 저장하는 것은 줄인 쪽이다. 그래서 크게 보기에서는 처음부터
+   * 올린 그대로를 띄운다. 격자의 작은 네모는 그대로 가벼운 것을 쓴다.
+   *
+   * HEIC 원본에는 없다 — 크롬·안드로이드가 못 열어서 빈 자리가 된다 (lib/photos.ts).
+   */
+  fullSrc?: string | null;
 }
 
 export function usePosterZoom() {
@@ -105,8 +114,26 @@ export function usePosterZoom() {
           <span className="poster-zoom-count">{t(T.count, { i: open!.index + 1, n: open!.items.length })}</span>
         )}
         <div className="poster-zoom-inner" role="dialog" aria-modal="true" aria-label={cur.name}>
+          {/*
+            * 원본을 띄울 때는 줄인 사진을 배경으로 깔아 둔다 — 원본이 몇 MB라 폰 데이터에서는
+            * 받는 동안 빈 자리가 된다. 격자에서 이미 받아 둔 그림이라 곧바로 보이고,
+            * 원본이 도착하면 그 위에 덮인다.
+            */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={cur.src} alt={cur.name} />
+          <img
+            src={cur.fullSrc || cur.src}
+            alt={cur.name}
+            {...(cur.fullSrc
+              ? {
+                  style: {
+                    backgroundImage: `url(${cur.src})`,
+                    backgroundSize: 'contain',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                  },
+                }
+              : {})}
+          />
           <span className="poster-zoom-name">
             {cur.by ? `${cur.name} · ${cur.by}` : cur.name}
             {cur.originalUrl && (
