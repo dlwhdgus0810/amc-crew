@@ -12,7 +12,7 @@
  */
 
 import { upload } from '@vercel/blob/client';
-import { originalExt, originalPath, photoPath } from './photos';
+import { contentTypeForExt, originalExt, originalPath, photoPath } from './photos';
 
 /** 긴 변 기준. 폰 화면에서 크게 봐도 충분하고, 장당 200~500KB로 떨어진다 */
 export const MAX_EDGE = 1600;
@@ -38,6 +38,8 @@ export class UnreadableImageError extends Error {}
  *
  * **원본이 실패해도 사진은 올라간다.** 원본은 있으면 좋은 것이지 사진이 걸리는 조건이
  * 아니다 — 25MB를 넘겼거나 폰 데이터가 끊긴 경우에 화면용까지 같이 버릴 이유가 없다.
+ * 다만 **왜 실패했는지는 돌려준다**. 처음엔 조용히 넘겼는데, 그러면 「원본 받기」가
+ * 안 보이는 이유를 아무 데서도 알 수 없다 (실제로 그래서 한 번 헤맸다).
  */
 export async function uploadPhoto(
   file: File,
@@ -46,6 +48,8 @@ export async function uploadPhoto(
 ): Promise<{
   pathname: string;
   originalPathname: string | null;
+  /** 원본만 실패했을 때 그 이유. 사진 자체는 올라갔다 */
+  originalError: string | null;
   width: number;
   height: number;
   /** 화면용으로 구운 JPEG — 만들기 화면의 미리보기가 쓴다 (원본은 HEIC일 수 있어서 못 그린다) */
@@ -63,20 +67,24 @@ export async function uploadPhoto(
   });
 
   let originalPathname: string | null = null;
+  let originalError: string | null = null;
   try {
-    const orig = await upload(originalPath(userId, uuid, originalExt(file.name)), file, {
+    const ext = originalExt(file.name);
+    const orig = await upload(originalPath(userId, uuid, ext), file, {
       access: 'private',
       handleUploadUrl: '/api/blob/upload',
-      ...(file.type ? { contentType: file.type } : {}),
+      // 폰이 형식을 안 줄 때가 있어서 확장자로 채운다 — 빈 채로 보내면 저장소가 거절한다
+      contentType: file.type || contentTypeForExt(ext),
       clientPayload: payload,
     });
     originalPathname = orig.pathname;
   } catch (e) {
     // 원본만 못 올렸다 — 화면용은 이미 올라갔으니 사진은 남는다
-    console.warn('[photo] 원본 업로드 실패 (화면용만 남긴다):', e instanceof Error ? e.message : e);
+    originalError = e instanceof Error ? e.message : String(e);
+    console.warn('[photo] 원본 업로드 실패 (화면용만 남긴다):', originalError);
   }
 
-  return { pathname: put.pathname, originalPathname, width, height, display: blob };
+  return { pathname: put.pathname, originalPathname, originalError, width, height, display: blob };
 }
 
 export async function shrinkToJpeg(file: File): Promise<Shrunk> {

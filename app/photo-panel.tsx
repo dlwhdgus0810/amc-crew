@@ -31,6 +31,12 @@ const T = {
   full: { ko: '사진은 {n}장까지 올릴 수 있어요.', en: 'Up to {n} photos per meetup.', es: 'Hasta {n} fotos por quedada.' },
   tooMany: { ko: '한 번에 {n}장까지 고를 수 있어요.', en: 'Pick up to {n} at a time.', es: 'Elige hasta {n} a la vez.' },
   failed: { ko: '올리지 못했어요.', en: 'Couldn’t upload that.', es: 'No se pudo subir.' },
+  /* 사진은 올라갔는데 원본만 못 올린 경우 — 막지 않고 알려만 준다 */
+  origFailed: {
+    ko: '사진은 올라갔는데 원본은 저장하지 못했어요 ({why}). 「원본 받기」가 이 사진에는 안 붙어요.',
+    en: 'The photo went up but the original didn’t ({why}). This one won’t have a download link.',
+    es: 'La foto se subió pero el original no ({why}). Esta no tendrá enlace de descarga.',
+  },
   heic: {
     ko: '이 사진 형식(HEIC)은 못 읽어요. 아이폰 설정 › 카메라 › 포맷을 「높은 호환성」으로 바꾸거나, 사진을 한 번 편집해 저장한 뒤 올려주세요.',
     en: 'That photo format (HEIC) can’t be read. Switch iPhone Settings › Camera › Formats to “Most Compatible”, or edit and save the photo once, then try again.',
@@ -105,6 +111,8 @@ export default function PhotoPanel({
     for (let i = 0; i < list.length; i++) {
       try {
         const up = await uploadPhoto(list[i]!, currentUserId!, postId);
+        // 사진은 올라갔다 — 원본만 빠졌으면 멈추지 않고 알려만 준다
+        if (up.originalError) setError(t(T.origFailed, { why: up.originalError }));
         // 바이트는 저장소에 갔고, 모임에 매다는 것은 여기서
         const res = await fetch(`/api/posts/${postId}/photos`, {
           method: 'POST',

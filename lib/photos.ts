@@ -38,15 +38,33 @@ export const ORIGINAL_TYPES = [
   'image/heif',
   'image/gif',
   'image/avif',
+  /*
+   * 폰이 형식을 안 알려줄 때가 있다 — 파일 고르는 창이 type을 빈 문자열로 주면
+   * 브라우저는 이걸로 올린다. 여기 없으면 저장소가 거절하고, 그러면 원본만 조용히 빠진다.
+   * 확장자는 이미 경로 규칙(originalPathAllowed)에서 걸렀으므로 이 자리는 열어 둔다.
+   */
+  'application/octet-stream',
 ] as const;
 
 /** 원본 경로에 허용하는 확장자 — 위 형식과 짝이 맞아야 한다 */
 const ORIGINAL_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'avif'];
 
-/** 파일 이름에서 확장자만 — 모르는 것이면 bin으로 둔다 (경로 규칙을 깨지 않게) */
+/** 파일 이름에서 확장자만 — 모르는 것이면 jpg로 둔다 (경로 규칙을 깨지 않게) */
 export function originalExt(fileName: string): string {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
   return ORIGINAL_EXTS.includes(ext) ? ext : 'jpg';
+}
+
+/**
+ * 확장자로 형식 이름 짓기 — 폰이 file.type을 안 줄 때 쓴다.
+ *
+ * 빈 채로 올리면 저장소가 application/octet-stream으로 받는데, 그러면 나중에 받을 때
+ * 브라우저가 무엇인지 몰라 그냥 파일로 떨군다. 확장자는 알고 있으니 여기서 채워 준다.
+ */
+export function contentTypeForExt(ext: string): string {
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'heic' || ext === 'heif') return `image/${ext}`;
+  return `image/${ext}`;
 }
 
 /*
