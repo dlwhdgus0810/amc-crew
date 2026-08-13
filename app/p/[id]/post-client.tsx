@@ -58,6 +58,7 @@ import SettlementPanel from '../../settlement-panel';
 import TranslateLine from '../../translate-line';
 import RatingPanel from '../../rating-panel';
 import PhotoPanel from '../../photo-panel';
+import ReviewPanel, { type ReviewItem } from '../../review-panel';
 import TermsPopup from '../../terms-popup';
 import { siteUrl } from '@/lib/site';
 import { useRefreshSession, useViewer } from '../../session';
@@ -124,6 +125,8 @@ export interface PostInitial {
   ratings: { userId: string; score: number }[];
   /** 모임 사진 (끝난 모임 + 로그인일 때만) */
   photos: { id: string; userId: string; url: string }[];
+  /** 그 모임의 후기 (끝난 모임일 때만) — 읽는 것은 회원 누구나 */
+  reviews: ReviewItem[];
 }
 
 export default function PostClient({ id, initial }: { id: string; initial: PostInitial }) {
@@ -445,6 +448,15 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         myZelle={myZelle}
         noteLabel={`${catLabel}${post.title ? ` ${post.title}` : ''} ${whenLabelShort(post.date, post.startTime, locale)}`}
       />
+      )}
+
+      {/*
+       * 후기 — 끝난 모임에만. 읽는 것은 회원 누구나이고, 쓰는 것은 다녀온 사람만이다.
+       * 정산·사진과 달리 참가자로 좁히지 않는 이유는 이 글이 「다음에 가볼까」를 돕는
+       * 자리라서다. 서버도 같은 조건을 다시 본다 (app/api/posts/[id]/review/route.ts).
+       */}
+      {past && (
+        <ReviewPanel postId={post.id} reviews={initial.reviews} canWrite={Boolean(user) && joined} />
       )}
 
       <h2>{t(T.comments)} {post.commentCount > 0 ? post.commentCount : ''}</h2>

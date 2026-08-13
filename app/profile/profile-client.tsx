@@ -58,6 +58,12 @@ const T = {
     es: 'Quien use la app en un idioma que no sea coreano verá este nombre primero. Déjalo vacío para mantener el de arriba.',
   },
   nameEnNone: { ko: '아직 없어요', en: 'Not set', es: 'Sin definir' },
+  notifTitle: { ko: '알림', en: 'Alerts', es: 'Avisos' },
+  notifHint: {
+    ko: '모임 변경·댓글·정산 알림을 모아 둔 곳이에요.',
+    en: 'Where meetup changes, comments and settle-ups land.',
+    es: 'Donde llegan los cambios, comentarios y cuentas.',
+  },
   venmo: { ko: 'Venmo 아이디', en: 'Venmo username', es: 'Usuario de Venmo' },
   venmoDesc: {
     ko: '모임 정산에서 다른 사람이 바로 보낼 수 있게 해줘요. 돈은 앱을 거치지 않고 Venmo에서 직접 오갑니다.',
@@ -189,6 +195,8 @@ export interface ProfileInitial {
   subs: string[];
   newsAlerts: boolean;
   showPastPrivate: boolean;
+  /** 안 읽은 알림 수 — 아래 알림 줄의 배지에만 쓴다 (세는 것은 서버가 한다) */
+  unread: number;
 }
 
 export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
@@ -727,6 +735,22 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
           ))}
         </div>
       </div>
+
+      {/*
+        * 알림함으로 가는 줄 — 탭바에서 내려온 자리다.
+        *
+        * 알림 관련이 여기 모여 있다: 이 줄(온 것) → 앱 푸시(오는 길) → 새 소식 알림.
+        * 묶음 모양은 알림 화면의 친구 줄에서 그대로 가져왔다 (a.friend-entry).
+        */}
+      <h2>{t(T.notifTitle)}</h2>
+      <Link href="/notifications" className="card friend-entry">
+        <span className="friend-entry-text">
+          <span className="friend-entry-title">🔔 {t(T.notifTitle)}</span>
+          <span className="friend-entry-hint">{t(T.notifHint)}</span>
+        </span>
+        {initial.unread > 0 && <span className="friend-count">{initial.unread}</span>}
+        <span className="friend-chev" aria-hidden="true">›</span>
+      </Link>
 
       <PushToggle />
 

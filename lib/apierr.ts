@@ -163,6 +163,21 @@ export const E = {
     en: 'Ratings run 0.0–10.0 in steps of 0.1.',
     es: 'Las puntuaciones van de 0,0 a 10,0 en pasos de 0,1.',
   },
+  reviewClosed: {
+    ko: '모임이 끝난 뒤에 후기를 남길 수 있어요.',
+    en: 'You can leave a review once the meetup is over.',
+    es: 'Podrás dejar una reseña cuando la quedada termine.',
+  },
+  reviewParticipantOnly: {
+    ko: '이 모임에 다녀온 사람만 후기를 남길 수 있어요.',
+    en: 'Only someone who was at the meetup can review it.',
+    es: 'Solo quien estuvo en la quedada puede reseñarla.',
+  },
+  reviewBody: {
+    ko: '후기는 1~200자로 적어주세요.',
+    en: 'A review is 1–200 characters.',
+    es: 'Una reseña tiene entre 1 y 200 caracteres.',
+  },
   settleNotFound: { ko: '정산을 찾을 수 없어요.', en: 'No settle-up found.', es: 'No hay ninguna cuenta que dividir.' },
   settleParticipantOnly: {
     ko: '모임에 참가한 사람만 정산을 만들 수 있어요.',

@@ -1,6 +1,6 @@
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from './index';
-import { postPhotos } from './schema';
+import { postParticipants, postPhotos, posts } from './schema';
 import { asDownload, signedUrls } from '../blob';
 
 /**
@@ -96,6 +96,106 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
     }
     // 한 장도 서명을 못 만들었으면 아예 안 내보낸다
     if (urls.length) out.set(postId, { urls, downloads, count: list.length });
+  }
+  return out;
+}
+
+/** 사진 모아보기(/photos) — 모임 하나가 한 묶음 */
+export interface PhotoWallGroup {
+  postId: string;
+  category: string;
+  title: string | null;
+  date: string | null;
+  startTime: string | null;
+  /** 실린 사진 (앞의 몇 장) */
+  urls: string[];
+  /** urls와 같은 순서의 받기 주소 */
+  downloads: { url: string; isOriginal: boolean }[];
+  /** 자른 수가 아니라 그 모임의 실제 전체 장수 */
+  count: number;
+}
+
+/** 모아보기에 싣는 모임 수 · 모임당 장수 — 이 저장소에는 무한 스크롤이 없다 (전부 자른다) */
+const WALL_POSTS = 20;
+const WALL_PER_POST = 6;
+
+/**
+ * 내가 다녀온 모임들의 사진 — 최근 모임부터.
+ *
+ * **내가 참가한 모임만 본다.** 사진은 같이 논 사람들 사이의 것이라, 모임 상세에서도
+ * 참가자·관리자에게만 붙고 그 밖에는 사진이 있다는 사실조차 응답에 안 나간다
+ * (lib/db/posts.ts의 myPostIds). 모아보는 화면이라고 그 전제를 넓히지 않는다 —
+ * 이미 올라간 사진들이 올릴 때의 약속보다 넓게 공개되는 일이 된다.
+ *
+ * 비공개(link) 모임도 들어온다. 내가 갔던 모임이고 나만 보는 화면이라 샐 곳이 없다 —
+ * 후기 모아보기(lib/db/reviews.ts)가 공개 모임만 싣는 것과는 자리가 다르다.
+ */
+export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
+  const db = await getDb();
+  /*
+   * 내가 참가한 모임을 최근 순으로 먼저 고른다. 사진부터 읽어 오면 남의 모임 사진까지
+   * 가져온 뒤에 버리는 셈이라, 「내 것」을 먼저 좁히는 순서를 지킨다.
+   */
+  const mine = await db
+    .select({
+      id: posts.id,
+      category: posts.category,
+      title: posts.title,
+      date: posts.date,
+      startTime: posts.startTime,
+    })
+    .from(posts)
+    .innerJoin(postParticipants, eq(postParticipants.postId, posts.id))
+    .where(and(eq(postParticipants.userId, viewerId), isNull(posts.deletedAt)))
+    .orderBy(desc(posts.date), desc(posts.startTime))
+    .limit(WALL_POSTS);
+  if (mine.length === 0) return [];
+
+  const rows = await db
+    .select({ postId: postPhotos.postId, pathname: postPhotos.pathname, originalPathname: postPhotos.originalPathname })
+    .from(postPhotos)
+    .where(and(inArray(postPhotos.postId, mine.map((m) => m.id)), isNull(postPhotos.deletedAt)))
+    .orderBy(asc(postPhotos.createdAt));
+
+  const byPost = new Map<string, { pathname: string; originalPathname: string | null }[]>();
+  for (const r of rows) {
+    const list = byPost.get(r.postId) ?? [];
+    list.push({ pathname: r.pathname, originalPathname: r.originalPathname });
+    byPost.set(r.postId, list);
+  }
+
+  // 서명은 실을 것만 (photoStrips와 같은 규칙 — 자른 뒤의 것까지 서명하면 그대로 낭비다)
+  const shown = [...byPost.values()].flatMap((list) => list.slice(0, WALL_PER_POST));
+  const signed = await signedUrls([
+    ...shown.map((p) => p.pathname),
+    ...shown.map((p) => p.originalPathname).filter((p): p is string => Boolean(p)),
+  ]);
+
+  const out: PhotoWallGroup[] = [];
+  for (const m of mine) {
+    const list = byPost.get(m.id);
+    if (!list) continue; // 사진이 없는 모임은 묶음을 만들지 않는다
+    const urls: string[] = [];
+    const downloads: PhotoWallGroup['downloads'] = [];
+    for (const p of list.slice(0, WALL_PER_POST)) {
+      const url = signed.get(p.pathname);
+      if (!url) continue;
+      urls.push(url);
+      const orig = p.originalPathname ? signed.get(p.originalPathname) : null;
+      downloads.push({ url: asDownload(orig ?? url) ?? url, isOriginal: Boolean(orig) });
+    }
+    if (urls.length) {
+      out.push({
+        postId: m.id,
+        category: m.category,
+        title: m.title,
+        date: m.date,
+        startTime: m.startTime,
+        urls,
+        downloads,
+        count: list.length,
+      });
+    }
   }
   return out;
 }

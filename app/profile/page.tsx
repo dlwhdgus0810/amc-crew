@@ -14,15 +14,18 @@ export const dynamic = 'force-dynamic';
  * 그 밖의 셋 — 구독 목록, 새 소식 알림, 지난 비공개 모임 설정.
  */
 async function ProfileData() {
-  const { user } = await getViewer();
-  if (!user) return <ProfileClient initial={{ subs: [], newsAlerts: false, showPastPrivate: false }} />;
+  const { user, unread } = await getViewer();
+  if (!user) {
+    return <ProfileClient initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0 }} />;
+  }
   const [subs, newsAlerts, row] = await Promise.all([
     getSubscriptions(user.id),
     getNewsAlerts(user.id),
     dbGetUser(user.id),
   ]);
   return (
-    <ProfileClient initial={{ subs, newsAlerts, showPastPrivate: row?.showPastPrivate ?? false }} />
+    // unread는 위 getViewer()가 이미 세어 둔 값이다 — 알림 줄 배지에만 쓴다
+    <ProfileClient initial={{ subs, newsAlerts, showPastPrivate: row?.showPastPrivate ?? false, unread }} />
   );
 }
 

@@ -32,7 +32,12 @@ const T = {
   groups: { ko: '그룹', en: 'Groups', es: 'Grupos' },
   profile: { ko: '프로필', en: 'Profile', es: 'Perfil' },
   admin: { ko: '관리자', en: 'Admin', es: 'Admin' },
+  // 탭바에서는 내렸고(프로필 안으로), 프로필 줄과 문맥에서만 쓴다
   notifications: { ko: '알림', en: 'Alerts', es: 'Avisos' },
+  /** 새 탭 — 모임이 끝난 뒤에 남는 것들 (사진·후기) */
+  keep: { ko: '모아보기', en: 'Keepsakes', es: 'Recuerdos' },
+  photos: { ko: '사진', en: 'Photos', es: 'Fotos' },
+  reviews: { ko: '후기', en: 'Reviews', es: 'Reseñas' },
   create: { ko: '모임 만들기', en: 'New meetup', es: 'Crear quedada' },
 };
 
@@ -60,6 +65,14 @@ const BellIcon = () => (
   <svg {...icon} aria-hidden>
     <path d="M18 15V10a6 6 0 1 0-12 0v5l-1.5 3h15z" />
     <path d="M10 21h4" />
+  </svg>
+);
+/** 모아보기 — 겹쳐 놓은 사진 두 장 (사진과 후기를 함께 아우르는 자리) */
+const KeepIcon = () => (
+  <svg {...icon} aria-hidden>
+    <rect x="7" y="3.5" width="14" height="11" rx="2" />
+    <path d="m10 12 3-3 3 3 2-2" />
+    <path d="M17 17.5v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1" />
   </svg>
 );
 
@@ -147,10 +160,17 @@ export default function NavLinks() {
           <CalendarIcon />
           <span>{t(T.calendar)}</span>
         </Link>
-        <Link href="/notifications" className={pathname === '/notifications' ? 'active' : ''}>
-          <BellIcon />
-          <span>{t(T.notifications)}</span>
-          {loggedIn && unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
+        {/*
+          * 알림이 있던 자리 — 알림은 프로필 안으로 들어갔다.
+          * 알림은 왔을 때만 보는 화면이라 늘 한 칸을 차지할 이유가 약했고,
+          * 그 자리를 모임이 끝난 뒤에 남는 것들(사진·후기)에 준다.
+          */}
+        <Link
+          href="/photos"
+          className={pathname.startsWith('/photos') || pathname.startsWith('/reviews') ? 'active' : ''}
+        >
+          <KeepIcon />
+          <span>{t(T.keep)}</span>
         </Link>
         {loggedIn ? (
           <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>
@@ -158,6 +178,12 @@ export default function NavLinks() {
               {avatar ? <img src={avatar} alt="" /> : name.slice(0, 1) || '·'}
             </span>
             <span>{t(T.profile)}</span>
+            {/*
+              * 안 읽은 알림이 있다는 표시. 숫자가 아니라 점 하나다 — 알림함이 프로필
+              * 안으로 들어갔으니 몇 개인지는 거기서 보면 되고, 여기서는 「볼 게 있다」만
+              * 말하면 된다. 이게 없으면 새 알림을 알 길이 앱 아이콘 뱃지밖에 없다.
+              */}
+            {unread > 0 && <span className="tab-dot" aria-hidden="true" />}
           </Link>
         ) : (
           <a href="/api/auth/login">
@@ -188,6 +214,13 @@ export function ContextTabs() {
       { href: '/movie', label: t(T.showtimes) },
       { href: '/movie/groups', label: t(T.groups) }
     );
+  }
+  /*
+   * 모아보기 — 사진과 후기를 알약 줄로 갈라 둔다. 탭은 한 칸이고, 주소는 따로다.
+   * 둘 다 「모임이 끝난 뒤에 남는 것」이라 한 자리에 두되, 보고 싶은 쪽만 볼 수 있어야 한다.
+   */
+  if (pathname.startsWith('/photos') || pathname.startsWith('/reviews')) {
+    links.push({ href: '/photos', label: t(T.photos) }, { href: '/reviews', label: t(T.reviews) });
   }
   if (pathname.startsWith('/tickets')) links.push({ href: '/tickets', label: t(T.tickets) });
   // 관리자 진입은 프로필 화면에만 둔다 — 모든 화면 위에 띄울 만한 버튼이 아니다

@@ -116,6 +116,17 @@ CREATE TABLE IF NOT EXISTS post_ratings (
   PRIMARY KEY (post_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS post_reviews (
+  post_id uuid NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  user_id text NOT NULL REFERENCES users(id),
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz,
+  PRIMARY KEY (post_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS post_reviews_recent_idx ON post_reviews (updated_at);
+
 CREATE TABLE IF NOT EXISTS subscriptions (
   user_id text NOT NULL REFERENCES users(id),
   category text NOT NULL,

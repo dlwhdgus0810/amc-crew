@@ -4,6 +4,7 @@ import { asc } from 'drizzle-orm';
 import { getPostView } from '@/lib/db/posts';
 import { listRatings } from '@/lib/db/ratings';
 import { listPhotos } from '@/lib/db/photos';
+import { listReviews } from '@/lib/db/reviews';
 import { getViewer } from '@/lib/session';
 import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
@@ -123,11 +124,17 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
    * 여기서 따로 판정하면 언젠가 둘이 어긋난다.
    */
   const photos = post?.photos ? await listPhotos(id) : [];
+  /*
+   * 후기는 회원 누구나 읽는다 — 사진과 달리 참가자로 좁히지 않는다.
+   * 「저기 재미있었대」를 보고 다음에 가보는 것이 이 글의 쓸모라서다.
+   * 끝난 모임에만 붙으므로 그 전에는 읽지도 않는다.
+   */
+  const reviews = post?.isPast ? await listReviews(id, user?.id, await getLocale()) : [];
 
   const body = (
     <PostClient
       id={id}
-      initial={{ post, members, friends: friendsOf(friendships), origin, ratings, photos }}
+      initial={{ post, members, friends: friendsOf(friendships), origin, ratings, photos, reviews }}
     />
   );
   // 모임을 눌러 들어와도 하늘은 이어진다 — 카테고리에서만 밤이면 한 걸음 만에 크림색으로 돌아온다

@@ -289,6 +289,36 @@ export const postRatings = pgTable(
   (t) => [primaryKey({ columns: [t.postId, t.userId] })]
 );
 
+/**
+ * 모임 한줄 후기 — 다녀온 사람이 남기는 글.
+ *
+ * 위 post_ratings와 따로 두는 이유가 둘이다. 저건 무비나잇 전용이고(lib/ratings.ts의
+ * RATABLE_CATEGORIES), 점수가 notNull이라 글만 남길 수가 없다.
+ *
+ * **점수는 안 받는다.** 열두어 명이 서로 아는 모임에서 모임에 점수를 매기기 시작하면
+ * 연 사람이 평가받는 꼴이 된다. 무비나잇 별점은 영화에 매기는 것이라 결이 다르다.
+ *
+ * 한 사람이 한 모임에 한 줄(PK). 고치면 덮어쓴다 — 같은 모임에 여러 줄을 쌓으면
+ * 모아보기가 한 사람 목소리로 채워진다.
+ */
+export const postReviews = pgTable(
+  'post_reviews',
+  {
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** 고친 시각 — 모아보기는 이 순서로 보여준다 (고친 글이 위로 온다) */
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: deletedAt(),
+  },
+  (t) => [primaryKey({ columns: [t.postId, t.userId] }), index('post_reviews_recent_idx').on(t.updatedAt)]
+);
+
 export const subscriptions = pgTable(
   'subscriptions',
   {
