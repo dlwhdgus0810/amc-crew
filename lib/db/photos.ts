@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, postPhotos, posts } from './schema';
-import { asDownload, signedUrls } from '../blob';
+import { signedUrls } from '../blob';
 
 /**
  * 모임 사진 — DB 쪽.
@@ -11,6 +11,20 @@ import { asDownload, signedUrls } from '../blob';
  *
  * 지우는 것은 두 곳(행과 파일)이라 부르는 쪽이 순서를 지켜야 한다 — 행 먼저, 파일 나중.
  */
+
+/**
+ * 받기 주소 — 저장소가 아니라 **우리 주소**다.
+ *
+ * 저장소의 서명 주소를 그대로 주면 폰에서 멈춘다: 홈 화면에 추가한 앱은 새 창을 여는데,
+ * 그 창이 받은 것은 그릴 게 없는 첨부파일이라 흰 화면인 채로 남는다. 같은 주소로
+ * 내려보내면 <a download>가 먹어서 창을 아예 안 연다
+ * (app/api/posts/[id]/photos/[photoId]/download).
+ *
+ * 서명하지 않아도 되는 것이 덤이다 — 눌러야 쓰이는 주소라 대부분 그냥 버려졌다.
+ */
+function downloadPath(postId: string, photoId: string): string {
+  return `/api/posts/${postId}/photos/${photoId}/download`;
+}
 
 export interface PhotoView {
   id: string;
@@ -62,27 +76,29 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
 
   const db = await getDb();
   const rows = await db
-    .select({ postId: postPhotos.postId, pathname: postPhotos.pathname, originalPathname: postPhotos.originalPathname })
+    .select({
+      id: postPhotos.id,
+      postId: postPhotos.postId,
+      pathname: postPhotos.pathname,
+      originalPathname: postPhotos.originalPathname,
+    })
     .from(postPhotos)
     .where(and(inArray(postPhotos.postId, postIds), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
 
-  const byPost = new Map<string, { pathname: string; originalPathname: string | null }[]>();
+  const byPost = new Map<string, { id: string; pathname: string; originalPathname: string | null }[]>();
   for (const r of rows) {
     const list = byPost.get(r.postId) ?? [];
-    list.push({ pathname: r.pathname, originalPathname: r.originalPathname });
+    list.push({ id: r.id, pathname: r.pathname, originalPathname: r.originalPathname });
     byPost.set(r.postId, list);
   }
 
   /*
-   * 서명은 실을 것만 — 자른 뒤의 것까지 서명하면 그만큼이 그대로 낭비다.
-   * 원본은 있는 것만 서명한다. 없으면 받기 주소로 그림 자체를 쓴다.
+   * 서명은 **화면에 그릴 것만.** 받기 주소는 우리 라우트라 서명이 필요 없다 —
+   * 예전에는 원본까지 같이 서명했는데, 그건 눌러야 쓰이는 주소라 대부분 그냥 버려졌다.
    */
   const shown = [...byPost.values()].flatMap((list) => list.slice(0, STRIP_LIMIT));
-  const signed = await signedUrls([
-    ...shown.map((p) => p.pathname),
-    ...shown.map((p) => p.originalPathname).filter((p): p is string => Boolean(p)),
-  ]);
+  const signed = await signedUrls(shown.map((p) => p.pathname));
 
   for (const [postId, list] of byPost) {
     const urls: string[] = [];
@@ -91,8 +107,7 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
       const url = signed.get(p.pathname);
       if (!url) continue; // 서명을 못 만든 장은 통째로 뺀다 (깨진 그림보다 낫다)
       urls.push(url);
-      const orig = p.originalPathname ? signed.get(p.originalPathname) : null;
-      downloads.push({ url: asDownload(orig ?? url) ?? url, isOriginal: Boolean(orig) });
+      downloads.push({ url: downloadPath(postId, p.id), isOriginal: Boolean(p.originalPathname) });
     }
     // 한 장도 서명을 못 만들었으면 아예 안 내보낸다
     if (urls.length) out.set(postId, { urls, downloads, count: list.length });
@@ -176,24 +191,26 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
   if (mine.length === 0) return [];
 
   const rows = await db
-    .select({ postId: postPhotos.postId, pathname: postPhotos.pathname, originalPathname: postPhotos.originalPathname })
+    .select({
+      id: postPhotos.id,
+      postId: postPhotos.postId,
+      pathname: postPhotos.pathname,
+      originalPathname: postPhotos.originalPathname,
+    })
     .from(postPhotos)
     .where(and(inArray(postPhotos.postId, mine.map((m) => m.id)), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
 
-  const byPost = new Map<string, { pathname: string; originalPathname: string | null }[]>();
+  const byPost = new Map<string, { id: string; pathname: string; originalPathname: string | null }[]>();
   for (const r of rows) {
     const list = byPost.get(r.postId) ?? [];
-    list.push({ pathname: r.pathname, originalPathname: r.originalPathname });
+    list.push({ id: r.id, pathname: r.pathname, originalPathname: r.originalPathname });
     byPost.set(r.postId, list);
   }
 
-  // 서명은 실을 것만 (photoStrips와 같은 규칙 — 자른 뒤의 것까지 서명하면 그대로 낭비다)
+  // 서명은 화면에 그릴 것만 (photoStrips와 같은 규칙 — 받기 주소는 우리 라우트다)
   const shown = [...byPost.values()].flatMap((list) => list.slice(0, WALL_PER_POST));
-  const signed = await signedUrls([
-    ...shown.map((p) => p.pathname),
-    ...shown.map((p) => p.originalPathname).filter((p): p is string => Boolean(p)),
-  ]);
+  const signed = await signedUrls(shown.map((p) => p.pathname));
 
   const out: PhotoWallGroup[] = [];
   for (const m of mine) {
@@ -205,8 +222,7 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       const url = signed.get(p.pathname);
       if (!url) continue;
       urls.push(url);
-      const orig = p.originalPathname ? signed.get(p.originalPathname) : null;
-      downloads.push({ url: asDownload(orig ?? url) ?? url, isOriginal: Boolean(orig) });
+      downloads.push({ url: downloadPath(m.id, p.id), isOriginal: Boolean(p.originalPathname) });
     }
     if (urls.length) {
       out.push({
@@ -244,22 +260,15 @@ export async function listPhotos(postId: string, opts?: { anonymous?: boolean; v
    */
   const hide = (userId: string) =>
     opts?.anonymous && userId !== opts.viewerId ? '' : userId;
-  // 화면용과 원본을 한 번에 서명한다 — 장마다 두 번 부르면 왕복이 두 배가 된다
-  const signed = await signedUrls([
-    ...rows.map((r) => r.pathname),
-    ...rows.map((r) => r.originalPathname).filter((p): p is string => Boolean(p)),
-  ]);
+  // 화면에 그릴 것만 서명한다 — 받기는 우리 라우트를 거치므로 서명이 필요 없다
+  const signed = await signedUrls(rows.map((r) => r.pathname));
   return rows
     .map((r) => ({
       id: r.id,
       userId: hide(r.userId),
       url: signed.get(r.pathname) ?? '',
-      // 열지 말고 받게 — 저장소가 파일로 내려보내도록 표를 붙인다
-      downloadUrl:
-        asDownload(r.originalPathname ? signed.get(r.originalPathname) : null) ??
-        asDownload(signed.get(r.pathname)) ??
-        '',
-      downloadIsOriginal: Boolean(r.originalPathname && signed.get(r.originalPathname)),
+      downloadUrl: downloadPath(postId, r.id),
+      downloadIsOriginal: Boolean(r.originalPathname),
       width: r.width,
       height: r.height,
       createdAt: r.createdAt.toISOString(),

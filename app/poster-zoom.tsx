@@ -117,14 +117,15 @@ export function usePosterZoom() {
               <>
                 {' · '}
                 {/*
-                 * 저장소가 다른 도메인이라 download 속성은 무시된다 — 브라우저가 열거나
-                 * 받는 것은 저장소가 보내는 헤더가 정한다. 새 창으로 띄워 두면 어느 쪽이든
-                 * 보던 화면이 날아가지 않는다.
+                 * 같은 주소(우리 라우트)라 download가 먹는다 — 창을 새로 열지 않는다.
+                 *
+                 * 예전에는 저장소 주소를 target=_blank로 열었다. 데스크톱에서는 저장소가
+                 * 보낸 헤더 덕에 받아졌는데, 홈 화면에 추가한 앱에서는 앱 안쪽 브라우저
+                 * 창이 열리고 그릴 게 없는 첨부파일을 받아 흰 화면인 채로 멈췄다.
                  */}
                 <a
                   href={cur.downloadUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                  download
                   onClick={(e) => e.stopPropagation()}
                   className="poster-zoom-orig"
                 >
