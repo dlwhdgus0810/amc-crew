@@ -103,6 +103,8 @@ CREATE TABLE IF NOT EXISTS post_photos (
   user_id text NOT NULL REFERENCES users(id),
   pathname text NOT NULL,
   original_pathname text,
+  -- 격자에 뿌릴 400px — lib/db/schema.ts의 주석 참고
+  thumb_pathname text,
   width integer,
   height integer,
   created_at timestamptz NOT NULL DEFAULT now(),

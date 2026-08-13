@@ -270,6 +270,20 @@ export const postPhotos = pgTable(
      * 이 칸이 생기기 전에 올린 사진은 null이다. 그때는 「원본 받기」가 안 뜬다.
      */
     originalPathname: text('original_pathname'),
+    /**
+     * 격자에 뿌릴 작은 사진(긴 변 400px) — 모아보기·모임 화면·카드가 이걸 쓴다.
+     *
+     * 왜 세 벌이 되었나: 격자 한 칸은 폰에서 110px 남짓인데 거기에 1600px짜리
+     * 화면용(중앙값 642KB)을 넣고 있었다. 첫 화면 열두 칸이 7.5MB였고, 그게 모아보기가
+     * 느리던 이유다. 400px 한 장이면 30KB 언저리다.
+     *
+     * 화면용을 더 줄여 해결할 수는 없다 — 크게 보기가 같은 파일을 쓴다. 격자와 확대는
+     * 필요한 크기가 다르니 파일을 나눈다.
+     *
+     * 이 칸이 생기기 전에 올린 사진은 null이고, 그때는 격자도 화면용을 쓴다(느릴 뿐
+     * 깨지지 않는다). 관리자 화면의 백필이 채워 준다.
+     */
+    thumbPathname: text('thumb_pathname'),
     width: integer('width'),
     height: integer('height'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

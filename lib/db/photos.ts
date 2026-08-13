@@ -29,7 +29,10 @@ function downloadPath(postId: string, photoId: string): string {
 export interface PhotoView {
   id: string;
   userId: string;
+  /** 크게 볼 때 쓰는 1600px */
   url: string;
+  /** 격자에 그릴 400px — 없는 옛 사진은 url과 같다 (느릴 뿐 안 깨진다) */
+  thumbUrl: string;
   /**
    * 받기 주소 — **언제나 있다.**
    *
@@ -56,9 +59,43 @@ export interface PhotoView {
  */
 const STRIP_LIMIT = 10;
 
+/** 격자와 확대가 함께 필요한 만큼만 읽어 온 한 줄 */
+interface PhotoRow {
+  id: string;
+  pathname: string;
+  thumbPathname: string | null;
+  originalPathname: string | null;
+}
+
+/**
+ * 한 장에 서명해야 할 경로들 — 화면용과 (있으면) 썸네일.
+ *
+ * 둘 다 서명하는 이유: 격자는 썸네일을 그리지만, 그 자리를 눌러 크게 보면 곧바로
+ * 화면용이 필요하다. 그때 가서 서명하러 다녀오면 확대 창이 잠깐 비어 있게 된다.
+ */
+function displayAndThumb(p: PhotoRow): string[] {
+  return p.thumbPathname ? [p.pathname, p.thumbPathname] : [p.pathname];
+}
+
+/**
+ * 격자에 그릴 주소. 썸네일이 없거나 서명을 못 만들었으면 화면용으로 떨어진다 —
+ * 이 칸이 생기기 전에 올라간 사진들이 여기로 온다 (느릴 뿐 안 깨진다).
+ */
+function thumbOr(signed: Map<string, string>, p: PhotoRow, fallback: string): string {
+  return (p.thumbPathname && signed.get(p.thumbPathname)) || fallback;
+}
+
 export interface PhotoStrip {
-  /** 카드에 실리는 그림들 (앞의 몇 장) */
+  /**
+   * 카드에 실리는 그림들 (앞의 몇 장) — **크게 볼 때 쓰는 1600px 쪽**이다.
+   * 카드에 그릴 작은 그림은 아래 thumbs를 쓴다.
+   */
   urls: string[];
+  /**
+   * urls와 같은 순서의 **격자용 400px.** 썸네일이 없는 옛 사진은 그 자리에 urls의 것이
+   * 그대로 들어간다 — 느릴 뿐 깨지지 않는다.
+   */
+  thumbs: string[];
   /**
    * 위 urls와 **같은 순서**의 받기 주소. 카드에서 사진을 눌러 크게 봤을 때 쓴다.
    *
@@ -80,16 +117,17 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
       id: postPhotos.id,
       postId: postPhotos.postId,
       pathname: postPhotos.pathname,
+      thumbPathname: postPhotos.thumbPathname,
       originalPathname: postPhotos.originalPathname,
     })
     .from(postPhotos)
     .where(and(inArray(postPhotos.postId, postIds), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
 
-  const byPost = new Map<string, { id: string; pathname: string; originalPathname: string | null }[]>();
+  const byPost = new Map<string, PhotoRow[]>();
   for (const r of rows) {
     const list = byPost.get(r.postId) ?? [];
-    list.push({ id: r.id, pathname: r.pathname, originalPathname: r.originalPathname });
+    list.push(r);
     byPost.set(r.postId, list);
   }
 
@@ -98,19 +136,21 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
    * 예전에는 원본까지 같이 서명했는데, 그건 눌러야 쓰이는 주소라 대부분 그냥 버려졌다.
    */
   const shown = [...byPost.values()].flatMap((list) => list.slice(0, STRIP_LIMIT));
-  const signed = await signedUrls(shown.map((p) => p.pathname));
+  const signed = await signedUrls(shown.flatMap(displayAndThumb));
 
   for (const [postId, list] of byPost) {
     const urls: string[] = [];
+    const thumbs: string[] = [];
     const downloads: PhotoStrip['downloads'] = [];
     for (const p of list.slice(0, STRIP_LIMIT)) {
       const url = signed.get(p.pathname);
       if (!url) continue; // 서명을 못 만든 장은 통째로 뺀다 (깨진 그림보다 낫다)
       urls.push(url);
+      thumbs.push(thumbOr(signed, p, url));
       downloads.push({ url: downloadPath(postId, p.id), isOriginal: Boolean(p.originalPathname) });
     }
     // 한 장도 서명을 못 만들었으면 아예 안 내보낸다
-    if (urls.length) out.set(postId, { urls, downloads, count: list.length });
+    if (urls.length) out.set(postId, { urls, thumbs, downloads, count: list.length });
   }
   return out;
 }
@@ -122,8 +162,10 @@ export interface PhotoWallGroup {
   title: string | null;
   date: string | null;
   startTime: string | null;
-  /** 실린 사진 (앞의 몇 장) */
+  /** 실린 사진 (앞의 몇 장) — 크게 볼 때 쓰는 1600px 쪽 */
   urls: string[];
+  /** urls와 같은 순서의 격자용 400px (없는 옛 사진은 urls의 것이 들어간다) */
+  thumbs: string[];
   /** urls와 같은 순서의 받기 주소 */
   downloads: { url: string; isOriginal: boolean }[];
   /** 자른 수가 아니라 그 모임의 실제 전체 장수 */
@@ -195,33 +237,36 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       id: postPhotos.id,
       postId: postPhotos.postId,
       pathname: postPhotos.pathname,
+      thumbPathname: postPhotos.thumbPathname,
       originalPathname: postPhotos.originalPathname,
     })
     .from(postPhotos)
     .where(and(inArray(postPhotos.postId, mine.map((m) => m.id)), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
 
-  const byPost = new Map<string, { id: string; pathname: string; originalPathname: string | null }[]>();
+  const byPost = new Map<string, PhotoRow[]>();
   for (const r of rows) {
     const list = byPost.get(r.postId) ?? [];
-    list.push({ id: r.id, pathname: r.pathname, originalPathname: r.originalPathname });
+    list.push(r);
     byPost.set(r.postId, list);
   }
 
   // 서명은 화면에 그릴 것만 (photoStrips와 같은 규칙 — 받기 주소는 우리 라우트다)
   const shown = [...byPost.values()].flatMap((list) => list.slice(0, WALL_PER_POST));
-  const signed = await signedUrls(shown.map((p) => p.pathname));
+  const signed = await signedUrls(shown.flatMap(displayAndThumb));
 
   const out: PhotoWallGroup[] = [];
   for (const m of mine) {
     const list = byPost.get(m.id);
     if (!list) continue; // 사진이 없는 모임은 묶음을 만들지 않는다
     const urls: string[] = [];
+    const thumbs: string[] = [];
     const downloads: PhotoWallGroup['downloads'] = [];
     for (const p of list.slice(0, WALL_PER_POST)) {
       const url = signed.get(p.pathname);
       if (!url) continue;
       urls.push(url);
+      thumbs.push(thumbOr(signed, p, url));
       downloads.push({ url: downloadPath(m.id, p.id), isOriginal: Boolean(p.originalPathname) });
     }
     if (urls.length) {
@@ -232,6 +277,7 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
         date: m.date,
         startTime: m.startTime,
         urls,
+        thumbs,
         downloads,
         count: list.length,
       });
@@ -260,13 +306,18 @@ export async function listPhotos(postId: string, opts?: { anonymous?: boolean; v
    */
   const hide = (userId: string) =>
     opts?.anonymous && userId !== opts.viewerId ? '' : userId;
-  // 화면에 그릴 것만 서명한다 — 받기는 우리 라우트를 거치므로 서명이 필요 없다
-  const signed = await signedUrls(rows.map((r) => r.pathname));
+  /*
+   * 화면에 그릴 것만 서명한다 — 받기는 우리 라우트를 거치므로 서명이 필요 없다.
+   * 격자용(썸네일)과 확대용(화면용) 둘 다 미리 서명해 둔다: 격자를 눌러 크게 볼 때
+   * 그제야 서명하러 다녀오면 확대 창이 잠깐 비어 있다.
+   */
+  const signed = await signedUrls(rows.flatMap(displayAndThumb));
   return rows
     .map((r) => ({
       id: r.id,
       userId: hide(r.userId),
       url: signed.get(r.pathname) ?? '',
+      thumbUrl: thumbOr(signed, r, signed.get(r.pathname) ?? ''),
       downloadUrl: downloadPath(postId, r.id),
       downloadIsOriginal: Boolean(r.originalPathname),
       width: r.width,
@@ -291,6 +342,8 @@ export async function addPhoto(input: {
   pathname: string;
   /** 고른 파일 그대로의 경로. 원본을 못 올렸으면 null — 화면용만 있어도 사진은 남는다 */
   originalPathname?: string | null;
+  /** 격자용 400px. 못 올렸으면 null — 그때는 격자가 화면용을 쓴다 */
+  thumbPathname?: string | null;
   width: number | null;
   height: number | null;
 }): Promise<string> {
@@ -311,6 +364,7 @@ export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: 
     userId: r.userId,
     // 지울 때 쓰는 값이라 서명하지 않는다 (del은 경로를 받는다)
     url: '',
+    thumbUrl: '',
     downloadUrl: '',
     downloadIsOriginal: false,
     pathname: r.pathname,
@@ -337,13 +391,23 @@ export async function deletePhotoRow(photoId: string): Promise<void> {
  * **지워진 사진도 센다 (isNull을 붙이지 않는다).** 붙이면 청소가 그 파일을 주인 없는
  * 것으로 보고 지워버려서, 되살릴 수 있다는 말이 거짓이 된다.
  *
- * **원본도 같이 센다.** 한 장이 파일 두 개(화면용·원본)라, 화면용만 세면 청소가 원본을
- * 주인 없는 것으로 보고 전부 걷어간다 — 「원본 받기」가 조용히 죽는 길이 정확히 이것이다.
+ * **세 벌을 다 센다.** 한 장이 파일 셋(화면용·원본·썸네일)이라, 하나라도 빠뜨리면
+ * 청소가 그걸 주인 없는 것으로 보고 전부 걷어간다 — 「원본 받기」가 조용히 죽는 길이
+ * 정확히 이것이고, 썸네일을 더할 때도 같은 자리를 고쳐야 한다.
+ *
+ * 경로에 적힌 회원번호는 여기서 보지 않는다. 청소는 「행이 가리키는 파일인가」로만
+ * 가리므로, 백필처럼 관리자가 남의 사진 썸네일을 자기 자리에 올려도 그대로 지켜진다.
  */
 export async function allPhotoPaths(): Promise<string[]> {
   const db = await getDb();
   const rows = await db
-    .select({ pathname: postPhotos.pathname, originalPathname: postPhotos.originalPathname })
+    .select({
+      pathname: postPhotos.pathname,
+      originalPathname: postPhotos.originalPathname,
+      thumbPathname: postPhotos.thumbPathname,
+    })
     .from(postPhotos);
-  return rows.flatMap((r) => (r.originalPathname ? [r.pathname, r.originalPathname] : [r.pathname]));
+  return rows.flatMap((r) =>
+    [r.pathname, r.originalPathname, r.thumbPathname].filter((p): p is string => Boolean(p))
+  );
 }

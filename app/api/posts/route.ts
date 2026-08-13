@@ -25,6 +25,11 @@ function ownedOriginal(value: unknown, userId: string): string | null {
   return typeof value === 'string' && originalPathAllowed(value, userId) ? value : null;
 }
 
+/** 썸네일도 같은 검사를 거친다 — 규칙이 화면용과 같아서 pathAllowed를 그대로 쓴다 */
+function ownedThumb(value: unknown, userId: string): string | null {
+  return typeof value === 'string' && pathAllowed(value, userId) ? value : null;
+}
+
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category') ?? '';
   const past = req.nextUrl.searchParams.get('past') === '1';
@@ -169,6 +174,7 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         pathname: body.photoPath,
         originalPathname: ownedOriginal(body?.photoOriginalPath, user.id),
+        thumbPathname: ownedThumb(body?.photoThumbPath, user.id),
         width: null,
         height: null,
       });
@@ -203,6 +209,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       pathname: body.photoPath,
       originalPathname: ownedOriginal(body?.photoOriginalPath, user.id),
+      thumbPathname: ownedThumb(body?.photoThumbPath, user.id),
       width: null,
       height: null,
     });

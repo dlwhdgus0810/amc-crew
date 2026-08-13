@@ -93,7 +93,10 @@ const T = {
 export interface PhotoItem {
   id: string;
   userId: string;
+  /** 크게 볼 때 쓰는 1600px */
   url: string;
+  /** 격자에 그릴 400px — 없는 옛 사진은 url과 같다 */
+  thumbUrl?: string;
   /** 받기 주소 — 원본이 있으면 그 파일, 없으면 보이는 사진 */
   downloadUrl?: string | null;
   /** 그 주소가 올린 파일 그대로인지 */
@@ -186,6 +189,7 @@ export default function PhotoPanel({
           body: JSON.stringify({
             pathname: up.pathname,
             originalPathname: up.originalPathname,
+            thumbPathname: up.thumbPathname,
             width: up.width,
             height: up.height,
           }),
@@ -291,11 +295,12 @@ export default function PhotoPanel({
           <div className="photo-grid">
             {photos.map((p, i) => (
               <div key={p.id} className="photo-cell">
+                {/* 격자는 썸네일, 눌러서 크게 보는 것은 items의 화면용이다 */}
                 {zoom.triggerAt(
                   items,
                   i,
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.url} alt="" loading="lazy" />
+                  <img src={p.thumbUrl || p.url} alt="" loading="lazy" />
                 )}
                 {/* 올린 사람과 호스트만 — 서버가 다시 확인한다 */}
                 {(p.userId === currentUserId || isHost || isAdmin) && (

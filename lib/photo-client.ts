@@ -12,11 +12,21 @@
  */
 
 import { upload } from '@vercel/blob/client';
-import { contentTypeForExt, originalExt, originalPath, photoPath } from './photos';
+import { contentTypeForExt, originalExt, originalPath, photoPath, thumbPath } from './photos';
 
 /** 긴 변 기준. 폰 화면에서 크게 봐도 충분하고, 장당 200~500KB로 떨어진다 */
 export const MAX_EDGE = 1600;
 const QUALITY = 0.85;
+
+/**
+ * 격자에 뿌릴 작은 사진. 긴 변 400px, 화질은 조금 낮춘다.
+ *
+ * 격자 한 칸이 폰에서 110px 남짓이고 3배 화면이면 330px이라 400이면 넉넉하다.
+ * 화질을 0.7로 내리는 것은 이 크기에서는 눈에 안 띄면서 파일이 눈에 띄게 줄기 때문이다 —
+ * 크게 볼 때 쓰는 화면용은 0.85 그대로다.
+ */
+export const THUMB_EDGE = 400;
+const THUMB_QUALITY = 0.7;
 
 export interface Shrunk {
   blob: Blob;
@@ -28,18 +38,23 @@ export interface Shrunk {
 export class UnreadableImageError extends Error {}
 
 /**
- * 사진 한 장을 저장소에 올린다 — **두 벌로**.
+ * 사진 한 장을 저장소에 올린다 — **세 벌로**.
  *
- *  1. 화면용: 아래 shrinkToJpeg가 줄여 구운 JPEG. 격자와 크게 보기가 이걸 쓴다.
+ *  1. 화면용(1600px): 크게 보기가 쓴다.
  *  2. 원본: 고른 파일 그대로. 「원본 받기」가 이걸 준다.
+ *  3. 썸네일(400px): 격자가 쓴다.
  *
- * 두 벌을 두는 이유가 둘이다. 원본은 아이폰 HEIC일 수 있는데 크롬·안드로이드가 못 열고,
- * 격자의 작은 네모 하나를 그리려고 8MB를 받게 할 수는 없다.
+ * 원본을 따로 두는 이유: 아이폰 HEIC일 수 있는데 크롬·안드로이드가 못 연다.
+ * 썸네일을 따로 두는 이유: 격자 한 칸이 110px인데 거기에 1600px(642KB)을 넣고 있었고,
+ * 첫 화면 열두 칸이 7.5MB였다. 화면용을 더 줄이면 크게 보기가 흐려지니 파일을 나눈다.
  *
- * **원본이 실패해도 사진은 올라간다.** 원본은 있으면 좋은 것이지 사진이 걸리는 조건이
- * 아니다 — 25MB를 넘겼거나 폰 데이터가 끊긴 경우에 화면용까지 같이 버릴 이유가 없다.
- * 다만 **왜 실패했는지는 돌려준다**. 처음엔 조용히 넘겼는데, 그러면 「원본 받기」가
- * 안 보이는 이유를 아무 데서도 알 수 없다 (실제로 그래서 한 번 헤맸다).
+ * **둘 다 실패해도 사진은 올라간다.** 있으면 좋은 것이지 사진이 걸리는 조건이 아니다 —
+ * 폰 데이터가 끊긴 자리에서 화면용까지 같이 버릴 이유가 없다. 썸네일이 없으면 격자가
+ * 화면용을 쓴다(느릴 뿐 깨지지 않는다).
+ *
+ * 원본은 **왜 실패했는지도 돌려준다**. 처음엔 조용히 넘겼는데, 그러면 「원본 받기」가
+ * 안 보이는 이유를 아무 데서도 알 수 없다 (실제로 그래서 한 번 헤맸다). 썸네일은
+ * 안 돌려준다 — 없어도 화면이 그대로라 쓰는 사람에게 할 말이 없다.
  */
 export async function uploadPhoto(
   file: File,
@@ -48,6 +63,8 @@ export async function uploadPhoto(
 ): Promise<{
   pathname: string;
   originalPathname: string | null;
+  /** 격자용 400px. 못 만들었으면 null이고, 그때는 격자가 화면용을 쓴다 */
+  thumbPathname: string | null;
   /** 원본만 실패했을 때 그 이유. 사진 자체는 올라갔다 */
   originalError: string | null;
   width: number;
@@ -84,12 +101,47 @@ export async function uploadPhoto(
     console.warn('[photo] 원본 업로드 실패 (화면용만 남긴다):', originalError);
   }
 
-  return { pathname: put.pathname, originalPathname, originalError, width, height, display: blob };
+  /*
+   * 썸네일은 마지막에 올린다. 화면용·원본이 먼저 자리를 잡아야, 여기서 끊겨도
+   * 사진이 남는다 — 순서가 곧 「무엇을 포기할 수 있는가」다.
+   */
+  let thumbPathname: string | null = null;
+  try {
+    const thumb = await shrinkToJpeg(file, THUMB_EDGE, THUMB_QUALITY);
+    const up = await upload(thumbPath(userId, uuid), thumb.blob, {
+      access: 'private',
+      handleUploadUrl: '/api/blob/upload',
+      contentType: 'image/jpeg',
+      clientPayload: payload,
+    });
+    thumbPathname = up.pathname;
+  } catch (e) {
+    // 격자가 화면용으로 그린다 — 느릴 뿐 안 깨진다
+    console.warn('[photo] 썸네일 업로드 실패 (격자는 화면용을 쓴다):', e);
+  }
+
+  return { pathname: put.pathname, originalPathname, thumbPathname, originalError, width, height, display: blob };
 }
 
-export async function shrinkToJpeg(file: File): Promise<Shrunk> {
+/**
+ * 썸네일 한 장만 저장소에 올린다 — 백필이 쓴다.
+ *
+ * uploadPhoto와 달리 화면용·원본은 건드리지 않는다. 이미 올라가 있는 사진에 작은
+ * 그림만 덧붙이는 자리라서다. 경로는 **올리는 사람 자리**에 만든다 (토큰이 거기 묶인다).
+ */
+export async function uploadThumbOnly(blob: Blob, userId: string): Promise<string> {
+  const up = await upload(thumbPath(userId, crypto.randomUUID()), blob, {
+    access: 'private',
+    handleUploadUrl: '/api/blob/upload',
+    contentType: 'image/jpeg',
+    clientPayload: JSON.stringify({ kind: 'photo' }),
+  });
+  return up.pathname;
+}
+
+export async function shrinkToJpeg(file: File, edge = MAX_EDGE, quality = QUALITY): Promise<Shrunk> {
   const bitmap = await decode(file);
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, edge / Math.max(bitmap.width, bitmap.height));
   const width = Math.round(bitmap.width * scale);
   const height = Math.round(bitmap.height * scale);
 
@@ -102,7 +154,7 @@ export async function shrinkToJpeg(file: File): Promise<Shrunk> {
   bitmap.close?.();
 
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/jpeg', QUALITY)
+    canvas.toBlob(resolve, 'image/jpeg', quality)
   );
   if (!blob) throw new UnreadableImageError('jpeg로 바꾸지 못함');
   return { blob, width, height };

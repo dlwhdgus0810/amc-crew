@@ -42,6 +42,8 @@ export interface PhotoWallGroupView {
   date: string | null;
   startTime: string | null;
   urls: string[];
+  /** urls와 같은 순서의 격자용 400px */
+  thumbs: string[];
   downloads: { url: string; isOriginal: boolean }[];
   count: number;
 }
@@ -91,13 +93,18 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
             </Link>
 
             <div className="wall-grid">
+              {/*
+                * 격자에 그리는 것은 **썸네일(400px)**이고, 눌러서 크게 보는 것은
+                * items에 담긴 화면용(1600px)이다. 한 칸이 폰에서 110px 남짓이라
+                * 여기에 화면용을 넣으면 첫 화면 열두 칸이 7.5MB가 된다.
+                */}
               {g.urls.map((src, i) => (
                 <div key={src} className="wall-cell">
                   {zoom.triggerAt(
                     items,
                     i,
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt="" loading="lazy" />
+                    <img src={g.thumbs[i] ?? src} alt="" loading="lazy" />
                   )}
                 </div>
               ))}

@@ -94,6 +94,16 @@ export function originalPath(userId: string, uuid: string, ext: string): string 
 }
 
 /**
+ * 격자용 작은 사진 자리. 원본과 같은 규칙으로 `-thumb`를 붙인다.
+ *
+ * 확장자가 .jpg라서 **pathAllowed가 이미 받아 준다** — 접미사 자리에 `-thumb`가 들어가고,
+ * 붙는 규칙(JPEG, 4MB)도 화면용과 같아야 맞다. 그래서 검사 함수를 새로 만들지 않는다.
+ */
+export function thumbPath(userId: string, uuid: string): string {
+  return `photos/${userId}/${uuid}-thumb.jpg`;
+}
+
+/**
  * 경로가 자기 자리인지 확인한다. 두 번 쓴다 — 토큰을 내주기 전(그 경로에 토큰이 묶인다)과
  * 「이 사진을 이 모임에 붙여 주세요」를 받을 때. 뒤쪽은 브라우저가 보내는 값이라 꼭 다시 본다.
  * 남의 자리에 쓰거나 남이 올린 것을 자기 모임에 매다는 것을 여기서 막는다.

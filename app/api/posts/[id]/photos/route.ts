@@ -74,6 +74,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       typeof body.originalPathname === 'string' && originalPathAllowed(body.originalPathname, user.id)
         ? body.originalPathname
         : null,
+    /*
+     * 썸네일도 화면용과 같은 규칙(JPEG·4MB)이라 pathAllowed로 본다 — lib/photos.ts의
+     * thumbPath 주석 참고. 자기 자리가 아니면 없는 것으로 친다.
+     */
+    thumbPathname:
+      typeof body.thumbPathname === 'string' && pathAllowed(body.thumbPathname, user.id)
+        ? body.thumbPathname
+        : null,
     width: num(body.width),
     height: num(body.height),
   });

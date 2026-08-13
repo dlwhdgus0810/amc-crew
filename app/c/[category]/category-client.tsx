@@ -326,6 +326,8 @@ interface PostView {
   /** 이 모임의 사진 — 넘겨 볼 몇 장과 실제 전체 장수 */
   photos: {
     urls: string[];
+    /** urls와 같은 순서의 격자용 400px — 카드에 실리는 작은 그림이 이걸 쓴다 */
+    thumbs: string[];
     /** urls와 같은 순서 — 카드에서 크게 봤을 때 받기 버튼이 쓴다 */
     downloads: { url: string; isOriginal: boolean }[];
     count: number;
@@ -447,7 +449,9 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
    * 준 주소로 그린다. 저장 전에는 경로만으로 그림을 띄울 수 없다(비공개 스토어라서).
    */
   /** 만들면서 고른 사진 — 저장할 때 서버가 붙인다. 원본 경로도 같이 들고 간다 */
-  const [fPhoto, setFPhoto] = useState<{ pathname: string; originalPathname: string | null } | null | undefined>(
+  const [fPhoto, setFPhoto] = useState<
+    { pathname: string; originalPathname: string | null; thumbPathname: string | null } | null | undefined
+  >(
     undefined
   );
   const [fPhotoPreview, setFPhotoPreview] = useState<string | null>(null);
@@ -471,7 +475,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
       for (const file of editId ? list.slice(0, MAX_PER_BATCH) : list.slice(0, 1)) {
         const up = await uploadPhoto(file, user!.id, editId ?? undefined);
         if (!editId) {
-          setFPhoto({ pathname: up.pathname, originalPathname: up.originalPathname });
+          setFPhoto({ pathname: up.pathname, originalPathname: up.originalPathname, thumbPathname: up.thumbPathname });
           // 미리보기는 구운 JPEG로 — 고른 파일이 HEIC면 브라우저가 못 그린다
           setFPhotoPreview(URL.createObjectURL(up.display));
           break;
@@ -482,6 +486,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           body: JSON.stringify({
             pathname: up.pathname,
             originalPathname: up.originalPathname,
+            thumbPathname: up.thumbPathname,
             width: up.width,
             height: up.height,
           }),
@@ -735,7 +740,13 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           capacity: fCapacity || undefined,
           ...(fCoHost ? { coHostId: fCoHost } : {}),
           allowNicknames: fNick,
-          ...(fPhoto ? { photoPath: fPhoto.pathname, photoOriginalPath: fPhoto.originalPathname } : {}),
+          ...(fPhoto
+            ? {
+                photoPath: fPhoto.pathname,
+                photoOriginalPath: fPhoto.originalPathname,
+                photoThumbPath: fPhoto.thumbPathname,
+              }
+            : {}),
           repeatWeekly: fRepeat,
           ...(fromSignups ? { fromSignups: true } : {}),
           visibility: fPrivate ? 'link' : 'public',
@@ -1598,7 +1609,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     const art =
       post.photos
         ? {
-            thumb: post.photos.urls[0]!,
+            // 카드에 실리는 작은 그림 — 썸네일이 있으면 그걸 쓴다 (없는 옛 사진은 화면용)
+            thumb: post.photos.thumbs[0] ?? post.photos.urls[0]!,
             items: [
               ...post.photos.urls.map((src, i) => ({
                 src,

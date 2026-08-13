@@ -7,6 +7,7 @@ import { TEST_USERS } from '@/lib/test-users';
 import { CATEGORIES } from '@/lib/categories';
 import { entryLabel } from '@/lib/datefmt';
 import { useViewer } from '../session';
+import { shrinkToJpeg, THUMB_EDGE, uploadThumbOnly } from '@/lib/photo-client';
 
 interface CategoryRequest {
   id: string;
@@ -114,6 +115,16 @@ const T = {
     ko: '한국어 말고는 비워 둬도 돼요. 비우면 그 언어로 보는 사람에게도 적어 둔 말이 그대로 보여요.',
     en: 'Only Korean is required — leave the rest blank and whatever you wrote shows instead.',
   },
+  thumbTitle: { ko: '사진 썸네일 채우기', en: 'Fill in photo thumbnails' },
+  thumbHint: {
+    ko: '격자에 뿌릴 작은 사진(400px)이 없는 옛 사진을 채워요. 브라우저가 원래 사진을 받아 줄여서 올리는 방식이라, 이 탭을 닫지 말고 끝날 때까지 두세요.',
+    en: 'Fills in the small grid image (400px) for older photos. Your browser downloads each one, shrinks it, and uploads it — keep this tab open until it finishes.',
+  },
+  thumbRun: { ko: '채우기 시작', en: 'Start' },
+  thumbBusy: { ko: '{done}/{total} 채우는 중…', en: 'Filling {done}/{total}…' },
+  thumbDone: { ko: '{n}장 채웠어요.', en: 'Filled {n} photos.' },
+  thumbNone: { ko: '채울 사진이 없어요 — 전부 되어 있어요.', en: 'Nothing to fill — they all have one.' },
+  thumbFailed: { ko: '채우다 멈췄어요: {why}', en: 'Stopped: {why}' },
   noticeLinkLabel: { ko: '보러 갈 곳 (선택)', en: 'Where it takes them (optional)' },
   noticeLinkHint: {
     ko: '적어 두면 공지에 「보러 가기」 버튼이 붙어요. 앱 안의 경로만 돼요 — /photos, /reviews, /p/모임아이디처럼요.',
@@ -264,7 +275,10 @@ export default function AdminPage() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const isKakaoAdmin = useViewer().isAdmin;
+  const viewer = useViewer();
+  const isKakaoAdmin = viewer.isAdmin;
+  /** 썸네일 백필 진행 상황 — null이면 안 돌고 있다 */
+  const [thumbBusy, setThumbBusy] = useState<{ done: number; total: number } | null>(null);
   const [deleted, setDeleted] = useState<
     { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
   >(null);
@@ -748,6 +762,56 @@ export default function AdminPage() {
 
 
 
+  /**
+   * 썸네일 백필 — 줄이는 일은 **여기(브라우저)서** 한다.
+   *
+   * 서버에서 줄이려면 이미지 라이브러리를 새로 들여야 하는데, 한 번 돌릴 일 때문에
+   * 의존성을 늘리지 않는다. 올릴 때 쓰는 코드(shrinkToJpeg)를 그대로 쓴다.
+   *
+   * 열 장씩 받아서 다 올리고 다시 물어보기를 되풀이한다. 한 번에 전부 받으면 사진이
+   * 수십 장일 때 메모리에 그만큼 쌓인다.
+   */
+  async function backfillThumbs() {
+    const me = viewer.user?.id;
+    if (!me) return;
+    setThumbBusy({ done: 0, total: 0 });
+    setMsg(null);
+    let done = 0;
+    try {
+      for (;;) {
+        const res = await fetch('/api/admin/thumb-backfill', { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? t(T.failed));
+        const photos = data.photos as { id: string; url: string }[];
+        if (photos.length === 0) break;
+
+        // 남은 수는 물어볼 때마다 줄어든다 — 전체는 「지금까지 한 것 + 남은 것」이다
+        const total = done + data.left;
+        setThumbBusy({ done, total });
+
+        for (const photo of photos) {
+          const blob = await (await fetch(photo.url)).blob();
+          const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+          const thumb = await shrinkToJpeg(file, THUMB_EDGE, 0.7);
+          const pathname = await uploadThumbOnly(thumb.blob, me);
+          const save = await fetch('/api/admin/thumb-backfill', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: photo.id, thumbPathname: pathname }),
+          });
+          if (!save.ok) throw new Error((await save.json().catch(() => null))?.error ?? t(T.failed));
+          done++;
+          setThumbBusy({ done, total });
+        }
+      }
+      setMsg({ type: 'ok', text: done > 0 ? t(T.thumbDone, { n: done }) : t(T.thumbNone) });
+    } catch (e) {
+      setMsg({ type: 'err', text: t(T.thumbFailed, { why: e instanceof Error ? e.message : String(e) }) });
+    } finally {
+      setThumbBusy(null);
+    }
+  }
+
   /** 캐시를 비우고 AMC에서 다시 받아온 뒤, 극장 목록도 함께 조회한다 */
 
   return (
@@ -895,6 +959,22 @@ export default function AdminPage() {
           </p>
           <button className="danger" disabled={busy} onClick={clearAllSelections}>
             {t(T.clearAll)}
+          </button>
+        </div>
+      )}
+
+      {/*
+        * 썸네일 백필 — 한 번 돌리고 나면 쓸 일이 없다. 그래도 남겨 둔다:
+        * 올릴 때 썸네일만 실패한 사진이 생길 수 있고(회선이 끊기면 그렇다) 그때 다시 돌린다.
+        */}
+      {isKakaoAdmin && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>{t(T.thumbTitle)}</h2>
+          <p className="subtitle" style={{ marginBottom: 14 }}>
+            {t(T.thumbHint)}
+          </p>
+          <button className="secondary" disabled={Boolean(thumbBusy)} onClick={backfillThumbs}>
+            {thumbBusy ? t(T.thumbBusy, { done: thumbBusy.done, total: thumbBusy.total }) : t(T.thumbRun)}
           </button>
         </div>
       )}
