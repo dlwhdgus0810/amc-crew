@@ -31,6 +31,20 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-13T16:30',
+    title: { ko: '알림은 프로필 맨 위 오른쪽에 있어요', en: 'Alerts are at the top right of Profile' },
+    items: [
+      {
+        ko: '알림함이 프로필 한참 아래에 있어서 끝까지 내려야 닿았어요. 이제 프로필을 열면 제목 옆에 🔔 버튼이 바로 보여요.',
+        en: 'The alerts screen was buried at the bottom of Profile. Now there’s a 🔔 button right next to the title.',
+      },
+      {
+        ko: '안 읽은 게 있으면 그 버튼에 숫자로 같이 보여요.',
+        en: 'If anything’s unread, the count sits on the button.',
+      },
+    ],
+  },
+  {
     at: '2026-08-13T15:00',
     notable: true,
     title: { ko: '모임 후기를 남기고, 모아 볼 수 있어요', en: 'Leave a review, and read everyone else’s' },

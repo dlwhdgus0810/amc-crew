@@ -6,7 +6,6 @@ import { adminIds, getSessionUser } from '@/lib/auth';
 import { getDb } from '@/lib/db/index';
 import { posts } from '@/lib/db/schema';
 import { getPostView } from '@/lib/db/posts';
-import { isAnonymous } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,10 +34,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!isHost && !adminIds().includes(user.id)) return await errJson(E.photosPublicHostOnly, 403);
 
   /*
-   * 익명 카테고리는 켤 수 없다. 이름을 가려 둔 자리인데 사진에는 얼굴이 그대로 찍히므로,
-   * 사진만 열면 가린 의미가 없다 — 정산·친구 추가를 막아 둔 것과 같은 이유다.
+   * 익명 카테고리(별보러가자)도 켤 수 있다.
+   *
+   * 처음에는 막아 뒀다 — 이름을 가려 둔 자리인데 사진에는 얼굴이 그대로 찍히므로.
+   * 열기로 한 것은 그 판단을 여는 사람에게 맡긴다는 뜻이고, 대신 화면에서 무엇이
+   * 나가는지 적어 준다 (photo-panel.tsx의 openHintAnon).
+   *
+   * 가려 두는 나머지는 그대로다. 이 스위치는 사진만 연다 — 명단도 댓글도 여전히
+   * 「익명」이고, 사진 아래 「누가 올림」도 이름이 안 붙는다.
    */
-  if (isAnonymous(post.category)) return await errJson(E.photosPublicAnon, 403);
 
   const body = await req.json().catch(() => null);
   const open = body?.public === true;

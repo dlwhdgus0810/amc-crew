@@ -11,7 +11,7 @@ import { users } from '@/lib/db/schema';
 import { friendsOf, listFriendships } from '@/lib/db/friends';
 import { nameOf } from '@/lib/store';
 import { siteUrl } from '@/lib/site';
-import { catName, getCategory } from '@/lib/categories';
+import { catName, getCategory, isAnonymous } from '@/lib/categories';
 import SkyBackdrop from '@/app/sky-backdrop';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
@@ -119,11 +119,16 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
    */
   const ratings = post?.rating ? await listRatings(id) : [];
   /*
-   * 사진은 그 모임에 참가한 사람과 관리자에게만 내려간다.
+   * 사진은 그 모임에 참가한 사람과 관리자에게만 내려간다 (호스트가 열어 둔 모임이면 회원 누구나).
    * post.photos(요약)가 딱 그 기준으로 채워지므로, 그게 있는지로 판단하면 기준이 하나로 유지된다 —
    * 여기서 따로 판정하면 언젠가 둘이 어긋난다.
+   *
+   * 익명 카테고리에서는 「누가 올렸는지」를 응답에서 지운다 — 사진을 열어 두면 안 온
+   * 사람도 이 목록을 받으므로, 회원번호가 실려 나가면 가려 둔 것이 그대로 읽힌다.
    */
-  const photos = post?.photos ? await listPhotos(id) : [];
+  const photos = post?.photos
+    ? await listPhotos(id, { anonymous: isAnonymous(post.category), viewerId: user?.id })
+    : [];
   /*
    * 후기는 회원 누구나 읽는다 — 사진과 달리 참가자로 좁히지 않는다.
    * 「저기 재미있었대」를 보고 다음에 가보는 것이 이 글의 쓸모라서다.

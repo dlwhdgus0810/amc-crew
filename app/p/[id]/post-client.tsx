@@ -431,11 +431,8 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           label={`${catLabel}${post.title ? ` 〈${post.title}〉` : ''}`}
           photosPublic={post.photosPublic}
           isPrivate={post.visibility === 'link'}
-          /* 익명 카테고리는 아무에게도 안 그린다 — 사진에는 얼굴이 그대로 찍힌다 */
-          canOpen={
-            !isAnonymous(post.category) &&
-            (post.authorId === user.id || post.coHost?.id === user.id || isAdmin)
-          }
+          isAnon={isAnonymous(post.category)}
+          canOpen={post.authorId === user.id || post.coHost?.id === user.id || isAdmin}
         />
       )}
 

@@ -225,13 +225,25 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
 }
 
 /** 한 모임의 사진 전부 — 모임 상세에서만 쓴다 (올린 사람 이름은 참가자 명단에서 찾는다) */
-export async function listPhotos(postId: string): Promise<PhotoView[]> {
+export async function listPhotos(postId: string, opts?: { anonymous?: boolean; viewerId?: string }): Promise<PhotoView[]> {
   const db = await getDb();
   const rows = await db
     .select()
     .from(postPhotos)
     .where(and(eq(postPhotos.postId, postId), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
+  /*
+   * 익명 카테고리에서는 「누가 올렸는지」를 응답에서 지운다.
+   *
+   * 화면에 이름을 안 그리는 것만으로는 부족하다 — 여기 담긴 회원번호가 그대로 나가면
+   * 개발자 도구를 여는 것만으로 어느 사진을 누가 올렸는지 읽힌다 (명단의 회원번호를
+   * anon:N으로 바꿔 두는 lib/db/posts.ts와 같은 이유다).
+   *
+   * 보고 있는 본인 것만 진짜 번호를 남긴다. 그 값으로 「내가 올린 사진」의 지우기
+   * 버튼이 결정되고, 그건 본인이 이미 아는 사실이라 새로 새는 것이 없다.
+   */
+  const hide = (userId: string) =>
+    opts?.anonymous && userId !== opts.viewerId ? '' : userId;
   // 화면용과 원본을 한 번에 서명한다 — 장마다 두 번 부르면 왕복이 두 배가 된다
   const signed = await signedUrls([
     ...rows.map((r) => r.pathname),
@@ -240,7 +252,7 @@ export async function listPhotos(postId: string): Promise<PhotoView[]> {
   return rows
     .map((r) => ({
       id: r.id,
-      userId: r.userId,
+      userId: hide(r.userId),
       url: signed.get(r.pathname) ?? '',
       // 열지 말고 받게 — 저장소가 파일로 내려보내도록 표를 붙인다
       downloadUrl:

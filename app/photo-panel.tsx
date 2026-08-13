@@ -57,6 +57,12 @@ const T = {
     en: 'Open, and any member sees these in the Photos page. Otherwise only people who were there, and admins.',
     es: 'Si la abres, cualquier miembro las ve en la página de Fotos. Si no, solo quienes estuvieron y los administradores.',
   },
+  /* 익명 카테고리에서만 덧붙는다 — 이름은 가려도 얼굴은 안 가려진다 */
+  openHintAnon: {
+    ko: '여기는 이름이 「익명」으로 나오는 곳이지만, 사진에는 얼굴이 그대로 찍혀요. 열면 안 온 사람도 그 얼굴들을 봐요.',
+    en: 'Names here show as “Anonymous”, but faces still show in photos. Open it, and people who weren’t there see them.',
+    es: 'Aquí los nombres salen como «Anónimo», pero en las fotos se siguen viendo las caras. Si la abres, las verá quien no estuvo.',
+  },
   /* 비공개 모임에서만 덧붙는다 — 켜면 모임이 있었다는 사실까지 나간다 */
   openHintPrivate: {
     ko: '이 모임은 비공개예요. 사진을 열면 안 부른 사람에게도 이 모임이 있었다는 것과 찍힌 얼굴들이 보여요.',
@@ -86,6 +92,7 @@ export default function PhotoPanel({
   label,
   photosPublic,
   isPrivate,
+  isAnon,
   canOpen,
 }: {
   postId: string;
@@ -101,9 +108,11 @@ export default function PhotoPanel({
   photosPublic: boolean;
   /** 비공개(link) 모임인지 — 켤 때 한 줄 더 일러 준다 */
   isPrivate: boolean;
+  /** 익명 카테고리인지 — 여기도 켤 수 있지만, 얼굴은 안 가려진다고 적어 준다 */
+  isAnon: boolean;
   /**
-   * 스위치를 그릴지. 호스트·같이 연 사람·관리자만이고, 익명 카테고리에서는 아무에게도
-   * 안 그린다 (서버가 다시 확인한다 — app/api/posts/[id]/photos-public).
+   * 스위치를 그릴지 — 호스트·같이 연 사람·관리자만.
+   * (서버가 다시 확인한다 — app/api/posts/[id]/photos-public)
    */
   canOpen: boolean;
 }) {
@@ -272,7 +281,9 @@ export default function PhotoPanel({
             </button>
           </div>
           <p className="hint" style={{ margin: '10px 0 0' }}>{t(T.openHint)}</p>
-          {isPrivate && !photosPublic && <p className="warn-line" style={{ margin: '6px 0 0' }}>{t(T.openHintPrivate)}</p>}
+          {/* 켜기 전에만 — 이미 켜 둔 사람에게 계속 붙여 두면 잔소리가 된다 */}
+          {!photosPublic && isAnon && <p className="warn-line" style={{ margin: '6px 0 0' }}>{t(T.openHintAnon)}</p>}
+          {!photosPublic && isPrivate && <p className="warn-line" style={{ margin: '6px 0 0' }}>{t(T.openHintPrivate)}</p>}
         </div>
       )}
 
