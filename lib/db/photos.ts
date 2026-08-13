@@ -17,12 +17,16 @@ export interface PhotoView {
   userId: string;
   url: string;
   /**
-   * 손대지 않은 파일의 주소 — 「원본 받기」가 이걸 연다.
+   * 받기 주소 — **언제나 있다.**
    *
-   * null인 경우가 둘이다: 이 기능이 생기기 전에 올린 사진, 그리고 서명이 실패한 경우.
-   * 어느 쪽이든 화면은 그 줄을 안 그린다 — 눌러도 안 되는 링크를 두지 않는다.
+   * 원본이 저장돼 있으면 그 파일, 없으면 화면에 보이는 줄인 사진을 준다.
+   * 예전에는 원본이 없으면 받기 줄 자체를 안 그렸는데, 그러면 「왜 이 사진만 받기가
+   * 없지」가 되고 고장인지 원래 그런 건지 구분이 안 된다. 받을 것은 언제나 있으므로
+   * 버튼도 언제나 둔다 — 무엇을 받는지는 아래 값으로 갈라 말해 준다.
    */
-  originalUrl: string | null;
+  downloadUrl: string;
+  /** 위 주소가 올린 파일 그대로인지 (false면 줄인 사진이다) */
+  downloadIsOriginal: boolean;
   width: number | null;
   height: number | null;
   createdAt: string;
@@ -87,7 +91,11 @@ export async function listPhotos(postId: string): Promise<PhotoView[]> {
       userId: r.userId,
       url: signed.get(r.pathname) ?? '',
       // 열지 말고 받게 — 저장소가 파일로 내려보내도록 표를 붙인다
-      originalUrl: asDownload(r.originalPathname ? signed.get(r.originalPathname) : null),
+      downloadUrl:
+        asDownload(r.originalPathname ? signed.get(r.originalPathname) : null) ??
+        asDownload(signed.get(r.pathname)) ??
+        '',
+      downloadIsOriginal: Boolean(r.originalPathname && signed.get(r.originalPathname)),
       width: r.width,
       height: r.height,
       createdAt: r.createdAt.toISOString(),
@@ -130,7 +138,8 @@ export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: 
     userId: r.userId,
     // 지울 때 쓰는 값이라 서명하지 않는다 (del은 경로를 받는다)
     url: '',
-    originalUrl: null,
+    downloadUrl: '',
+    downloadIsOriginal: false,
     pathname: r.pathname,
     width: r.width,
     height: r.height,

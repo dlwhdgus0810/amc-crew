@@ -51,8 +51,10 @@ export interface PhotoItem {
   id: string;
   userId: string;
   url: string;
-  /** 원본 주소 — 없으면 「원본 받기」가 안 뜬다 (예전에 올린 사진) */
-  originalUrl?: string | null;
+  /** 받기 주소 — 원본이 있으면 그 파일, 없으면 보이는 사진 */
+  downloadUrl?: string | null;
+  /** 그 주소가 올린 파일 그대로인지 */
+  downloadIsOriginal?: boolean;
 }
 
 export default function PhotoPanel({
@@ -90,7 +92,8 @@ export default function PhotoPanel({
     src: p.url,
     name: label,
     by: t(T.by, { name: nameOf(p.userId) }),
-    originalUrl: p.originalUrl ?? null,
+    downloadUrl: p.downloadUrl ?? null,
+    downloadIsOriginal: Boolean(p.downloadIsOriginal),
   }));
 
   async function pick(files: FileList | null) {

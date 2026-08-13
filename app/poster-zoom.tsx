@@ -21,6 +21,8 @@ const T = {
   next: { ko: '다음 사진', en: 'Next', es: 'Siguiente' },
   count: { ko: '{i} / {n}', en: '{i} / {n}', es: '{i} / {n}' },
   original: { ko: '원본 받기', en: 'Download original', es: 'Descargar original' },
+  /* 원본이 저장되기 전에 올라온 사진 — 받을 수 있는 것은 보이는 줄인 쪽뿐이다 */
+  saveShrunk: { ko: '사진 받기', en: 'Download photo', es: 'Descargar foto' },
 };
 
 export interface Zoomed {
@@ -29,12 +31,14 @@ export interface Zoomed {
   /** 사진이면 올린 사람 — 상영표 포스터에는 없다 */
   by?: string;
   /**
-   * 손대지 않은 파일의 주소. 있으면 「원본 받기」가 뜬다.
+   * 받기 주소. 사진에는 언제나 있고, 상영표 포스터에는 없다.
    *
-   * 화면에 보이는 src는 올릴 때 줄여 구운 것이라 화질이 원본과 다르다. 이 기능이
-   * 생기기 전에 올린 사진과 상영표 포스터에는 없다.
+   * 원본이 저장돼 있으면 그 파일, 없으면 화면에 보이는 줄인 사진이다.
+   * 어느 쪽인지는 아래 값이 말하고, 버튼 이름이 그에 따라 갈린다.
    */
-  originalUrl?: string | null;
+  downloadUrl?: string | null;
+  /** 위 주소가 올린 파일 그대로인지 — 버튼 이름이 갈린다 */
+  downloadIsOriginal?: boolean;
 }
 
 export function usePosterZoom() {
@@ -109,7 +113,7 @@ export function usePosterZoom() {
           <img src={cur.src} alt={cur.name} />
           <span className="poster-zoom-name">
             {cur.by ? `${cur.name} · ${cur.by}` : cur.name}
-            {cur.originalUrl && (
+            {cur.downloadUrl && (
               <>
                 {' · '}
                 {/*
@@ -118,13 +122,13 @@ export function usePosterZoom() {
                  * 보던 화면이 날아가지 않는다.
                  */}
                 <a
-                  href={cur.originalUrl}
+                  href={cur.downloadUrl}
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   className="poster-zoom-orig"
                 >
-                  {t(T.original)}
+                  {t(cur.downloadIsOriginal ? T.original : T.saveShrunk)}
                 </a>
               </>
             )}
