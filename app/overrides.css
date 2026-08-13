@@ -1901,9 +1901,18 @@ h2 {
   border-radius: inherit;
   pointer-events: none;
 }
-/* 글이 유성 위에 오게 — 유성 층이 위치를 가진 요소라 그냥 두면 글자를 덮는다 */
+/*
+ * 글이 유성 위에 오게 — 유성 층이 위치를 가진 요소라 그냥 두면 글자를 덮는다.
+ *
+ * **position은 주지 않는다.** 한때 `position: relative`를 같이 걸었는데, 그러면 카드 안
+ * 모든 자식이 「자리를 가진 요소」가 되어 그 아래 absolute 요소의 기준을 가로챈다.
+ * 실제로 둘러보기 바둑판 뷰가 그것 때문에 깨졌다 — 카테고리 아이콘이 카드 왼쪽 위
+ * (15, 14)로 가야 하는데 중간 div를 기준으로 잡아 (30, 62), 즉 제목 글자 위로 올라왔다.
+ *
+ * .car-card가 flex라서 자식은 flex 항목이고, **flex 항목에는 position 없이도 z-index가
+ * 먹는다.** 그래서 쌓임 순서만 정하고 기준은 카드에 그대로 남긴다.
+ */
 .car-card > *:not(.meteors) {
-  position: relative;
   z-index: 1;
 }
 
