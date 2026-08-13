@@ -6,7 +6,7 @@ import { getProfiles, localName } from '@/lib/store';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { addParticipants, createPost, getPost, listPosts, notifyAddedToPost } from '@/lib/db/posts';
 import { clearSignups, listSignups } from '@/lib/db/signups';
-import { originalPathAllowed, pathAllowed } from '@/lib/photos';
+import { originalPathAllowed, pathAllowed, thumbPathAllowed } from '@/lib/photos';
 import { addPhoto } from '@/lib/db/photos';
 import { friendIds } from '@/lib/db/friends';
 import { createRecurringRule } from '@/lib/db/recurring';
@@ -25,9 +25,9 @@ function ownedOriginal(value: unknown, userId: string): string | null {
   return typeof value === 'string' && originalPathAllowed(value, userId) ? value : null;
 }
 
-/** 썸네일도 같은 검사를 거친다 — 규칙이 화면용과 같아서 pathAllowed를 그대로 쓴다 */
+/** 썸네일은 경로 모양이 달라 따로 본다 (`-thumb`) */
 function ownedThumb(value: unknown, userId: string): string | null {
-  return typeof value === 'string' && pathAllowed(value, userId) ? value : null;
+  return typeof value === 'string' && thumbPathAllowed(value, userId) ? value : null;
 }
 
 export async function GET(req: NextRequest) {

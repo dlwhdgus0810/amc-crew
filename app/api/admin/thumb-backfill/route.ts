@@ -5,7 +5,7 @@ import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db/index';
 import { postPhotos } from '@/lib/db/schema';
 import { signedUrls } from '@/lib/blob';
-import { pathAllowed } from '@/lib/photos';
+import { thumbPathAllowed } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
    * 경로 주인이 사진 주인과 달라도 괜찮다 — 청소는 「행이 가리키는 파일인가」로만
    * 가리므로(lib/db/photos.ts의 allPhotoPaths) 이 파일도 그대로 지켜진다.
    */
-  if (!pathAllowed(thumbPathname, user.id)) return await errJson(E.photoBadUrl, 400);
+  if (!thumbPathAllowed(thumbPathname, user.id)) return await errJson(E.photoBadUrl, 400);
 
   await db.update(postPhotos).set({ thumbPathname }).where(eq(postPhotos.id, id));
   return NextResponse.json({ ok: true });

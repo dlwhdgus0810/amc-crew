@@ -4,7 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView, isParticipant } from '@/lib/db/posts';
 import { addPhoto, countPhotos, listPhotos } from '@/lib/db/photos';
-import { MAX_PHOTOS_PER_POST, originalPathAllowed, pathAllowed } from '@/lib/photos';
+import { MAX_PHOTOS_PER_POST, originalPathAllowed, pathAllowed, thumbPathAllowed } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,12 +74,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       typeof body.originalPathname === 'string' && originalPathAllowed(body.originalPathname, user.id)
         ? body.originalPathname
         : null,
-    /*
-     * 썸네일도 화면용과 같은 규칙(JPEG·4MB)이라 pathAllowed로 본다 — lib/photos.ts의
-     * thumbPath 주석 참고. 자기 자리가 아니면 없는 것으로 친다.
-     */
+    // 썸네일은 경로 모양이 달라 따로 본다 (`-thumb`). 자기 자리가 아니면 없는 것으로 친다
     thumbPathname:
-      typeof body.thumbPathname === 'string' && pathAllowed(body.thumbPathname, user.id)
+      typeof body.thumbPathname === 'string' && thumbPathAllowed(body.thumbPathname, user.id)
         ? body.thumbPathname
         : null,
     width: num(body.width),

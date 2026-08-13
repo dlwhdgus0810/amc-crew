@@ -8,6 +8,7 @@ import {
   ORIGINAL_TYPES,
   originalPathAllowed,
   pathAllowed,
+  thumbPathAllowed,
 } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
@@ -45,7 +46,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
          * 원본은 HEIC일 수 있고 훨씬 크다.
          */
         const isOriginal = originalPathAllowed(pathname, user.id);
-        if (!isOriginal && !pathAllowed(pathname, user.id)) {
+        /*
+         * 썸네일도 따로 본다. pathAllowed로도 통과하긴 하는데(접미사 자리에 -thumb가
+         * 들어간다) 그건 우연이고, 저장소가 무작위 접미사를 붙인 뒤에는 통과하지 못한다 —
+         * 실제로 그 어긋남 때문에 백필이 멈췄다 (lib/photos.ts의 thumbPathAllowed).
+         */
+        if (!isOriginal && !thumbPathAllowed(pathname, user.id) && !pathAllowed(pathname, user.id)) {
           throw new Error('경로가 올바르지 않습니다');
         }
 

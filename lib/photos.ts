@@ -95,12 +95,27 @@ export function originalPath(userId: string, uuid: string, ext: string): string 
 
 /**
  * 격자용 작은 사진 자리. 원본과 같은 규칙으로 `-thumb`를 붙인다.
- *
- * 확장자가 .jpg라서 **pathAllowed가 이미 받아 준다** — 접미사 자리에 `-thumb`가 들어가고,
- * 붙는 규칙(JPEG, 4MB)도 화면용과 같아야 맞다. 그래서 검사 함수를 새로 만들지 않는다.
  */
 export function thumbPath(userId: string, uuid: string): string {
   return `photos/${userId}/${uuid}-thumb.jpg`;
+}
+
+/**
+ * 썸네일 자리인지. **pathAllowed로 대신할 수 없다** — 처음에 그렇게 했다가 백필이 멈췄다.
+ *
+ * pathAllowed의 접미사 자리는 하나뿐인데 `-thumb`가 그 자리를 먼저 차지한다. 그래서
+ * 올리기 직전(`<uuid>-thumb.jpg`)에는 통과하고, 저장소가 무작위 접미사를 붙여 돌려준
+ * `<uuid>-thumb-a1b2c3.jpg`에서 걸린다. 검사하는 시점이 둘이라 앞에서만 통과한 것이다.
+ *
+ * `-orig`이 이 문제를 안 겪은 이유가 바로 규칙에 `-orig`을 따로 적어 뒀기 때문이고,
+ * 여기도 같은 모양으로 적는다 — 접미사 자리를 비워 둔다.
+ *
+ * 붙는 규칙(JPEG, 4MB)은 화면용과 같다. 갈라지는 것은 경로 모양뿐이다.
+ */
+export function thumbPathAllowed(pathname: string, ownerId: string): boolean {
+  const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+  const suffix = '(-[A-Za-z0-9]+)?';
+  return new RegExp(`^photos\\/${ownerId}\\/${uuid}-thumb${suffix}\\.jpg$`).test(pathname);
 }
 
 /**
