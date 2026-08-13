@@ -114,6 +114,11 @@ const T = {
     ko: '한국어 말고는 비워 둬도 돼요. 비우면 그 언어로 보는 사람에게도 적어 둔 말이 그대로 보여요.',
     en: 'Only Korean is required — leave the rest blank and whatever you wrote shows instead.',
   },
+  noticeLinkLabel: { ko: '보러 갈 곳 (선택)', en: 'Where it takes them (optional)' },
+  noticeLinkHint: {
+    ko: '적어 두면 공지에 「보러 가기」 버튼이 붙어요. 앱 안의 경로만 돼요 — /photos, /reviews, /p/모임아이디처럼요.',
+    en: 'Fill this in and the notice gets a “Take me there” button. Paths inside the app only — /photos, /reviews, /p/<id>.',
+  },
   noticeTitlePh: { ko: '제목 — 예: 참가하시면 참가 버튼을 눌러주세요', en: 'Title — e.g. Tap Join if you’re coming' },
   noticeTitlePhEn: { ko: 'Title (English)', en: 'Title (English)' },
   noticeBodyPh: { ko: '내용 (선택) — 줄을 나눠 써도 그대로 보여요', en: 'Body (optional) — line breaks are kept' },
@@ -312,6 +317,7 @@ export default function AdminPage() {
       bodyKo: string | null;
       bodyEn: string | null;
       bodyEs: string | null;
+      linkPath: string | null;
       targets: string[];
       reads: { userId: string; seenAt: string }[];
       active: boolean;
@@ -324,6 +330,8 @@ export default function AdminPage() {
   const [noticeBodyEn, setNoticeBodyEn] = useState('');
   const [noticeTitleEs, setNoticeTitleEs] = useState('');
   const [noticeBodyEs, setNoticeBodyEs] = useState('');
+  /** 「보러 가기」가 데려갈 앱 안의 경로 — 비워 두면 버튼 없이 「알겠어요」만 */
+  const [noticeLink, setNoticeLink] = useState('');
   const [noticeBusy, setNoticeBusy] = useState(false);
   /** 목록에서 내려 둔 카테고리 (관리자만 고친다) */
   const [hidden, setHidden] = useState<string[]>([]);
@@ -401,6 +409,7 @@ export default function AdminPage() {
           bodyKo: noticeBody.trim(),
           bodyEn: noticeBodyEn.trim(),
           bodyEs: noticeBodyEs.trim(),
+          linkPath: noticeLink.trim(),
           targets: noticePicked ? noticeTargets : [],
         }),
       });
@@ -412,6 +421,7 @@ export default function AdminPage() {
       setNoticeBody('');
       setNoticeBodyEn('');
       setNoticeBodyEs('');
+      setNoticeLink('');
       setMsg({ type: 'ok', text: noticePicked ? t(T.noticePostedSome) : t(T.noticePosted) });
       await loadNotices();
     } catch (e) {
@@ -458,6 +468,7 @@ export default function AdminPage() {
           bodyKo: n.bodyKo ?? '',
           bodyEn: n.bodyEn ?? '',
           bodyEs: n.bodyEs ?? '',
+          linkPath: n.linkPath ?? '',
           targets: [],
         }),
       });
@@ -980,6 +991,20 @@ export default function AdminPage() {
             />
             <p className="hint" style={{ marginTop: 8 }}>
               {t(T.noticeEnHint)}
+            </p>
+
+            <div className="field-label" style={{ marginTop: 16 }}>
+              {t(T.noticeLinkLabel)}
+            </div>
+            <input
+              type="text"
+              placeholder="/photos"
+              value={noticeLink}
+              maxLength={200}
+              onChange={(e) => setNoticeLink(e.target.value)}
+            />
+            <p className="hint" style={{ marginTop: 8 }}>
+              {t(T.noticeLinkHint)}
             </p>
 
             <div className="field-label" style={{ marginTop: 16 }}>

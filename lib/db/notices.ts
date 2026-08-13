@@ -23,6 +23,8 @@ export interface NoticeView {
   bodyKo: string | null;
   bodyEn: string | null;
   bodyEs: string | null;
+  /** 「보러 가기」가 데려갈 앱 안의 경로 — 없으면 버튼도 없다 */
+  linkPath: string | null;
   /** 빈 배열이면 전체 */
   targets: string[];
   active: boolean;
@@ -39,6 +41,7 @@ function view(r: typeof notices.$inferSelect): NoticeView {
     bodyKo: r.bodyKo,
     bodyEn: r.bodyEn,
     bodyEs: r.bodyEs,
+    linkPath: r.linkPath,
     targets: r.targets ?? [],
     active: r.active,
     createdAt: r.createdAt.toISOString(),
@@ -153,6 +156,7 @@ export interface NoticeInput {
   bodyKo: string | null;
   bodyEn: string | null;
   bodyEs: string | null;
+  linkPath: string | null;
 }
 
 /**

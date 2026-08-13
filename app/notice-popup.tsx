@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useT } from './i18n';
 import { useViewer } from './session';
 
@@ -27,6 +28,7 @@ const SEEN_MAX = 20;
 const T = {
   label: { ko: '공지', en: 'Notice', es: 'Aviso' },
   ok: { ko: '알겠어요', en: 'Got it', es: 'Entendido' },
+  go: { ko: '보러 가기', en: 'Take me there', es: 'Ir a verlo' },
 };
 
 interface Notice {
@@ -37,6 +39,8 @@ interface Notice {
   bodyKo: string | null;
   bodyEn: string | null;
   bodyEs: string | null;
+  /** 있으면 「보러 가기」가 붙는다 — 앱 안의 경로만 온다 (서버가 거른다) */
+  linkPath: string | null;
   updatedAt: string;
 }
 
@@ -76,6 +80,7 @@ function seenList(): string[] {
 export default function NoticePopup() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const viewer = useViewer();
+  const router = useRouter();
   const t = useT();
 
   // 로그인한 회원에게만. 정지 가리개나 온보딩이 떠 있을 때는 그 위에 또 얹지 않는다.
@@ -129,6 +134,18 @@ export default function NoticePopup() {
     setNotice(null);
   }
 
+  /*
+   * 「보러 가기」 — 닫는 것과 같은 기록을 남기고 그 화면으로 간다.
+   *
+   * 읽음 처리를 빼면 「보러 가기」로 나간 사람에게 다음에 또 뜬다. 본 사람에게
+   * 다시 띄우는 것이 이 창에서 가장 하면 안 되는 일이라(파일 첫 주석), 나가는 길이
+   * 둘이어도 남기는 것은 하나로 맞춘다.
+   */
+  function go(path: string) {
+    close();
+    router.push(path);
+  }
+
   if (!notice) return null;
 
   return (
@@ -145,9 +162,21 @@ export default function NoticePopup() {
         {(notice.bodyKo || notice.bodyEn || notice.bodyEs) && (
           <p className="notice-body">{t(msg(notice.bodyKo, notice.bodyEn, notice.bodyEs))}</p>
         )}
-        <button className="notice-ok" onClick={close} autoFocus>
-          {t(T.ok)}
-        </button>
+        {notice.linkPath ? (
+          <div className="notice-acts">
+            {/* 가는 쪽을 오른쪽에 두고 autoFocus를 준다 — 공지를 올린 목적이 그쪽이다 */}
+            <button className="notice-later" onClick={close}>
+              {t(T.ok)}
+            </button>
+            <button className="notice-ok" onClick={() => go(notice.linkPath!)} autoFocus>
+              {t(T.go)}
+            </button>
+          </div>
+        ) : (
+          <button className="notice-ok" onClick={close} autoFocus>
+            {t(T.ok)}
+          </button>
+        )}
       </div>
     </div>
   );

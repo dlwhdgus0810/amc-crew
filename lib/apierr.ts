@@ -272,6 +272,11 @@ export const E = {
   },
   noticeTitle: { ko: '공지 제목은 1~60자로 입력해주세요.', en: 'The notice title must be 1–60 characters.', es: 'El título del aviso debe tener entre 1 y 60 caracteres.' },
   noticeBody: { ko: '공지 내용은 1000자 이하로 입력해주세요.', en: 'The notice must be 1000 characters or fewer.', es: 'El aviso admite 1000 caracteres como máximo.' },
+  noticeLink: {
+    ko: '보러 갈 곳은 앱 안의 경로만 넣을 수 있어요 (/photos처럼).',
+    en: 'The link must be a path inside the app (like /photos).',
+    es: 'El enlace debe ser una ruta dentro de la app (como /photos).',
+  },
   noticeNotFound: { ko: '공지를 찾을 수 없어요.', en: 'Notice not found.', es: 'Aviso no encontrado.' },
   amcNoShowtimes: {
     ko: 'AMC API에서 The Odyssey 회차를 찾지 못했습니다.',

@@ -226,6 +226,8 @@ CREATE TABLE IF NOT EXISTS notices (
   body_ko text,
   body_en text,
   body_es text,
+  -- 「보러 가기」가 데려갈 앱 안의 경로 — lib/db/schema.ts의 주석 참고
+  link_path text,
   targets jsonb NOT NULL DEFAULT '[]',
   active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),

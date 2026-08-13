@@ -35,6 +35,18 @@ export async function readNoticeInput(req: NextRequest): Promise<Parsed> {
     return { error: await errJson(E.noticeBody, 400) };
   }
 
+  /*
+   * 「보러 가기」 경로 — 앱 안만 받는다.
+   *
+   * `//evil.com`은 브라우저가 프로토콜 상대 주소로 읽어 밖으로 나간다. 그래서
+   * 「/로 시작」만으로는 부족하고 `//`를 따로 거른다 — lib/auth.ts의 safeNextPath와 같다.
+   * 여기서 거르지 않으면 공지 하나로 회원 전체를 임의의 사이트에 보낼 수 있다.
+   */
+  const linkPath = str(body?.linkPath);
+  if (linkPath && (!linkPath.startsWith('/') || linkPath.startsWith('//'))) {
+    return { error: await errJson(E.noticeLink, 400) };
+  }
+
   const raw = Array.isArray(body?.targets) ? body.targets : [];
   if (raw.length > TARGETS_MAX || raw.some((v: unknown) => typeof v !== 'string' || !v)) {
     return { error: await errJson(E.badRequest, 400) };
@@ -50,6 +62,7 @@ export async function readNoticeInput(req: NextRequest): Promise<Parsed> {
       bodyKo: bodyKo || null,
       bodyEn: bodyEn || null,
       bodyEs: bodyEs || null,
+      linkPath: linkPath || null,
     },
     targets,
   };

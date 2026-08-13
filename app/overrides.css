@@ -258,12 +258,36 @@ body[data-standalone='yes'] .site-header {
   background: var(--accent);
   border: 2px solid var(--surface);
 }
+/*
+ * 모아보기 탭의 NEW 딱지 — 점(.tab-dot)과 같은 자리, 대신 글자라 조금 더 넓다.
+ *
+ * 점으로 두지 않은 이유: 프로필 칸의 점이 「알림이 왔다」를 뜻하는데, 옆 칸에 같은
+ * 점이 있으면 그것도 뭔가 왔다는 뜻으로 읽힌다. 여기는 온 것이 없고 화면이 새 것이다.
+ */
+.tabbar a .tab-new {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 13px;
+  letter-spacing: 0.02em;
+}
 @media (min-width: 1024px) {
   /* 좌측 레일에서는 줄 오른쪽 끝에 — 알림 뱃지도 같은 자리로 옮긴다(globals.css:606) */
   .tabbar a .tab-dot {
     position: static;
     margin: 0 0 0 auto;
     border: none;
+  }
+  .tabbar a .tab-new {
+    position: static;
+    margin: 0 0 0 auto;
   }
 }
 
@@ -1883,6 +1907,29 @@ a.feed-review-meta {
   width: 100%;
   margin-top: 18px;
   min-height: 44px;
+}
+/*
+ * 「보러 가기」가 붙은 공지 — 버튼 둘을 한 줄에.
+ *
+ * 가는 쪽에 넓이를 더 준다(2:3). 둘을 같은 크기로 두면 어느 쪽이 이 창의 용건인지가
+ * 안 드러나서, 읽는 사람이 늘 왼쪽(닫기)을 누르게 된다.
+ */
+.notice-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+.notice-acts .notice-later {
+  flex: 2;
+  min-height: 44px;
+  background: var(--surface-2);
+  color: var(--text-mid);
+  border: none;
+}
+.notice-acts .notice-ok {
+  flex: 3;
+  width: auto;
+  margin-top: 0;
 }
 
 /* 관리자 화면의 공지 목록 */

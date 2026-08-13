@@ -140,9 +140,52 @@ function useSession() {
   return { isAdmin, loggedIn, name, avatar, unread, pathname };
 }
 
+/**
+ * 모아보기 탭의 NEW 딱지 — **한 번 들어가 보면 사라진다.**
+ *
+ * 날짜로만 끊으면 그 사이에 앱을 안 연 사람은 딱지를 못 보고, 이미 본 사람에게는
+ * 남은 기간 내내 붙어 있는다. 「봤나」로 끊어야 사람마다 맞는다.
+ *
+ * 그래도 끝나는 날을 함께 둔다. 그게 없으면 다음 달에 들어온 회원에게 이 탭이
+ * 여전히 새 것으로 보인다 — 그 사람에게는 앱 전체가 새 것이라 딱지가 뜻을 잃는다.
+ *
+ * 기기마다 따로 센다(localStorage). 서버에 남길 만한 일이 아니고, 폰에서 봤는데
+ * 노트북에 딱지가 남아 있는 정도는 이 딱지가 감당할 수 있는 어긋남이다.
+ *
+ * 첫 그림에서는 늘 안 보인다 — 서버에는 localStorage가 없어서, 켜 둔 채로 그리면
+ * 서버와 브라우저의 첫 그림이 어긋나 하이드레이션이 깨진다.
+ */
+const KEEP_NEW_KEY = 'kk-keep-seen';
+const KEEP_NEW_UNTIL = '2026-09-13';
+
+function useKeepNew(pathname: string): boolean {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (new Date().toISOString().slice(0, 10) > KEEP_NEW_UNTIL) return setShow(false);
+    // 들어와 있는 동안 지운다 — 나갈 때까지 기다리면 자기가 보고 있는 화면에 NEW가 붙어 있다
+    if (pathname.startsWith('/photos') || pathname.startsWith('/reviews')) {
+      try {
+        localStorage.setItem(KEEP_NEW_KEY, '1');
+      } catch {
+        // 저장소를 못 쓰면 딱지가 계속 붙는다 — 기능이 막히는 것보다 낫다
+      }
+      return setShow(false);
+    }
+    try {
+      setShow(localStorage.getItem(KEEP_NEW_KEY) !== '1');
+    } catch {
+      setShow(false);
+    }
+  }, [pathname]);
+
+  return show;
+}
+
 /** 떠 있는 하단 탭바 — 좁은 폰에서도 줄바꿈되지 않고, 콘텐츠 위에 얹힌다 */
 export default function NavLinks() {
   const { loggedIn, name, avatar, unread, pathname } = useSession();
+  const showKeepNew = useKeepNew(pathname);
   const t = useT();
 
   return (
@@ -171,6 +214,7 @@ export default function NavLinks() {
         >
           <KeepIcon />
           <span>{t(T.keep)}</span>
+          {showKeepNew && <span className="tab-new">NEW</span>}
         </Link>
         {loggedIn ? (
           <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>
