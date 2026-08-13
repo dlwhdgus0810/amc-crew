@@ -556,6 +556,24 @@ const N = {
   byActor: { ko: '{text} — {name}', en: '{text} — {name}', es: '{text} — {name}' },
   commentLine: { ko: '{text} — {name}: {body}', en: '{text} — {name}: {body}', es: '{text} — {name}: {body}' },
   btnPost: { ko: '모임 보기', en: 'View meetup', es: 'Ver la quedada' },
+  /*
+   * 「무엇이 바뀌었나」 — 변경 알림에 붙는 조각들.
+   *
+   * 예전에는 바뀐 **결과**만 적었다(「피클볼 모임 변경 · 8/9(토) 오후 7:00 · 스타디움」).
+   * 받는 사람은 그게 원래 그랬는지 방금 바뀐 것인지 알 수가 없어서, 결국 모임을 열어
+   * 기억과 맞춰봐야 했다. 무엇이 어떻게 바뀌었는지 그 자리에서 읽히게 한다.
+   */
+  chDate: { ko: '날짜', en: 'Date', es: 'Fecha' },
+  chTime: { ko: '시간', en: 'Time', es: 'Hora' },
+  chPlace: { ko: '장소', en: 'Place', es: 'Lugar' },
+  chTitle: { ko: '제목', en: 'Title', es: 'Título' },
+  chCapacity: { ko: '정원', en: 'Capacity', es: 'Aforo' },
+  /** 메모는 길어서 본문을 싣지 않는다 — 바뀌었다는 사실만 */
+  chMemo: { ko: '메모가 바뀌었어요', en: 'The note changed', es: 'La nota cambió' },
+  chFromTo: { ko: '{label} {from} → {to}', en: '{label} {from} → {to}', es: '{label} {from} → {to}' },
+  chNone: { ko: '없음', en: 'none', es: 'ninguno' },
+  chNoLimit: { ko: '무제한', en: 'no limit', es: 'sin límite' },
+  chPeople: { ko: '{n}명', en: '{n}', es: '{n}' },
   btnComment: { ko: '댓글 보기', en: 'View comments', es: 'Ver comentarios' },
   btnOther: { ko: '다른 모임 보기', en: 'See other meetups', es: 'Ver otras quedadas' },
   // 친구 알림 — 주어가 모임이 아니라 사람이라 이름이 앞에 온다
@@ -584,6 +602,88 @@ function describeForNotification(
   const titlePart = title ? ` 〈${title}〉` : '';
   const when = whenLabelShort(date, startTime, locale);
   return `${cat?.emoji ?? ''} ${catName(category, locale)} ${pick(locale, label)}${titlePart} · ${when} · ${location}`;
+}
+
+/** 수정 전후를 견줄 때 보는 칸들 — updatePost가 넘긴다 */
+interface PostShape {
+  title: string | null;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  location: string;
+  description: string | null;
+  capacity: number | null;
+}
+
+/**
+ * 「오후 7:00–9:00」 — 오전·오후가 같으면 한 번만 적는다.
+ *
+ * 그냥 이어 붙이면 「오후 7:00–오후 9:00」이 되어 한 줄에 같은 말이 두 번 들어간다.
+ * 영어는 뒤에 붙는 자리라(7:00 PM) 앞쪽에서 뗀다.
+ */
+function timeSpan(start: string | null, end: string | null, locale: Locale): string {
+  if (!start) return pick(locale, N.chNone);
+  const a = timeLabel(start, locale);
+  if (!end) return a;
+  const b = timeLabel(end, locale);
+  const [aHead, aRest] = a.split(' ');
+  const [bHead, bRest] = b.split(' ');
+  // ko: 「오후 7:00」 — 앞이 오전/오후
+  if (aRest && bRest && aHead === bHead) return `${aHead} ${aRest}–${bRest}`;
+  // en: 「7:00 PM」 — 뒤가 AM/PM
+  if (aRest && bRest && aRest === bRest) return `${aHead}–${b}`;
+  return `${a}–${b}`;
+}
+
+/**
+ * 무엇이 어떻게 바뀌었는지 한 줄로.
+ *
+ * 참가자가 다시 확인해야 하는 것만 본다 — 날짜·시간·장소·제목·정원, 그리고 메모는
+ * 바뀌었다는 사실만. 비공개 여부나 닉네임 허용은 「가야 하나」를 바꾸지 않으므로 뺀다.
+ *
+ * 아무것도 못 알아보면 빈 문자열을 준다. 그때는 부르는 쪽이 예전처럼 결과만 적는다 —
+ * 「모임 변경」이라고만 하고 마는 것보다는 지금 값이라도 보이는 편이 낫다.
+ */
+function describeChanges(before: PostShape, after: PostShape, locale: Locale): string {
+  const parts: string[] = [];
+  const fromTo = (label: Msg, from: string, to: string) =>
+    parts.push(pick(locale, N.chFromTo, { label: pick(locale, label), from, to }));
+
+  if (before.date !== after.date) {
+    const none = pick(locale, N.chNone);
+    fromTo(
+      N.chDate,
+      before.date ? dateLabelShort(before.date, locale) : none,
+      after.date ? dateLabelShort(after.date, locale) : none
+    );
+  }
+  // 끝 시각만 바뀐 것도 시간이 바뀐 것이다 (「몇 시까지」를 보고 일정을 잡는다)
+  if (before.startTime !== after.startTime || before.endTime !== after.endTime) {
+    fromTo(
+      N.chTime,
+      timeSpan(before.startTime, before.endTime, locale),
+      timeSpan(after.startTime, after.endTime, locale)
+    );
+  }
+  if (before.location !== after.location) fromTo(N.chPlace, before.location, after.location);
+  if ((before.title ?? '') !== (after.title ?? '')) {
+    const none = pick(locale, N.chNone);
+    fromTo(N.chTitle, before.title || none, after.title || none);
+  }
+  if (before.capacity !== after.capacity) {
+    const cap = (n: number | null) => (n == null ? pick(locale, N.chNoLimit) : pick(locale, N.chPeople, { n }));
+    fromTo(N.chCapacity, cap(before.capacity), cap(after.capacity));
+  }
+  if ((before.description ?? '') !== (after.description ?? '')) parts.push(pick(locale, N.chMemo));
+
+  return parts.join(' · ');
+}
+
+/** 「무엇이 바뀌었나」를 실은 한 줄 — describeForNotification과 머리말은 같고 꼬리만 다르다 */
+function describeChangeLine(category: string, title: string | null, changes: string, locale: Locale): string {
+  const cat = getCategory(category);
+  const titlePart = title ? ` 〈${title}〉` : '';
+  return `${cat?.emoji ?? ''} ${catName(category, locale)} ${pick(locale, N.updated)}${titlePart} · ${changes}`;
 }
 
 interface Notice {
@@ -1054,20 +1154,38 @@ export async function updatePost(input: {
 }): Promise<void> {
   const db = await getDb();
   const recipients = input.silent ? [] : await participantIdsExcept(input.postId, input.actorId);
-  const notice = await buildNotice(recipients, (locale) =>
-    pick(locale, N.byActor, {
-      text: describeForNotification(
-        input.category,
-        N.updated,
-        input.date,
-        input.startTime,
-        input.location,
-        input.title,
-        locale
-      ),
+  /*
+   * 무엇이 바뀌었는지 적으려면 **고치기 전 값**이 있어야 한다. 아래 update 전에 읽는다.
+   * 보낼 사람이 없으면 읽지 않는다 — 아무도 못 볼 문장을 만들려고 왕복을 늘리지 않는다.
+   */
+  const before = recipients.length > 0 ? await getPost(input.postId) : undefined;
+  const after = {
+    title: input.title,
+    date: input.date,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    location: input.location,
+    description: input.description,
+    capacity: input.capacity,
+  };
+  const notice = await buildNotice(recipients, (locale) => {
+    const changes = before ? describeChanges(before, after, locale) : '';
+    return pick(locale, N.byActor, {
+      // 알아본 변경이 없으면 예전처럼 지금 값을 적는다 (「모임 변경」만 남기는 것보다 낫다)
+      text: changes
+        ? describeChangeLine(input.category, input.title, changes, locale)
+        : describeForNotification(
+            input.category,
+            N.updated,
+            input.date,
+            input.startTime,
+            input.location,
+            input.title,
+            locale
+          ),
       name: isAnonymous(input.category) ? pick(locale, N.anon) : input.actorName(locale),
-    })
-  );
+    });
+  });
 
   const set = {
     title: input.title,
