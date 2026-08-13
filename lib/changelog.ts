@@ -129,8 +129,8 @@ const ENTRIES: ChangelogEntry[] = [
         en: 'If you only use one of them, leave the other box blank — that line simply won’t appear on the settle-up screen.',
       },
       {
-        ko: '얼마 전에 Zelle만 쓰시는 분이 Venmo 칸에 「Zelle」이라고 적어두셔서, 보내기 링크가 실제로 @Zelle이라는 모르는 사람에게 걸린 적이 있어요. 그래서 프로필과 정산 화면에 안내를 적어뒀어요.',
-        en: 'Someone who only uses Zelle typed “Zelle” into the Venmo box, and the pay link pointed at a stranger whose handle really is @Zelle. There’s a note about it on both screens now.',
+        ko: '안 쓴다는 뜻으로 「Zelle」이나 「없음」처럼 적어두면, 앱은 그걸 아이디로 읽어서 보내기 링크를 그 이름의 모르는 사람에게 걸어요. 그래서 프로필과 정산 화면에 안내를 적어뒀어요.',
+        en: 'Typing something like “Zelle” or “none” to mean “I don’t use this” doesn’t work — the app reads it as a handle and points the pay link at a stranger by that name. There’s a note about it on both screens now.',
       },
       {
         ko: '저장해 둔 Zelle 전화번호는 숫자를 끊어서 보여줘요 — 옮겨 적을 때 틀리지 않게요.',
