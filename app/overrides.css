@@ -1697,20 +1697,6 @@ a.wall-head {
  * 카드처럼 큰 버튼으로 두지 않는다. 사진을 보러 온 화면이라 격자가 주인공이고,
  * 이건 가끔 누르는 것이다. 오른쪽 끝에 붙여 머리줄의 연장처럼 보이게 한다.
  */
-.wall-save {
-  display: block;
-  margin: 0 0 6px auto;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--text-mid);
-  font-size: 13px;
-}
-.wall-save:disabled {
-  color: var(--text-dim);
-}
-
 /* 자른 나머지 — 모임 화면으로 보낸다 */
 a.wall-more {
   display: flex;
