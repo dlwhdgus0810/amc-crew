@@ -41,7 +41,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!post) return await errJson(E.postNotFound, 404);
   if (!post.photos) return await errJson(E.photoParticipantOnly, 403);
 
-  const photos = await listPhotos(id, { anonymous: isAnonymous(post.category), viewerId: user.id });
+  // 받기 주소는 갔던 사람과 관리자에게만 (lib/db/photos.ts의 canDownload)
+  const photos = await listPhotos(id, {
+    anonymous: isAnonymous(post.category),
+    viewerId: user.id,
+    canDownload: isAdmin(user) || post.participants.some((p) => p.id === user.id),
+  });
   return NextResponse.json({
     photos: photos.map((p) => ({ id: p.id, url: p.url, downloadUrl: p.downloadUrl })),
   });

@@ -350,7 +350,8 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
       settlementSummaries(myPostIds, viewerId),
       commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
       ratingSummaries(ratableIds, viewerId),
-      photoStrips(photoPostIds),
+      // 보이는 범위는 photoPostIds, **받기는 myPostIds** — 열어 둔 모임은 보이기만 한다
+      photoStrips(photoPostIds, myPostIds),
       reviewCounts(pastIds),
     ]);
   const userById = new Map(userRows.map((u) => [u.id, u]));

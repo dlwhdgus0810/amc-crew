@@ -105,13 +105,23 @@ export interface PhotoStrip {
    *
    * 처음에는 안 실었는데, 그래서 카드에서 연 확대 창에만 받기 버튼이 없었다 —
    * 모임에 들어가서 열면 있고 목록에서 열면 없으니, 쓰는 사람에게는 고장으로 보인다.
+   *
+   * **갔던 모임에만 채운다** (아래 downloadableIds). 호스트가 사진을 열어 둔 모임은
+   * 보이기는 해도 받기는 안 된다 — 연 것은 보여 주기까지다.
    */
   downloads: { url: string; isOriginal: boolean }[];
   /** 자른 수가 아니라 실제 전체 장수 */
   count: number;
 }
 
-export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoStrip>> {
+export async function photoStrips(
+  postIds: string[],
+  /**
+   * 이 중 **받기까지 되는** 모임. 안 주면 전부 된다 (부르는 쪽이 이미 좁혀 놓은 경우).
+   * 사진이 보이는 범위보다 좁다 — photosPublic으로 열린 모임은 여기 안 들어간다.
+   */
+  downloadableIds?: string[]
+): Promise<Map<string, PhotoStrip>> {
   const out = new Map<string, PhotoStrip>();
   if (postIds.length === 0) return out;
 
@@ -142,6 +152,7 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
   const shown = [...byPost.values()].flatMap((list) => list.slice(0, STRIP_LIMIT));
   const signed = await signedUrls(shown.flatMap(displayAndThumb));
 
+  const canGet = downloadableIds ? new Set(downloadableIds) : null;
   for (const [postId, list] of byPost) {
     const urls: string[] = [];
     const thumbs: string[] = [];
@@ -151,7 +162,9 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
       if (!url) continue; // 서명을 못 만든 장은 통째로 뺀다 (깨진 그림보다 낫다)
       urls.push(url);
       thumbs.push(thumbOr(signed, p, url));
-      downloads.push({ url: downloadPath(p.id), isOriginal: Boolean(p.originalPathname) });
+      if (!canGet || canGet.has(postId)) {
+        downloads.push({ url: downloadPath(p.id), isOriginal: Boolean(p.originalPathname) });
+      }
     }
     // 한 장도 서명을 못 만들었으면 아예 안 내보낸다
     if (urls.length) out.set(postId, { urls, thumbs, downloads, count: list.length });
@@ -180,7 +193,13 @@ export interface PhotoWallGroup {
   urls: string[];
   /** urls와 같은 순서의 격자용 400px (없는 옛 사진은 urls의 것이 들어간다) */
   thumbs: string[];
-  /** urls와 같은 순서의 받기 주소 */
+  /**
+   * urls와 같은 순서의 받기 주소. **안 갔던 모임이면 빈 배열이다.**
+   *
+   * 호스트가 연 것은 「보여 주기」다. 안 갔던 사람이 사진을 가져가는 것까지 연 것은
+   * 아니라서, 그 묶음에는 받기 주소를 안 싣는다 — 라우트도 같은 기준으로 막는다
+   * (app/api/photos/[photoId]/download).
+   */
   downloads: { url: string; isOriginal: boolean }[];
   /** 자른 수가 아니라 그 모임의 실제 전체 장수 */
   count: number;
@@ -273,6 +292,7 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
   for (const m of mine) {
     const list = byPost.get(m.id);
     if (!list) continue; // 사진이 없는 모임은 묶음을 만들지 않는다
+    const joined = joinedIds.has(m.id);
     const urls: string[] = [];
     const thumbs: string[] = [];
     const downloads: PhotoWallGroup['downloads'] = [];
@@ -281,12 +301,13 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       if (!url) continue;
       urls.push(url);
       thumbs.push(thumbOr(signed, p, url));
-      downloads.push({ url: downloadPath(p.id), isOriginal: Boolean(p.originalPathname) });
+      // 갔던 모임에만 받기를 붙인다 (위 downloads 주석)
+      if (joined) downloads.push({ url: downloadPath(p.id), isOriginal: Boolean(p.originalPathname) });
     }
     if (urls.length) {
       out.push({
         // 안 갔던 모임이면 id를 안 내보낸다 (위 postId 주석)
-        postId: joinedIds.has(m.id) ? m.id : null,
+        postId: joined ? m.id : null,
         category: m.category,
         title: m.title,
         date: m.date,
@@ -302,7 +323,21 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
 }
 
 /** 한 모임의 사진 전부 — 모임 상세에서만 쓴다 (올린 사람 이름은 참가자 명단에서 찾는다) */
-export async function listPhotos(postId: string, opts?: { anonymous?: boolean; viewerId?: string }): Promise<PhotoView[]> {
+export async function listPhotos(
+  postId: string,
+  opts?: {
+    anonymous?: boolean;
+    viewerId?: string;
+    /**
+     * 받기 주소를 붙일지. **안 갔던 사람에게는 안 붙인다.**
+     *
+     * 이 화면에 사진이 보이는 것과 파일을 가져갈 수 있는 것은 다르다 — 호스트가
+     * photosPublic으로 연 것은 보여 주기까지다. 라우트도 같은 기준으로 막는다
+     * (app/api/photos/[photoId]/download).
+     */
+    canDownload?: boolean;
+  }
+): Promise<PhotoView[]> {
   const db = await getDb();
   const rows = await db
     .select()
@@ -333,7 +368,7 @@ export async function listPhotos(postId: string, opts?: { anonymous?: boolean; v
       userId: hide(r.userId),
       url: signed.get(r.pathname) ?? '',
       thumbUrl: thumbOr(signed, r, signed.get(r.pathname) ?? ''),
-      downloadUrl: downloadPath(r.id),
+      downloadUrl: opts?.canDownload === false ? '' : downloadPath(r.id),
       downloadIsOriginal: Boolean(r.originalPathname),
       width: r.width,
       height: r.height,

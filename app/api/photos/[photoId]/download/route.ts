@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { and, eq, isNull } from 'drizzle-orm';
 import { E, errJson } from '@/lib/apierr';
-import { getSessionUser } from '@/lib/auth';
+import { adminIds, getSessionUser } from '@/lib/auth';
 import { getDb } from '@/lib/db/index';
 import { postPhotos } from '@/lib/db/schema';
 import { getPostView } from '@/lib/db/posts';
@@ -35,13 +35,24 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pho
     .where(and(eq(postPhotos.id, photoId), isNull(postPhotos.deletedAt)));
   if (!row) return await errJson(E.photoNotFound, 404);
 
-  /*
-   * 볼 수 있는 사람인지는 post.photos로 가린다 — 참가자·관리자, 그리고 호스트가 열어 둔
-   * 모임(photosPublic)이면 채워지고 그 밖에는 null이다. 화면이 쓰는 것과 **같은 판정**이라
-   * 둘이 어긋날 수 없다.
-   */
   const post = await getPostView(row.postId, user.id);
   if (!post?.photos) return await errJson(E.photoNotFound, 404);
+
+  /*
+   * **보는 것과 받는 것을 여기서 가른다.**
+   *
+   * post.photos는 참가자·관리자에 더해 호스트가 열어 둔 모임(photosPublic)에도 채워진다.
+   * 그건 「보여 주기」까지고, 안 갔던 사람이 파일을 가져가는 것까지 연 것은 아니다.
+   * 그래서 받기는 갔던 사람과 관리자만이다.
+   *
+   * 화면에서도 그 묶음에는 받기 주소를 안 싣지만(lib/db/photos.ts의 myPhotoWall),
+   * 주소는 짐작할 수 있으므로 여기서 다시 본다 — 화면에서만 감추면 감춘 것이 아니다.
+   *
+   * 익명 카테고리에서도 이 검사가 맞다. 명단은 남의 회원번호만 가리고 보고 있는 본인
+   * 번호는 그대로 남기기 때문이다 (lib/db/posts.ts).
+   */
+  const joined = post.participants.some((p) => p.id === user.id);
+  if (!joined && !adminIds().includes(user.id)) return await errJson(E.photoNotFound, 404);
 
   // 올린 그대로의 파일이 있으면 그것, 없으면 화면에 보이는 줄인 사진
   const pathname = row.originalPathname ?? row.pathname;

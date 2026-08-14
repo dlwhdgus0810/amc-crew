@@ -259,8 +259,11 @@ export default function PhotoPanel({
           * 같은 일이라, 버튼만 하나 늘고 고를 것이 생긴다.
           *
           * 올리기와 같은 줄에 둔다. 받는 사람이 곧 올리는 사람이라 서로 멀리 둘 이유가 없다.
+          *
+          * 받기 주소가 하나도 없으면 안 그린다 — 호스트가 사진만 열어 둔 모임을 안 갔던
+          * 사람이 보고 있는 경우다. 서버가 그 사람에게는 주소를 안 싣는다(lib/db/photos.ts).
           */}
-        {photos.length > 1 && (
+        {photos.length > 1 && photos.some((p) => p.downloadUrl) && (
           <div className="field-row" style={{ marginTop: 12 }}>
             <button
               className="secondary"

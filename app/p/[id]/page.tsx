@@ -126,8 +126,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
    * 익명 카테고리에서는 「누가 올렸는지」를 응답에서 지운다 — 사진을 열어 두면 안 온
    * 사람도 이 목록을 받으므로, 회원번호가 실려 나가면 가려 둔 것이 그대로 읽힌다.
    */
+  /*
+   * 받기는 갔던 사람과 관리자만. 사진이 보이는 것(post.photos)보다 좁다 — 호스트가
+   * photosPublic으로 연 것은 보여 주기까지고, 파일을 가져가는 것까지는 아니다.
+   */
+  const canDownload = Boolean(
+    post?.photos && user && (isAdmin || post.participants.some((p) => p.id === user.id))
+  );
   const photos = post?.photos
-    ? await listPhotos(id, { anonymous: isAnonymous(post.category), viewerId: user?.id })
+    ? await listPhotos(id, { anonymous: isAnonymous(post.category), viewerId: user?.id, canDownload })
     : [];
   /*
    * 후기는 회원 누구나 읽는다 — 사진과 달리 참가자로 좁히지 않는다.
