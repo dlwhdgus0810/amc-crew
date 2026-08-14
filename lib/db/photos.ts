@@ -203,6 +203,13 @@ export interface PhotoWallGroup {
   downloads: { url: string; isOriginal: boolean }[];
   /** 자른 수가 아니라 그 모임의 실제 전체 장수 */
   count: number;
+  /**
+   * 호스트가 이 모임 사진을 회원 전체에게 열어 뒀는지.
+   *
+   * 안 갔던 사람에게는 「내가 왜 이걸 보고 있지」의 답이고, 갔던 사람에게는 「우리
+   * 사진이 지금 열려 있다」는 알림이다. 그래서 양쪽 모두에게 붙인다.
+   */
+  photosPublic: boolean;
 }
 
 /**
@@ -251,6 +258,7 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       title: posts.title,
       date: posts.date,
       startTime: posts.startTime,
+      photosPublic: posts.photosPublic,
     })
     .from(posts)
     .where(
@@ -316,6 +324,7 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
         thumbs,
         downloads,
         count: list.length,
+        photosPublic: m.photosPublic,
       });
     }
   }

@@ -33,6 +33,13 @@ const T = {
     es: 'Aún no hay fotos: sube una desde una quedada a la que fuiste.',
   },
   more: { ko: '+{n}장 더', en: '+{n} more', es: '+{n} más' },
+  /* 호스트가 회원 전체에게 열어 둔 묶음 */
+  open: { ko: '전체공개', en: 'Open to all', es: 'Abierta a todos' },
+  openWhy: {
+    ko: '이 모임 사진은 회원 누구나 볼 수 있게 열려 있어요.',
+    en: 'These photos are open to every member.',
+    es: 'Estas fotos están abiertas a todos los miembros.',
+  },
 };
 
 export interface PhotoWallGroupView {
@@ -47,6 +54,8 @@ export interface PhotoWallGroupView {
   thumbs: string[];
   downloads: { url: string; isOriginal: boolean }[];
   count: number;
+  /** 호스트가 회원 전체에게 열어 뒀는지 — 머리줄에 「전체공개」를 붙인다 */
+  photosPublic: boolean;
 }
 
 export default function PhotosClient({ initial }: { initial: { groups: PhotoWallGroupView[] } | null }) {
@@ -102,6 +111,11 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
                 </span>
                 <span className="wall-when">{whenLabelShort(g.date, g.startTime, locale)}</span>
                 {g.title && <span className="wall-title">〈{g.title}〉</span>}
+                {g.photosPublic && (
+                  <span className="wall-open" title={t(T.openWhy)}>
+                    {t(T.open)}
+                  </span>
+                )}
               </Link>
             ) : (
               <span className="wall-head">
@@ -110,6 +124,11 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
                 </span>
                 <span className="wall-when">{whenLabelShort(g.date, g.startTime, locale)}</span>
                 {g.title && <span className="wall-title">〈{g.title}〉</span>}
+                {g.photosPublic && (
+                  <span className="wall-open" title={t(T.openWhy)}>
+                    {t(T.open)}
+                  </span>
+                )}
               </span>
             )}
 

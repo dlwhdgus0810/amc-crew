@@ -1698,6 +1698,22 @@ h2 {
  * 이건 가끔 누르는 것이다. 오른쪽 끝에 붙여 머리줄의 연장처럼 보이게 한다.
  */
 /* 자른 나머지 — 모임 화면으로 보낸다 */
+/*
+ * 「전체공개」 딱지 — 호스트가 회원 전체에게 열어 둔 묶음.
+ *
+ * 카테고리 알약(.wall-cat)과 나란히 서지만 색은 안 쓴다. 카테고리는 저마다 색이 있어서
+ * 그 옆에 또 다른 색을 두면 둘 다 이름표처럼 보인다 — 이건 상태라서 테두리만 두른다.
+ */
+.wall-open {
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-mid);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .wall-more {
   display: flex;
   align-items: center;
