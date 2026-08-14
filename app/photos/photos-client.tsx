@@ -36,7 +36,8 @@ const T = {
 };
 
 export interface PhotoWallGroupView {
-  postId: string;
+  /** 안 갔던 모임이면 null — 그 모임으로 가는 길을 아예 안 준다 */
+  postId: string | null;
   category: string;
   title: string | null;
   date: string | null;
@@ -83,14 +84,34 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
         }));
 
         return (
-          <section key={g.postId} className="wall-group">
-            <Link href={`/p/${g.postId}`} className="wall-head">
-              <span className="wall-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
-                {cat?.emoji} {label}
+          <section key={g.urls[0] ?? g.postId} className="wall-group">
+            {/*
+              * 머리줄은 **갔던 모임일 때만** 모임 화면으로 간다.
+              *
+              * 안 갔는데 여기 실린 것은 호스트가 사진을 열어 뒀다는 뜻인데(photosPublic),
+              * 그 사람이 연 것은 사진이지 모임이 아니다. 비공개 모임이면 이 링크가 곧
+              * 초대장이고 — 링크를 아는 사람만 열 수 있다는 전제가 여기서 깨진다 —
+              * 익명 모임이면 명단과 댓글이 딸려 온다.
+              *
+              * 안 갔으면 같은 줄을 글자로만 그린다. 어느 모임 사진인지는 알아야 하니까.
+              */}
+            {g.postId ? (
+              <Link href={`/p/${g.postId}`} className="wall-head">
+                <span className="wall-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
+                  {cat?.emoji} {label}
+                </span>
+                <span className="wall-when">{whenLabelShort(g.date, g.startTime, locale)}</span>
+                {g.title && <span className="wall-title">〈{g.title}〉</span>}
+              </Link>
+            ) : (
+              <span className="wall-head">
+                <span className="wall-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
+                  {cat?.emoji} {label}
+                </span>
+                <span className="wall-when">{whenLabelShort(g.date, g.startTime, locale)}</span>
+                {g.title && <span className="wall-title">〈{g.title}〉</span>}
               </span>
-              <span className="wall-when">{whenLabelShort(g.date, g.startTime, locale)}</span>
-              {g.title && <span className="wall-title">〈{g.title}〉</span>}
-            </Link>
+            )}
 
             <div className="wall-grid">
               {/*
@@ -108,12 +129,18 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
                   )}
                 </div>
               ))}
-              {/* 실은 것보다 많으면 나머지는 모임 화면에서 본다 (목록 응답을 가볍게 두려고 자른다) */}
-              {g.count > g.urls.length && (
-                <Link href={`/p/${g.postId}#photos`} className="wall-cell wall-more">
-                  {t(T.more, { n: g.count - g.urls.length })}
-                </Link>
-              )}
+              {/*
+                * 실은 것보다 많으면 나머지는 모임 화면에서 본다 (목록 응답을 가볍게 두려고 자른다).
+                * 안 갔던 모임이면 그 길이 없으므로 남은 장수만 적는다 — 여기까지가 열어 준 몫이다.
+                */}
+              {g.count > g.urls.length &&
+                (g.postId ? (
+                  <Link href={`/p/${g.postId}#photos`} className="wall-cell wall-more">
+                    {t(T.more, { n: g.count - g.urls.length })}
+                  </Link>
+                ) : (
+                  <span className="wall-cell wall-more">{t(T.more, { n: g.count - g.urls.length })}</span>
+                ))}
             </div>
           </section>
         );

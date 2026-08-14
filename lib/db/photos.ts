@@ -21,9 +21,13 @@ import { signedUrls } from '../blob';
  * (app/api/posts/[id]/photos/[photoId]/download).
  *
  * 서명하지 않아도 되는 것이 덤이다 — 눌러야 쓰이는 주소라 대부분 그냥 버려졌다.
+ *
+ * **모임 id는 안 넣는다.** 넣었더니 모아보기 응답에 그 값이 그대로 실렸고, 비공개
+ * 모임은 /p/{id}가 곧 초대장이라 사진만 열어 둔 모임의 id가 회원 전체에게 나갔다.
+ * 어느 모임인지는 사진 id로 서버가 찾는다.
  */
-function downloadPath(postId: string, photoId: string): string {
-  return `/api/posts/${postId}/photos/${photoId}/download`;
+function downloadPath(photoId: string): string {
+  return `/api/photos/${photoId}/download`;
 }
 
 export interface PhotoView {
@@ -147,7 +151,7 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
       if (!url) continue; // 서명을 못 만든 장은 통째로 뺀다 (깨진 그림보다 낫다)
       urls.push(url);
       thumbs.push(thumbOr(signed, p, url));
-      downloads.push({ url: downloadPath(postId, p.id), isOriginal: Boolean(p.originalPathname) });
+      downloads.push({ url: downloadPath(p.id), isOriginal: Boolean(p.originalPathname) });
     }
     // 한 장도 서명을 못 만들었으면 아예 안 내보낸다
     if (urls.length) out.set(postId, { urls, thumbs, downloads, count: list.length });
@@ -157,7 +161,17 @@ export async function photoStrips(postIds: string[]): Promise<Map<string, PhotoS
 
 /** 사진 모아보기(/photos) — 모임 하나가 한 묶음 */
 export interface PhotoWallGroup {
-  postId: string;
+  /**
+   * 그 모임으로 가는 길. **안 갔던 모임이면 null이다.**
+   *
+   * 여기 실렸는데 안 갔다는 것은 호스트가 사진을 열어 뒀다는 뜻인데(photosPublic),
+   * 그 사람이 연 것은 사진이지 모임이 아니다. 비공개 모임은 /p/{id}가 곧 초대장이라
+   * id를 실어 보내는 것만으로 초대가 나간다 — 화면에서 링크를 안 그려도 개발자 도구에
+   * 남으므로, 값 자체를 안 준다.
+   *
+   * 묶음을 가리키는 열쇠로도 쓸 수 없게 되어서, 화면은 첫 사진 주소로 key를 만든다.
+   */
+  postId: string | null;
   category: string;
   title: string | null;
   date: string | null;
@@ -267,11 +281,12 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       if (!url) continue;
       urls.push(url);
       thumbs.push(thumbOr(signed, p, url));
-      downloads.push({ url: downloadPath(m.id, p.id), isOriginal: Boolean(p.originalPathname) });
+      downloads.push({ url: downloadPath(p.id), isOriginal: Boolean(p.originalPathname) });
     }
     if (urls.length) {
       out.push({
-        postId: m.id,
+        // 안 갔던 모임이면 id를 안 내보낸다 (위 postId 주석)
+        postId: joinedIds.has(m.id) ? m.id : null,
         category: m.category,
         title: m.title,
         date: m.date,
@@ -318,7 +333,7 @@ export async function listPhotos(postId: string, opts?: { anonymous?: boolean; v
       userId: hide(r.userId),
       url: signed.get(r.pathname) ?? '',
       thumbUrl: thumbOr(signed, r, signed.get(r.pathname) ?? ''),
-      downloadUrl: downloadPath(postId, r.id),
+      downloadUrl: downloadPath(r.id),
       downloadIsOriginal: Boolean(r.originalPathname),
       width: r.width,
       height: r.height,

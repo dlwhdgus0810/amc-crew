@@ -1638,7 +1638,7 @@ h2 {
 .wall-group {
   margin-bottom: 26px;
 }
-a.wall-head {
+.wall-head {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1698,7 +1698,7 @@ a.wall-head {
  * 이건 가끔 누르는 것이다. 오른쪽 끝에 붙여 머리줄의 연장처럼 보이게 한다.
  */
 /* 자른 나머지 — 모임 화면으로 보낸다 */
-a.wall-more {
+.wall-more {
   display: flex;
   align-items: center;
   justify-content: center;
