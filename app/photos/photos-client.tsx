@@ -46,7 +46,6 @@ export interface PhotoWallGroupView {
   urls: string[];
   /** urls와 같은 순서의 격자용 400px */
   thumbs: string[];
-  downloads: { url: string; isOriginal: boolean }[];
   count: number;
 }
 
@@ -79,13 +78,14 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
       {groups.map((g) => {
         const cat = getCategory(g.category);
         const label = cat ? t(catDisplayName(g.category)) : g.category;
-        // 확대 창에 넘길 목록 — 격자 순서 그대로 (받기 주소도 같이 간다)
-        const items: Zoomed[] = g.urls.map((src, i) => ({
-          src,
-          name: label,
-          downloadUrl: g.downloads[i]?.url ?? null,
-          downloadIsOriginal: g.downloads[i]?.isOriginal ?? false,
-        }));
+        /*
+         * 확대 창에 넘길 목록 — 격자 순서 그대로.
+         *
+         * **받기 버튼은 안 붙인다.** 여기는 「지난 사진들을 훑는」 화면이라 넘겨 보다가
+         * 한 장을 저장하는 자리가 아니다. 받을 일이 생기면 모임 화면으로 가면 되고,
+         * 거기에는 한 장 받기와 전부 받기가 다 있다.
+         */
+        const items: Zoomed[] = g.urls.map((src) => ({ src, name: label }));
 
         return (
           <section key={g.postId} className="wall-group">
