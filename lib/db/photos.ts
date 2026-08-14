@@ -166,13 +166,9 @@ export interface PhotoWallGroup {
   urls: string[];
   /** urls와 같은 순서의 격자용 400px (없는 옛 사진은 urls의 것이 들어간다) */
   thumbs: string[];
-  /**
-   * 자른 수가 아니라 그 모임의 실제 전체 장수.
-   *
-   * 받기 주소는 안 싣는다 — 모아보기는 훑는 화면이고, 받는 자리는 모임 화면이다
-   * (app/photos/photos-client.tsx). 스무 개 모임 × 스무 장이면 그 주소만 400줄이라,
-   * 안 쓰는 값을 빼는 것이 그대로 응답 크기다.
-   */
+  /** urls와 같은 순서의 받기 주소 */
+  downloads: { url: string; isOriginal: boolean }[];
+  /** 자른 수가 아니라 그 모임의 실제 전체 장수 */
   count: number;
 }
 
@@ -265,11 +261,13 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
     if (!list) continue; // 사진이 없는 모임은 묶음을 만들지 않는다
     const urls: string[] = [];
     const thumbs: string[] = [];
+    const downloads: PhotoWallGroup['downloads'] = [];
     for (const p of list.slice(0, WALL_PER_POST)) {
       const url = signed.get(p.pathname);
       if (!url) continue;
       urls.push(url);
       thumbs.push(thumbOr(signed, p, url));
+      downloads.push({ url: downloadPath(m.id, p.id), isOriginal: Boolean(p.originalPathname) });
     }
     if (urls.length) {
       out.push({
@@ -280,6 +278,7 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
         startTime: m.startTime,
         urls,
         thumbs,
+        downloads,
         count: list.length,
       });
     }
