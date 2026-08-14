@@ -193,6 +193,8 @@ function KakaoIcon() {
 /** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx) */
 export interface ProfileInitial {
   subs: string[];
+  /** 관리자가 목록에서 내려 둔 카테고리 — 구독 칸에서도 뺀다 */
+  hidden: string[];
   newsAlerts: boolean;
   showPastPrivate: boolean;
   /** 안 읽은 알림 수 — 아래 알림 줄의 배지에만 쓴다 (세는 것은 서버가 한다) */
@@ -736,7 +738,14 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
           {t(T.subsDesc)}
         </p>
         <div className="field-row">
-          {CATEGORIES.filter((c) => c.kind === 'posts').map((c) => (
+          {/*
+            * 감춘 카테고리는 여기서도 뺀다 — 홈·둘러보기와 같은 규칙이다.
+            * 목록에 없는 취미가 구독 칸에만 남아 있으면 끄지도 켜지도 못할 것처럼 보인다.
+            *
+            * **구독 기록은 지우지 않는다.** 감추기는 되돌릴 수 있는 일이라, 다시 올리면
+            * 원래 구독하던 사람에게 그대로 돌아와야 한다.
+            */}
+          {CATEGORIES.filter((c) => c.kind === 'posts' && !initial.hidden.includes(c.slug)).map((c) => (
             <button
               key={c.slug}
               className={`seg ${subs.has(c.slug) ? 'on' : ''}`}

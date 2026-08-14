@@ -5,6 +5,7 @@ import { getDb } from './index';
 import { commentLikes, favorites, notifications, postComments, postParticipants, posts, recurringRules, subscriptions, users } from './schema';
 import { LocalName, NameRow, nameOf, UNKNOWN_NAME } from '../store';
 import { getLocale } from '../locale';
+import { hiddenSlugs } from './hidden';
 import { catName, getCategory, isAnonymous } from '../categories';
 import type { TitleMeta } from '../tmdb';
 import { sendPush } from '../push';
@@ -967,9 +968,14 @@ export async function createPost(input: {
   /*
    * 비공개 모임은 구독자에게 알리지 않는다. 알림에 제목·시간·장소가 그대로 담기므로
    * 링크를 받지 않은 사람에게 내용이 새는 통로가 된다.
+   *
+   * **내려 둔 카테고리도 안 알린다.** 목록에서 뺀 취미가 알림으로 자기를 들이미는 것은
+   * 내린 뜻과 반대고, 프로필의 구독 칸에서도 빠져서(app/profile) 받는 사람이 끌 방법이
+   * 없다. 구독 기록은 그대로 두므로 다시 올리면 알림도 같이 돌아온다.
    */
+  const hidden = await hiddenSlugs();
   const subscriberRows =
-    input.visibility === 'link' || input.silent
+    input.visibility === 'link' || input.silent || hidden.includes(input.category)
       ? []
       : await db
           .select({ userId: subscriptions.userId })
