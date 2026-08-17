@@ -58,6 +58,12 @@ export interface PostView {
   endDate: string | null;
   /** 숙소 — 여행에서만 받는다 (선택) */
   lodging: string | null;
+  /**
+   * 위 숙소의 좌표 — 사진 타임라인이 「숙소」 라벨을 붙일 때만 쓴다.
+   * 백필이 한 번 채워 둔다 (app/api/admin/photo-place). 못 찾는 주소면 null이다.
+   */
+  lodgingLat: number | null;
+  lodgingLon: number | null;
   location: string;
   description: string | null;
   capacity: number | null;
@@ -473,6 +479,8 @@ function shellOf(p: typeof posts.$inferSelect, repeatsOn: boolean) {
     endTime: p.endTime,
     endDate: p.endDate,
     lodging: p.lodging,
+    lodgingLat: p.lodgingLat,
+    lodgingLon: p.lodgingLon,
     location: p.location,
     description: p.description,
     capacity: p.capacity,

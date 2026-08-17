@@ -457,6 +457,11 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           isAnon={isAnonymous(post.category)}
           canOpen={post.authorId === user.id || post.coHost?.id === user.id || isAdmin}
           timeline={Boolean(cat?.timeline)}
+          lodgingAt={
+            post.lodgingLat != null && post.lodgingLon != null
+              ? { lat: post.lodgingLat, lon: post.lodgingLon }
+              : null
+          }
         />
       )}
 

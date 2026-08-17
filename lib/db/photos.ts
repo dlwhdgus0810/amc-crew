@@ -63,6 +63,8 @@ export interface PhotoView {
   takenOffset: number | null;
   lat: number | null;
   lon: number | null;
+  /** 그 자리의 이름 — 「SomiSomi」나 「The Colony, TX」. 아직 안 물어봤으면 null */
+  place: string | null;
 }
 
 /**
@@ -398,6 +400,7 @@ export async function listPhotos(
       takenOffset: r.takenOffset,
       lat: r.lat,
       lon: r.lon,
+      place: r.place,
     }))
     .filter((p) => p.url);
 }
@@ -457,6 +460,7 @@ export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: 
     takenOffset: null,
     lat: null,
     lon: null,
+    place: null,
   };
 }
 

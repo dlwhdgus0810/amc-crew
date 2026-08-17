@@ -8,7 +8,7 @@ import { UnreadableImageError, uploadPhoto } from '@/lib/photo-client';
 import { saveFile } from '@/lib/download-client';
 import { useSavePhotos } from './save-photos';
 import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST } from '@/lib/photos';
-import { buildTimeline } from '@/lib/photo-timeline';
+import { buildTimeline, distanceMeters } from '@/lib/photo-timeline';
 import { dateLabelShort, timeLabel } from '@/lib/datefmt';
 import { mapsPointUrl } from '@/lib/maps';
 
@@ -50,6 +50,7 @@ const T = {
   del: { ko: '지우기', en: 'Remove', es: 'Quitar' },
   /* 여행 타임라인 */
   here: { ko: '지도', en: 'Map', es: 'Mapa' },
+  atLodging: { ko: '숙소', en: 'Where we stayed', es: 'Alojamiento' },
   undated: { ko: '시각을 모르는 사진', en: 'No time on these', es: 'Sin hora' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.', es: 'No se pudo quitar.' },
   by: { ko: '{name} 올림', en: 'by {name}', es: 'de {name}' },
@@ -102,6 +103,8 @@ export interface PhotoItem {
   takenOffset?: number | null;
   lat?: number | null;
   lon?: number | null;
+  /** 그 자리의 이름 — 「SomiSomi」나 「The Colony, TX」 (lib/geocode.ts) */
+  place?: string | null;
 }
 
 export default function PhotoPanel({
@@ -117,6 +120,7 @@ export default function PhotoPanel({
   isAnon,
   canOpen,
   timeline,
+  lodgingAt,
 }: {
   postId: string;
   photos: PhotoItem[];
@@ -144,6 +148,11 @@ export default function PhotoPanel({
    * 무엇을 담을지는 서버가 카테고리를 보고 다시 정한다 (lib/photos.ts의 exifFromBody).
    */
   timeline: boolean;
+  /**
+   * 숙소 좌표 — 있으면 그 근처 자리에 이름 대신 「숙소」가 붙는다.
+   * 라벨을 DB에 글자로 박지 않고 여기서 고르는 이유: 「숙소」는 번역되는 말이다.
+   */
+  lodgingAt?: { lat: number; lon: number } | null;
 }) {
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -180,6 +189,28 @@ export default function PhotoPanel({
     downloadUrl: p.downloadUrl ?? null,
     downloadIsOriginal: Boolean(p.downloadIsOriginal),
   }));
+
+  /**
+   * 이 자리를 뭐라고 부를지.
+   *
+   * 숙소가 먼저다 — 「Fairfield Inn The Colony」보다 「숙소」가 읽기 좋고, 그게 이 여행에서
+   * 그 자리가 가진 뜻이다. 200m는 숙소 주소를 좌표로 바꿀 때 생기는 오차와 GPS가 튀는
+   * 폭을 합쳐 잡은 값이다.
+   *
+   * 그다음이 사진에 적힌 이름. 한 자리 안에서 이름이 갈릴 수 있어서(가장자리 사진이
+   * 옆 가게 위에 떨어진다) 제일 많은 것을 고른다.
+   */
+  function placeOf(stop: { lat: number | null; lon: number | null; photos: PhotoItem[] }): string | null {
+    if (lodgingAt && stop.lat != null && stop.lon != null) {
+      if (distanceMeters(stop.lat, stop.lon, lodgingAt.lat, lodgingAt.lon) <= 200) return t(T.atLodging);
+    }
+    const count = new Map<string, number>();
+    for (const p of stop.photos) if (p.place) count.set(p.place, (count.get(p.place) ?? 0) + 1);
+    let best: string | null = null;
+    let most = 0;
+    for (const [name, n] of count) if (n > most) [best, most] = [name, n];
+    return best;
+  }
 
   /** 격자 한 칸. 격자와 타임라인이 같은 것을 쓴다 — 지우기 버튼 조건이 갈리면 안 된다 */
   function cell(p: PhotoItem) {
@@ -308,6 +339,7 @@ export default function PhotoPanel({
                         {timeLabel(stop.time, locale)}
                         {stop.endTime !== stop.time && ` – ${timeLabel(stop.endTime, locale)}`}
                       </span>
+                      {placeOf(stop) && <span className="tl-place">{placeOf(stop)}</span>}
                       {stop.lat != null && stop.lon != null && (
                         <a
                           className="tl-map"

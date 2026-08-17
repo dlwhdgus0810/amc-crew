@@ -135,6 +135,16 @@ const T = {
   exifDone: { ko: '{n}장 채웠어요. {left}장은 읽을 것이 없었어요.', en: 'Filled {n}. {left} had nothing to read.' },
   exifNone: { ko: '채울 사진이 없어요.', en: 'Nothing to fill.' },
   exifFailed: { ko: '채우다 멈췄어요: {why}', en: 'Stopped: {why}' },
+  placeTitle: { ko: '여행 사진 장소 이름 붙이기', en: 'Name the places in trip photos' },
+  placeHint: {
+    ko: '사진에서 읽은 좌표를 OpenStreetMap에 물어 자리 이름을 붙여요. 사진 낱장이 아니라 「멈춘 자리」마다 한 번씩 묻고, 초당 한 번 제한이 있어서 조금 걸려요. 숙소 주소도 한 번 좌표로 바꿔서, 그 근처 자리에는 「숙소」라고 붙어요. 좌표와 숙소 주소가 OpenStreetMap으로 나가요.',
+    en: 'Asks OpenStreetMap what’s at the coordinates read from the photos. It asks once per stop rather than per photo, and there’s a one-per-second limit, so it takes a moment. The lodging address gets looked up too, so stops near it are labelled “Where we stayed”. The coordinates and the lodging address go to OpenStreetMap.',
+  },
+  placeRun: { ko: '이름 붙이기 시작', en: 'Start' },
+  placeBusy: { ko: '물어보는 중…', en: 'Asking…' },
+  placeDone: { ko: '{n}장에 이름을 붙였어요. {left}장은 이름을 못 찾았어요.', en: 'Named {n}. Couldn’t find a name for {left}.' },
+  placeNone: { ko: '이름을 붙일 사진이 없어요.', en: 'Nothing to name.' },
+  placeFailed: { ko: '붙이다 멈췄어요: {why}', en: 'Stopped: {why}' },
   noticeLinkLabel: { ko: '보러 갈 곳 (선택)', en: 'Where it takes them (optional)' },
   noticeLinkHint: {
     ko: '적어 두면 공지에 「보러 가기」 버튼이 붙어요. 앱 안의 경로만 돼요 — /photos, /reviews, /p/모임아이디처럼요.',
@@ -290,6 +300,7 @@ export default function AdminPage() {
   /** 썸네일 백필 진행 상황 — null이면 안 돌고 있다 */
   const [thumbBusy, setThumbBusy] = useState<{ done: number; total: number } | null>(null);
   const [exifBusy, setExifBusy] = useState(false);
+  const [placeBusy, setPlaceBusy] = useState(false);
   const [deleted, setDeleted] = useState<
     { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
   >(null);
@@ -337,6 +348,7 @@ export default function AdminPage() {
   const [dataOpen, setDataOpen] = useState(false);
   const [thumbOpen, setThumbOpen] = useState(false);
   const [exifOpen, setExifOpen] = useState(false);
+  const [placeOpen, setPlaceOpen] = useState(false);
   const [banBusy, setBanBusy] = useState<string | null>(null);
   const [banReason, setBanReason] = useState('');
   const [members, setMembers] = useState<
@@ -868,6 +880,37 @@ export default function AdminPage() {
     }
   }
 
+  /**
+   * 자리 이름 붙이기 — 바깥(OpenStreetMap)에 묻는 유일한 자리다.
+   *
+   * 초당 한 번이라 한 번 부를 때 열다섯 번까지만 묻는다. 더 남아 있으면 다시 부르는데,
+   * **이름을 못 찾은 자리는 계속 남는다** — 그래서 남은 수가 안 줄면 거기서 멈춘다.
+   * 안 그러면 이름 없는 사진을 두고 영영 돈다.
+   */
+  async function backfillPlaces() {
+    setPlaceBusy(true);
+    setMsg(null);
+    let named = 0;
+    let left = 0;
+    try {
+      for (;;) {
+        const res = await fetch('/api/admin/photo-place', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? t(T.failed));
+        named += data.named as number;
+        const before = left;
+        left = data.left as number;
+        // 다 됐거나, 물어본 것이 없거나, 남은 수가 안 줄었으면 더 해 봐야 같다
+        if (left === 0 || data.asked === 0 || (before > 0 && left >= before)) break;
+      }
+      setMsg({ type: 'ok', text: named > 0 || left > 0 ? t(T.placeDone, { n: named, left }) : t(T.placeNone) });
+    } catch (e) {
+      setMsg({ type: 'err', text: t(T.placeFailed, { why: e instanceof Error ? e.message : String(e) }) });
+    } finally {
+      setPlaceBusy(false);
+    }
+  }
+
   /** 캐시를 비우고 AMC에서 다시 받아온 뒤, 극장 목록도 함께 조회한다 */
 
   return (
@@ -1084,6 +1127,29 @@ export default function AdminPage() {
               <div className="card">
                 <button className="secondary" disabled={exifBusy} onClick={backfillExif}>
                   {exifBusy ? t(T.exifBusy) : t(T.exifRun)}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/*
+            * 자리 이름 — 위의 EXIF 백필 다음에 돌려야 한다. 좌표가 있어야 물어볼 것이 있다.
+            * 순서를 강제하지는 않는다: 좌표가 없으면 물어볼 자리가 없어서 그냥 0장이 된다.
+            */}
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={placeOpen} onClick={() => setPlaceOpen((v) => !v)}>
+              {t(T.placeTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {placeOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {placeOpen && (
+            <>
+              <p className="subtitle">{t(T.placeHint)}</p>
+              <div className="card">
+                <button className="secondary" disabled={placeBusy} onClick={backfillPlaces}>
+                  {placeBusy ? t(T.placeBusy) : t(T.placeRun)}
                 </button>
               </div>
             </>

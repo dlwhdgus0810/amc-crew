@@ -66,6 +66,9 @@ CREATE TABLE IF NOT EXISTS posts (
   -- 마지막 날 (여러 날 모임) · 숙소 — lib/db/schema.ts의 주석 참고
   end_date text,
   lodging text,
+  -- 숙소 주소를 좌표로 바꿔 둔 것 (「숙소」 라벨) — lib/db/schema.ts의 주석 참고
+  lodging_lat double precision,
+  lodging_lon double precision,
   location text NOT NULL,
   description text,
   capacity integer,
@@ -115,6 +118,8 @@ CREATE TABLE IF NOT EXISTS post_photos (
   taken_offset integer,
   lat double precision,
   lon double precision,
+  -- 그 좌표의 이름 (자리마다 한 번씩 물어 적어 둔다) — lib/db/schema.ts의 주석 참고
+  place text,
   created_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
 );

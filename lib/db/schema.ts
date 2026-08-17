@@ -206,6 +206,18 @@ export const posts = pgTable(
      * 출발 아침에 아무도 어디로 갈지 모른다.
      */
     lodging: text('lodging'),
+    /**
+     * 위 숙소 주소를 좌표로 바꿔 둔 것 — 사진 타임라인이 「숙소」 라벨을 붙일 때 쓴다.
+     *
+     * 주소는 사람이 자유롭게 쓰는 칸이라 그때그때 좌표로 바꿀 수 없다(바깥에 물어봐야
+     * 하고 초당 한 번 제한이 있다). 그래서 백필 때 **모임당 한 번** 물어보고 여기 적어 둔다
+     * (app/api/admin/photo-place). 못 찾는 주소면 null이고, 그러면 라벨이 안 붙을 뿐이다.
+     *
+     * 라벨을 사진에 박아 두지 않고 좌표로 남기는 이유: 「숙소」는 번역되는 말이라
+     * (ko/en/es) 글자로 저장하면 한 언어에 갇힌다. 좌표로 두면 그릴 때 고른다.
+     */
+    lodgingLat: doublePrecision('lodging_lat'),
+    lodgingLon: doublePrecision('lodging_lon'),
     location: text('location').notNull(),
     description: text('description'),
     capacity: integer('capacity'), // 정원. null이면 무제한
@@ -343,6 +355,19 @@ export const postPhotos = pgTable(
     takenOffset: integer('taken_offset'),
     lat: doublePrecision('lat'),
     lon: doublePrecision('lon'),
+    /**
+     * 그 좌표의 이름 — 「SomiSomi」나 「The Colony, TX」.
+     *
+     * 좌표만으로는 이름이 안 나와서 바깥(Nominatim)에 물어봐야 한다. 좌표는 안 변하니
+     * 한 번 묻고 여기 적어 두면 끝이다 — 그리는 자리에서는 절대 안 묻는다.
+     *
+     * **사진 낱장이 아니라 「자리」마다 한 번씩 묻는다.** 같은 자리 사진들은 300m 안에
+     * 있어서 이름이 같고, 열한 장을 낱개로 물으면 일곱 번이면 될 것을 열한 번 묻는다
+     * (lib/photo-timeline.ts, app/api/admin/photo-place).
+     *
+     * 못 찾았거나 아직 안 물어본 사진은 null이다 — 그때는 시각만 보여준다.
+     */
+    place: text('place'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     /** 지워도 저장소의 파일은 남긴다 — 되살릴 때 깨진 그림이 되지 않도록 (lib/db/photos.ts) */
     deletedAt: deletedAt(),

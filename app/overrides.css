@@ -2729,3 +2729,14 @@ body:has(.sky-scope.night) .tabbar a.active {
   text-decoration: none; border-bottom: 1px solid var(--border);
 }
 .tl-map:hover { color: var(--accent); border-bottom-color: currentColor; }
+/*
+ * 자리 이름 — 시각 옆에 붙는다. 시각보다 흐리게 둔다: 타임라인을 세로로 훑을 때
+ * 눈이 따라가는 것은 시각이고, 이름은 「아 거기」를 떠올리게 하는 거들이다.
+ * 길면 자른다 — 한 줄에서 지도 링크를 밀어내면 안 된다.
+ */
+.tl-place {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; color: var(--text-dim); letter-spacing: -0.01em;
+}
+/* 지도 링크는 줄어들지 않는다 — 이름이 길어도 자리를 지킨다 */
+.tl-map { flex: none; }
