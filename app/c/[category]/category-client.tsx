@@ -1768,8 +1768,15 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
       .map((p) => (user && p.id === user.id ? t(T.me) : p.name))
       .join(', ');
 
+    /*
+     * 지난 모임은 흐리게 — 다만 **한 줄에 섞어 놓는 카테고리(여행)는 빼고**다.
+     *
+     * 흐리게 하는 것은 「예정」 목록 안에서 지난 것을 구분하려는 표시인데, 여행처럼
+     * 예정과 지난이 나란히 놓이면 목록의 절반이 흐려진다. 지난 여행이 곧 사진과 정산이
+     * 쌓인 자리라, 그게 바래 보일 이유가 없다.
+     */
     return (
-      <article key={post.id} className={`post-card ${past ? 'past' : ''}`}>
+      <article key={post.id} className={`post-card ${past && !flat ? 'past' : ''}`}>
         {/*
           * 포스터가 있으면 머리 부분만 가로로 나눈다 — 왼쪽에 글, 오른쪽에 포스터.
           * 아래의 참여자·댓글은 전폭을 그대로 쓴다. 카드 전체를 둘로 쪼개면 댓글이

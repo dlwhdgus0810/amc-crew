@@ -905,7 +905,11 @@ body:has(.poster-zoom) nav.tabbar {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 10px 0 2px;
+  /*
+   * 아래 여백은 이 줄과 첫 카드 사이다. 2px이면 알약이 카드에 얹힌 것처럼 보여서
+   * 「누가 제안했다」가 그 카드에 대한 말로 읽힌다 — 카테고리 전체에 대한 말인데.
+   */
+  margin: 10px 0 16px;
   padding: 6px 13px;
   border: none;
   border-radius: 999px;
