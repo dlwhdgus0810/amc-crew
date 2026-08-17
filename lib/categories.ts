@@ -343,28 +343,32 @@ export const CATEGORIES: Category[] = [
     locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
   },
   /*
-   * 여행 — 텍사스에 다녀오고 나서 열었다.
+   * 여행 — 텍사스에 다녀오고 나서 열었다. 정재호 님이 색과 한 줄까지 정해 제안했다.
    *
    * 「텍사스」로 만들지 않은 이유: 다음 여행에서 또 카테고리를 만들어야 하고, 지난 것은
    * 목록에 내려야 한다. 갈 곳은 모임마다 다르니 그건 titleLabel로 받는다 — 카드에
    * 〈텍사스〉로 붙는다.
    *
-   * 색은 movienight(161°)와 baking(203°) 사이가 가장 넓게 비어 있어서 그 가운데(183°)에
-   * 넣었다. 채도는 .095로 위의 .13에 못 미치는데, 이 청록 구간은 sRGB가 거기까지 못 간다
-   * (baking이 .093으로 같은 처지다). 크림색 글씨 대비 4.2:1로 이웃들과 같다.
+   * **이 카드만 글씨가 진하다.** 받은 색(#E9A300)이 열여섯 장 중 유일하게 밝은 쪽이라
+   * (OKLCH L .76, 나머지는 .55) 크림색 글씨를 얹으면 대비가 1.97:1 — 글자가 안 읽힌다.
+   * 색을 어둡게 고치는 대신 글씨를 바꿨다: 제안한 사람이 고른 색이 카드의 정체고,
+   * 읽히게 만드는 것은 우리 몫이다. 진한 글씨로는 7.3:1이다.
+   *
+   * 색상(78°)은 카페(72°)와 헬스장(96°) 사이인데, 밝기가 크게 달라 같은 색으로 안 보인다.
    */
   {
     slug: 'trip',
     emoji: '🧳',
     en: 'TRIP',
-    color: '#118376',
-    fg: '#F6F4EE',
+    color: '#E9A300',
+    // 이 카드만 진한 글씨 — 위 주석 참고 (나머지 열다섯 장은 크림색이다)
+    fg: '#1E241F',
     kind: 'posts',
     name: { ko: '여행', en: 'Trip', es: 'Viaje' },
     description: {
-      ko: '멀리 안 가도 여행이에요',
-      en: 'It counts even when it is not far.',
-      es: 'Cuenta aunque no sea lejos.',
+      ko: '현실 도피하러 떠납니다',
+      en: 'Leaving reality behind for a bit.',
+      es: 'Nos vamos a escapar de la realidad.',
     },
     // 여행은 하루가 아니라 며칠이다 — 시각 대신 날짜 범위를 받는다
     dateRange: true,
@@ -387,6 +391,7 @@ export const CATEGORIES: Category[] = [
       en: 'e.g. Airbnb in Austin',
       es: 'p. ej. Airbnb en Austin',
     },
+    proposedBy: '정재호',
   },
   /*
    * 일식 하루짜리 카드. 끝나면 관리자 화면에서 목록에 내린다 (지우지 않는다 —
