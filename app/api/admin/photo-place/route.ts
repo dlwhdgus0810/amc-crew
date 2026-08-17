@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { and, asc, eq, inArray, isNull, isNotNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, isNotNull, or } from 'drizzle-orm';
 import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db/index';
 import { postPhotos, posts } from '@/lib/db/schema';
 import { CATEGORIES } from '@/lib/categories';
-import { geocodeAddress, placeName } from '@/lib/geocode';
+import { geocodeAddress, placeName, placePipeline } from '@/lib/geocode';
 import { buildTimeline } from '@/lib/photo-timeline';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +22,10 @@ export const dynamic = 'force-dynamic';
  *
  * 숙소도 여기서 한 번 좌표로 바꿔 둔다 (posts.lodging_lat). 그 근처 자리에는 이름 대신
  * 「숙소」가 붙는데, 그게 「Fairfield Inn The Colony」보다 읽기 좋다.
+ *
+ * **구글 키가 생기면 이미 붙은 OSM 이름을 다시 묻는다.** OSM만으로는 대개 도시 이름까지고
+ * (「Carrollton, TX」가 세 번 반복됐다) 구글은 가게 이름을 준다. 사람이 손으로 고친 것은
+ * 안 건드린다 — 갔던 사람이 적은 이름이 어느 API보다 낫다.
  *
  * 좌표와 숙소 주소가 바깥(OSM)으로 나가는 자리다. 그래서 여행 카테고리에서만, 관리자가
  * 눌렀을 때만 돈다. EXIF 백필(../photo-exif)과 나눠 둔 것도 그래서다 — 저쪽은 우리
@@ -51,6 +55,7 @@ export async function POST() {
     .where(and(inArray(posts.category, slugs), isNull(posts.deletedAt)))
     .orderBy(asc(posts.date));
 
+  const pipeline = placePipeline();
   let asked = 0;
   let named = 0;
 
@@ -65,6 +70,7 @@ export async function POST() {
         lat: postPhotos.lat,
         lon: postPhotos.lon,
         place: postPhotos.place,
+        placeSource: postPhotos.placeSource,
       })
       .from(postPhotos)
       .where(
@@ -101,20 +107,32 @@ export async function POST() {
 
     for (const stop of stops) {
       if (asked >= ASK_LIMIT) break;
-      // 이 자리 사진이 전부 이름을 갖고 있으면 물어볼 것이 없다
-      if (stop.photos.every((p) => p.place)) continue;
       if (stop.lat == null || stop.lon == null) continue;
+      /*
+       * 물어볼 자리인가. 두 가지다:
+       *  - 아직 이름이 없는 사진이 있다
+       *  - 지금 길이 구글인데 이 자리는 OSM으로만 물어봤다 (더 좋은 답이 있을 자리)
+       * 손으로 고친 것('manual')은 어느 쪽에도 안 걸린다.
+       */
+      const needs = stop.photos.some(
+        (p) => !p.place || (pipeline === 'google' && p.placeSource === 'osm')
+      );
+      if (!needs) continue;
 
       asked++;
-      const name = await placeName(stop.lat, stop.lon);
-      if (!name) continue;
-
-      // 한 자리의 사진은 이름이 같다 — 자리 전체에 같은 값을 적는다
+      const { name, source } = await placeName(stop.lat, stop.lon);
+      /*
+       * 못 찾아도 다 물어본 자리라는 표시는 남긴다. 안 그러면 이름이 안 나오는 자리를
+       * 붙들고 영영 다시 묻는다 (화면 쪽 되풀이가 남은 수로 멈추긴 하지만, 매번 거기부터
+       * 다시 물어 다음 자리로 못 넘어간다).
+       */
+      const ids = stop.photos.filter((p) => p.placeSource !== 'manual').map((p) => p.id);
+      if (ids.length === 0) continue;
       await db
         .update(postPhotos)
-        .set({ place: name })
-        .where(inArray(postPhotos.id, stop.photos.map((p) => p.id)));
-      named += stop.photos.length;
+        .set({ ...(name ? { place: name } : {}), placeSource: source })
+        .where(inArray(postPhotos.id, ids));
+      if (name) named += ids.length;
     }
   }
 
@@ -131,11 +149,14 @@ export async function POST() {
       and(
         inArray(posts.category, slugs),
         isNotNull(postPhotos.lat),
-        isNull(postPhotos.place),
         isNull(postPhotos.deletedAt),
-        isNull(posts.deletedAt)
+        isNull(posts.deletedAt),
+        // 아직 이름이 없거나, 구글이 붙었는데 OSM으로만 물어본 것
+        pipeline === 'google'
+          ? or(isNull(postPhotos.place), eq(postPhotos.placeSource, 'osm'))
+          : isNull(postPhotos.place)
       )
     );
 
-  return NextResponse.json({ asked, named, left: left.length });
+  return NextResponse.json({ asked, named, left: left.length, pipeline });
 }

@@ -2,15 +2,14 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocale, useT } from './i18n';
+import { useT } from './i18n';
 import { usePosterZoom, type Zoomed } from './poster-zoom';
 import { UnreadableImageError, uploadPhoto } from '@/lib/photo-client';
 import { saveFile } from '@/lib/download-client';
 import { useSavePhotos } from './save-photos';
 import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST } from '@/lib/photos';
-import { buildTimeline, distanceMeters } from '@/lib/photo-timeline';
-import { dateLabelShort, timeLabel } from '@/lib/datefmt';
-import { mapsPointUrl } from '@/lib/maps';
+import { buildTimeline, timelineOrder } from '@/lib/photo-timeline';
+import PhotoTimelineView from './photo-timeline-view';
 
 /**
  * 모임 사진 — 가기 전 안내문도, 다녀와서 찍은 것도 여기 같이 쌓인다.
@@ -48,10 +47,6 @@ const T = {
     es: 'No se puede leer ese formato (HEIC). Cambia Ajustes › Cámara › Formatos a «Más compatible» en el iPhone, o edita y guarda la foto una vez y vuelve a intentarlo.',
   },
   del: { ko: '지우기', en: 'Remove', es: 'Quitar' },
-  /* 여행 타임라인 */
-  here: { ko: '지도', en: 'Map', es: 'Mapa' },
-  atLodging: { ko: '숙소', en: 'Where we stayed', es: 'Alojamiento' },
-  undated: { ko: '시각을 모르는 사진', en: 'No time on these', es: 'Sin hora' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.', es: 'No se pudo quitar.' },
   by: { ko: '{name} 올림', en: 'by {name}', es: 'de {name}' },
   allHint: {
@@ -162,19 +157,17 @@ export default function PhotoPanel({
   const router = useRouter();
   const zoom = usePosterZoom();
   const t = useT();
-  const locale = useLocale();
 
   /*
    * 여행이면 찍은 순서로 늘어놓는다. 한 장도 시각을 모르면 그냥 격자다 — 옛 사진만
    * 있는 모임에서 「시각을 모르는 사진」 한 줄만 덩그러니 남는 꼴을 막는다.
    */
-  const tl =
-    timeline && photos.some((p) => p.takenAt) ? buildTimeline(photos) : null;
+  const tl = timeline && photos.some((p) => p.takenAt);
   /*
    * 확대해서 넘겨 볼 순서는 **화면에 놓인 순서**여야 한다. 타임라인에서 세 번째 사진을
    * 열었는데 올린 순서로 넘어가면 옆 사진이 딴 날 것이 된다.
    */
-  const ordered = tl ? [...tl.days.flatMap((d) => d.stops.flatMap((s) => s.photos)), ...tl.undated] : photos;
+  const ordered = tl ? timelineOrder(buildTimeline(photos)) : photos;
   const slotOf = new Map(ordered.map((p, i) => [p.id, i]));
 
   const inMeetup = Boolean(currentUserId && participants.some((p) => p.id === currentUserId));
@@ -189,28 +182,6 @@ export default function PhotoPanel({
     downloadUrl: p.downloadUrl ?? null,
     downloadIsOriginal: Boolean(p.downloadIsOriginal),
   }));
-
-  /**
-   * 이 자리를 뭐라고 부를지.
-   *
-   * 숙소가 먼저다 — 「Fairfield Inn The Colony」보다 「숙소」가 읽기 좋고, 그게 이 여행에서
-   * 그 자리가 가진 뜻이다. 200m는 숙소 주소를 좌표로 바꿀 때 생기는 오차와 GPS가 튀는
-   * 폭을 합쳐 잡은 값이다.
-   *
-   * 그다음이 사진에 적힌 이름. 한 자리 안에서 이름이 갈릴 수 있어서(가장자리 사진이
-   * 옆 가게 위에 떨어진다) 제일 많은 것을 고른다.
-   */
-  function placeOf(stop: { lat: number | null; lon: number | null; photos: PhotoItem[] }): string | null {
-    if (lodgingAt && stop.lat != null && stop.lon != null) {
-      if (distanceMeters(stop.lat, stop.lon, lodgingAt.lat, lodgingAt.lon) <= 200) return t(T.atLodging);
-    }
-    const count = new Map<string, number>();
-    for (const p of stop.photos) if (p.place) count.set(p.place, (count.get(p.place) ?? 0) + 1);
-    let best: string | null = null;
-    let most = 0;
-    for (const [name, n] of count) if (n > most) [best, most] = [name, n];
-    return best;
-  }
 
   /** 격자 한 칸. 격자와 타임라인이 같은 것을 쓴다 — 지우기 버튼 조건이 갈리면 안 된다 */
   function cell(p: PhotoItem) {
@@ -322,49 +293,10 @@ export default function PhotoPanel({
         {photos.length > 0 && !tl && <div className="photo-grid">{photos.map(cell)}</div>}
 
         {/*
-          * 여행은 격자 대신 찍은 순서다 — 날짜, 그리고 그날 멈춘 자리별로.
-          *
-          * 자리마다 지도 링크를 단다. 좌표를 「In-N-Out」 같은 이름으로 바꾸려면 지오코딩
-          * 키가 필요해서, 지금은 눌러서 지도에서 확인하는 데까지다.
+          * 여행은 격자 대신 찍은 순서다. 그림은 모아보기와 같은 것을 쓴다
+          * (app/photo-timeline-view.tsx) — 두 화면에 따로 그리면 하나만 고치게 된다.
           */}
-        {tl && (
-          <div className="tl">
-            {tl.days.map((day) => (
-              <section key={day.date} className="tl-day">
-                <h3 className="tl-date">{dateLabelShort(day.date, locale)}</h3>
-                {day.stops.map((stop) => (
-                  <div key={stop.time} className="tl-stop">
-                    <div className="tl-when">
-                      <span className="tl-time">
-                        {timeLabel(stop.time, locale)}
-                        {stop.endTime !== stop.time && ` – ${timeLabel(stop.endTime, locale)}`}
-                      </span>
-                      {placeOf(stop) && <span className="tl-place">{placeOf(stop)}</span>}
-                      {stop.lat != null && stop.lon != null && (
-                        <a
-                          className="tl-map"
-                          href={mapsPointUrl(stop.lat, stop.lon)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {t(T.here)}
-                        </a>
-                      )}
-                    </div>
-                    <div className="photo-grid">{stop.photos.map(cell)}</div>
-                  </div>
-                ))}
-              </section>
-            ))}
-            {/* 시각을 모르는 사진도 사라지면 안 된다 — 스크린샷이거나 원본이 없는 것들이다 */}
-            {tl.undated.length > 0 && (
-              <section className="tl-day">
-                <h3 className="tl-date">{t(T.undated)}</h3>
-                <div className="photo-grid">{tl.undated.map(cell)}</div>
-              </section>
-            )}
-          </div>
-        )}
+        {tl && <PhotoTimelineView photos={photos} lodgingAt={lodgingAt} renderCell={cell} />}
 
         {/*
           * 전부 받기 — 두 장 이상일 때만. 한 장짜리 모임에서는 사진을 눌러 받는 것과

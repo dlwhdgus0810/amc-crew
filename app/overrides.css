@@ -2740,3 +2740,8 @@ body:has(.sky-scope.night) .tabbar a.active {
 }
 /* 지도 링크는 줄어들지 않는다 — 이름이 길어도 자리를 지킨다 */
 .tl-map { flex: none; }
+/*
+ * 「+n장 더」만 남은 줄 — 모아보기에서 타임라인으로 그릴 때 쓴다.
+ * 격자(wall-grid)에 그냥 넣으면 마지막 자리에 붙어서 그 시각에 찍은 사진처럼 보인다.
+ */
+.wall-rest { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }

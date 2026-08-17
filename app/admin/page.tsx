@@ -137,12 +137,18 @@ const T = {
   exifFailed: { ko: '채우다 멈췄어요: {why}', en: 'Stopped: {why}' },
   placeTitle: { ko: '여행 사진 장소 이름 붙이기', en: 'Name the places in trip photos' },
   placeHint: {
-    ko: '사진에서 읽은 좌표를 OpenStreetMap에 물어 자리 이름을 붙여요. 사진 낱장이 아니라 「멈춘 자리」마다 한 번씩 묻고, 초당 한 번 제한이 있어서 조금 걸려요. 숙소 주소도 한 번 좌표로 바꿔서, 그 근처 자리에는 「숙소」라고 붙어요. 좌표와 숙소 주소가 OpenStreetMap으로 나가요.',
-    en: 'Asks OpenStreetMap what’s at the coordinates read from the photos. It asks once per stop rather than per photo, and there’s a one-per-second limit, so it takes a moment. The lodging address gets looked up too, so stops near it are labelled “Where we stayed”. The coordinates and the lodging address go to OpenStreetMap.',
+    ko: '사진에서 읽은 좌표를 구글 Places(키가 있을 때)나 OpenStreetMap에 물어 자리 이름을 붙여요. 사진 낱장이 아니라 「멈춘 자리」마다 한 번씩 묻고, 초당 한 번 제한이 있어서 조금 걸려요. 숙소 주소도 한 번 좌표로 바꿔서, 그 근처 자리에는 「숙소」라고 붙어요. 좌표와 숙소 주소가 OpenStreetMap으로 나가요.',
+    en: 'Asks Google Places (when a key is set) or OpenStreetMap what’s at the coordinates read from the photos. It asks once per stop rather than per photo, and there’s a one-per-second limit, so it takes a moment. The lodging address gets looked up too, so stops near it are labelled “Where we stayed”. The coordinates and the lodging address go to OpenStreetMap.',
   },
   placeRun: { ko: '이름 붙이기 시작', en: 'Start' },
   placeBusy: { ko: '물어보는 중…', en: 'Asking…' },
-  placeDone: { ko: '{n}장에 이름을 붙였어요. {left}장은 이름을 못 찾았어요.', en: 'Named {n}. Couldn’t find a name for {left}.' },
+  placeDone: {
+    ko: '{n}장에 이름을 붙였어요 ({how}). {left}장은 이름을 못 찾았어요.',
+    en: 'Named {n} ({how}). Couldn’t find a name for {left}.',
+  },
+  /* 어느 길로 물었는지 — 구글 키가 꽂혔는지를 화면에서 확인할 방법이 여기밖에 없다 */
+  viaGoogle: { ko: '구글 Places', en: 'Google Places' },
+  viaOsm: { ko: 'OpenStreetMap', en: 'OpenStreetMap' },
   placeNone: { ko: '이름을 붙일 사진이 없어요.', en: 'Nothing to name.' },
   placeFailed: { ko: '붙이다 멈췄어요: {why}', en: 'Stopped: {why}' },
   noticeLinkLabel: { ko: '보러 갈 곳 (선택)', en: 'Where it takes them (optional)' },
@@ -892,18 +898,23 @@ export default function AdminPage() {
     setMsg(null);
     let named = 0;
     let left = 0;
+    let how = t(T.viaOsm);
     try {
       for (;;) {
         const res = await fetch('/api/admin/photo-place', { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? t(T.failed));
+        how = data.pipeline === 'google' ? t(T.viaGoogle) : t(T.viaOsm);
         named += data.named as number;
         const before = left;
         left = data.left as number;
         // 다 됐거나, 물어본 것이 없거나, 남은 수가 안 줄었으면 더 해 봐야 같다
         if (left === 0 || data.asked === 0 || (before > 0 && left >= before)) break;
       }
-      setMsg({ type: 'ok', text: named > 0 || left > 0 ? t(T.placeDone, { n: named, left }) : t(T.placeNone) });
+      setMsg({
+        type: 'ok',
+        text: named > 0 || left > 0 ? t(T.placeDone, { n: named, left, how }) : t(T.placeNone),
+      });
     } catch (e) {
       setMsg({ type: 'err', text: t(T.placeFailed, { why: e instanceof Error ? e.message : String(e) }) });
     } finally {

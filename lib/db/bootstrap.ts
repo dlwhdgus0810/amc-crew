@@ -120,6 +120,8 @@ CREATE TABLE IF NOT EXISTS post_photos (
   lon double precision,
   -- 그 좌표의 이름 (자리마다 한 번씩 물어 적어 둔다) — lib/db/schema.ts의 주석 참고
   place text,
+  -- 그 이름을 어느 길로 얻었는지 ('osm'|'google'|'manual') — lib/db/schema.ts의 주석 참고
+  place_source text,
   created_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
 );

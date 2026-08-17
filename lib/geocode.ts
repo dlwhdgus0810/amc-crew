@@ -1,10 +1,18 @@
 /**
- * 좌표와 주소를 서로 바꾼다 — OpenStreetMap의 Nominatim에 물어서. 서버 전용.
+ * 좌표와 주소를 이름으로 바꾼다. 서버 전용.
  *
- * 왜 Nominatim인가: 키도 결제 계정도 없이 쓴다. 이 앱이 물어볼 양이 여행 한 번에
- * 자리 일곱 개 남짓이라(사진 낱장이 아니라 자리마다 한 번), 1년에 스무 번을 가도 이백 번이다.
- * 그 정도에 결제 계정을 만들고 키를 굴릴 이유가 없다. 나중에 가게 이름이 더 필요해지면
- * 이 파일만 갈아끼우면 된다 — 부르는 쪽은 「좌표 주면 이름」밖에 모른다.
+ * **두 길이 있고, 키가 있으면 좋은 길로 간다.**
+ *
+ *   GOOGLE_MAPS_API_KEY 있음 → 구글 Places에 「이 점에 뭐가 있나」를 묻는다. 가게 이름이
+ *                              나온다 (「SomiSomi」). 못 찾으면 아래로 떨어진다.
+ *   없음                    → OpenStreetMap Nominatim. 키도 결제 계정도 없이 쓰지만,
+ *                              가게가 등록돼 있을 때만 이름이 나오고 대개 도시가 나온다.
+ *
+ * 구글에서 못 찾은 자리의 도시 이름은 그대로 Nominatim에서 받는다 — 구글 Nearby는
+ * 「이 근처 업소」를 주는 것이라 허허벌판에서는 아무것도 안 준다. 두 길이 서로를 메운다.
+ *
+ * 물어보는 양이 작아서 어느 쪽이든 값이 안 든다: 여행 한 번에 자리 일곱 개 남짓이고
+ * (사진 낱장이 아니라 자리마다 한 번), 1년에 스무 번을 가도 이백 번이다.
  *
  * **묻는 자리는 백필 하나뿐이다** (app/api/admin/photo-place). 화면을 그리면서 여기를
  * 부르면 안 된다: 초당 한 번 제한이 있고, 무엇보다 좌표는 안 변하니 한 번 묻고 DB에
@@ -17,6 +25,23 @@
 import { SITE_URL } from './site';
 
 const BASE = 'https://nominatim.openstreetmap.org';
+const GOOGLE_NEARBY = 'https://places.googleapis.com/v1/places:searchNearby';
+
+/**
+ * 이 이름을 어느 길로 얻었는지. DB의 place_source에 그대로 들어간다.
+ *
+ * 「어느 API가 이 글자를 만들었나」가 아니라 **「어느 파이프라인이 이 자리를 다 봤나」**다.
+ * 구글에서 못 찾아 Nominatim의 도시 이름으로 떨어진 것도 'google'이다 — 구글까지
+ * 물어본 자리라는 뜻이라야, 키가 생겼을 때 다시 물어볼 자리를 고를 수 있다.
+ */
+export type PlaceSource = 'osm' | 'google';
+
+const googleKey = () => process.env.GOOGLE_MAPS_API_KEY?.trim() || null;
+
+/** 지금 어느 길로 물어보는지 — 백필이 「다시 물어볼 자리」를 고를 때 쓴다 */
+export function placePipeline(): PlaceSource {
+  return googleKey() ? 'google' : 'osm';
+}
 
 /**
  * Nominatim 이용 정책이 요구하는 신원 표시. 이게 없으면 막힌다 — 선택이 아니다.
@@ -109,7 +134,16 @@ interface NominatimAddress {
  * 「어디였더라」는 사진을 보면 되지만 「Chase Bank에서 찍었네」는 기억을 덮어쓴다.
  * 그래서 그 점 위에 실제로 무엇이 있을 때만 이름을 받는다 (zoom=18).
  */
-export async function placeName(lat: number, lon: number): Promise<string | null> {
+export async function placeName(lat: number, lon: number): Promise<{ name: string | null; source: PlaceSource }> {
+  if (googleKey()) {
+    const hit = await googlePlaceName(lat, lon);
+    // 구글이 못 찾았으면 도시 이름이라도 — 허허벌판에서는 업소가 아예 없다
+    return { name: hit ?? (await osmPlaceName(lat, lon)), source: 'google' };
+  }
+  return { name: await osmPlaceName(lat, lon), source: 'osm' };
+}
+
+async function osmPlaceName(lat: number, lon: number): Promise<string | null> {
   const q = new URLSearchParams({
     lat: lat.toFixed(6),
     lon: lon.toFixed(6),
@@ -163,6 +197,80 @@ function shortLabel(d: { name?: string; category?: string; address?: NominatimAd
 function trim(v: string | undefined): string | null {
   const s = v?.trim();
   return s && s.length <= 40 ? s : null;
+}
+
+/* ── 구글 Places: 이 점에 뭐가 있나 ─────────────────────────────────── */
+
+/**
+ * 반경. **좁게 잡는다.**
+ *
+ * GPS가 50~100m씩 튀는데 여기를 넓히면 가장 가까운 업소를 집게 되고, 그건 옆 가게다.
+ * 「어디였더라」는 사진을 보면 되지만 「Chase Bank에서 찍었네」는 기억을 덮어쓴다.
+ * 60m면 그 건물 안에 있을 때만 걸린다.
+ */
+const NEARBY_RADIUS_M = 60;
+
+/**
+ * 이름으로 안 쓸 종류.
+ *
+ * 가장 가까운 것을 집기 때문에 주차장·ATM·정류장이 자꾸 1등이 된다. 「그 식당 주차장」은
+ * 식당이 아니고, 그 이름이 붙으면 그 자리에 대해 아무것도 안 알려 준다.
+ */
+const NOISE_TYPES = new Set([
+  'parking',
+  'atm',
+  'bus_stop',
+  'transit_station',
+  'bus_station',
+  'train_station',
+  'subway_station',
+  'electric_vehicle_charging_station',
+  'rest_stop',
+]);
+
+/** 구글에 물어본다. 키가 없거나 못 찾으면 null (부르는 쪽이 OSM으로 떨어진다) */
+async function googlePlaceName(lat: number, lon: number): Promise<string | null> {
+  const key = googleKey();
+  if (!key) return null;
+  try {
+    const res = await fetch(GOOGLE_NEARBY, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': key,
+        // 안 쓸 칸까지 받으면 비싼 등급으로 올라간다 — 이름과 종류만 받는다
+        'X-Goog-FieldMask': 'places.displayName,places.primaryType,places.types',
+      },
+      body: JSON.stringify({
+        locationRestriction: {
+          circle: { center: { latitude: lat, longitude: lon }, radius: NEARBY_RADIUS_M },
+        },
+        // 가까운 순으로 몇 개 받아서 잡음을 건너뛴다 — 1개만 받으면 주차장에 걸린다
+        maxResultCount: 5,
+        rankPreference: 'DISTANCE',
+        languageCode: 'en',
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      cache: 'no-store',
+    });
+    if (!res.ok) {
+      console.warn('[geocode] 구글이 거절했다:', res.status, (await res.text()).slice(0, 200));
+      return null;
+    }
+    const data = (await res.json()) as {
+      places?: { displayName?: { text?: string }; primaryType?: string; types?: string[] }[];
+    };
+    for (const p of data.places ?? []) {
+      if (p.primaryType && NOISE_TYPES.has(p.primaryType)) continue;
+      if (p.types?.some((t) => NOISE_TYPES.has(t))) continue;
+      const name = trim(p.displayName?.text);
+      if (name) return name;
+    }
+    return null;
+  } catch (e) {
+    console.warn('[geocode] 구글에 못 물어봤다:', e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 /* ── 주소 → 좌표 ────────────────────────────────────────────────────── */

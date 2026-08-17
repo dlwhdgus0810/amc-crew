@@ -136,3 +136,13 @@ export function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: n
     Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
 }
+
+/**
+ * 타임라인이 놓은 순서 그대로 한 줄로.
+ *
+ * 확대 창이 이 순서를 쓴다 — 화면에서 세 번째로 보이는 사진을 눌렀는데 넘기기가
+ * 올린 순서를 따라가면 옆 사진이 딴 날 것이 된다.
+ */
+export function timelineOrder<T>(tl: Timeline<T>): T[] {
+  return [...tl.days.flatMap((d) => d.stops.flatMap((s) => s.photos)), ...tl.undated];
+}

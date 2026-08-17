@@ -368,6 +368,18 @@ export const postPhotos = pgTable(
      * 못 찾았거나 아직 안 물어본 사진은 null이다 — 그때는 시각만 보여준다.
      */
     place: text('place'),
+    /**
+     * 위 이름을 **어느 길로 얻었는지** — 'osm' | 'google' | 'manual'.
+     *
+     * 「어느 API가 이 글자를 만들었나」가 아니라 「어느 파이프라인이 이 자리를 다 봤나」다.
+     * 구글 키가 있을 때는 가게 이름을 구글에 묻고 못 찾으면 도시 이름을 OSM에서 받는데,
+     * 그렇게 나온 「Carrollton, TX」도 'google'로 적는다 — 구글까지 물어본 자리라는 뜻이라야
+     * 다시 물어볼 자리를 고를 수 있다.
+     *
+     * 이게 있어야 하는 이유: 키가 나중에 생기면 이미 붙은 OSM 이름을 다시 물어 올려야 하고,
+     * 사람이 손으로 고친 이름은 그때 덮이면 안 된다.
+     */
+    placeSource: text('place_source'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     /** 지워도 저장소의 파일은 남긴다 — 되살릴 때 깨진 그림이 되지 않도록 (lib/db/photos.ts) */
     deletedAt: deletedAt(),

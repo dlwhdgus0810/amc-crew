@@ -3,6 +3,7 @@ import { getDb } from './index';
 import { postParticipants, postPhotos, posts } from './schema';
 import { signedUrls } from '../blob';
 import { NO_EXIF, type PhotoExifInput } from '../photos';
+import { getCategory } from '../categories';
 
 /**
  * 모임 사진 — DB 쪽.
@@ -152,7 +153,7 @@ export async function photoStrips(
     .where(and(inArray(postPhotos.postId, postIds), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
 
-  const byPost = new Map<string, PhotoRow[]>();
+  const byPost = new Map<string, (typeof rows)[number][]>();
   for (const r of rows) {
     const list = byPost.get(r.postId) ?? [];
     list.push(r);
@@ -203,6 +204,8 @@ export interface PhotoWallGroup {
   title: string | null;
   date: string | null;
   startTime: string | null;
+  /** 마지막 날 — 여행처럼 며칠짜리 모임에서만. 머리줄이 「8/14(금) ~ 8/16(일)」이 된다 */
+  endDate: string | null;
   /** 실린 사진 (앞의 몇 장) — 크게 볼 때 쓰는 1600px 쪽 */
   urls: string[];
   /** urls와 같은 순서의 격자용 400px (없는 옛 사진은 urls의 것이 들어간다) */
@@ -215,6 +218,22 @@ export interface PhotoWallGroup {
    * (app/api/photos/[photoId]/download).
    */
   downloads: { url: string; isOriginal: boolean }[];
+  /**
+   * urls와 **같은 순서**의 찍은 시각·자리. 타임라인을 쓰는 카테고리에서만 채워진다
+   * (lib/categories.ts의 timeline). 그 밖에는 빈 배열이라 모아보기가 격자로 그린다.
+   *
+   * 나란한 배열을 하나 더 다는 것이 못생겼지만, 여기 urls·thumbs·downloads가 이미
+   * 그 모양이라 혼자만 객체 배열로 가면 화면 쪽이 두 규칙을 알게 된다.
+   */
+  taken: {
+    takenAt: string | null;
+    takenOffset: number | null;
+    lat: number | null;
+    lon: number | null;
+    place: string | null;
+  }[];
+  /** 숙소 좌표 — 있으면 그 근처 자리에 「숙소」가 붙는다 */
+  lodgingAt: { lat: number; lon: number } | null;
   /** 자른 수가 아니라 그 모임의 실제 전체 장수 */
   count: number;
   /**
@@ -272,6 +291,9 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       title: posts.title,
       date: posts.date,
       startTime: posts.startTime,
+      endDate: posts.endDate,
+      lodgingLat: posts.lodgingLat,
+      lodgingLon: posts.lodgingLon,
       photosPublic: posts.photosPublic,
     })
     .from(posts)
@@ -294,12 +316,17 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       pathname: postPhotos.pathname,
       thumbPathname: postPhotos.thumbPathname,
       originalPathname: postPhotos.originalPathname,
+      takenAt: postPhotos.takenAt,
+      takenOffset: postPhotos.takenOffset,
+      lat: postPhotos.lat,
+      lon: postPhotos.lon,
+      place: postPhotos.place,
     })
     .from(postPhotos)
     .where(and(inArray(postPhotos.postId, mine.map((m) => m.id)), isNull(postPhotos.deletedAt)))
     .orderBy(asc(postPhotos.createdAt));
 
-  const byPost = new Map<string, PhotoRow[]>();
+  const byPost = new Map<string, (typeof rows)[number][]>();
   for (const r of rows) {
     const list = byPost.get(r.postId) ?? [];
     list.push(r);
@@ -318,6 +345,12 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
     const urls: string[] = [];
     const thumbs: string[] = [];
     const downloads: PhotoWallGroup['downloads'] = [];
+    const taken: PhotoWallGroup['taken'] = [];
+    /*
+     * 찍은 시각·자리는 타임라인을 쓰는 카테고리에서만 싣는다. 다른 카테고리는 애초에
+     * 그 칸이 비어 있지만(lib/photos.ts의 exifFromBody), 내보내는 자리에서도 한 번 더 막는다.
+     */
+    const withTime = Boolean(getCategory(m.category)?.timeline);
     for (const p of list.slice(0, WALL_PER_POST)) {
       const url = signed.get(p.pathname);
       if (!url) continue;
@@ -325,6 +358,15 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
       thumbs.push(thumbOr(signed, p, url));
       // 갔던 모임에만 받기를 붙인다 (위 downloads 주석)
       if (joined) downloads.push({ url: downloadPath(p.id), isOriginal: Boolean(p.originalPathname) });
+      if (withTime) {
+        taken.push({
+          takenAt: p.takenAt?.toISOString() ?? null,
+          takenOffset: p.takenOffset,
+          lat: p.lat,
+          lon: p.lon,
+          place: p.place,
+        });
+      }
     }
     if (urls.length) {
       out.push({
@@ -334,9 +376,15 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
         title: m.title,
         date: m.date,
         startTime: m.startTime,
+        endDate: m.endDate,
         urls,
         thumbs,
         downloads,
+        taken,
+        lodgingAt:
+          withTime && m.lodgingLat != null && m.lodgingLon != null
+            ? { lat: m.lodgingLat, lon: m.lodgingLon }
+            : null,
         count: list.length,
         photosPublic: m.photosPublic,
       });

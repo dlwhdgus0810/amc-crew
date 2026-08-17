@@ -40,6 +40,15 @@ export function mapsUrl(location: string): string {
  *
  * 소수점 다섯 자리면 1m 남짓이다. 그 아래는 GPS 자체가 못 맞추는 자리라 자릿수만 는다.
  */
-export function mapsPointUrl(lat: number, lon: number): string {
-  return `https://www.google.com/maps/search/?api=1&query=${lat.toFixed(5)},${lon.toFixed(5)}`;
+export function mapsPointUrl(lat: number, lon: number, name?: string | null): string {
+  const at = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+  /*
+   * 이름을 아는 자리는 **이름으로 열되 그 점을 중심에 두고** 연다.
+   *
+   * 좌표만 주면 지도가 이름 없는 핀 하나를 떨어뜨린다 — 정확하긴 한데 「거기가 뭐였지」에
+   * 답을 안 한다. 그렇다고 이름만 검색시키면 같은 이름의 다른 지점이 나온다.
+   * @좌표를 붙이면 그 점 근처에서 그 이름을 찾으므로 둘 다 지킨다.
+   */
+  if (name?.trim()) return `https://www.google.com/maps/search/${encodeURIComponent(name.trim())}/@${at},17z`;
+  return `https://www.google.com/maps/search/?api=1&query=${at}`;
 }
