@@ -326,6 +326,44 @@ export const CATEGORIES: Category[] = [
     locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
   },
   /*
+   * 여행 — 텍사스에 다녀오고 나서 열었다.
+   *
+   * 「텍사스」로 만들지 않은 이유: 다음 여행에서 또 카테고리를 만들어야 하고, 지난 것은
+   * 목록에 내려야 한다. 갈 곳은 모임마다 다르니 그건 titleLabel로 받는다 — 카드에
+   * 〈텍사스〉로 붙는다.
+   *
+   * 색은 movienight(161°)와 baking(203°) 사이가 가장 넓게 비어 있어서 그 가운데(183°)에
+   * 넣었다. 채도는 .095로 위의 .13에 못 미치는데, 이 청록 구간은 sRGB가 거기까지 못 간다
+   * (baking이 .093으로 같은 처지다). 크림색 글씨 대비 4.2:1로 이웃들과 같다.
+   */
+  {
+    slug: 'trip',
+    emoji: '🧳',
+    en: 'TRIP',
+    color: '#118376',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '여행', en: 'Trip', es: 'Viaje' },
+    description: {
+      ko: '멀리 안 가도 여행이에요',
+      en: 'It counts even when it is not far.',
+      es: 'Cuenta aunque no sea lejos.',
+    },
+    // 어디로 갔는지가 이 카드에서 제일 먼저 묻는 것이라 제목 자리에 받는다
+    titleLabel: { ko: '어디로 (선택)', en: 'Where to (optional)', es: 'Adónde (opcional)' },
+    titleOptions: [
+      { ko: '텍사스', en: 'Texas', es: 'Texas' },
+      { ko: '콜로라도', en: 'Colorado', es: 'Colorado' },
+      { ko: '시카고', en: 'Chicago', es: 'Chicago' },
+    ],
+    locationLabel: { ko: '모이는 곳', en: 'Meeting point', es: 'Punto de encuentro' },
+    locationHint: {
+      ko: '예: 오버랜드파크 코스트코 주차장',
+      en: 'e.g. Costco parking lot, Overland Park',
+      es: 'p. ej. aparcamiento de Costco, Overland Park',
+    },
+  },
+  /*
    * 일식 하루짜리 카드. 끝나면 관리자 화면에서 목록에 내린다 (지우지 않는다 —
    * 그날 찍은 사진과 댓글은 그대로 남는다).
    *
