@@ -35,6 +35,12 @@ export const dynamic = 'force-dynamic';
 /** 한 번에 물어볼 횟수. 초당 한 번이라 이만큼이 20초쯤이다 — 더 남으면 화면이 다시 부른다 */
 const ASK_LIMIT = 15;
 
+/**
+ * 더 물어볼 것이 없는 상태들. 나머지(빈 값과 'osm')는 구글에 다시 묻는다.
+ * 빈 값이 여기 없는 것이 핵심이다 — place_source 칸이 생기기 전에 붙은 이름이 그 모양이다.
+ */
+const ASKED_GOOGLE = new Set(['google', 'manual']);
+
 export async function POST() {
   const user = await getSessionUser();
   if (!user) return await errJson(E.loginRequired, 401);
@@ -111,11 +117,14 @@ export async function POST() {
       /*
        * 물어볼 자리인가. 두 가지다:
        *  - 아직 이름이 없는 사진이 있다
-       *  - 지금 길이 구글인데 이 자리는 OSM으로만 물어봤다 (더 좋은 답이 있을 자리)
+       *  - 지금 길이 구글인데 이 자리는 아직 구글에 안 물어봤다 (더 좋은 답이 있을 자리)
+       *
+       * **place_source가 비어 있으면 「구글 이전」이다.** 그 칸이 생기기 전에 붙은 이름들이
+       * 그렇다 — 값이 없다고 건너뛰면 정작 올려야 할 이름들이 영영 안 올라간다.
        * 손으로 고친 것('manual')은 어느 쪽에도 안 걸린다.
        */
       const needs = stop.photos.some(
-        (p) => !p.place || (pipeline === 'google' && p.placeSource === 'osm')
+        (p) => !p.place || (pipeline === 'google' && !ASKED_GOOGLE.has(p.placeSource ?? ''))
       );
       if (!needs) continue;
 
@@ -151,9 +160,13 @@ export async function POST() {
         isNotNull(postPhotos.lat),
         isNull(postPhotos.deletedAt),
         isNull(posts.deletedAt),
-        // 아직 이름이 없거나, 구글이 붙었는데 OSM으로만 물어본 것
+        // 아직 이름이 없거나, 구글이 붙었는데 아직 구글에 안 물어본 것 (빈 값 = 구글 이전)
         pipeline === 'google'
-          ? or(isNull(postPhotos.place), eq(postPhotos.placeSource, 'osm'))
+          ? or(
+              isNull(postPhotos.place),
+              isNull(postPhotos.placeSource),
+              eq(postPhotos.placeSource, 'osm')
+            )
           : isNull(postPhotos.place)
       )
     );

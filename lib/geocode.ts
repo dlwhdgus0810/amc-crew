@@ -137,8 +137,20 @@ interface NominatimAddress {
 export async function placeName(lat: number, lon: number): Promise<{ name: string | null; source: PlaceSource }> {
   if (googleKey()) {
     const hit = await googlePlaceName(lat, lon);
-    // 구글이 못 찾았으면 도시 이름이라도 — 허허벌판에서는 업소가 아예 없다
-    return { name: hit ?? (await osmPlaceName(lat, lon)), source: 'google' };
+    /*
+     * **못 물어본 것과 못 찾은 것은 다르다.**
+     *
+     * 키가 막혀 있으면(웹사이트 제한이 걸린 키가 그렇다 — 서버 호출에는 리퍼러가 없다)
+     * 구글은 한 자리도 못 본 것이다. 그걸 'google'로 적어 두면 키를 고친 뒤에 다시
+     * 물어볼 자리가 하나도 안 남는다. 그래서 'osm'으로 적어 다음에 또 걸리게 둔다.
+     *
+     * 물어봤는데 없는 것(null)은 진짜 없는 것이다 — 고속도로 한복판이 그렇다.
+     * 그건 'google'로 적어야 그 자리를 붙들고 영영 다시 묻지 않는다.
+     */
+    if (hit !== FAILED) {
+      // 구글이 못 찾았으면 도시 이름이라도 — 허허벌판에서는 업소가 아예 없다
+      return { name: hit ?? (await osmPlaceName(lat, lon)), source: 'google' };
+    }
   }
   return { name: await osmPlaceName(lat, lon), source: 'osm' };
 }
@@ -228,10 +240,18 @@ const NOISE_TYPES = new Set([
   'rest_stop',
 ]);
 
-/** 구글에 물어본다. 키가 없거나 못 찾으면 null (부르는 쪽이 OSM으로 떨어진다) */
-async function googlePlaceName(lat: number, lon: number): Promise<string | null> {
+/** 아예 못 물어봤다 — 키가 막혔거나 응답이 안 왔다. 「물어봤는데 없다」(null)와 다르다 */
+const FAILED = Symbol('geocode-failed');
+
+/**
+ * 구글에 물어본다.
+ *   string  찾았다
+ *   null    물어봤는데 그 점에 업소가 없다
+ *   FAILED  못 물어봤다 (키가 막혔거나 응답이 안 왔다)
+ */
+async function googlePlaceName(lat: number, lon: number): Promise<string | null | typeof FAILED> {
   const key = googleKey();
-  if (!key) return null;
+  if (!key) return FAILED;
   try {
     const res = await fetch(GOOGLE_NEARBY, {
       method: 'POST',
@@ -254,8 +274,8 @@ async function googlePlaceName(lat: number, lon: number): Promise<string | null>
       cache: 'no-store',
     });
     if (!res.ok) {
-      console.warn('[geocode] 구글이 거절했다:', res.status, (await res.text()).slice(0, 200));
-      return null;
+      console.warn('[geocode] 구글이 거절했다:', res.status, (await res.text()).slice(0, 300));
+      return FAILED;
     }
     const data = (await res.json()) as {
       places?: { displayName?: { text?: string }; primaryType?: string; types?: string[] }[];
@@ -269,7 +289,7 @@ async function googlePlaceName(lat: number, lon: number): Promise<string | null>
     return null;
   } catch (e) {
     console.warn('[geocode] 구글에 못 물어봤다:', e instanceof Error ? e.message : e);
-    return null;
+    return FAILED;
   }
 }
 
