@@ -2,12 +2,15 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useT } from './i18n';
+import { useLocale, useT } from './i18n';
 import { usePosterZoom, type Zoomed } from './poster-zoom';
 import { UnreadableImageError, uploadPhoto } from '@/lib/photo-client';
 import { saveFile } from '@/lib/download-client';
 import { useSavePhotos } from './save-photos';
 import { MAX_PER_BATCH, MAX_PHOTOS_PER_POST } from '@/lib/photos';
+import { buildTimeline } from '@/lib/photo-timeline';
+import { dateLabelShort, timeLabel } from '@/lib/datefmt';
+import { mapsPointUrl } from '@/lib/maps';
 
 /**
  * 모임 사진 — 가기 전 안내문도, 다녀와서 찍은 것도 여기 같이 쌓인다.
@@ -45,6 +48,9 @@ const T = {
     es: 'No se puede leer ese formato (HEIC). Cambia Ajustes › Cámara › Formatos a «Más compatible» en el iPhone, o edita y guarda la foto una vez y vuelve a intentarlo.',
   },
   del: { ko: '지우기', en: 'Remove', es: 'Quitar' },
+  /* 여행 타임라인 */
+  here: { ko: '지도', en: 'Map', es: 'Mapa' },
+  undated: { ko: '시각을 모르는 사진', en: 'No time on these', es: 'Sin hora' },
   delFailed: { ko: '지우지 못했어요.', en: 'Couldn’t remove that.', es: 'No se pudo quitar.' },
   by: { ko: '{name} 올림', en: 'by {name}', es: 'de {name}' },
   allHint: {
@@ -90,6 +96,12 @@ export interface PhotoItem {
   downloadUrl?: string | null;
   /** 그 주소가 올린 파일 그대로인지 */
   downloadIsOriginal?: boolean;
+  /** 찍은 시각 (ISO) — 타임라인 카테고리에서만 채워진다 (lib/exif.ts) */
+  takenAt?: string | null;
+  /** 찍은 자리의 UTC 오프셋(분) */
+  takenOffset?: number | null;
+  lat?: number | null;
+  lon?: number | null;
 }
 
 export default function PhotoPanel({
@@ -104,6 +116,7 @@ export default function PhotoPanel({
   isPrivate,
   isAnon,
   canOpen,
+  timeline,
 }: {
   postId: string;
   photos: PhotoItem[];
@@ -125,6 +138,12 @@ export default function PhotoPanel({
    * (서버가 다시 확인한다 — app/api/posts/[id]/photos-public)
    */
   canOpen: boolean;
+  /**
+   * 찍은 순서로 늘어놓는 카테고리인지 (여행). 켜져 있으면 올릴 때 원본에서 찍은 시각과
+   * 자리를 읽어 같이 보낸다 — 안 읽고 지나가면 화면용을 굽는 순간 EXIF가 사라진다.
+   * 무엇을 담을지는 서버가 카테고리를 보고 다시 정한다 (lib/photos.ts의 exifFromBody).
+   */
+  timeline: boolean;
 }) {
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,19 +153,54 @@ export default function PhotoPanel({
   const router = useRouter();
   const zoom = usePosterZoom();
   const t = useT();
+  const locale = useLocale();
+
+  /*
+   * 여행이면 찍은 순서로 늘어놓는다. 한 장도 시각을 모르면 그냥 격자다 — 옛 사진만
+   * 있는 모임에서 「시각을 모르는 사진」 한 줄만 덩그러니 남는 꼴을 막는다.
+   */
+  const tl =
+    timeline && photos.some((p) => p.takenAt) ? buildTimeline(photos) : null;
+  /*
+   * 확대해서 넘겨 볼 순서는 **화면에 놓인 순서**여야 한다. 타임라인에서 세 번째 사진을
+   * 열었는데 올린 순서로 넘어가면 옆 사진이 딴 날 것이 된다.
+   */
+  const ordered = tl ? [...tl.days.flatMap((d) => d.stops.flatMap((s) => s.photos)), ...tl.undated] : photos;
+  const slotOf = new Map(ordered.map((p, i) => [p.id, i]));
 
   const inMeetup = Boolean(currentUserId && participants.some((p) => p.id === currentUserId));
   const canAdd = inMeetup || isAdmin;
   const nameOf = (userId: string) => participants.find((p) => p.id === userId)?.name ?? t(T.unknown);
 
-  // 확대 창에 넘길 목록 — 격자 순서 그대로다
-  const items: Zoomed[] = photos.map((p) => ({
+  // 확대 창에 넘길 목록 — 화면에 놓인 순서 그대로다
+  const items: Zoomed[] = ordered.map((p) => ({
     src: p.url,
     name: label,
     by: t(T.by, { name: nameOf(p.userId) }),
     downloadUrl: p.downloadUrl ?? null,
     downloadIsOriginal: Boolean(p.downloadIsOriginal),
   }));
+
+  /** 격자 한 칸. 격자와 타임라인이 같은 것을 쓴다 — 지우기 버튼 조건이 갈리면 안 된다 */
+  function cell(p: PhotoItem) {
+    return (
+      <div key={p.id} className="photo-cell">
+        {/* 격자는 썸네일, 눌러서 크게 보는 것은 items의 화면용이다 */}
+        {zoom.triggerAt(
+          items,
+          slotOf.get(p.id) ?? 0,
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={p.thumbUrl || p.url} alt="" loading="lazy" />
+        )}
+        {/* 올린 사람과 호스트만 — 서버가 다시 확인한다 */}
+        {(p.userId === currentUserId || isHost || isAdmin) && (
+          <button className="photo-del" aria-label={t(T.del)} onClick={() => remove(p)}>
+            ✕
+          </button>
+        )}
+      </div>
+    );
+  }
 
   async function pick(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -165,7 +219,7 @@ export default function PhotoPanel({
     setBusy({ done: 0, total: list.length });
     for (let i = 0; i < list.length; i++) {
       try {
-        const up = await uploadPhoto(list[i]!, currentUserId!, postId);
+        const up = await uploadPhoto(list[i]!, currentUserId!, postId, { exif: timeline });
         // 사진은 올라갔다 — 원본만 빠졌으면 멈추지 않고 알려만 준다
         if (up.originalError) setError(t(T.origFailed, { why: up.originalError }));
         // 바이트는 저장소에 갔고, 모임에 매다는 것은 여기서
@@ -179,6 +233,8 @@ export default function PhotoPanel({
             thumbPathname: up.thumbPathname,
             width: up.width,
             height: up.height,
+            // Date는 JSON을 건너면서 ISO 문자열이 된다 — 서버가 그 모양으로 읽는다
+            exif: up.exif,
           }),
         });
         if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? t(T.failed));
@@ -232,25 +288,49 @@ export default function PhotoPanel({
           </p>
         )}
 
-        {photos.length > 0 && (
-          <div className="photo-grid">
-            {photos.map((p, i) => (
-              <div key={p.id} className="photo-cell">
-                {/* 격자는 썸네일, 눌러서 크게 보는 것은 items의 화면용이다 */}
-                {zoom.triggerAt(
-                  items,
-                  i,
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.thumbUrl || p.url} alt="" loading="lazy" />
-                )}
-                {/* 올린 사람과 호스트만 — 서버가 다시 확인한다 */}
-                {(p.userId === currentUserId || isHost || isAdmin) && (
-                  <button className="photo-del" aria-label={t(T.del)} onClick={() => remove(p)}>
-                    ✕
-                  </button>
-                )}
-              </div>
+        {photos.length > 0 && !tl && <div className="photo-grid">{photos.map(cell)}</div>}
+
+        {/*
+          * 여행은 격자 대신 찍은 순서다 — 날짜, 그리고 그날 멈춘 자리별로.
+          *
+          * 자리마다 지도 링크를 단다. 좌표를 「In-N-Out」 같은 이름으로 바꾸려면 지오코딩
+          * 키가 필요해서, 지금은 눌러서 지도에서 확인하는 데까지다.
+          */}
+        {tl && (
+          <div className="tl">
+            {tl.days.map((day) => (
+              <section key={day.date} className="tl-day">
+                <h3 className="tl-date">{dateLabelShort(day.date, locale)}</h3>
+                {day.stops.map((stop) => (
+                  <div key={stop.time} className="tl-stop">
+                    <div className="tl-when">
+                      <span className="tl-time">
+                        {timeLabel(stop.time, locale)}
+                        {stop.endTime !== stop.time && ` – ${timeLabel(stop.endTime, locale)}`}
+                      </span>
+                      {stop.lat != null && stop.lon != null && (
+                        <a
+                          className="tl-map"
+                          href={mapsPointUrl(stop.lat, stop.lon)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t(T.here)}
+                        </a>
+                      )}
+                    </div>
+                    <div className="photo-grid">{stop.photos.map(cell)}</div>
+                  </div>
+                ))}
+              </section>
             ))}
+            {/* 시각을 모르는 사진도 사라지면 안 된다 — 스크린샷이거나 원본이 없는 것들이다 */}
+            {tl.undated.length > 0 && (
+              <section className="tl-day">
+                <h3 className="tl-date">{t(T.undated)}</h3>
+                <div className="photo-grid">{tl.undated.map(cell)}</div>
+              </section>
+            )}
           </div>
         )}
 

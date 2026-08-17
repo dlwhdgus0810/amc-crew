@@ -110,6 +110,11 @@ CREATE TABLE IF NOT EXISTS post_photos (
   thumb_pathname text,
   width integer,
   height integer,
+  -- 찍은 시각·자리 (EXIF) — 여행 타임라인이 쓴다. lib/db/schema.ts의 주석 참고
+  taken_at timestamptz,
+  taken_offset integer,
+  lat double precision,
+  lon double precision,
   created_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
 );

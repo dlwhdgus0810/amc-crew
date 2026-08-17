@@ -12,6 +12,7 @@
  */
 
 import { upload } from '@vercel/blob/client';
+import { readExifFromBlob, type PhotoExif } from './exif';
 import { contentTypeForExt, originalExt, originalPath, photoPath, thumbPath } from './photos';
 
 /** 긴 변 기준. 폰 화면에서 크게 봐도 충분하고, 장당 200~500KB로 떨어진다 */
@@ -55,11 +56,16 @@ export class UnreadableImageError extends Error {}
  * 원본은 **왜 실패했는지도 돌려준다**. 처음엔 조용히 넘겼는데, 그러면 「원본 받기」가
  * 안 보이는 이유를 아무 데서도 알 수 없다 (실제로 그래서 한 번 헤맸다). 썸네일은
  * 안 돌려준다 — 없어도 화면이 그대로라 쓰는 사람에게 할 말이 없다.
+ *
+ * `exif`를 켜면 **줄이기 전에** 고른 파일에서 찍은 시각과 자리를 읽는다. 여기서 안 읽으면
+ * 영영 못 읽는다 — 아래 shrinkToJpeg가 캔버스로 다시 구우면서 EXIF를 통째로 떨어뜨리기
+ * 때문이다. 여행처럼 타임라인을 쓰는 카테고리에서만 켠다 (lib/categories.ts의 timeline).
  */
 export async function uploadPhoto(
   file: File,
   userId: string,
-  postId?: string
+  postId?: string,
+  opts?: { exif?: boolean }
 ): Promise<{
   pathname: string;
   originalPathname: string | null;
@@ -69,9 +75,13 @@ export async function uploadPhoto(
   originalError: string | null;
   width: number;
   height: number;
+  /** 찍은 시각·자리. opts.exif를 안 켰거나 파일에 없으면 null */
+  exif: PhotoExif | null;
   /** 화면용으로 구운 JPEG — 만들기 화면의 미리보기가 쓴다 (원본은 HEIC일 수 있어서 못 그린다) */
   display: Blob;
 }> {
+  // 줄이기 전에 읽는다 — 구우면 EXIF가 사라진다
+  const exif = opts?.exif ? await readExifFromBlob(file) : null;
   const { blob, width, height } = await shrinkToJpeg(file);
   const uuid = crypto.randomUUID();
   const payload = JSON.stringify({ kind: 'photo', ...(postId ? { postId } : {}) });
@@ -120,7 +130,7 @@ export async function uploadPhoto(
     console.warn('[photo] 썸네일 업로드 실패 (격자는 화면용을 쓴다):', e);
   }
 
-  return { pathname: put.pathname, originalPathname, thumbPathname, originalError, width, height, display: blob };
+  return { pathname: put.pathname, originalPathname, thumbPathname, originalError, width, height, exif, display: blob };
 }
 
 /**

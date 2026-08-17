@@ -125,6 +125,16 @@ const T = {
   thumbDone: { ko: '{n}장 채웠어요.', en: 'Filled {n} photos.' },
   thumbNone: { ko: '채울 사진이 없어요 — 전부 되어 있어요.', en: 'Nothing to fill — they all have one.' },
   thumbFailed: { ko: '채우다 멈췄어요: {why}', en: 'Stopped: {why}' },
+  exifTitle: { ko: '여행 사진 찍은 시각·자리 채우기', en: 'Fill in trip photo times and places' },
+  exifHint: {
+    ko: '여행 모임에 이미 올라간 사진의 원본에서 찍은 시각과 좌표를 읽어 채워요. 타임라인이 그걸로 그려져요. 원본이 없는 옛 사진과 스크린샷은 읽을 것이 없어 건너뛰어요.',
+    en: 'Reads the time and coordinates out of the originals already uploaded to trip meetups — that’s what the timeline is drawn from. Photos with no original, and screenshots, have nothing to read.',
+  },
+  exifRun: { ko: '채우기 시작', en: 'Start' },
+  exifBusy: { ko: '읽는 중…', en: 'Reading…' },
+  exifDone: { ko: '{n}장 채웠어요. {left}장은 읽을 것이 없었어요.', en: 'Filled {n}. {left} had nothing to read.' },
+  exifNone: { ko: '채울 사진이 없어요.', en: 'Nothing to fill.' },
+  exifFailed: { ko: '채우다 멈췄어요: {why}', en: 'Stopped: {why}' },
   noticeLinkLabel: { ko: '보러 갈 곳 (선택)', en: 'Where it takes them (optional)' },
   noticeLinkHint: {
     ko: '적어 두면 공지에 「보러 가기」 버튼이 붙어요. 앱 안의 경로만 돼요 — /photos, /reviews, /p/모임아이디처럼요.',
@@ -279,6 +289,7 @@ export default function AdminPage() {
   const isKakaoAdmin = viewer.isAdmin;
   /** 썸네일 백필 진행 상황 — null이면 안 돌고 있다 */
   const [thumbBusy, setThumbBusy] = useState<{ done: number; total: number } | null>(null);
+  const [exifBusy, setExifBusy] = useState(false);
   const [deleted, setDeleted] = useState<
     { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
   >(null);
@@ -325,6 +336,7 @@ export default function AdminPage() {
   const [onlineOpen, setOnlineOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   const [thumbOpen, setThumbOpen] = useState(false);
+  const [exifOpen, setExifOpen] = useState(false);
   const [banBusy, setBanBusy] = useState<string | null>(null);
   const [banReason, setBanReason] = useState('');
   const [members, setMembers] = useState<
@@ -823,6 +835,39 @@ export default function AdminPage() {
     }
   }
 
+  /**
+   * 여행 사진 EXIF 백필 — 여기는 부르기만 한다.
+   *
+   * 썸네일 쪽과 달리 브라우저가 할 일이 없다. 바이트를 읽는 일이라 서버가 원본 앞부분만
+   * 받아 파싱하고 행에 적는다 (app/api/admin/photo-exif). 한 번에 마흔 장씩 보므로,
+   * 더 남아 있으면 다 될 때까지 다시 부른다.
+   */
+  async function backfillExif() {
+    setExifBusy(true);
+    setMsg(null);
+    let filled = 0;
+    let left = 0;
+    try {
+      for (;;) {
+        const res = await fetch('/api/admin/photo-exif', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? t(T.failed));
+        filled += data.filled as number;
+        left = data.left as number;
+        // 본 것이 없거나 남은 것이 이번에 본 것뿐이면 더 볼 것이 없다 (읽을 게 없던 사진들)
+        if (data.scanned === 0 || data.filled === 0) break;
+      }
+      setMsg({
+        type: 'ok',
+        text: filled > 0 || left > 0 ? t(T.exifDone, { n: filled, left }) : t(T.exifNone),
+      });
+    } catch (e) {
+      setMsg({ type: 'err', text: t(T.exifFailed, { why: e instanceof Error ? e.message : String(e) }) });
+    } finally {
+      setExifBusy(false);
+    }
+  }
+
   /** 캐시를 비우고 AMC에서 다시 받아온 뒤, 극장 목록도 함께 조회한다 */
 
   return (
@@ -1016,6 +1061,29 @@ export default function AdminPage() {
               <div className="card">
                 <button className="secondary" disabled={Boolean(thumbBusy)} onClick={backfillThumbs}>
                   {thumbBusy ? t(T.thumbBusy, { done: thumbBusy.done, total: thumbBusy.total }) : t(T.thumbRun)}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/*
+            * 여행 사진 EXIF 백필 — 썸네일 쪽과 나란히 둔다. 둘 다 「이미 올라간 사진에
+            * 빠진 것을 채운다」는 같은 일이고, 한 번 돌리고 나면 쓸 일이 없다는 것도 같다.
+            */}
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={exifOpen} onClick={() => setExifOpen((v) => !v)}>
+              {t(T.exifTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {exifOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {exifOpen && (
+            <>
+              <p className="subtitle">{t(T.exifHint)}</p>
+              <div className="card">
+                <button className="secondary" disabled={exifBusy} onClick={backfillExif}>
+                  {exifBusy ? t(T.exifBusy) : t(T.exifRun)}
                 </button>
               </div>
             </>

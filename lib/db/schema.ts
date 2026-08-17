@@ -1,4 +1,16 @@
-import { boolean, index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  doublePrecision,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  serial,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import type { TitleMeta } from '../tmdb';
 
 /**
@@ -309,6 +321,28 @@ export const postPhotos = pgTable(
     thumbPathname: text('thumb_pathname'),
     width: integer('width'),
     height: integer('height'),
+    /*
+     * 찍은 시각과 찍은 자리 — 여행 타임라인이 쓴다.
+     *
+     * 파일 안(EXIF)에 원래 들어 있는 값이다. 화면용·썸네일은 캔버스로 다시 구우면서
+     * EXIF가 통째로 날아가므로, 손 안 댄 원본을 올릴 때 한 번 읽어 여기 옮겨 적는다
+     * (lib/exif.ts). 원본을 못 올린 사진은 영영 null이다.
+     *
+     * **여행 카테고리에서만 채운다** (lib/categories.ts의 timeline). 좌표는 「우리집」이라고
+     * 안 써도 그 집이 어디인지 말해 버리는 값이라, 쓸 데가 있는 자리에만 남긴다.
+     * 서버가 카테고리를 보고 거른다 — 브라우저가 보낸 값을 그냥 담지 않는다.
+     */
+    takenAt: timestamp('taken_at', { withTimezone: true }),
+    /**
+     * 찍은 자리의 UTC 오프셋(분). -300 = 미국 중부 여름.
+     *
+     * 이게 있어야 카메라가 보여 준 벽시계 시각을 되살릴 수 있다. 보는 사람이 어느
+     * 시간대에 있든 「8/14 저녁 7시」는 그때 거기서의 7시여야 한다.
+     * 못 읽었으면 null이고, 그때 takenAt에는 벽시계 시각이 UTC인 척 담겨 있다.
+     */
+    takenOffset: integer('taken_offset'),
+    lat: doublePrecision('lat'),
+    lon: doublePrecision('lon'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     /** 지워도 저장소의 파일은 남긴다 — 되살릴 때 깨진 그림이 되지 않도록 (lib/db/photos.ts) */
     deletedAt: deletedAt(),

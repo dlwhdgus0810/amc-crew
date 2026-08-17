@@ -5,6 +5,8 @@
  * drizzle까지 브라우저 번들에 딸려 들어간다 (lib/ratings.ts와 같은 이유).
  */
 
+import { getCategory } from './categories';
+
 /** 한 모임에 올릴 수 있는 사진 수 */
 export const MAX_PHOTOS_PER_POST = 60;
 /** 한 번에 고를 수 있는 장수 — 순차로 올리므로 너무 많으면 기다림이 길어진다 */
@@ -145,4 +147,56 @@ export function originalPathAllowed(pathname: string, ownerId: string): boolean 
   const suffix = '(-[A-Za-z0-9]+)?';
   const ext = ORIGINAL_EXTS.join('|');
   return new RegExp(`^photos\\/${ownerId}\\/${uuid}-orig${suffix}\\.(${ext})$`).test(pathname);
+}
+
+/**
+ * 사진 한 장의 찍은 시각·자리. 저장되는 모양 그대로다 (lib/db/schema.ts).
+ */
+export interface PhotoExifInput {
+  takenAt: Date | null;
+  takenOffset: number | null;
+  lat: number | null;
+  lon: number | null;
+}
+
+export const NO_EXIF: PhotoExifInput = { takenAt: null, takenOffset: null, lat: null, lon: null };
+
+/** 카메라가 시각을 못 맞춘 채 찍으면 1970년이 박힌다 — 그런 값은 안 받는다 */
+const OLDEST_TAKEN = Date.UTC(2000, 0, 1);
+
+/**
+ * 브라우저가 보낸 EXIF를 받아들일지 정한다.
+ *
+ * **타임라인을 쓰는 카테고리가 아니면 통째로 버린다.** 좌표는 「우리집」이라고 안 써도
+ * 그 집이 어디인지 말해 버리는 값이라, 쓸 데가 있는 자리에만 남긴다 — 지금은 여행뿐이다
+ * (lib/categories.ts의 timeline).
+ *
+ * 화면이 애초에 안 보내지만 거르는 것은 여기다. 화면이 보내는 값은 화면이 정하는 값이라,
+ * 무엇을 담을지는 서버가 정해야 한다. 경로를 다시 보는 것(pathAllowed)과 같은 기준이다.
+ */
+export function exifFromBody(raw: unknown, category: string): PhotoExifInput {
+  if (!getCategory(category)?.timeline) return NO_EXIF;
+  if (!raw || typeof raw !== 'object') return NO_EXIF;
+  const b = raw as Record<string, unknown>;
+
+  let takenAt: Date | null = null;
+  if (typeof b.takenAt === 'string') {
+    const at = new Date(b.takenAt);
+    const ms = at.getTime();
+    // 앞날짜는 시계가 틀어진 기기다. 하루쯤은 시차로 봐준다
+    if (!Number.isNaN(ms) && ms >= OLDEST_TAKEN && ms <= Date.now() + 86_400_000) takenAt = at;
+  }
+
+  const num = (v: unknown, limit: number) =>
+    typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= limit ? v : null;
+  const lat = num(b.lat, 90);
+  const lon = num(b.lon, 180);
+
+  return {
+    takenAt,
+    // 오프셋은 시각이 있을 때만 뜻이 있다 (±14시간이 세상의 끝이다)
+    takenOffset: takenAt ? num(b.takenOffset, 14 * 60) : null,
+    // 둘 중 하나만 온 좌표는 좌표가 아니다. 0,0은 「모름」을 그렇게 적는 기기가 있다
+    ...(lat != null && lon != null && !(lat === 0 && lon === 0) ? { lat, lon } : { lat: null, lon: null }),
+  };
 }

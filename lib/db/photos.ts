@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, postPhotos, posts } from './schema';
 import { signedUrls } from '../blob';
+import { NO_EXIF, type PhotoExifInput } from '../photos';
 
 /**
  * 모임 사진 — DB 쪽.
@@ -51,6 +52,17 @@ export interface PhotoView {
   width: number | null;
   height: number | null;
   createdAt: string;
+  /**
+   * 찍은 시각 (ISO) — 여행 타임라인이 쓴다. 올린 시각(createdAt)과 다르다:
+   * 여행 마지막 날 찍은 사진을 돌아온 다음 주에 올릴 수 있다.
+   *
+   * 여행이 아닌 카테고리에서는 언제나 null이다 — 애초에 안 담는다 (lib/photos.ts).
+   */
+  takenAt: string | null;
+  /** 찍은 자리의 UTC 오프셋(분). 그때 거기서의 벽시계 시각을 되살릴 때 쓴다 */
+  takenOffset: number | null;
+  lat: number | null;
+  lon: number | null;
 }
 
 /**
@@ -382,6 +394,10 @@ export async function listPhotos(
       width: r.width,
       height: r.height,
       createdAt: r.createdAt.toISOString(),
+      takenAt: r.takenAt?.toISOString() ?? null,
+      takenOffset: r.takenOffset,
+      lat: r.lat,
+      lon: r.lon,
     }))
     .filter((p) => p.url);
 }
@@ -405,10 +421,16 @@ export async function addPhoto(input: {
   thumbPathname?: string | null;
   width: number | null;
   height: number | null;
+  /**
+   * 찍은 시각·자리 (EXIF). 부르는 쪽이 lib/photos.ts의 exifFromBody로 걸러서 넘긴다 —
+   * 타임라인을 안 쓰는 카테고리에서는 통째로 null이 온다.
+   */
+  exif?: PhotoExifInput;
 }): Promise<string> {
   const db = await getDb();
   const id = crypto.randomUUID();
-  await db.insert(postPhotos).values({ id, ...input });
+  const { exif, ...rest } = input;
+  await db.insert(postPhotos).values({ id, ...rest, ...(exif ?? NO_EXIF) });
   return id;
 }
 
@@ -430,6 +452,11 @@ export async function getPhoto(photoId: string): Promise<(PhotoView & { postId: 
     width: r.width,
     height: r.height,
     createdAt: r.createdAt.toISOString(),
+    // 지우는 자리라 안 쓴다 — 모양만 맞춘다
+    takenAt: null,
+    takenOffset: null,
+    lat: null,
+    lon: null,
   };
 }
 

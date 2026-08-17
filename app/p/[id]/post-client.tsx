@@ -456,6 +456,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           isPrivate={post.visibility === 'link'}
           isAnon={isAnonymous(post.category)}
           canOpen={post.authorId === user.id || post.coHost?.id === user.id || isAdmin}
+          timeline={Boolean(cat?.timeline)}
         />
       )}
 

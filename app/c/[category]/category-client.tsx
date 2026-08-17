@@ -40,6 +40,7 @@ import {formatCents} from '@/lib/money';
 import { formatScore } from '@/lib/ratings';
 import { upload } from '@vercel/blob/client';
 import { UnreadableImageError, uploadPhoto } from '@/lib/photo-client';
+import type { PhotoExif } from '@/lib/exif';
 import { MAX_PER_BATCH } from '@/lib/photos';
 import {useRefreshSession, useViewer} from '../../session';
 import {usePosterZoom} from '../../poster-zoom';
@@ -479,7 +480,15 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
    */
   /** 만들면서 고른 사진 — 저장할 때 서버가 붙인다. 원본 경로도 같이 들고 간다 */
   const [fPhoto, setFPhoto] = useState<
-    { pathname: string; originalPathname: string | null; thumbPathname: string | null } | null | undefined
+    | {
+        pathname: string;
+        originalPathname: string | null;
+        thumbPathname: string | null;
+        /** 찍은 시각·자리 — 타임라인 카테고리에서만 읽는다 (lib/exif.ts) */
+        exif: PhotoExif | null;
+      }
+    | null
+    | undefined
   >(
     undefined
   );
@@ -502,9 +511,14 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     try {
       // 만들 때는 한 장만 — 나머지는 만든 뒤에 올린다
       for (const file of editId ? list.slice(0, MAX_PER_BATCH) : list.slice(0, 1)) {
-        const up = await uploadPhoto(file, user!.id, editId ?? undefined);
+        const up = await uploadPhoto(file, user!.id, editId ?? undefined, { exif: Boolean(category?.timeline) });
         if (!editId) {
-          setFPhoto({ pathname: up.pathname, originalPathname: up.originalPathname, thumbPathname: up.thumbPathname });
+          setFPhoto({
+            pathname: up.pathname,
+            originalPathname: up.originalPathname,
+            thumbPathname: up.thumbPathname,
+            exif: up.exif,
+          });
           // 미리보기는 구운 JPEG로 — 고른 파일이 HEIC면 브라우저가 못 그린다
           setFPhotoPreview(URL.createObjectURL(up.display));
           break;
@@ -518,6 +532,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             thumbPathname: up.thumbPathname,
             width: up.width,
             height: up.height,
+            exif: up.exif,
           }),
         });
         if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? t(T.photoFailed));
@@ -801,6 +816,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                 photoPath: fPhoto.pathname,
                 photoOriginalPath: fPhoto.originalPathname,
                 photoThumbPath: fPhoto.thumbPathname,
+                photoExif: fPhoto.exif,
               }
             : {}),
           repeatWeekly: fRepeat,

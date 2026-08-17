@@ -30,3 +30,16 @@ export function mapsUrl(location: string): string {
   const query = HAS_REGION.test(s) ? s : `${s} ${REGION}`;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
+
+/**
+ * 좌표 하나를 지도에서 여는 주소.
+ *
+ * 위의 mapsUrl은 사람이 쓴 장소 이름을 검색시키는 것이고, 이건 사진에 박혀 있던 좌표를
+ * 그대로 찍어 준다 (여행 타임라인). 검색이 아니라 지점이라 REGION을 안 붙인다 —
+ * 좌표에는 헤맬 여지가 없다.
+ *
+ * 소수점 다섯 자리면 1m 남짓이다. 그 아래는 GPS 자체가 못 맞추는 자리라 자릿수만 는다.
+ */
+export function mapsPointUrl(lat: number, lon: number): string {
+  return `https://www.google.com/maps/search/?api=1&query=${lat.toFixed(5)},${lon.toFixed(5)}`;
+}

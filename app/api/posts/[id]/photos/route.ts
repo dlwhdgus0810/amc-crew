@@ -5,7 +5,13 @@ import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView, isParticipant } from '@/lib/db/posts';
 import { isAnonymous } from '@/lib/categories';
 import { addPhoto, countPhotos, listPhotos } from '@/lib/db/photos';
-import { MAX_PHOTOS_PER_POST, originalPathAllowed, pathAllowed, thumbPathAllowed } from '@/lib/photos';
+import {
+  MAX_PHOTOS_PER_POST,
+  exifFromBody,
+  originalPathAllowed,
+  pathAllowed,
+  thumbPathAllowed,
+} from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,6 +102,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         : null,
     width: num(body.width),
     height: num(body.height),
+    /*
+     * 찍은 시각·자리는 카테고리를 보고 받는다 — 여행이 아니면 브라우저가 뭘 보내든
+     * 통째로 버린다. 좌표는 쓸 데가 있는 자리에만 남긴다 (lib/photos.ts).
+     */
+    exif: exifFromBody(body.exif, post.category),
   });
   return NextResponse.json({ ok: true, photoId });
 }

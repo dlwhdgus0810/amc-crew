@@ -2698,3 +2698,34 @@ body:has(.sky-scope.night) .tabbar a.active {
     opacity: 0.8;
   }
 }
+
+/*
+ * 여행 사진 타임라인 — app/photo-panel.tsx
+ *
+ * 왼쪽에 가는 선 하나와 점을 두어 「이어지는 하루」로 읽히게 한다. 점 없이 시각만
+ * 늘어놓으면 목록이고, 선이 있으면 이동이다 — 여행에서 보고 싶은 것은 뒤쪽이다.
+ */
+.tl-day + .tl-day { margin-top: 20px; }
+.tl-date {
+  margin: 0 0 10px; font-size: 14px; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--text);
+}
+.tl-stop { position: relative; padding-left: 18px; }
+.tl-stop + .tl-stop { margin-top: 14px; }
+.tl-stop::before {
+  content: ''; position: absolute; left: 2px; top: 5px;
+  width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim);
+}
+/* 자리와 자리를 잇는 선. 마지막 자리 아래로는 안 내린다 — 거기서 하루가 끝난다 */
+.tl-stop::after {
+  content: ''; position: absolute; left: 5px; top: 16px; bottom: -14px;
+  width: 1px; background: var(--border);
+}
+.tl-stop:last-child::after { display: none; }
+.tl-when { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.tl-time { font-size: 13px; font-weight: 600; color: var(--text-mid); letter-spacing: -0.01em; }
+.tl-map {
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
+  text-decoration: none; border-bottom: 1px solid var(--border);
+}
+.tl-map:hover { color: var(--accent); border-bottom-color: currentColor; }

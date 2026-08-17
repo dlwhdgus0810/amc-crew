@@ -6,7 +6,7 @@ import { getProfiles, localName } from '@/lib/store';
 import { dbGetUser, ensureUser } from '@/lib/db/users';
 import { addParticipants, createPost, getPost, listPosts, notifyAddedToPost } from '@/lib/db/posts';
 import { clearSignups, listSignups } from '@/lib/db/signups';
-import { originalPathAllowed, pathAllowed, thumbPathAllowed } from '@/lib/photos';
+import { exifFromBody, originalPathAllowed, pathAllowed, thumbPathAllowed } from '@/lib/photos';
 import { addPhoto } from '@/lib/db/photos';
 import { friendIds } from '@/lib/db/friends';
 import { createRecurringRule } from '@/lib/db/recurring';
@@ -194,6 +194,7 @@ export async function POST(req: NextRequest) {
         thumbPathname: ownedThumb(body?.photoThumbPath, user.id),
         width: null,
         height: null,
+        exif: exifFromBody(body?.photoExif, common.category),
       });
     }
     return NextResponse.json({ ok: true, postId, ruleId, repeatWeekly: true });
@@ -229,6 +230,7 @@ export async function POST(req: NextRequest) {
       thumbPathname: ownedThumb(body?.photoThumbPath, user.id),
       width: null,
       height: null,
+      exif: exifFromBody(body?.photoExif, common.category),
     });
   }
 

@@ -46,6 +46,18 @@ export interface Category {
   lodgingLabel?: Msg;
   /** 숙소 입력 placeholder에 붙는 예시 */
   lodgingHint?: Msg;
+  /**
+   * 사진을 **찍은 순서로 늘어놓는다** (여행).
+   *
+   * 켜면 올릴 때 원본에서 찍은 시각과 좌표를 읽어 저장하고(lib/exif.ts), 사진 자리에
+   * 격자 대신 날짜별 타임라인이 붙는다. 며칠짜리 모임에서만 뜻이 있다 — 저녁 두 시간짜리
+   * 모임은 사진이 다 같은 시각 같은 자리라 늘어놓아 봐야 격자와 다를 게 없다.
+   *
+   * 좌표를 남기는 카테고리를 이 깃발 하나로 묶어 두는 것이 중요하다. 어디서 찍었는지는
+   * 「우리집」이라고 안 써도 그 집을 가리키는 값이라, 켠 자리에만 남긴다.
+   * 거르는 것은 서버다 (app/api/posts/[id]/photos).
+   */
+  timeline?: boolean;
   /** 이 카테고리를 제안한 사람 — 카테고리 화면에 이름을 적어 준다 */
   proposedBy?: string;
   /**
@@ -372,6 +384,8 @@ export const CATEGORIES: Category[] = [
     },
     // 여행은 하루가 아니라 며칠이다 — 시각 대신 날짜 범위를 받는다
     dateRange: true,
+    // 며칠 치 사진은 찍은 순서로 늘어놓아야 어디를 어떻게 돌았는지가 보인다
+    timeline: true,
     // 어디로 갔는지가 이 카드에서 제일 먼저 묻는 것이라 제목 자리에 받는다
     titleLabel: { ko: '어디로 (선택)', en: 'Where to (optional)', es: 'Adónde (opcional)' },
     titleOptions: [
