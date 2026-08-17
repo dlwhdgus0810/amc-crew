@@ -6,10 +6,10 @@ import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getPostView } from '@/lib/db/posts';
 import {
   deleteSettlement,
-  getSettlement,
+  getSettlements,
   notifySettlement,
   saveSettlement,
-  settlementPayee,
+  settlementOwner,
   settlementNotifiedAt,
   settlementViewers,
   type ItemScope,
@@ -41,16 +41,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const allowed = (await settlementViewers(id)).includes(viewer.id);
   if (!allowed && !isAdmin(viewer)) return await errJson(E.settleNotFound, 404);
 
-  const settlement = await getSettlement(id);
+  const list = await getSettlements(id);
   /*
-   * 「마지막으로 언제 알렸는지」는 받을 사람에게만 내려준다.
+   * 「마지막으로 언제 알렸는지」는 **자기가 받을 정산에만** 내려준다.
+   *
    * 다시 알리기 화면에서만 쓰는 값이고, 남이 언제 알림을 받았는지는 남의 일이다.
+   * 정산이 여러 개라 정산별로 갈린다 — 내 정산 것만 담고 남의 것은 아예 안 읽는다.
    */
-  const canRemind = Boolean(settlement) && (settlement!.payee.id === viewer.id || isAdmin(viewer));
-  return NextResponse.json({
-    settlement,
-    ...(canRemind ? { notifiedAt: await settlementNotifiedAt(id) } : {}),
-  });
+  const mine = list.filter((v) => v.payee.id === viewer.id || isAdmin(viewer));
+  const notifiedAt: Record<string, Record<string, string>> = {};
+  for (const v of mine) notifiedAt[v.id] = await settlementNotifiedAt(v.id);
+
+  return NextResponse.json({ settlements: list, notifiedAt });
 }
 
 /** 정산 저장 + 각자에게 알림. 참가자만 만들 수 있고, 만든 사람이 받는 사람이 된다. */
@@ -72,13 +74,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!post.participants.some((p) => p.id === user.id)) {
     return await errJson(E.settleParticipantOnly, 403);
   }
-  // 이미 있는 정산은 만든 사람만 고친다 (관리자는 예외 — 잘못 만든 걸 치울 수 있어야 한다)
-  const payee = await settlementPayee(id);
-  if (payee && payee !== user.id && !isAdmin(user)) {
-    return await errJson(E.settleOwnerOnly, 403);
+  /*
+   * settlementId가 오면 그 정산을 고치는 것이고, 없으면 새로 만드는 것이다.
+   * 한 모임에 정산이 여러 개라 「어느 것」을 부르는 쪽이 말해 줘야 한다.
+   */
+  const body = await req.json().catch(() => null);
+  const settlementId = typeof body?.settlementId === 'string' ? body.settlementId : null;
+
+  let payee: string | null = null;
+  if (settlementId) {
+    const owner = await settlementOwner(settlementId);
+    // 없는 정산이거나 **다른 모임 것**이면 여기서 끝 — 주소의 모임과 안 맞는 요청이다
+    if (!owner || owner.postId !== id) return await errJson(E.settleNotFound, 404);
+    // 고치는 것은 그 정산을 받을 사람만 (관리자는 예외 — 잘못 만든 걸 치울 수 있어야 한다)
+    if (owner.payeeId !== user.id && !isAdmin(user)) return await errJson(E.settleOwnerOnly, 403);
+    payee = owner.payeeId;
   }
 
-  const body = await req.json().catch(() => null);
   const raw = Array.isArray(body?.items) ? body.items : null;
   if (!raw || raw.length === 0 || raw.length > MAX_ITEMS) return await errJson(E.settleItems, 400);
 
@@ -125,22 +137,34 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     items.push({ label, amountCents, scope, memberIds: picked, extraPeople: extraRaw });
   }
 
-  await saveSettlement({ postId: id, payeeId: payee ?? user.id, items, extraMemberIds });
-  const { sent } = await notifySettlement(id, siteUrl(req.nextUrl.origin));
-  return NextResponse.json({ ok: true, notified: sent, settlement: await getSettlement(id) });
+  const savedId = await saveSettlement({
+    postId: id,
+    ...(settlementId ? { settlementId } : {}),
+    payeeId: payee ?? user.id,
+    items,
+    extraMemberIds,
+  });
+  const { sent } = await notifySettlement(savedId, siteUrl(req.nextUrl.origin));
+  return NextResponse.json({ ok: true, notified: sent, settlements: await getSettlements(id) });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+/** 정산 하나 지우기 — 어느 정산인지 본문으로 받는다 (모임에 여러 개다) */
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
   if (!user) return await errJson(E.loginRequired, 401);
   const banned = await banGuard(user);
   if (banned) return banned;
 
   const { id } = await params;
-  const payee = await settlementPayee(id);
-  if (!payee) return await errJson(E.settleNotFound, 404);
-  if (payee !== user.id && !isAdmin(user)) return await errJson(E.settleOwnerOnly, 403);
+  const body = await req.json().catch(() => null);
+  const settlementId = typeof body?.settlementId === 'string' ? body.settlementId : '';
+  if (!settlementId) return await errJson(E.settleNotFound, 404);
 
-  await deleteSettlement(id);
-  return NextResponse.json({ ok: true });
+  const owner = await settlementOwner(settlementId);
+  // 다른 모임 정산을 이 주소로 지우려는 요청도 여기서 걸린다
+  if (!owner || owner.postId !== id) return await errJson(E.settleNotFound, 404);
+  if (owner.payeeId !== user.id && !isAdmin(user)) return await errJson(E.settleOwnerOnly, 403);
+
+  await deleteSettlement(settlementId);
+  return NextResponse.json({ ok: true, settlements: await getSettlements(id) });
 }

@@ -93,7 +93,13 @@ const T = {
   reviewIt: { ko: '후기 남기기', en: 'Leave a review', es: 'Dejar reseña' },
   rateIt: { ko: '평점 매기기', en: 'Rate it', es: 'Puntuar' },
   settleOwe: { ko: '정산 {amount}', en: 'Settle {amount}', es: 'Cuentas {amount}' },
+  /*
+   * 정산이 여러 개일 때 — 금액은 **전부 합한 내 몫**이고 숫자는 정산 개수다.
+   * 개수를 적는 이유: 「정산 $47」만 있으면 하나만 열어 보고 나머지를 지나친다.
+   */
+  settleOweN: { ko: '정산 {n} · {amount}', en: 'Settle {n} · {amount}', es: 'Cuentas {n} · {amount}' },
   settleSee: { ko: '정산 보기', en: 'Settle-up', es: 'Cuentas' },
+  settleSeeN: { ko: '정산 {n}', en: '{n} settle-ups', es: '{n} cuentas' },
   settleStart: { ko: '정산하기', en: 'Settle up', es: 'Dividir la cuenta' },
   privateBadge: { ko: '비공개', en: 'Private', es: 'Privada' },
   notifyHintPrivate: {
@@ -328,7 +334,14 @@ interface PostView {
   participantCount: number;
   commentCount: number;
   /** 정산 요약 — 없으면 null (서버 PostView와 같은 모양) */
-  settle: { exists: boolean; myCents: number | null; iAmPayee: boolean } | null;
+  settle: {
+    exists: boolean;
+    /** 이 모임 정산이 몇 개인지 (하나면 1) */
+    count: number;
+    /** 정산 전부를 합한 내 몫 */
+    myCents: number | null;
+    iAmPayee: boolean;
+  } | null;
   /** 우리 평점 요약 — 끝난 무비나잇에만 붙는다 */
   rating: { average: number | null; count: number; mine: number | null } | null;
   /** 이 모임에 달린 후기 수 — 끝난 모임에만 (그 밖에는 0) */
@@ -1932,9 +1945,13 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           {joined && !anonCat && (
             <Link className={`link-btn ${post.settle?.myCents ? 'strong' : ''}`} href={`/p/${post.id}#settle`}>
               {post.settle?.myCents
-                ? t(T.settleOwe, { amount: formatCents(post.settle.myCents) })
+                ? post.settle.count > 1
+                  ? t(T.settleOweN, { n: post.settle.count, amount: formatCents(post.settle.myCents) })
+                  : t(T.settleOwe, { amount: formatCents(post.settle.myCents) })
                 : post.settle
-                  ? t(T.settleSee)
+                  ? post.settle.count > 1
+                    ? t(T.settleSeeN, { n: post.settle.count })
+                    : t(T.settleSee)
                   : t(T.settleStart)}
             </Link>
           )}

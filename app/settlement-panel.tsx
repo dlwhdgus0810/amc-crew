@@ -13,6 +13,8 @@ const T = {
     es: 'Divide la cuenta o una apuesta. Cada uno recibe un aviso con lo suyo.',
   },
   start: { ko: '정산 시작하기', en: 'Start a settle-up', es: 'Empezar el reparto' },
+  /* 이미 정산이 있을 때 하나 더 — 결제한 사람도, 나눠 낼 사람도 정산마다 다를 수 있다 */
+  addMore: { ko: '정산 추가하기', en: 'Add another settle-up', es: 'Añadir otro reparto' },
   edit: { ko: '고치기', en: 'Edit', es: 'Editar' },
   cancel: { ko: '취소', en: 'Cancel', es: 'Cancelar' },
   remove: { ko: '정산 지우기', en: 'Delete the settle-up', es: 'Borrar el reparto' },
@@ -155,6 +157,8 @@ interface Item {
   heads: number;
 }
 export interface Settlement {
+  /** 이 정산 하나를 가리키는 값 — 고치기·지우기·다시 알리기가 다 이걸로 간다 */
+  id: string;
   payee: { id: string; name: string; venmo: string | null; zelle: string | null };
   items: Item[];
   shares: Share[];
@@ -204,7 +208,14 @@ function preview(drafts: Draft[], participantIds: string[]) {
   return { perUser, total };
 }
 
-export default function SettlementPanel({
+/**
+ * 정산 **하나**. 목록을 그리는 것은 아래 SettlementPanel이다.
+ *
+ * settlement가 null이면 「새로 만드는 중」이고, 그때는 편집기로 열린 채 시작한다.
+ * 읽어오기와 목록 관리는 부모가 하고, 여기는 한 장을 그리고 고치는 일만 한다 —
+ * 그렇게 나눠야 정산이 세 개일 때도 각자의 편집 상태가 서로 섞이지 않는다.
+ */
+function OneSettlement({
   postId,
   participants,
   currentUserId,
@@ -212,6 +223,11 @@ export default function SettlementPanel({
   myVenmo,
   myZelle,
   noteLabel,
+  settlement,
+  notifiedAt,
+  startOpen,
+  onChanged,
+  onCancelNew,
 }: {
   postId: string;
   participants: { id: string; name: string }[];
@@ -223,12 +239,20 @@ export default function SettlementPanel({
   myZelle?: string | null;
   /** Venmo 메모에 넣을 문구 (모임 이름) */
   noteLabel: string;
+  /** 그릴 정산. null이면 새로 만드는 자리다 */
+  settlement: Settlement | null;
+  /** 이 정산으로 누구에게 언제 마지막으로 알렸는지 (받을 사람에게만 내려온다) */
+  notifiedAt: Record<string, string>;
+  /** 새로 만드는 자리는 편집기가 열린 채로 시작한다 */
+  startOpen?: boolean;
+  /** 저장·삭제 뒤 부모가 목록을 다시 읽는다 */
+  onChanged: () => void;
+  /** 새로 만들다 그만둘 때 — 부모가 이 자리를 치운다 */
+  onCancelNew?: () => void;
 }) {
   const t = useT();
   const locale = useLocale();
-  const [settlement, setSettlement] = useState<Settlement | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(Boolean(startOpen));
   const [drafts, setDrafts] = useState<Draft[]>([{ ...EMPTY }]);
   /*
    * 모임에는 없지만 이 정산에 넣은 친구들. 참가자와 합쳐 "낼 사람" 명단이 되고,
@@ -247,8 +271,7 @@ export default function SettlementPanel({
   const [confirming, setConfirming] = useState(false);
   const [venmoInput, setVenmoInput] = useState('');
   const [zelleInput, setZelleInput] = useState('');
-  /* 다시 알리기 — 마지막으로 보낸 시각(사람별)과 지금 고른 사람들 */
-  const [notifiedAt, setNotifiedAt] = useState<Record<string, string>>({});
+  /* 다시 알리기 — 지금 고른 사람들 (마지막으로 보낸 시각은 위 prop이다) */
   const [remindOpen, setRemindOpen] = useState(false);
   const [remindPick, setRemindPick] = useState<Set<string>>(new Set());
 
@@ -262,15 +285,6 @@ export default function SettlementPanel({
     }
   }
 
-  async function load() {
-    const res = await fetch(`/api/posts/${postId}/settlement`);
-    if (!res.ok) return;
-    const data = await res.json();
-    setSettlement(data.settlement ?? null);
-    // 받을 사람에게만 내려온다 (없으면 빈 객체)
-    setNotifiedAt(data.notifiedAt ?? {});
-  }
-
   /** 고른 사람들에게 같은 알림을 다시 보낸다 */
   async function sendRemind() {
     setBusy(true);
@@ -278,7 +292,7 @@ export default function SettlementPanel({
     const res = await fetch(`/api/posts/${postId}/settlement/remind`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userIds: [...remindPick] }),
+      body: JSON.stringify({ settlementId: settlement?.id, userIds: [...remindPick] }),
     });
     const data = await res.json().catch(() => null);
     setBusy(false);
@@ -289,14 +303,9 @@ export default function SettlementPanel({
     setMsg({ type: 'ok', text: t(T.remindDone, { n: data?.sent ?? remindPick.size }) });
     setRemindOpen(false);
     setRemindPick(new Set());
-    // 마지막으로 보낸 시각이 사람마다 바뀌었다
-    void load();
+    // 마지막으로 보낸 시각이 사람마다 바뀌었다 — 부모가 다시 읽는다
+    onChanged();
   }
-
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postId]);
 
   /*
    * 카드에서 /p/<id>#settle 로 들어오면 이 자리로 내려준다.
@@ -306,14 +315,14 @@ export default function SettlementPanel({
    * 이동 직후 맨 위로 되돌리는 것에 덮이지 않도록 한 박자 미룬다.
    */
   useEffect(() => {
-    if (loading || window.location.hash !== '#settle') return;
+    if (window.location.hash !== '#settle') return;
     // smooth로 하면 애니메이션 도중 다른 스크롤에 끊겨 제자리로 돌아온다 — 즉시 옮긴다
     const timer = setTimeout(
       () => document.getElementById('settle')?.scrollIntoView({ block: 'start' }),
       300
     );
     return () => clearTimeout(timer);
-  }, [loading]);
+  }, []);
 
   function startEditing() {
     setExtras(settlement?.extraMembers ?? []);
@@ -424,16 +433,18 @@ export default function SettlementPanel({
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // 고치는 것이면 어느 정산인지 알려준다. 없으면 서버가 새로 만든다
+          ...(settlement ? { settlementId: settlement.id } : {}),
           items: drafts.map((d) => ({ ...d, extraPeople: d.extra.trim() ? Number(d.extra) : 0 })),
           extraMemberIds: extras.map((e) => e.id),
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t(T.failed));
-      setSettlement(data.settlement ?? null);
       setEditing(false);
       setAskPay(false);
       setConfirming(false);
+      onChanged();
       setMsg({
         type: 'ok',
         text: data.notified > 0 ? t(T.saved, { n: data.notified }) : t(T.savedNobody),
@@ -448,11 +459,15 @@ export default function SettlementPanel({
   async function remove() {
     if (!confirm(t(T.removeConfirm))) return;
     setBusy(true);
-    const res = await fetch(`/api/posts/${postId}/settlement`, { method: 'DELETE' });
+    const res = await fetch(`/api/posts/${postId}/settlement`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settlementId: settlement?.id }),
+    });
     if (res.ok) {
-      setSettlement(null);
       setEditing(false);
       setMsg(null);
+      onChanged();
     }
     setBusy(false);
   }
@@ -479,7 +494,6 @@ export default function SettlementPanel({
   const inMeetup = participants.some((p) => p.id === currentUserId);
   // 참가하지 않았으면 정산이 있는지조차 보이지 않는다 (금액·받을 계좌가 담긴 화면이다)
   if (!inMeetup && !isAdmin) return null;
-  if (loading) return null;
 
   const mine = settlement?.shares.find((s) => s.userId === currentUserId);
   const isPayee = settlement?.payee.id === currentUserId;
@@ -509,20 +523,7 @@ export default function SettlementPanel({
 
   return (
     <>
-      {/* 카드의 "정산" 버튼이 /p/<id>#settle 로 보내므로 앵커가 필요하다 */}
-      <h2 id="settle" style={{ scrollMarginTop: 72 }}>{t(T.title)}</h2>
       <div className="card">
-        {!settlement && !editing && (
-          <>
-            <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>{t(T.none)}</p>
-            {inMeetup && (
-              <button className="secondary" onClick={startEditing}>
-                {t(T.start)}
-              </button>
-            )}
-          </>
-        )}
-
         {settlement && !editing && (
           <>
             {/* 내가 낼 금액을 맨 위에 — 대부분은 이것만 보러 들어온다 */}
@@ -985,7 +986,15 @@ export default function SettlementPanel({
                 <button disabled={busy} onClick={requestSave}>
                   {busy ? t(T.saving) : t(T.save)}
                 </button>
-                <button className="secondary" disabled={busy} onClick={() => setEditing(false)}>
+                {/*
+                  * 새로 만들다 그만두면 이 자리를 아예 치운다 — 안 그러면 빈 카드가 남는다.
+                  * 고치다 그만두는 것은 읽기 화면으로 돌아가는 것뿐이다.
+                  */}
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => (settlement ? setEditing(false) : onCancelNew?.())}
+                >
                   {t(T.cancel)}
                 </button>
               </div>
@@ -995,6 +1004,108 @@ export default function SettlementPanel({
 
         {msg && <div className={`msg ${msg.type}`} style={{ marginTop: 14 }}>{msg.text}</div>}
       </div>
+    </>
+  );
+}
+
+/**
+ * 이 모임의 정산들 — 없으면 「정산 시작하기」, 있으면 나열하고 아래에 「정산 추가하기」.
+ *
+ * **한 모임에 여러 개다.** 여행에서 한 사람이 여러 번 결제하고 결제마다 나눠 내는 사람이
+ * 다르기 때문이다 — 숙소는 다섯 명, 렌터카는 셋. 정산 하나에 항목을 여러 개 넣는 것으로는
+ * 안 되는데, 받을 사람이 정산마다 다르다.
+ *
+ * 각 정산은 **그 정산을 받을 사람만** 고치고 지운다 (관리자는 예외). 서버도 같은 기준으로
+ * 다시 본다 — app/api/posts/[id]/settlement.
+ */
+export default function SettlementPanel(props: {
+  postId: string;
+  participants: { id: string; name: string }[];
+  currentUserId?: string;
+  isAdmin?: boolean;
+  myVenmo?: string | null;
+  myZelle?: string | null;
+  noteLabel: string;
+}) {
+  const t = useT();
+  const [list, setList] = useState<Settlement[] | null>(null);
+  const [notifiedAt, setNotifiedAt] = useState<Record<string, Record<string, string>>>({});
+  /** 새 정산을 만드는 자리를 하나 열어 둘지 */
+  const [adding, setAdding] = useState(false);
+
+  async function load() {
+    const res = await fetch(`/api/posts/${props.postId}/settlement`);
+    if (!res.ok) return setList([]);
+    const data = await res.json();
+    setList(data.settlements ?? []);
+    setNotifiedAt(data.notifiedAt ?? {});
+  }
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.postId]);
+
+  const inMeetup = Boolean(props.currentUserId && props.participants.some((p) => p.id === props.currentUserId));
+  // 볼 자격이 없으면 「정산」이라는 제목조차 그리지 않는다 (안쪽 컴포넌트와 같은 기준)
+  if (!inMeetup && !props.isAdmin) return null;
+  if (list === null) return null;
+
+  return (
+    <>
+      {/* 카드의 "정산" 버튼이 /p/<id>#settle 로 보내므로 앵커가 필요하다 */}
+      <h2 id="settle" style={{ scrollMarginTop: 72 }}>
+        {t(T.title)} {list.length > 1 ? list.length : ''}
+      </h2>
+
+      {list.length === 0 && !adding && (
+        <div className="card">
+          <p className="subtitle" style={{ marginBottom: 16, fontSize: 14 }}>{t(T.none)}</p>
+          {inMeetup && (
+            <button className="secondary" onClick={() => setAdding(true)}>
+              {t(T.start)}
+            </button>
+          )}
+        </div>
+      )}
+
+      {list.map((s) => (
+        <OneSettlement
+          key={s.id}
+          {...props}
+          settlement={s}
+          notifiedAt={notifiedAt[s.id] ?? {}}
+          onChanged={load}
+        />
+      ))}
+
+      {/*
+        * 새로 만드는 자리. 만들고 나면 목록에 들어오므로 이 자리는 닫는다.
+        *
+        * key에 목록 길이를 넣는다 — 저장 뒤 다시 「추가하기」를 눌렀을 때 앞서 쓰던 초안이
+        * 남아 있으면 안 된다 (같은 자리에 새 컴포넌트가 서야 상태가 비워진다).
+        */}
+      {adding && (
+        <OneSettlement
+          key={`new-${list.length}`}
+          {...props}
+          settlement={null}
+          notifiedAt={{}}
+          startOpen
+          onChanged={() => {
+            setAdding(false);
+            void load();
+          }}
+          onCancelNew={() => setAdding(false)}
+        />
+      )}
+
+      {/* 이미 정산이 있어도 하나 더 — 여러 사람이 각자 여러 개씩 올릴 수 있다 */}
+      {list.length > 0 && !adding && inMeetup && (
+        <button className="secondary" onClick={() => setAdding(true)}>
+          {t(T.addMore)}
+        </button>
+      )}
     </>
   );
 }

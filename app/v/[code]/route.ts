@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from '@/lib/db/index';
 import { posts, settlements, users } from '@/lib/db/schema';
-import { getSettlement } from '@/lib/db/settlements';
+import { getSettlementById } from '@/lib/db/settlements';
 import { payNote, venmoLink } from '@/lib/money';
 import { catName } from '@/lib/categories';
 import { whenLabelShort } from '@/lib/datefmt';
@@ -29,7 +29,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
   // 지워졌거나 없는 코드 — 홈으로 보낸다 (없는 페이지를 보여줄 이유가 없다)
   if (!row) return NextResponse.redirect(new URL('/', req.nextUrl.origin));
 
-  const view = await getSettlement(row.postId);
+  // 코드가 정산 하나를 가리킨다 — 모임에 정산이 여러 개라 모임으로 찾으면 안 된다
+  const view = await getSettlementById(row.id);
   const [payee] = await db.select({ venmo: users.venmo }).from(users).where(eq(users.id, row.payeeId));
   if (!view || !payee?.venmo) {
     return NextResponse.redirect(new URL(`/p/${row.postId}`, req.nextUrl.origin));

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
-import { getSettlement, notifySettlement } from '@/lib/db/settlements';
+import { getSettlementById, notifySettlement, settlementOwner } from '@/lib/db/settlements';
 import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -24,22 +24,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const banned = await banGuard(user);
   if (banned) return banned;
 
-  const settlement = await getSettlement(id);
+  /*
+   * 어느 정산인지 본문으로 받는다 — 한 모임에 여러 개다. 주소의 모임과 안 맞는 정산 id는
+   * 여기서 걸린다 (안 걸르면 남의 모임 정산으로 알림을 쏠 수 있다).
+   */
+  const body = await req.json().catch(() => null);
+  const settlementId = typeof body?.settlementId === 'string' ? body.settlementId : '';
+  if (!settlementId) return await errJson(E.settleNotFound, 404);
+  const owner = await settlementOwner(settlementId);
+  if (!owner || owner.postId !== id) return await errJson(E.settleNotFound, 404);
+
+  const settlement = await getSettlementById(settlementId);
   if (!settlement) return await errJson(E.settleNotFound, 404);
   // 보내는 사람은 받을 사람뿐 — 남이 대신 찌를 일이 아니다
   if (settlement.payee.id !== user.id && !isAdmin(user)) {
     return await errJson(E.settleOwnerOnly, 403);
   }
-
-  const body = await req.json().catch(() => null);
   const asked: string[] = Array.isArray(body?.userIds) ? body.userIds.filter((v: unknown) => typeof v === 'string') : [];
   // 실제로 낼 금액이 있는 사람만 남긴다 — 받을 사람 본인과 명단에 없는 id는 뺀다
   const owing = new Set(
-    settlement.shares.filter((s) => s.userId !== settlement.payee.id).map((s) => s.userId)
+    settlement.shares
+      .filter((sh) => sh.userId !== settlement.payee.id)
+      .map((sh) => sh.userId)
   );
   const userIds = [...new Set(asked)].filter((uid) => owing.has(uid));
   if (userIds.length === 0) return await errJson(E.remindNobody, 400);
 
-  const { sent } = await notifySettlement(id, siteUrl(req.nextUrl.origin), userIds);
+  const { sent } = await notifySettlement(settlementId, siteUrl(req.nextUrl.origin), userIds);
   return NextResponse.json({ ok: true, sent });
 }

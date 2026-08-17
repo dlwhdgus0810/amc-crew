@@ -195,6 +195,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   user_id text NOT NULL REFERENCES users(id),
   post_id uuid REFERENCES posts(id) ON DELETE CASCADE,
   kind text,
+  -- 정산 알림이면 어느 정산인지 — lib/db/schema.ts의 주석 참고
+  settlement_id uuid,
   message text NOT NULL,
   read boolean NOT NULL DEFAULT false,
   deleted_at timestamptz,
@@ -267,11 +269,13 @@ CREATE INDEX IF NOT EXISTS push_subscriptions_user_idx ON push_subscriptions (us
 CREATE TABLE IF NOT EXISTS settlements (
   id uuid PRIMARY KEY,
   short_code text UNIQUE,
-  post_id uuid NOT NULL UNIQUE REFERENCES posts(id) ON DELETE CASCADE,
+  -- 한 모임에 여러 개 붙는다 (UNIQUE를 뗐다) — lib/db/schema.ts의 주석 참고
+  post_id uuid NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   payee_id text NOT NULL REFERENCES users(id),
   created_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
 );
+CREATE INDEX IF NOT EXISTS settlements_post_idx ON settlements (post_id, created_at);
 
 CREATE TABLE IF NOT EXISTS settlement_items (
   id uuid PRIMARY KEY,

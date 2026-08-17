@@ -37,6 +37,8 @@ export interface SettlementItemInput {
 }
 
 export interface SettlementView {
+  /** 이 정산 하나를 가리키는 값 — 고치기·지우기·알림이 다 이걸로 간다 */
+  id: string;
   payee: { id: string; name: string; venmo: string | null; zelle: string | null };
   items: {
     id: string;
@@ -108,12 +110,20 @@ async function payerIds(postId: string, extras: string[]): Promise<string[]> {
 /** 이 정산을 볼 수 있는 사람 (참가자 + 정산에 들어간 사람). 라우트의 접근 확인에 쓴다 */
 export async function settlementViewers(postId: string): Promise<string[]> {
   const db = await getDb();
-  const [row] = await db
+  const rows = await db
     .select({ id: settlements.id })
     .from(settlements)
     .where(and(eq(settlements.postId, postId), isNull(settlements.deletedAt)));
-  const extras = row ? await extraMemberIds(row.id) : [];
-  return payerIds(postId, extras);
+  if (rows.length === 0) return payerIds(postId, []);
+  /*
+   * 정산이 여러 개면 **전부의 extras를 합친다.** 셋 중 하나에만 들어간 사람도 이 모임의
+   * 정산 화면을 열 수 있어야 한다 — 자기가 낼 돈이 거기 있다.
+   */
+  const memberRows = await db
+    .select({ userId: settlementMembers.userId })
+    .from(settlementMembers)
+    .where(inArray(settlementMembers.settlementId, rows.map((r) => r.id)));
+  return payerIds(postId, [...new Set(memberRows.map((m) => m.userId))]);
 }
 
 async function extraMemberIds(settlementId: string): Promise<string[]> {
@@ -176,101 +186,152 @@ function headsOf(
   return members.length + Math.max(0, item.extraPeople);
 }
 
-/** 모임의 정산 (없으면 null) */
-export async function getSettlement(postId: string): Promise<SettlementView | null> {
+/**
+ * 모임의 정산들 — 만든 순서대로. 없으면 빈 배열.
+ *
+ * 한 모임에 여러 개다 (schema.ts의 settlements). 여행에서 한 사람이 여러 번 결제하고
+ * 결제마다 나눠 내는 사람이 다르기 때문이다 — 숙소는 다섯 명, 렌터카는 셋.
+ *
+ * **개수와 무관하게 질의는 여섯 번이다.** 정산마다 따로 읽으면 세 개짜리 모임에서
+ * 열여덟 번을 돈다 (neon-http는 왕복 하나가 곧 지연이다).
+ */
+export async function getSettlements(postId: string): Promise<SettlementView[]> {
   const locale = await getLocale();
   const db = await getDb();
-  const [row] = await db
+  const rows = await db
     .select()
     .from(settlements)
-    .where(and(eq(settlements.postId, postId), isNull(settlements.deletedAt)));
-  if (!row) return null;
+    .where(and(eq(settlements.postId, postId), isNull(settlements.deletedAt)))
+    .orderBy(asc(settlements.createdAt));
+  if (rows.length === 0) return [];
 
+  const ids = rows.map((r) => r.id);
   const itemRows = await db
     .select()
     .from(settlementItems)
-    .where(eq(settlementItems.settlementId, row.id))
+    .where(inArray(settlementItems.settlementId, ids))
     .orderBy(asc(settlementItems.sort));
   const memberRows = itemRows.length
     ? await db
         .select()
         .from(settlementItemMembers)
-        .where(
-          inArray(
-            settlementItemMembers.itemId,
-            itemRows.map((i) => i.id)
-          )
-        )
+        .where(inArray(settlementItemMembers.itemId, itemRows.map((i) => i.id)))
     : [];
+  const extraRows = await db
+    .select()
+    .from(settlementMembers)
+    .where(inArray(settlementMembers.settlementId, ids));
+  const userRows = await db.select().from(users);
+  const inMeetup = await participantIds(postId);
+
   const membersByItem = new Map<string, string[]>();
   for (const m of memberRows) {
     if (!membersByItem.has(m.itemId)) membersByItem.set(m.itemId, []);
     membersByItem.get(m.itemId)!.push(m.userId);
   }
-
-  const extras = await extraMemberIds(row.id);
-  const participants = await payerIds(postId, extras);
-  const items = itemRows.map((i) => {
-    const base = {
-      id: i.id,
-      label: i.label,
-      amountCents: i.amountCents,
-      scope: (i.scope === 'some' ? 'some' : 'all') as ItemScope,
-      memberIds: membersByItem.get(i.id) ?? [],
-      extraPeople: i.extraPeople,
-    };
-    return { ...base, heads: headsOf(base, participants) };
-  });
-
-  const shareMap = computeShares(items, participants);
-  const userRows = await db.select().from(users);
+  const itemsBySettlement = new Map<string, typeof itemRows>();
+  for (const i of itemRows) {
+    if (!itemsBySettlement.has(i.settlementId)) itemsBySettlement.set(i.settlementId, []);
+    itemsBySettlement.get(i.settlementId)!.push(i);
+  }
+  const extrasBySettlement = new Map<string, string[]>();
+  for (const e of extraRows) {
+    if (!extrasBySettlement.has(e.settlementId)) extrasBySettlement.set(e.settlementId, []);
+    extrasBySettlement.get(e.settlementId)!.push(e.userId);
+  }
   const userById = new Map(userRows.map((u) => [u.id, u]));
 
-  const shares = [...shareMap]
-    .filter(([, cents]) => cents > 0)
-    .map(([userId, cents]) => ({
-      userId,
-      name: displayNameOf(userById.get(userId), UNKNOWN_NAME, locale),
-      avatar: userById.get(userId)?.avatar ?? null,
-      cents,
-    }))
-    .sort((a, b) => b.cents - a.cents || a.name.localeCompare(b.name));
+  return rows.map((row) => {
+    /*
+     * 나눠 낼 사람은 **정산마다 다르다** — 참가자 전원 + 이 정산에만 넣은 사람.
+     * 그래서 heads도 shares도 정산 안에서 계산한다.
+     */
+    const extras = extrasBySettlement.get(row.id) ?? [];
+    const seen = new Set(inMeetup);
+    const participants = [...inMeetup, ...extras.filter((id) => !seen.has(id))];
 
-  const payee = userById.get(row.payeeId);
-  return {
-    payee: {
-      id: row.payeeId,
-      name: displayNameOf(payee, UNKNOWN_NAME, locale),
-      venmo: payee?.venmo ?? null,
-      zelle: payee?.zelle ?? null,
-    },
-    items,
-    shares,
-    totalCents: items.reduce((n, i) => n + i.amountCents, 0),
-    extraMembers: extras.map((id) => ({ id, name: displayNameOf(userById.get(id), UNKNOWN_NAME, locale) })),
-    shortCode: row.shortCode ?? null,
-    createdAt: row.createdAt.toISOString(),
-  };
+    const items = (itemsBySettlement.get(row.id) ?? []).map((i) => {
+      const base = {
+        id: i.id,
+        label: i.label,
+        amountCents: i.amountCents,
+        scope: (i.scope === 'some' ? 'some' : 'all') as ItemScope,
+        memberIds: membersByItem.get(i.id) ?? [],
+        extraPeople: i.extraPeople,
+      };
+      return { ...base, heads: headsOf(base, participants) };
+    });
+
+    const shares = [...computeShares(items, participants)]
+      .filter(([, cents]) => cents > 0)
+      .map(([userId, cents]) => ({
+        userId,
+        name: displayNameOf(userById.get(userId), UNKNOWN_NAME, locale),
+        avatar: userById.get(userId)?.avatar ?? null,
+        cents,
+      }))
+      .sort((a, b) => b.cents - a.cents || a.name.localeCompare(b.name));
+
+    const payee = userById.get(row.payeeId);
+    return {
+      id: row.id,
+      payee: {
+        id: row.payeeId,
+        name: displayNameOf(payee, UNKNOWN_NAME, locale),
+        venmo: payee?.venmo ?? null,
+        zelle: payee?.zelle ?? null,
+      },
+      items,
+      shares,
+      totalCents: items.reduce((n, i) => n + i.amountCents, 0),
+      extraMembers: extras.map((id) => ({ id, name: displayNameOf(userById.get(id), UNKNOWN_NAME, locale) })),
+      shortCode: row.shortCode ?? null,
+      createdAt: row.createdAt.toISOString(),
+    };
+  });
+}
+
+/** 정산 하나 — 없으면 null (알림·짧은 링크가 쓴다) */
+export async function getSettlementById(settlementId: string): Promise<SettlementView | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ postId: settlements.postId })
+    .from(settlements)
+    .where(and(eq(settlements.id, settlementId), isNull(settlements.deletedAt)));
+  if (!row) return null;
+  return (await getSettlements(row.postId)).find((v) => v.id === settlementId) ?? null;
 }
 
 /**
- * 정산을 저장한다 (있으면 통째로 갈아끼운다).
- * 항목을 지웠다 다시 넣는 편이 부분 수정보다 단순하고, 규모가 작아 비용도 무시할 만하다.
+ * 정산을 저장한다 — **settlementId를 주면 그것을 고치고, 안 주면 새로 만든다.**
+ *
+ * 예전에는 postId로 찾아 하나를 갈아끼웠다. 한 모임에 정산이 하나였기 때문인데,
+ * 이제 여러 개라 「어느 정산인지」를 부르는 쪽이 말해 줘야 한다.
+ *
+ * 항목은 통째로 갈아끼운다 — 부분 수정보다 단순하고 규모가 작아 비용도 무시할 만하다.
  */
 export async function saveSettlement(input: {
   postId: string;
+  /** 있으면 그 정산을 고친다. 없으면 새 정산이다 */
+  settlementId?: string;
   payeeId: string;
   items: SettlementItemInput[];
   /** 모임에 없지만 정산에 넣을 사람 (라우트에서 이미 "내 친구"로 걸러 온다) */
   extraMemberIds?: string[];
-}): Promise<void> {
+}): Promise<string> {
   const db = await getDb();
   /*
-   * **여기는 일부러 지워진 정산까지 찾는다** (isNull을 붙이지 않는다).
-   * post_id가 unique라 지운 행이 자리를 잡고 있어서, 거르면 새로 만들 때 키가 부딪힌다.
-   * 찾으면 아래에서 deletedAt을 지우며 그 자리에 다시 쓴다.
+   * 고치는 경우에는 **그 정산이 이 모임 것인지** 확인한다. 부르는 쪽(라우트)도 보지만,
+   * 여기서 한 번 더 보는 이유는 postId가 항목 계산의 기준이라서다 — 남의 모임 정산을
+   * 이 모임 참가자로 다시 계산해 버리면 금액이 조용히 틀어진다.
    */
-  const [existing] = await db.select().from(settlements).where(eq(settlements.postId, input.postId));
+  const existing = input.settlementId
+    ? (await db
+        .select()
+        .from(settlements)
+        .where(and(eq(settlements.id, input.settlementId), eq(settlements.postId, input.postId))))[0]
+    : undefined;
+  if (input.settlementId && !existing) throw new Error('settlement not found');
 
   const settlementId = existing?.id ?? crypto.randomUUID();
   if (existing) {
@@ -279,7 +340,7 @@ export async function saveSettlement(input: {
     await db
       .update(settlements)
       // 예전에 만든 정산은 코드가 없다 — 저장할 때 채운다
-      // deletedAt: null — 지웠던 자리에 다시 만드는 경우다 (post_id가 unique라 행은 하나뿐)
+      // deletedAt: null — 지웠던 정산을 다시 저장하면 되살아난다
       .set({ payeeId: input.payeeId, deletedAt: null, ...(existing.shortCode ? {} : { shortCode: shortCode() }) })
       .where(eq(settlements.id, settlementId));
   } else {
@@ -316,28 +377,35 @@ export async function saveSettlement(input: {
   if (extras.length > 0) {
     await db.insert(settlementMembers).values(extras.map((userId) => ({ settlementId, userId })));
   }
+  return settlementId;
 }
 
 /**
- * 정산 지우기 — 표시만 한다. 항목·명단은 그대로 붙어 있다.
+ * 정산 하나 지우기 — 표시만 한다. 항목·명단은 그대로 붙어 있다.
  *
- * post_id가 unique라 한 모임에 정산 행은 하나뿐이다. 그래서 지운 뒤 다시 만들면
- * 새 행이 아니라 이 행을 되살려 쓰고(saveSettlement), 그때 항목이 통째로 갈린다.
- * 되살릴 수 있는 것은 「다시 정산을 만들기 전까지」다.
+ * 정산이 여러 개라 **id로 지운다.** 예전에는 postId로 지웠는데, 그러면 모임의 정산이
+ * 통째로 사라진다 — 남의 정산까지.
  */
-export async function deleteSettlement(postId: string): Promise<void> {
+export async function deleteSettlement(settlementId: string): Promise<void> {
   const db = await getDb();
-  await db.update(settlements).set({ deletedAt: new Date() }).where(eq(settlements.postId, postId));
+  await db.update(settlements).set({ deletedAt: new Date() }).where(eq(settlements.id, settlementId));
 }
 
-/** 정산을 만든 사람 (수정·삭제 권한 확인용) */
-export async function settlementPayee(postId: string): Promise<string | null> {
+/**
+ * 그 정산을 받을 사람과 어느 모임 것인지 (수정·삭제 권한 확인용).
+ *
+ * 모임까지 함께 돌려주는 이유: 라우트는 주소의 모임 id와 본문의 정산 id를 둘 다 받는데,
+ * 둘이 안 맞는 요청을 걸러야 한다 — 안 걸르면 남의 모임 정산을 고칠 수 있다.
+ */
+export async function settlementOwner(
+  settlementId: string
+): Promise<{ payeeId: string; postId: string } | null> {
   const db = await getDb();
   const [row] = await db
-    .select({ payeeId: settlements.payeeId })
+    .select({ payeeId: settlements.payeeId, postId: settlements.postId })
     .from(settlements)
-    .where(and(eq(settlements.postId, postId), isNull(settlements.deletedAt)));
-  return row?.payeeId ?? null;
+    .where(and(eq(settlements.id, settlementId), isNull(settlements.deletedAt)));
+  return row ?? null;
 }
 
 /**
@@ -354,14 +422,21 @@ export async function settlementPayee(postId: string): Promise<string | null> {
  * 고치게 되고, 그건 받는 사람에게 서로 다른 두 문구가 도착한다는 뜻이다.
  */
 export async function notifySettlement(
-  postId: string,
+  /** 어느 정산인지 — 모임에 여러 개라 정산 단위로 알린다 */
+  settlementId: string,
   origin: string,
   onlyUserIds?: string[]
 ): Promise<{ sent: number }> {
-  const view = await getSettlement(postId);
+  const view = await getSettlementById(settlementId);
   if (!view) return { sent: 0 };
 
   const db = await getDb();
+  const [owner] = await db
+    .select({ postId: settlements.postId })
+    .from(settlements)
+    .where(eq(settlements.id, settlementId));
+  if (!owner) return { sent: 0 };
+  const postId = owner.postId;
   const [post] = await db.select().from(posts).where(and(eq(posts.id, postId), isNull(posts.deletedAt)));
   if (!post) return { sent: 0 };
 
@@ -404,7 +479,14 @@ export async function notifySettlement(
   const cat = getCategory(post.category);
   // 정산 알림은 모임 화면의 정산 카드로 바로 보낸다 (app/settlement-panel.tsx의 #settle)
   const linkUrl = `${origin}/p/${postId}#settle`;
-  const rows: { id: string; userId: string; postId: string; kind: string; message: string }[] = [];
+  const rows: {
+    id: string;
+    userId: string;
+    postId: string;
+    settlementId: string;
+    kind: string;
+    message: string;
+  }[] = [];
   // 인앱·푸시는 plain, 카톡만 kakao (받을 계좌가 붙은 판)
   const messages = new Map<string, { plain: string; kakao: string; locale: Locale }>();
 
@@ -443,7 +525,7 @@ export async function notifySettlement(
      * 인앱 알림과 푸시는 눌러서 정산 카드로 가고 거기에 보내기 수단이 이미 있다 —
      * 목록에 계좌가 늘어져 있으면 정작 읽어야 할 금액이 묻힌다.
      */
-    rows.push({ id: crypto.randomUUID(), userId: target.userId, postId, kind: 'settle', message: plain });
+    rows.push({ id: crypto.randomUUID(), userId: target.userId, postId, settlementId, kind: 'settle', message: plain });
     messages.set(target.userId, {
       plain,
       kakao: ways.length ? `${plain}\n${ways.join('\n')}` : plain,
@@ -500,7 +582,7 @@ export async function notifySettlement(
           ].filter(Boolean)
         : [];
 
-    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, kind: 'settle', message: copy });
+    rows.push({ id: crypto.randomUUID(), userId: view.payee.id, postId, settlementId, kind: 'settle', message: copy });
     messages.set(view.payee.id, {
       plain: copy,
       kakao: ways.length ? `${copy}\n${ways.join('\n')}` : copy,
@@ -510,7 +592,7 @@ export async function notifySettlement(
 
   if (rows.length > 0) await db.insert(notifications).values(rows);
   for (const [userId, { plain, kakao, locale }] of messages) {
-    await sendPush([userId], { title: 'Kansas Korean', body: plain, url: linkUrl, tag: `settle:${postId}` });
+    await sendPush([userId], { title: 'Kansas Korean', body: plain, url: linkUrl, tag: `settle:${settlementId}` });
   }
   return { sent: targets.length };
 }
@@ -518,18 +600,21 @@ export async function notifySettlement(
 /**
  * 이 정산으로 누구에게 언제 마지막으로 알렸는지.
  *
+ * **정산 단위로 센다.** 모임 단위로 세면 같은 모임의 다른 정산에서 보낸 알림까지 섞여서,
+ * 아직 안 알린 사람에게도 「방금 보냈다」고 나온다 (schema.ts의 notifications.settlementId).
+ *
  * 새 칸을 두지 않고 알림 기록에서 뽑는다 — 알림을 보냈다는 사실은 이미 notifications에
  * 남아 있고, 같은 것을 두 곳에 적어 두면 언젠가 서로 어긋난다.
  *
  * 「다시 알리기」 화면이 사람마다 이 시각을 보여준다. 하루에 세 번 찌르는 일을 막는 건
  * 규칙이 아니라 이 한 줄이다 — 방금 보냈다는 게 보이면 대개 안 누른다.
  */
-export async function settlementNotifiedAt(postId: string): Promise<Record<string, string>> {
+export async function settlementNotifiedAt(settlementId: string): Promise<Record<string, string>> {
   const db = await getDb();
   const rows = await db
     .select({ userId: notifications.userId, at: notifications.createdAt })
     .from(notifications)
-    .where(and(eq(notifications.postId, postId), eq(notifications.kind, NOTIF.settle)))
+    .where(and(eq(notifications.settlementId, settlementId), eq(notifications.kind, NOTIF.settle)))
     .orderBy(desc(notifications.createdAt));
 
   const out: Record<string, string> = {};
@@ -542,9 +627,20 @@ export async function settlementNotifiedAt(postId: string): Promise<Record<strin
 export interface SettlementSummary {
   /** 이 모임에 정산이 있는지 */
   exists: boolean;
-  /** 보는 사람이 내야 할 금액 (없거나 0이면 null) */
+  /**
+   * 이 모임 정산이 몇 개인지. 하나면 1이다.
+   *
+   * 카드에 개수를 적는 이유: 「정산하기」만 있으면 세 개짜리 모임에서 하나만 보고 나간다.
+   */
+  count: number;
+  /**
+   * 보는 사람이 내야 할 금액 — **정산 전부를 합한 값**이다 (없거나 0이면 null).
+   *
+   * 정산마다 따로 보여주지 않는 이유: 카드에서 궁금한 것은 「이 모임에서 내가 내야 할
+   * 돈이 얼마인가」 하나다. 누구에게 얼마씩인지는 모임 화면에서 갈라 보여준다.
+   */
   myCents: number | null;
-  /** 보는 사람이 받는 사람인지 */
+  /** 보는 사람이 **하나라도** 받을 사람인지 */
   iAmPayee: boolean;
 }
 
@@ -609,6 +705,16 @@ export async function settlementSummaries(
     itemsBySettlement.get(i.settlementId)!.push(i);
   }
 
+  /*
+   * 한 모임에 정산이 여러 개다 — **모임 단위로 합친다.**
+   *
+   * 예전에는 정산마다 out.set(postId, ...)을 해서 마지막 것만 남았다. 그러면 카드가
+   * 세 정산 중 하나의 금액만 보여주고, 나머지는 조용히 사라진다.
+   *
+   * 정산에만 들어간 사람(extras)은 여기서 안 읽는다. 카드 요약은 목록을 그리는 자리라
+   * 질의를 늘리지 않는 쪽을 골랐다 — 그 사람 카드에는 금액이 안 잡히지만, 모임 화면을
+   * 열면 정확한 금액이 보인다. (모임 목록은 참가한 모임만 보여주므로 대개 참가자다)
+   */
   for (const [settlementId, row] of byId) {
     const items = (itemsBySettlement.get(settlementId) ?? []).map((i) => ({
       amountCents: i.amountCents,
@@ -618,10 +724,14 @@ export async function settlementSummaries(
     }));
     const shares = computeShares(items, participantsByPost.get(row.postId) ?? []);
     const cents = viewerId ? (shares.get(viewerId) ?? 0) : 0;
+
+    const prev = out.get(row.postId);
+    const mine = (prev?.myCents ?? 0) + cents;
     out.set(row.postId, {
       exists: true,
-      myCents: cents > 0 ? cents : null,
-      iAmPayee: viewerId === row.payeeId,
+      count: (prev?.count ?? 0) + 1,
+      myCents: mine > 0 ? mine : null,
+      iAmPayee: (prev?.iAmPayee ?? false) || viewerId === row.payeeId,
     });
   }
   return out;

@@ -495,6 +495,17 @@ export const notifications = pgTable(
      * 'friend_req'·'friend_ok'는 친구 화면으로. null이면 예전처럼 카테고리 피드.
      */
     kind: text('kind'),
+    /**
+     * 정산 알림이면 **어느 정산인지** (그 밖에는 null).
+     *
+     * post_id만으로는 못 가린다 — 한 모임에 정산이 여러 개라(schema.ts의 settlements)
+     * 「이 사람에게 마지막으로 언제 알렸나」가 정산끼리 섞인다. 그러면 다시 알리기 화면이
+     * 다른 정산 때문에 「방금 보냈다」고 말해서, 받을 사람이 안 눌러도 되는 줄 안다.
+     *
+     * 굳이 정산만 칸을 갖는 이유: 사람마다 금액이 달라서 정산은 알림이 사람 단위로 나가는
+     * 유일한 종류다. 나머지는 모임 하나에 문구 하나라 post_id로 충분하다.
+     */
+    settlementId: uuid('settlement_id').references(() => settlements.id, { onDelete: 'cascade' }),
     message: text('message').notNull(),
     read: boolean('read').notNull().default(false),
     /**
@@ -557,7 +568,9 @@ export const pushSubscriptions = pgTable(
  * 금액은 센트 정수로 둔다. 달러를 소수로 저장하면 3명이 10달러를 나눌 때
  * 반올림이 어긋나 합계가 원금과 안 맞는다.
  */
-export const settlements = pgTable('settlements', {
+export const settlements = pgTable(
+  'settlements',
+  {
   id: uuid('id').primaryKey(),
   /**
    * 짧은 링크 주소 (/v/<code>) — 앱 밖의 사람에게 전달하는 Venmo 링크에 쓴다.
@@ -565,21 +578,28 @@ export const settlements = pgTable('settlements', {
    * 우리 도메인이라 카카오 메시지에서 주소가 바뀌지도 않는다.
    */
   shortCode: text('short_code').unique(),
+  /**
+   * **한 모임에 여러 개 붙는다** (예전에는 unique였다).
+   *
+   * 여행에서 한 사람이 여러 번 결제하고, 결제마다 나눠 내는 사람이 다르다 — 숙소는
+   * 다섯 명, 렌터카는 셋, 저녁은 넷. 정산 하나에 항목을 여러 개 넣는 것으로는 안 되는데,
+   * 받을 사람이 정산마다 다르기 때문이다. 그래서 「정산 = 한 사람이 한 번 받을 것」이다.
+   */
   postId: uuid('post_id')
     .notNull()
-    .unique()
     .references(() => posts.id, { onDelete: 'cascade' }),
   payeeId: text('payee_id')
     .notNull()
     .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   /**
-   * post_id가 unique라 한 모임에 정산은 하나뿐이다. 그래서 지운 뒤 다시 만들면 새 행이
-   * 아니라 이 행을 되살려 쓴다 (saveSettlement). 항목은 저장할 때마다 통째로 갈아끼우므로,
-   * 되살릴 수 있는 것은 「다시 정산을 만들기 전까지」다.
+   * 지운 정산. 행은 남기고 표시만 한다 — 항목·명단도 그대로 붙어 있다.
+   *
+   * 예전에는 post_id가 unique라 지운 자리를 되살려 썼는데, 이제는 정산이 여러 개라
+   * 새로 만들면 그냥 새 행이다. 지운 것은 지운 채로 남는다.
    */
   deletedAt: deletedAt(),
-});
+}, (t) => [index('settlements_post_idx').on(t.postId, t.createdAt)]);
 
 /**
  * 정산 항목. 하나의 정산에 여러 개가 붙는다.
