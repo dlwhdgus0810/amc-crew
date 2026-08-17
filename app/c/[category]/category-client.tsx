@@ -11,7 +11,7 @@
    4) 댓글은 "댓글 2 ▾"로 열고 닫습니다 (닫힘이 기본)
    ============================================================ */
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCategory } from '@/lib/categories';
 import PlaceLink from '@/app/place-link';
@@ -576,6 +576,29 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   // 지난 모임
   const [pastPosts, setPastPosts] = useState<PostView[] | null>(initial.pastPosts);
   const [showPast, setShowPast] = useState(false);
+  /*
+   * 여행처럼 며칠 이어지는 카테고리는 **예정/지난을 안 나눈다** (lib/categories.ts의 dateRange).
+   *
+   * 여행은 한 해에 몇 번 안 가고, 지난 여행이 곧 사진과 정산이 쌓인 자리다 — 탭 뒤에
+   * 숨겨 둘 이유가 없다. 날짜 머리줄도 안 그린다: 카드마다 「8/14(금) ~ 8/16(일)」로
+   * 기간이 통째로 적혀서, 그 위에 시작일만 또 적으면 같은 말이 두 줄이 된다.
+   */
+  const flat = Boolean(category?.dateRange);
+  /**
+   * 예정과 지난을 한 줄로 이어 **최신순**으로. flat인 카테고리에서만 쓴다.
+   *
+   * 견주는 값은 시작 날짜다 — 「언제 갔던 여행인가」로 줄을 세우는 것이 사람이 기억하는
+   * 순서다 (끝난 날로 세우면 긴 여행이 짧은 여행 뒤로 밀린다).
+   * 날짜 미정은 맨 뒤 — 기간이 없으니 최신에 낄 자리가 없다.
+   */
+  const allFlat = useMemo(() => {
+    const merged = [...posts, ...(pastPosts ?? [])];
+    return merged.sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return b.date.localeCompare(a.date);
+    });
+  }, [posts, pastPosts]);
 
   // 펼침 상태 — 댓글, 참여자 명단
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
@@ -1065,14 +1088,16 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         </p>
       )}
 
-      <div className="feed-tabs">
-        <button className={showPast ? '' : 'on'} onClick={() => setShowPast(false)}>
-          {t(T.tabUpcoming, { n: posts.length })}
-        </button>
-        <button className={showPast ? 'on' : ''} onClick={togglePast}>
-          {pastPosts ? t(T.tabPast, { n: pastPosts.length }) : t(T.tabPastPlain)}
-        </button>
-      </div>
+      {!flat && (
+        <div className="feed-tabs">
+          <button className={showPast ? '' : 'on'} onClick={() => setShowPast(false)}>
+            {t(T.tabUpcoming, { n: posts.length })}
+          </button>
+          <button className={showPast ? 'on' : ''} onClick={togglePast}>
+            {pastPosts ? t(T.tabPast, { n: pastPosts.length }) : t(T.tabPastPlain)}
+          </button>
+        </div>
+      )}
 
       {msg && <div className={`msg ${msg.type}`}>{msg.text}</div>}
 
@@ -1127,7 +1152,35 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         </div>
       )}
 
-      {!showPast && (
+      {/*
+        * 여행 같은 카테고리 — 예정과 지난을 한 줄로 이어 최신순으로만 늘어놓는다.
+        * 날짜가 미정인 모임은 맨 뒤로 (기간이 없으니 「최신」에 낄 자리가 없다).
+        */}
+      {flat && (
+        <>
+          {allFlat.length === 0 ? (
+            <div className="feed-empty">
+              {t(T.emptyUpcoming)}
+              {canCreate && (
+                <button className="new-inline" onClick={() => openCreate()}>
+                  {t(T.newMeetupWide)}
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {allFlat.map((post) => renderPost(post, post.isPast))}
+              {canCreate && (
+                <button className="new-inline" onClick={() => openCreate()}>
+                  {t(T.newMeetupWide)}
+                </button>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {!flat && !showPast && (
         <>
           {posts.length === 0 && signupTarget === 0 && (
             <div className="feed-empty">
@@ -1149,7 +1202,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
       )}
 
       {/* 지난 목록도 서버가 함께 읽어 오므로 따로 기다리는 상태가 없다 */}
-      {showPast &&
+      {!flat && showPast &&
         ((pastPosts ?? []).length === 0 ? (
           <div className="feed-empty">{t(T.emptyPast)}</div>
         ) : (
@@ -1739,7 +1792,18 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                 * 모임이면 언제까지인지, 날짜조차 없으면 몇 명 모였는지.
                 */}
               {post.endDate && post.date && post.endDate > post.date ? (
-                <>~ {fmtDateShort(post.endDate, locale)}</>
+                /*
+                 * 기간을 통째로 적는다 — 날짜 머리줄이 없는 카테고리(flat)에서는 이 줄이
+                 * 유일한 날짜다. 묶음으로 그리는 카테고리에서는 시작일이 머리줄에 이미
+                 * 있으므로 「~ 끝」만 적어 같은 말을 두 번 안 한다.
+                 */
+                <>
+                  {flat ? `${fmtDateShort(post.date, locale)} ~ ` : '~ '}
+                  {fmtDateShort(post.endDate, locale)}
+                </>
+              ) : flat && post.date ? (
+                // 기간이 하루인 여행 — 머리줄이 없으니 날짜를 여기 적는다
+                <>{fmtDateShort(post.date, locale)}</>
               ) : post.startTime ? (
                 <>
                   {to12h(post.startTime)}
