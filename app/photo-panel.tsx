@@ -183,6 +183,22 @@ export default function PhotoPanel({
     downloadIsOriginal: Boolean(p.downloadIsOriginal),
   }));
 
+  /**
+   * 한 자리의 이름을 손으로 적는다.
+   *
+   * API가 못 맞히는 자리가 있어서 있는 길이다 — 밤 8시 반의 단체사진에 안과 이름이
+   * 붙었던 적이 있다. 적어 두면 백필이 그 자리를 다시 안 건드린다.
+   */
+  async function rename(photoIds: string[], place: string) {
+    const res = await fetch(`/api/posts/${postId}/photos/place`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photoIds, place }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? t(T.failed));
+    router.refresh();
+  }
+
   /** 격자 한 칸. 격자와 타임라인이 같은 것을 쓴다 — 지우기 버튼 조건이 갈리면 안 된다 */
   function cell(p: PhotoItem) {
     return (
@@ -296,7 +312,15 @@ export default function PhotoPanel({
           * 여행은 격자 대신 찍은 순서다. 그림은 모아보기와 같은 것을 쓴다
           * (app/photo-timeline-view.tsx) — 두 화면에 따로 그리면 하나만 고치게 된다.
           */}
-        {tl && <PhotoTimelineView photos={photos} lodgingAt={lodgingAt} renderCell={cell} />}
+        {tl && (
+          <PhotoTimelineView
+            photos={photos}
+            lodgingAt={lodgingAt}
+            renderCell={cell}
+            /* 이름은 갔던 사람과 관리자만 고친다 — 사진 올리는 자격과 같다 (서버도 같은 기준) */
+            onRename={canAdd ? rename : undefined}
+          />
+        )}
 
         {/*
           * 전부 받기 — 두 장 이상일 때만. 한 장짜리 모임에서는 사진을 눌러 받는 것과

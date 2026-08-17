@@ -2745,3 +2745,27 @@ body:has(.sky-scope.night) .tabbar a.active {
  * 격자(wall-grid)에 그냥 넣으면 마지막 자리에 붙어서 그 시각에 찍은 사진처럼 보인다.
  */
 .wall-rest { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+
+/*
+ * 자리 이름을 눌러 고치기 — app/photo-timeline-view.tsx
+ *
+ * 이름이 있을 때는 **버튼처럼 안 보이게** 둔다. 타임라인을 훑는 동안 자리마다 버튼이
+ * 하나씩 서 있으면 읽는 화면이 아니라 고치는 화면이 된다. 누를 수 있다는 표시는
+ * 점선 밑줄 하나면 충분하다.
+ */
+.tl-place-edit,
+.tl-name-btn {
+  padding: 0; border: none; background: none; min-height: 0;
+  font: inherit; cursor: pointer; text-align: left;
+}
+.tl-place-edit { border-bottom: 1px dashed var(--border); }
+.tl-place-edit:hover { color: var(--text-mid); border-bottom-color: var(--text-dim); }
+/* 이름이 없는 자리 — 여기서는 눌러 달라고 말해야 하므로 조금 더 드러낸다 */
+.tl-name-btn {
+  flex: none; font-size: 12px; font-weight: 600; color: var(--text-dim);
+  border-bottom: 1px dashed var(--border);
+}
+.tl-name-btn:hover { color: var(--accent); border-bottom-color: currentColor; }
+.tl-edit { display: flex; align-items: center; gap: 6px; margin: 2px 0 8px; }
+.tl-edit input { flex: 1; min-width: 0; }
+.tl-edit button { flex: none; }
