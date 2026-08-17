@@ -24,6 +24,7 @@ import {useLocale, useT} from '../../i18n';
 import {
   dateLabel as fmtDate,
   dateLabelLong as fmtDateLong,
+  dateLabelShort as fmtDateShort,
   timeLabel as fmtTime,
   weekdayLabel as fmtWeekday,
   whenLabelShort,
@@ -140,6 +141,11 @@ const T = {
   secWho: { ko: '함께', en: 'Who', es: 'Quién' },
   secTitle: { ko: '무엇을', en: 'What', es: 'Qué' },
   fieldDate: { ko: '날짜', en: 'Date', es: 'Fecha' },
+  /* 며칠 이어지는 모임(여행) — 시각 대신 날짜 범위를 받는다 */
+  fieldDateFrom: { ko: '가는 날', en: 'Leaving', es: 'Salida' },
+  fieldDateTo: { ko: '오는 날 (선택)', en: 'Coming back (optional)', es: 'Vuelta (opcional)' },
+  /* 날짜는 있는데 시각이 없는 모임 (당일치기 여행) */
+  allDay: { ko: '하루', en: 'All day', es: 'Todo el día' },
   fieldStart: { ko: '시작', en: 'Starts', es: 'Empieza' },
   fieldEnd: { ko: '종료 (선택)', en: 'Ends (optional)', es: 'Termina (opcional)' },
   capacityPh: { ko: '정원 (선택)', en: 'Capacity (optional)', es: 'Aforo (opcional)' },
@@ -310,6 +316,10 @@ interface PostView {
   startTime: string | null;
   /** 안 적었으면 null — 카드에는 시작 시각만 보여준다 */
   endTime: string | null;
+  /** 마지막 날 — 여행처럼 며칠 이어지는 모임만 (null이면 하루짜리) */
+  endDate: string | null;
+  /** 숙소 (선택) */
+  lodging: string | null;
   location: string;
   description: string | null;
   capacity: number | null;
@@ -385,6 +395,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const t = useT();
   const locale = useLocale();
   const category = getCategory(slug);
+  /** 시각 대신 날짜 범위를 받는 카테고리인지 (여행) — lib/categories.ts의 dateRange */
+  const ranged = Boolean(category?.dateRange);
   /** 이름이 하나도 안 보이는 카테고리 — 이름에 딸린 기능들을 화면에서도 내린다 */
   const anonCat = category?.anonymous === true;
   const name = category ? t(catDisplayName(category.slug)) : slug;
@@ -421,6 +433,10 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const [fDate, setFDate] = useState('');
   const [fStart, setFStart] = useState('');
   const [fEnd, setFEnd] = useState('');
+  /** 마지막 날 — 여행처럼 며칠 이어지는 카테고리에서만 쓴다 (cat.dateRange) */
+  const [fEndDate, setFEndDate] = useState('');
+  /** 숙소 — lodgingLabel이 있는 카테고리에서만 (선택) */
+  const [fLodging, setFLodging] = useState('');
   const [fLocation, setFLocation] = useState('');
   const [fMemo, setFMemo] = useState('');
   const [fCapacity, setFCapacity] = useState('');
@@ -527,6 +543,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFDate('');
     setFStart('');
     setFEnd('');
+    setFEndDate('');
+    setFLodging('');
     setFLocation('');
     setFMemo('');
     setFCapacity('');
@@ -735,6 +753,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           date: fNoDate ? null : fDate,
           startTime: fNoDate ? null : fStart,
           endTime: fNoDate ? null : fEnd || null,
+          ...(ranged ? { endDate: fEndDate || null } : {}),
+          ...(category?.lodgingLabel ? { lodging: fLodging } : {}),
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
@@ -792,6 +812,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     setFStart(post.startTime ?? '');
     setFNoDate(!post.date);
     setFEnd(post.endTime ?? '');
+    setFEndDate(post.endDate ?? '');
+    setFLodging(post.lodging ?? '');
     setFLocation(post.location);
     setFMemo(post.description ?? '');
     setFCapacity(post.capacity != null ? String(post.capacity) : '');
@@ -819,6 +841,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           date: fNoDate ? null : fDate,
           startTime: fNoDate ? null : fStart,
           endTime: fNoDate ? null : fEnd || null,
+          ...(ranged ? { endDate: fEndDate || null } : {}),
+          ...(category?.lodgingLabel ? { lodging: fLodging } : {}),
           location: fLocation,
           description: fMemo,
           capacity: fCapacity || undefined,
@@ -933,7 +957,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           title: t(T.shareTitle, {
             cat: name,
             title: post.title ? ` 〈${post.title}〉` : '',
-            when: whenLabelShort(post.date, post.startTime, locale),
+            when: whenLabelShort(post.date, post.startTime, locale, post.endDate),
             place: post.location,
           }),
           url,
@@ -1204,7 +1228,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
       resetForm();
     };
     // 종료 시각은 안 적어도 만들 수 있다
-    const canSave = Boolean(fDate && fStart && fLocation.trim());
+    // 여행은 시각을 안 받으므로 시작 시각을 요구하지 않는다 (cat.dateRange)
+    const canSave = Boolean(fDate && (ranged || fStart) && fLocation.trim());
     return (
       <div className="create-panel" role="dialog" aria-modal="true">
         <div className="create-head">
@@ -1343,6 +1368,29 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
               </p>
             ) : (
               <>
+            {/*
+              * 여행은 시각이 아니라 날짜 범위를 받는다 (lib/categories.ts의 dateRange).
+              * 「8월 5일 오전 8시」가 아니라 「8월 5일부터 9일까지」가 그 모임의 언제다.
+              */}
+            {ranged ? (
+              <div className="field-row">
+                <label className="stack-field">
+                  <span className="stack-label">{t(T.fieldDateFrom)}</span>
+                  <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} />
+                </label>
+                <label className="stack-field">
+                  <span className="stack-label">{t(T.fieldDateTo)}</span>
+                  <input
+                    type="date"
+                    value={fEndDate}
+                    // 시작보다 앞선 날은 못 고르게 — 서버도 400으로 막지만 여기서 먼저 잡는다
+                    min={fDate || undefined}
+                    onChange={(e) => setFEndDate(e.target.value)}
+                  />
+                </label>
+              </div>
+            ) : (
+              <>
             <label className="stack-field">
               <span className="stack-label">{t(T.fieldDate)}</span>
               <input type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} />
@@ -1357,7 +1405,10 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                 <input type="time" value={fEnd} onChange={(e) => setFEnd(e.target.value)} />
               </label>
             </div>
-            {isCreate && (
+              </>
+            )}
+            {/* 며칠 이어지는 모임에 「매주 반복」은 뜻이 안 맞는다 (다음 주 어디부터 어디까지?) */}
+            {isCreate && !ranged && (
               <label className="repeat-check" style={{ marginTop: 6 }}>
                 <input type="checkbox" checked={fRepeat} onChange={(e) => setFRepeat(e.target.checked)} />
                 <span>
@@ -1384,6 +1435,22 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
               maxLength={100}
               onChange={(e) => setFLocation(e.target.value)}
             />
+            {/*
+              * 숙소 — 장소와 따로 받는다. 여행에서 장소는 출발 전에 모이는 곳이고
+              * 숙소는 가서 머무는 곳이다 (lib/db/schema.ts의 lodging).
+              */}
+            {category?.lodgingLabel && (
+              <label className="stack-field" style={{ marginTop: 10 }}>
+                <span className="stack-label">{t(category.lodgingLabel)}</span>
+                <input
+                  type="text"
+                  placeholder={category.lodgingHint ? t(category.lodgingHint) : undefined}
+                  value={fLodging}
+                  maxLength={100}
+                  onChange={(e) => setFLodging(e.target.value)}
+                />
+              </label>
+            )}
           </div>
 
           {/*
@@ -1651,11 +1718,23 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         <div className={art ? 'post-head has-poster' : 'post-head'}>
           <div className="post-head-text">
             <div className="post-when">
-              {post.startTime ? (
+              {/*
+                * 이 자리에 무엇을 적을지가 셋으로 갈린다.
+                *
+                * 목록은 날짜별로 묶여 있고 그 날짜는 머리줄에 이미 적혀 있다. 그래서 여기는
+                * 「그날 안에서 언제」를 적는 자리다 — 시각이 있으면 시각, 며칠 이어지는
+                * 모임이면 언제까지인지, 날짜조차 없으면 몇 명 모였는지.
+                */}
+              {post.endDate && post.date && post.endDate > post.date ? (
+                <>~ {fmtDateShort(post.endDate, locale)}</>
+              ) : post.startTime ? (
                 <>
                   {to12h(post.startTime)}
                   {post.endTime ? ` – ${to12h(post.endTime)}` : ''}
                 </>
+              ) : post.date ? (
+                /* 날짜는 있는데 시각을 안 받는 카테고리 (당일치기 여행) */
+                t(T.allDay)
               ) : (
                 /* 시각 자리에 인원을 적는다 — 이 모임에서 지금 궁금한 건 「몇 명 모였나」다 */
                 t(T.gatheringCount, { n: post.participantCount })

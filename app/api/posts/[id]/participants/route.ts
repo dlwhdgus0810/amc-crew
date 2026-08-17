@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
    */
   const asAdmin = isAdmin(user);
   const isHost = post.authorId === user.id || post.coHostId === user.id;
-  const past = isPastSlot(post.date, post.startTime, post.endTime);
+  const past = isPastSlot(post.date, post.startTime, post.endTime, post.endDate);
   if (!asAdmin) {
     /*
      * 지난 모임의 명단은 호스트만 고친다 — 그날 온 사람을 뒤늦게 적는 일이라
@@ -124,7 +124,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
    * 예정 모임에서 남을 빼는 건 "나가라"는 말이 되어 성격이 다르다 — 그건 열어두지 않는다.
    */
   const isHost = post.authorId === user.id || post.coHostId === user.id;
-  const past = isPastSlot(post.date, post.startTime, post.endTime);
+  const past = isPastSlot(post.date, post.startTime, post.endTime, post.endDate);
   if (!isAdmin(user) && !(isHost && past)) {
     return await errJson(E.rosterHostOnly, 403);
   }

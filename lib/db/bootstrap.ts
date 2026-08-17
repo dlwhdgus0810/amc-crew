@@ -63,6 +63,9 @@ CREATE TABLE IF NOT EXISTS posts (
   date text,
   start_time text,
   end_time text,
+  -- 마지막 날 (여러 날 모임) · 숙소 — lib/db/schema.ts의 주석 참고
+  end_date text,
+  lodging text,
   location text NOT NULL,
   description text,
   capacity integer,

@@ -50,6 +50,7 @@ const T = {
   comments: { ko: '댓글', en: 'Comments', es: 'Comentarios' },
   del: { ko: '삭제', en: 'Delete', es: 'Eliminar' },
   roster: { ko: '명단 고치기', en: 'Edit roster', es: 'Editar la lista' },
+  lodging: { ko: '숙소', en: 'Stay', es: 'Alojamiento' },
 };
 import type { PostView } from '@/lib/db/posts';
 import { TMDB_IMG } from '@/lib/tmdb';
@@ -300,7 +301,19 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           post.title && <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>〈{post.title}〉</div>
         )}
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.4px' }}>
-          {post.date && post.startTime ? (
+          {/*
+            * 며칠 이어지는 모임(여행)은 시각이 없다 — 날짜 범위를 그린다.
+            * 시각이 있는 모임과 갈라 두는 이유: 없는 시각을 「오전 12:00」으로 그리면
+            * 아무도 안 정한 시각이 정해진 것처럼 보인다.
+            */}
+          {post.date && post.endDate && post.endDate > post.date ? (
+            <>
+              {dateLabel(post.date)} ~ {dateLabel(post.endDate)}
+            </>
+          ) : post.date && !post.startTime ? (
+            // 시각을 안 받는 카테고리의 당일치기
+            <>{dateLabel(post.date)}</>
+          ) : post.date && post.startTime ? (
             <>
               {dateLabel(post.date)} {to12h(post.startTime)}
               {post.endTime ? ` ~ ${to12h(post.endTime)}` : ''}
@@ -321,6 +334,16 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
           <PlaceLink location={post.location} />
           {post.authorName && <> — {post.authorName}</>}
         </div>
+        {/*
+          * 숙소 — 장소와 한 줄에 붙이지 않는다. 「어디로 모여요」와 「어디서 자요」는
+          * 다른 질문이라, 붙여 놓으면 출발 아침에 둘 중 어디로 갈지 헷갈린다.
+          */}
+        {post.lodging && (
+          <div style={{ marginTop: 4, fontSize: 15.5 }}>
+            <span style={{ color: 'var(--text-dim)' }}>{t(T.lodging)} </span>
+            <PlaceLink location={post.lodging} />
+          </div>
+        )}
         {post.description && (
           <div style={{ marginTop: 8, color: 'var(--text-dim)' }}>“{post.description}”</div>
         )}
@@ -450,7 +473,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
         isAdmin={isAdmin}
         myVenmo={myVenmo}
         myZelle={myZelle}
-        noteLabel={`${catLabel}${post.title ? ` ${post.title}` : ''} ${whenLabelShort(post.date, post.startTime, locale)}`}
+        noteLabel={`${catLabel}${post.title ? ` ${post.title}` : ''} ${whenLabelShort(post.date, post.startTime, locale, post.endDate)}`}
       />
       )}
 

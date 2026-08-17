@@ -52,15 +52,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // 날짜 미정으로 두거나(둘 다 null) 나중에 날짜를 정하는 것 둘 다 여기로 온다
   const noDate = body?.date === null || body?.date === '';
   const date = !noDate && typeof body?.date === 'string' ? body.date : null;
-  const startTime = !noDate && typeof body?.startTime === 'string' ? body.startTime : null;
+  // 여행처럼 며칠 이어지는 카테고리는 시각을 안 받는다 (만들 때와 같은 규칙)
+  const ranged = Boolean(getCategory(post.category)?.dateRange);
+  const startTime = !noDate && !ranged && typeof body?.startTime === 'string' ? body.startTime : null;
   // 종료 시각은 안 적어도 된다 — 빈 값이면 null로 저장하고, 언제 끝난 걸로 볼지는 lib/dates.ts가 정한다
-  const endTime = typeof body?.endTime === 'string' && body.endTime ? body.endTime : null;
+  const endTime = !ranged && typeof body?.endTime === 'string' && body.endTime ? body.endTime : null;
+  const endDate = ranged && typeof body?.endDate === 'string' && body.endDate ? body.endDate : null;
+  const lodging = typeof body?.lodging === 'string' ? body.lodging.trim() : '';
   const location = typeof body?.location === 'string' ? body.location.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
   const rawCapacity = body?.capacity;
 
-  if (!noDate && (!date || !startTime || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime))) {
+  if (!noDate && (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
     return await errJson(E.badDateTime, 400);
+  }
+  if (!noDate && !ranged && (!startTime || !/^\d{2}:\d{2}$/.test(startTime))) {
+    return await errJson(E.badDateTime, 400);
+  }
+  if (endDate !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(endDate) || !date || endDate < date)) {
+    return await errJson(E.endBeforeStart, 400);
   }
   // 날짜를 비워 두는 것은 참가신청을 쓰는 카테고리에서만 (만들 때와 같은 규칙)
   if (noDate && !getCategory(post.category)?.signup) {
@@ -134,7 +144,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
    * 고치기 전만 보면 그때 「모임 변경 · 7/1」이 나가는데, 이미 끝난 일을 알리는 셈이 된다.
    */
   const editingPast =
-    isPastSlot(post.date, post.startTime, post.endTime) || isPastSlot(date, startTime, endTime);
+    isPastSlot(post.date, post.startTime, post.endTime, post.endDate) ||
+    isPastSlot(date, startTime, endTime, endDate);
 
   /*
    * 같이 여는 사람만 바뀐 경우.
@@ -148,6 +159,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     date === post.date &&
     startTime === post.startTime &&
     endTime === post.endTime &&
+    endDate === post.endDate &&
+    (lodging || null) === post.lodging &&
     location === post.location &&
     (description || null) === post.description &&
     capacity === post.capacity &&
@@ -167,6 +180,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     date,
     startTime,
     endTime,
+    endDate,
+    lodging: lodging || null,
     location,
     description: description || null,
     capacity,
@@ -224,11 +239,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
    * 그래서 호스트에게는 지우는 길을 막아 둔다. 실수로 하나 지우면 되돌릴 방법이 없다.
    * 관리자만 지운다: 잘못 올라간 모임을 치우는 사람이 아무도 없으면 그건 그것대로 막힌다.
    */
-  if (!isAdmin(user) && isPastSlot(post.date, post.startTime, post.endTime)) {
+  if (!isAdmin(user) && isPastSlot(post.date, post.startTime, post.endTime, post.endDate)) {
     return await errJson(E.pastDelete, 400);
   }
   // 지난 모임을 치우는 것은 정리지 취소가 아니다 — 알림을 보내지 않는다
-  const wasPast = isPastSlot(post.date, post.startTime, post.endTime);
+  const wasPast = isPastSlot(post.date, post.startTime, post.endTime, post.endDate);
   await deletePost(post, user.id, await displayNameOf(user), siteUrl(req.nextUrl.origin), wasPast);
   return NextResponse.json({ ok: true });
 }

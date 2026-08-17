@@ -171,6 +171,29 @@ export const posts = pgTable(
     /** HH:mm — 날짜가 미정이면 이것도 없다 (둘은 늘 같이 있거나 같이 없다) */
     startTime: text('start_time'),
     endTime: text('end_time'), // HH:mm — 안 적어도 된다 (lib/dates.ts의 effectiveEnd 참고)
+    /**
+     * 마지막 날 (YYYY-MM-DD). **null이면 하루짜리 모임이다.**
+     *
+     * 여행처럼 여러 날 이어지는 모임을 위해 열었다. 시각과는 다른 축이다 — 여행은
+     * 「8월 5일 오전 8시」가 아니라 「8월 5일부터 9일까지」다. 그래서 여행 카테고리는
+     * 시각 칸을 아예 안 그리고 이 칸만 받는다 (lib/categories.ts의 dateRange).
+     *
+     * **끝났는지는 이 날로 본다.** date만 보면 3박 4일 여행이 출발 다음 날부터 「지난
+     * 모임」으로 내려간다 — 아직 가 있는데. lib/dates.ts의 isPastSlot과 목록 질의
+     * (lib/db/posts.ts)가 둘 다 COALESCE(end_date, date)를 쓴다.
+     *
+     * 캘린더에는 시작일 하루만 찍힌다. 여러 날에 걸쳐 칠하려면 캘린더가 날짜마다 범위를
+     * 훑어야 하는데, 이 칸을 쓰는 카테고리가 하나뿐인 지금은 값이 안 맞는다.
+     */
+    endDate: text('end_date'),
+    /**
+     * 숙소 (선택). lodgingLabel이 있는 카테고리에서만 칸이 생긴다 (지금은 여행).
+     *
+     * location과 따로 두는 이유: 여행에서 location은 **출발 전에 만나는 곳**이고 숙소는
+     * 가서 머무는 곳이다. 한 칸에 넣으면 「어디로 모여요」와 「어디서 자요」가 섞여서
+     * 출발 아침에 아무도 어디로 갈지 모른다.
+     */
+    lodging: text('lodging'),
     location: text('location').notNull(),
     description: text('description'),
     capacity: integer('capacity'), // 정원. null이면 무제한

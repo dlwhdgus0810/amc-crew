@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const title = pick(locale, T.title, {
     cat: catName(post.category, locale),
     title: post.title ? ` 〈${post.title}〉` : '',
-    when: whenLabelShort(post.date, post.startTime, locale),
+    when: whenLabelShort(post.date, post.startTime, locale, post.endDate),
   });
   const metaPart = post.titleMeta
     ? [

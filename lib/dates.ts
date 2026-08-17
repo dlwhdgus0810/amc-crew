@@ -101,10 +101,28 @@ export function openEndCutoffTime(): string | null {
  * 날짜가 없으면(모집 중) 절대 지나지 않는다. 언제 할지를 안 정했으니 끝났을 리도 없다 —
  * 날짜가 정해지는 순간부터 이 판정이 시작된다.
  */
-export function isPastSlot(date: string | null, startTime: string | null, endTime?: string | null): boolean {
-  if (!date || !startTime) return false;
+export function isPastSlot(
+  date: string | null,
+  startTime: string | null,
+  endTime?: string | null,
+  /**
+   * 마지막 날 (여행처럼 여러 날 이어지는 모임). null이면 하루짜리다.
+   *
+   * 이게 없으면 3박 4일 여행이 **출발 다음 날부터** 「지난 모임」이 된다 — 아직 가 있는데.
+   * 그래서 끝났는지는 언제나 마지막 날로 본다.
+   */
+  endDate?: string | null
+): boolean {
+  if (!date) return false;
+  const last = endDate && endDate > date ? endDate : date;
   const { date: cutDate, time: cutTime } = pastCutoff();
-  if (date !== cutDate) return date < cutDate;
+  if (last !== cutDate) return last < cutDate;
+  /*
+   * 마지막 날이 오늘이면 시각으로 가른다. 시각이 아예 없는 모임(여행)은 그날이 다
+   * 지나야 끝난 것으로 본다 — 마지막 날 낮에 「지난 모임」으로 내려가면 그날 찍은
+   * 사진을 올릴 자리가 사라진다.
+   */
+  if (!startTime) return false;
   if (endTime) return endTime <= cutTime;
   const openCut = openEndCutoffTime();
   return openCut !== null && startTime <= openCut;

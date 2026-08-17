@@ -32,7 +32,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const fg = cat?.fg ?? '#F6F4EE';
   const label = cat?.en ?? 'KANSAS KOREAN';
   const heading = post ? `${catName(post.category, locale)} ${cat?.emoji ?? ''}` : 'Kansas Korean';
-  const when = post ? whenLabelShort(post.date, post.startTime, locale) : '';
+  const when = post ? whenLabelShort(post.date, post.startTime, locale, post.endDate) : '';
   const where = post?.location ?? pick(locale, T.notFound);
   const title = post?.title ? `〈${post.title}〉` : '';
   const count = post

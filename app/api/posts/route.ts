@@ -60,9 +60,17 @@ export async function POST(req: NextRequest) {
    */
   const noDate = body?.date === null || body?.date === '';
   const date = !noDate && typeof body?.date === 'string' ? body.date : null;
-  const startTime = !noDate && typeof body?.startTime === 'string' ? body.startTime : null;
+  /*
+   * 여행처럼 며칠 이어지는 카테고리는 **시각을 안 받는다** — 날짜 범위로 받는다
+   * (lib/categories.ts의 dateRange). 그래서 시각 필수 검사도 여기서 갈린다.
+   */
+  const ranged = Boolean(getCategory(category)?.dateRange);
+  const startTime = !noDate && !ranged && typeof body?.startTime === 'string' ? body.startTime : null;
   // 종료 시각은 안 적어도 된다 — 빈 값이면 null로 저장하고, 언제 끝난 걸로 볼지는 lib/dates.ts가 정한다
-  const endTime = typeof body?.endTime === 'string' && body.endTime ? body.endTime : null;
+  const endTime = !ranged && typeof body?.endTime === 'string' && body.endTime ? body.endTime : null;
+  // 마지막 날 — 범위를 쓰는 카테고리에서만. 안 적으면 하루짜리다
+  const endDate = ranged && typeof body?.endDate === 'string' && body.endDate ? body.endDate : null;
+  const lodging = typeof body?.lodging === 'string' ? body.lodging.trim() : '';
   const location = typeof body?.location === 'string' ? body.location.trim() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
   const rawCapacity = body?.capacity;
@@ -70,8 +78,15 @@ export async function POST(req: NextRequest) {
   if (!POST_CATEGORY_SLUGS.includes(category)) {
     return await errJson(E.badCategory, 400);
   }
-  if (!noDate && (!date || !startTime || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime))) {
+  if (!noDate && (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
     return await errJson(E.badDateTime, 400);
+  }
+  // 시각을 받는 카테고리에서는 시작 시각이 여전히 필수다
+  if (!noDate && !ranged && (!startTime || !/^\d{2}:\d{2}$/.test(startTime))) {
+    return await errJson(E.badDateTime, 400);
+  }
+  if (endDate !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(endDate) || !date || endDate < date)) {
+    return await errJson(E.endBeforeStart, 400);
   }
   /*
    * 날짜 없는 모임은 참가신청을 쓰는 카테고리(독서나눔)에서만 만들 수 있다.
@@ -94,7 +109,7 @@ export async function POST(req: NextRequest) {
    * 관리자는 예외다. 앱을 쓰기 전에 있었던 모임이나 누가 올리는 걸 잊은 모임을
    * 나중에 채워 넣어야 하는데, 그건 오타가 아니라 기록을 맞추는 일이다.
    */
-  const backfilling = isPastSlot(date, startTime, endTime);
+  const backfilling = isPastSlot(date, startTime, endTime, endDate);
   if (backfilling && !isAdmin(user)) {
     return await errJson(E.pastSlot, 400);
   }
@@ -148,6 +163,8 @@ export async function POST(req: NextRequest) {
     ...(titleMeta ? { titleMeta } : {}),
     startTime,
     endTime,
+    ...(endDate ? { endDate } : {}),
+    ...(lodging ? { lodging } : {}),
     location,
     ...(description ? { description } : {}),
     ...(capacity !== undefined ? { capacity } : {}),

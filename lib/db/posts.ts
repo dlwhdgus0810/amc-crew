@@ -54,6 +54,10 @@ export interface PostView {
   startTime: string | null;
   /** 안 적었으면 null — 화면에서 시작 시각만 보여준다 */
   endTime: string | null;
+  /** 마지막 날 — null이면 하루짜리. 여행처럼 며칠 이어지는 모임만 채워진다 */
+  endDate: string | null;
+  /** 숙소 — 여행에서만 받는다 (선택) */
+  lodging: string | null;
   location: string;
   description: string | null;
   capacity: number | null;
@@ -170,7 +174,14 @@ export const listPosts = cache(
   const upcomingToday = openCut
     ? or(gt(posts.endTime, cutTime), and(isNull(posts.endTime), gt(posts.startTime, openCut)))
     : or(gt(posts.endTime, cutTime), isNull(posts.endTime));
-  const ended = or(lt(posts.date, cutDate), and(eq(posts.date, cutDate), endedToday));
+  /*
+   * 견주는 날은 **마지막 날**이다 (여행처럼 여러 날 이어지는 모임 — schema.ts의 endDate).
+   * date로 견주면 3박 4일 여행이 출발 다음 날부터 「지난 모임」으로 내려간다.
+   * 시각 칸이 비어 있는 모임은 endedToday가 참이 되지 않으므로, 마지막 날이 다 지나야
+   * 넘어간다 — 여행에서 원하는 그대로다.
+   */
+  const lastDay = sql`coalesce(${posts.endDate}, ${posts.date})`;
+  const ended = or(lt(lastDay, cutDate), and(eq(lastDay, cutDate), endedToday));
   /*
    * 날짜 미정(date IS NULL)은 「아직 안 끝난 모임」에 들어간다.
    *
@@ -184,8 +195,8 @@ export const listPosts = cache(
    */
   const upcoming = or(
     isNull(posts.date),
-    gt(posts.date, cutDate),
-    and(eq(posts.date, cutDate), upcomingToday)
+    gt(lastDay, cutDate),
+    and(eq(lastDay, cutDate), upcomingToday)
   );
   const postRows = past
     ? await db
@@ -460,12 +471,14 @@ function shellOf(p: typeof posts.$inferSelect, repeatsOn: boolean) {
     date: p.date,
     startTime: p.startTime,
     endTime: p.endTime,
+    endDate: p.endDate,
+    lodging: p.lodging,
     location: p.location,
     description: p.description,
     capacity: p.capacity,
     visibility: (p.visibility === 'link' ? 'link' : 'public') as 'link' | 'public',
     photosPublic: p.photosPublic,
-    isPast: isPastSlot(p.date, p.startTime, p.endTime),
+    isPast: isPastSlot(p.date, p.startTime, p.endTime, p.endDate),
     createdAt: p.createdAt.toISOString(),
   };
 }
@@ -947,6 +960,10 @@ export async function createPost(input: {
   date: string | null;
   startTime: string | null;
   endTime: string | null;
+  /** 마지막 날 — 여행처럼 며칠 이어지는 카테고리만 (schema.ts의 endDate) */
+  endDate?: string | null;
+  /** 숙소 — 여행에서만 (선택) */
+  lodging?: string | null;
   location: string;
   description?: string;
   capacity?: number;
@@ -1014,6 +1031,8 @@ export async function createPost(input: {
     date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,
+    endDate: input.endDate ?? null,
+    lodging: input.lodging ?? null,
     location: input.location,
     description: input.description ?? null,
     capacity: input.capacity ?? null,
@@ -1175,6 +1194,10 @@ export async function updatePost(input: {
   date: string | null;
   startTime: string | null;
   endTime: string | null;
+  /** 마지막 날 — 여행처럼 며칠 이어지는 카테고리만 (null이면 하루짜리) */
+  endDate?: string | null;
+  /** 숙소 (선택) */
+  lodging?: string | null;
   location: string;
   description: string | null;
   capacity: number | null;
@@ -1234,6 +1257,8 @@ export async function updatePost(input: {
     date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,
+    endDate: input.endDate ?? null,
+    lodging: input.lodging ?? null,
     location: input.location,
     ...(input.visibility ? { visibility: input.visibility } : {}),
     ...(input.coHostId !== undefined ? { coHostId: input.coHostId } : {}),

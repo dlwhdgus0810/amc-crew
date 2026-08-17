@@ -29,6 +29,23 @@ export interface Category {
   locationLabel?: Msg;
   /** 장소 입력 placeholder에 붙는 예시 문구 */
   locationHint?: Msg;
+  /**
+   * 시각 대신 **날짜 범위**를 받는다 (여행).
+   *
+   * 여행은 「8월 5일 오전 8시」가 아니라 「8월 5일부터 9일까지」다. 켜면 만들기 화면에서
+   * 시작·종료 시각 칸이 사라지고 종료 날짜 칸이 생긴다. 끝났는지도 마지막 날로 본다
+   * (lib/dates.ts의 isPastSlot).
+   */
+  dateRange?: boolean;
+  /**
+   * 숙소 칸의 이름. 있으면 만들기 화면에 선택 입력이 하나 생긴다.
+   *
+   * location과 따로 받는다 — 여행에서 장소는 출발 전에 모이는 곳이고 숙소는 가서 머무는
+   * 곳이다. 한 칸에 넣으면 출발 아침에 어디로 갈지 알 수 없다.
+   */
+  lodgingLabel?: Msg;
+  /** 숙소 입력 placeholder에 붙는 예시 */
+  lodgingHint?: Msg;
   /** 이 카테고리를 제안한 사람 — 카테고리 화면에 이름을 적어 준다 */
   proposedBy?: string;
   /**
@@ -349,6 +366,8 @@ export const CATEGORIES: Category[] = [
       en: 'It counts even when it is not far.',
       es: 'Cuenta aunque no sea lejos.',
     },
+    // 여행은 하루가 아니라 며칠이다 — 시각 대신 날짜 범위를 받는다
+    dateRange: true,
     // 어디로 갔는지가 이 카드에서 제일 먼저 묻는 것이라 제목 자리에 받는다
     titleLabel: { ko: '어디로 (선택)', en: 'Where to (optional)', es: 'Adónde (opcional)' },
     titleOptions: [
@@ -361,6 +380,12 @@ export const CATEGORIES: Category[] = [
       ko: '예: 오버랜드파크 코스트코 주차장',
       en: 'e.g. Costco parking lot, Overland Park',
       es: 'p. ej. aparcamiento de Costco, Overland Park',
+    },
+    lodgingLabel: { ko: '숙소 (선택)', en: 'Where you stay (optional)', es: 'Alojamiento (opcional)' },
+    lodgingHint: {
+      ko: '예: 오스틴 에어비앤비',
+      en: 'e.g. Airbnb in Austin',
+      es: 'p. ej. Airbnb en Austin',
     },
   },
   /*

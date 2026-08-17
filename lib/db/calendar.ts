@@ -69,6 +69,7 @@ export async function listMeetupsBetween(
       date: posts.date,
       startTime: posts.startTime,
       endTime: posts.endTime,
+      endDate: posts.endDate,
       location: posts.location,
       capacity: posts.capacity,
       visibility: posts.visibility,
@@ -113,7 +114,7 @@ export async function listMeetupsBetween(
     capacity: r.capacity,
     count: count.get(r.id) ?? 0,
     joined: joined.has(r.id),
-    isPast: isPastSlot(r.date, r.startTime, r.endTime),
+    isPast: isPastSlot(r.date, r.startTime, r.endTime, r.endDate),
     private: r.visibility === 'link',
   }));
 }

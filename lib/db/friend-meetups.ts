@@ -51,6 +51,7 @@ export async function friendMeetups(viewerId: string, ownerId: string): Promise<
       date: posts.date,
       startTime: posts.startTime,
       endTime: posts.endTime,
+      endDate: posts.endDate,
       location: posts.location,
     })
     .from(posts)
@@ -77,7 +78,7 @@ export async function friendMeetups(viewerId: string, ownerId: string): Promise<
      */
     if (!r.date || !r.startTime) continue;
     const item: FriendMeetup = { ...r, date: r.date, startTime: r.startTime, together: withMe.has(r.id) };
-    if (isPastSlot(r.date, r.startTime, r.endTime)) past.push(item);
+    if (isPastSlot(r.date, r.startTime, r.endTime, r.endDate)) past.push(item);
     else upcoming.push(item);
   }
   past.reverse(); // 최근 것부터

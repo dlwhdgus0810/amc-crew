@@ -66,9 +66,29 @@ export function dateLabelLong(date: string, locale: Locale): string {
  */
 export const WHEN_TBD: Msg = { ko: '날짜 미정', en: 'Date TBD', es: 'Fecha por decidir' };
 
-/** 모임 한 줄의 「언제」 자리 — 날짜가 없으면 「날짜 미정」 */
-export function whenLabelShort(date: string | null, startTime: string | null, locale: Locale): string {
-  if (!date || !startTime) return pick(locale, WHEN_TBD);
+/**
+ * 모임 한 줄의 「언제」 자리 — 날짜가 없으면 「날짜 미정」.
+ *
+ * 세 모양이 나온다.
+ *   8/5(수) 오후 6:00     하루 + 시각 (대부분의 모임)
+ *   8/5(수) ~ 8/9(일)      여러 날 (여행 — endDate가 있다)
+ *   8/5(수)                하루인데 시각이 없다 (당일치기 여행)
+ *
+ * 예전에는 시각이 없으면 「날짜 미정」이었다. 날짜와 시각이 늘 한 쌍이라는 전제였는데,
+ * 여행이 그 전제를 깼다 — 여행은 날짜만 받고 시각을 안 받는다. 날짜가 있는데 미정이라고
+ * 적으면 카드가 거짓말을 한다.
+ */
+export function whenLabelShort(
+  date: string | null,
+  startTime: string | null,
+  locale: Locale,
+  endDate?: string | null
+): string {
+  if (!date) return pick(locale, WHEN_TBD);
+  if (endDate && endDate > date) {
+    return `${dateLabelShort(date, locale)} ~ ${dateLabelShort(endDate, locale)}`;
+  }
+  if (!startTime) return dateLabelShort(date, locale);
   return `${dateLabelShort(date, locale)} ${timeLabel(startTime, locale)}`;
 }
 
