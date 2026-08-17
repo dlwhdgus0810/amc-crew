@@ -2769,3 +2769,41 @@ body:has(.sky-scope.night) .tabbar a.active {
 .tl-edit { display: flex; align-items: center; gap: 6px; margin: 2px 0 8px; }
 .tl-edit input { flex: 1; min-width: 0; }
 .tl-edit button { flex: none; }
+
+/*
+ * 정산이 여럿일 때 — app/settlement-panel.tsx
+ *
+ * 맨 위 요약. 「나 얼마 보내면 돼?」의 답이라 제목 바로 밑에 두고, 카드보다 조용하게
+ * 둔다 — 여기서 멈추는 사람이 대부분이지만 이게 정산 자체는 아니다.
+ */
+.settle-sum {
+  margin: -2px 2px 12px; display: flex; flex-direction: column; gap: 4px;
+  font-size: 14px; letter-spacing: -0.01em;
+}
+.settle-sum-line { display: flex; gap: 8px; align-items: baseline; }
+.settle-sum-label { flex: none; color: var(--text-dim); font-size: 12.5px; }
+.settle-sum-val { font-weight: 600; }
+.settle-sum-none { color: var(--text-dim); }
+
+/*
+ * 접힌 줄. 카드 하나가 통째로 이 버튼이 된다 — 어디를 눌러야 펼쳐지는지 고민할 것이 없다.
+ * 금액은 고정폭으로 두지 않는다: 이름이 길면 이름이 줄고, 금액은 끝까지 살아 있어야 한다.
+ */
+.settle-row {
+  display: flex; align-items: baseline; gap: 8px; width: 100%;
+  /*
+   * color까지 되돌려야 한다. 기본 button은 진한 바탕에 흰 글씨라, 바탕만 지우면
+   * 흰 종이에 흰 글씨가 된다 — 실제로 그렇게 한 번 냈다.
+   */
+  padding: 4px 0; border: none; background: none; min-height: 0; color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.settle-row-who {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 600;
+}
+.settle-row-total { flex: none; color: var(--text-mid); font-size: 13.5px; }
+.settle-row-mine { flex: none; margin-left: auto; font-weight: 600; font-size: 13.5px; }
+/* 낼 것이 없는 정산은 한 톤 죽인다 — 훑을 때 눈이 안 걸려야 한다 */
+.settle-row-mine.muted { color: var(--text-dim); font-weight: 500; }
+.settle-row .collapse-caret { flex: none; color: var(--text-dim); }

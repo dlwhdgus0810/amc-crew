@@ -110,6 +110,18 @@ const T = {
   copyLink: { ko: '링크 복사', en: 'Copy link', es: 'Copiar enlace' },
   nothingToPay: { ko: '보낼 금액이 없어요.', en: 'You owe nothing here.', es: 'Aquí no debes nada.' },
   total: { ko: '합계', en: 'Total', es: 'Total' },
+
+  /* ── 여러 개일 때: 접힌 줄과 맨 위 요약 ── */
+  /** 접힌 줄의 「누가 받는 정산인지」 자리 — 내가 받는 것이면 이름 대신 이 말 */
+  rowMe: { ko: '내가 받을 정산', en: 'You’re collecting', es: 'Tú cobras' },
+  rowShare: { ko: '내 몫 {amount}', en: 'Your share {amount}', es: 'Tu parte {amount}' },
+  rowNothing: { ko: '낼 것 없음', en: 'Nothing to pay', es: 'Nada que pagar' },
+  rowGet: { ko: '받을 돈 {amount}', en: 'You get {amount}', es: 'Recibes {amount}' },
+  rowOpen: { ko: '자세히 보기', en: 'See the details', es: 'Ver el detalle' },
+  rowClose: { ko: '접기', en: 'Collapse', es: 'Plegar' },
+  sumSend: { ko: '보낼 돈', en: 'You send', es: 'Tú envías' },
+  sumGet: { ko: '받을 돈', en: 'You get back', es: 'Te devuelven' },
+  sumSettled: { ko: '주고받을 게 없어요.', en: 'Nothing to settle for you.', es: 'No tienes nada que saldar.' },
   // 아이디에 링크가 걸려 있다는 걸 알려주는 한마디 — 금액이 채워진다는 게 요점이다
   venmoTapHint: { ko: '누르면 금액까지 채워져요', en: 'Tap — amount filled in', es: 'Toca: el importe ya va puesto' },
   remindOpen: { ko: '다시 알리기', en: 'Send a reminder', es: 'Volver a avisar' },
@@ -226,6 +238,7 @@ function OneSettlement({
   settlement,
   notifiedAt,
   startOpen,
+  startCollapsed,
   onChanged,
   onCancelNew,
 }: {
@@ -245,6 +258,12 @@ function OneSettlement({
   notifiedAt: Record<string, string>;
   /** 새로 만드는 자리는 편집기가 열린 채로 시작한다 */
   startOpen?: boolean;
+  /**
+   * 접힌 채로 시작할지 — 정산이 둘 이상일 때 부모가 켠다.
+   *
+   * 하나뿐일 때는 안 접는다. 하나짜리를 접는 것은 누를 거리를 하나 늘리는 일일 뿐이다.
+   */
+  startCollapsed?: boolean;
   /** 저장·삭제 뒤 부모가 목록을 다시 읽는다 */
   onChanged: () => void;
   /** 새로 만들다 그만둘 때 — 부모가 이 자리를 치운다 */
@@ -253,6 +272,14 @@ function OneSettlement({
   const t = useT();
   const locale = useLocale();
   const [editing, setEditing] = useState(Boolean(startOpen));
+  /*
+   * 펼쳐져 있나.
+   *
+   * 길이의 대부분은 「누가 얼마」 명단이다 — 참가자가 열다섯이면 정산 하나에 열다섯 줄이고,
+   * 정산이 여섯이면 그것만 아흔 줄이다. 그래서 접는 것은 개수가 아니라 그 명단을 접는 일이다.
+   * 접힌 줄이 **답을 들고 있어야** 뜻이 있다 — 아래 요약 줄 참고.
+   */
+  const [open, setOpen] = useState(!startCollapsed);
   const [drafts, setDrafts] = useState<Draft[]>([{ ...EMPTY }]);
   /*
    * 모임에는 없지만 이 정산에 넣은 친구들. 참가자와 합쳐 "낼 사람" 명단이 되고,
@@ -521,10 +548,36 @@ function OneSettlement({
   const canRemind = Boolean(settlement) && (isPayee || isAdmin);
   const remindTargets = (settlement?.shares ?? []).filter((sh) => sh.userId !== settlement?.payee.id);
 
+  /** 받을 사람이 받을 돈 — 자기 몫은 빼고 남들이 낼 것만 */
+  const owedToMe = (settlement?.shares ?? [])
+    .filter((sh) => sh.userId !== settlement?.payee.id)
+    .reduce((n, sh) => n + sh.cents, 0);
+
   return (
     <>
       <div className="card">
-        {settlement && !editing && (
+        {/*
+          * 접힌 줄. **여기에 답이 다 있어야 한다** — 「정산 1, 2, 3」으로 접으면 셋 다
+          * 눌러 봐야 하므로 접은 뜻이 없다. 누가 받는지, 총액, 내가 얼마인지까지 적는다.
+          */}
+        {settlement && !editing && startCollapsed && (
+          <button className="settle-row" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+            <span className="settle-row-who">{isPayee ? t(T.rowMe) : settlement.payee.name}</span>
+            <span className="settle-row-total">{formatCents(settlement.totalCents)}</span>
+            <span className={`settle-row-mine${isPayee || mine ? '' : ' muted'}`}>
+              {isPayee
+                ? t(T.rowGet, { amount: formatCents(owedToMe) })
+                : mine
+                  ? t(T.rowShare, { amount: formatCents(mine.cents) })
+                  : t(T.rowNothing)}
+            </span>
+            <span className="collapse-caret" aria-hidden>
+              {open ? '⌃' : '⌄'}
+            </span>
+          </button>
+        )}
+
+        {settlement && !editing && open && (
           <>
             {/* 내가 낼 금액을 맨 위에 — 대부분은 이것만 보러 들어온다 */}
             {isPayee ? (
@@ -1051,12 +1104,52 @@ export default function SettlementPanel(props: {
   if (!inMeetup && !props.isAdmin) return null;
   if (list === null) return null;
 
+  /*
+   * 맨 위 한 줄 — 「나 얼마 보내면 돼?」
+   *
+   * 정산이 여럿이면 이게 실제로 찾는 값이다. **받을 사람별로 묶는다**: 같은 사람에게
+   * 갈 돈이 세 정산에 흩어져 있어도 보낼 때는 한 번에 보내므로, 나뉜 채로 보여주면
+   * 보는 사람이 머릿속에서 더해야 한다.
+   */
+  const send = new Map<string, number>();
+  let get = 0;
+  for (const s of list) {
+    if (s.payee.id === props.currentUserId) {
+      get += s.shares.filter((sh) => sh.userId !== s.payee.id).reduce((n, sh) => n + sh.cents, 0);
+      continue;
+    }
+    const mine = s.shares.find((sh) => sh.userId === props.currentUserId);
+    if (mine) send.set(s.payee.name, (send.get(s.payee.name) ?? 0) + mine.cents);
+  }
+  // 정산이 하나면 카드 자체가 이미 그 말을 한다 — 같은 말을 두 번 하지 않는다
+  const showSummary = list.length > 1 && Boolean(props.currentUserId);
+
   return (
     <>
       {/* 카드의 "정산" 버튼이 /p/<id>#settle 로 보내므로 앵커가 필요하다 */}
       <h2 id="settle" style={{ scrollMarginTop: 72 }}>
         {t(T.title)} {list.length > 1 ? list.length : ''}
       </h2>
+
+      {showSummary && (
+        <div className="settle-sum">
+          {send.size === 0 && get === 0 && <span className="settle-sum-none">{t(T.sumSettled)}</span>}
+          {send.size > 0 && (
+            <div className="settle-sum-line">
+              <span className="settle-sum-label">{t(T.sumSend)}</span>
+              <span className="settle-sum-val">
+                {[...send.entries()].map(([name, cents]) => `${name} ${formatCents(cents)}`).join(' · ')}
+              </span>
+            </div>
+          )}
+          {get > 0 && (
+            <div className="settle-sum-line">
+              <span className="settle-sum-label">{t(T.sumGet)}</span>
+              <span className="settle-sum-val">{formatCents(get)}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {list.length === 0 && !adding && (
         <div className="card">
@@ -1075,6 +1168,7 @@ export default function SettlementPanel(props: {
           {...props}
           settlement={s}
           notifiedAt={notifiedAt[s.id] ?? {}}
+          startCollapsed={list.length > 1}
           onChanged={load}
         />
       ))}
