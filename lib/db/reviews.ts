@@ -41,6 +41,8 @@ export interface RecentReview extends ReviewView {
   title: string | null;
   date: string | null;
   startTime: string | null;
+  /** 마지막 날 — 여행처럼 며칠 이어지는 모임만. 없으면 하루짜리다 */
+  endDate: string | null;
 }
 
 const NAME_COLS = {
@@ -148,6 +150,7 @@ export async function recentReviews(
       title: posts.title,
       date: posts.date,
       startTime: posts.startTime,
+      endDate: posts.endDate,
       allowNicknames: posts.allowNicknames,
       user: NAME_COLS,
     })
@@ -178,6 +181,7 @@ export async function recentReviews(
     title: r.title,
     date: r.date,
     startTime: r.startTime,
+    endDate: r.endDate,
   }));
 }
 

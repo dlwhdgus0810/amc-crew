@@ -40,6 +40,8 @@ export interface RecentReviewView {
   title: string | null;
   date: string | null;
   startTime: string | null;
+  /** 며칠짜리 모임의 마지막 날 — 있으면 「8/14(금) ~ 8/16(일)」로 찍힌다 */
+  endDate: string | null;
   userId: string;
   name: string;
   avatar: string | null;
@@ -87,14 +89,14 @@ export default function ReviewsClient({ initial }: { initial: { rows: RecentRevi
                     <span className="feed-review-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
                       {cat?.emoji} {label}
                     </span>
-                    <span>{whenLabelShort(r.date, r.startTime, locale)}</span>
+                    <span>{whenLabelShort(r.date, r.startTime, locale, r.endDate)}</span>
                   </Link>
                 ) : (
                   <span className="feed-review-meta">
                     <span className="feed-review-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
                       {cat?.emoji} {label}
                     </span>
-                    <span>{whenLabelShort(r.date, r.startTime, locale)}</span>
+                    <span>{whenLabelShort(r.date, r.startTime, locale, r.endDate)}</span>
                   </span>
                 )}
                 <span className="feed-review-by">
