@@ -1233,10 +1233,7 @@ export default function AdminPage() {
                         const n = Math.min(6, all.length);
                         return Array.from({ length: n }, (_, i) => all[Math.round((i * (all.length - 1)) / (n - 1))]!).map(
                           (c) => (
-                            <span
-                              key={c.slug}
-                              style={{ background: c.color, boxShadow: `inset 0 0 0 1px ${c.edge ?? 'transparent'}` }}
-                            />
+                            <span key={c.slug} style={{ background: c.color }} />
                           )
                         );
                       })()}

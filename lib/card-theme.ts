@@ -180,9 +180,6 @@ function ramp(stops: string[], n: number): string[] {
 /** 본문색과 크림 — 카드 위 글씨는 이 둘 중 하나다 (앱이 이미 쓰는 두 색이라 새로 안 만든다) */
 const TEXT_DARK = '#101010';
 const TEXT_CREAM = '#F6F4EE';
-/** 페이지 바탕 (globals.css의 --bg) — 카드가 여기 묻히는지 재는 데 쓴다 */
-const PAGE_BG = '#F7F6F2';
-
 /** WCAG 명암비 */
 function contrast(a: string, b: string): number {
   const lum = (hex: string) => {
@@ -214,35 +211,18 @@ function textOn(bg: string): string {
 }
 
 /**
- * 페이지 바탕에 묻히는 카드에만 두르는 실선.
+ * 그 테마에서 카테고리마다 쓸 바탕색·글씨색.
  *
- * 「수묵」의 첫 색은 #FFFFE3다. 페이지 바탕(#F7F6F2)과 대비가 1.06:1이라 카드가 아니라
- * 그냥 글자 몇 줄이 떠 있는 것처럼 보인다 — 받은 팔레트에 아이보리와 연둣빛이 흔해서
- * 다섯 테마 중 셋이 여기 걸린다.
- *
- * 어두운 카드에는 안 두른다 (null). 안 그러면 원래 멀쩡하던 기본 테마까지 테두리가 생긴다.
- * 선 색은 그 카드 색을 눌러서 만든다 — 회색 선을 두르면 어느 테마에도 안 속한 줄이 생긴다.
+ * **테두리는 안 두른다.** 페이지 바탕에 묻히는 밝은 카드에 한 올 둘러 봤는데, 그 조건에
+ * 걸리는 것이 대개 첫 한두 장이라 그 카드만 선이 생기고 아래는 없다 — 묻히는 것보다
+ * 저 혼자 다르게 생긴 것이 더 눈에 걸린다. 아주 밝은 색을 고르면 카드 경계가 흐려지는
+ * 것은 그 팔레트의 성질로 두는 편이 낫다.
  */
-const EDGE_NEEDED_BELOW = 1.6;
-function edgeFor(bg: string): string | null {
-  if (contrast(bg, PAGE_BG) >= EDGE_NEEDED_BELOW) return null;
-  const [L, a, b] = hexToLab(bg);
-  return labToHex([Math.max(0, L - 0.14), a, b]);
-}
-
-/** 그 테마에서 카테고리마다 쓸 바탕색·글씨색, 그리고 필요하면 테두리색 */
-export function cardColors(theme: CardTheme): { slug: string; color: string; fg: string; edge: string | null }[] {
+export function cardColors(theme: CardTheme): { slug: string; color: string; fg: string }[] {
   const def = CARD_THEMES[theme];
-  if (!def.stops) {
-    return CATEGORIES.map((c) => ({ slug: c.slug, color: c.color, fg: c.fg, edge: edgeFor(c.color) }));
-  }
+  if (!def.stops) return CATEGORIES.map((c) => ({ slug: c.slug, color: c.color, fg: c.fg }));
   const colors = ramp(def.stops, CATEGORIES.length);
-  return CATEGORIES.map((c, i) => ({
-    slug: c.slug,
-    color: colors[i]!,
-    fg: textOn(colors[i]!),
-    edge: edgeFor(colors[i]!),
-  }));
+  return CATEGORIES.map((c, i) => ({ slug: c.slug, color: colors[i]!, fg: textOn(colors[i]!) }));
 }
 
 /**
@@ -253,10 +233,7 @@ export function cardColors(theme: CardTheme): { slug: string; color: string; fg:
  */
 export function cardThemeCss(theme: CardTheme): string {
   const vars = cardColors(theme)
-    .map(
-      (c) =>
-        `--cat-${c.slug}:${c.color};--cat-${c.slug}-fg:${c.fg};--cat-${c.slug}-edge:${c.edge ?? 'transparent'}`
-    )
+    .map((c) => `--cat-${c.slug}:${c.color};--cat-${c.slug}-fg:${c.fg}`)
     .join(';');
   return `:root{${vars}}`;
 }
