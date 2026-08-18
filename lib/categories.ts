@@ -374,7 +374,15 @@ export const CATEGORIES: Category[] = [
     color: '#00838F',
     fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '이사', en: 'Moving', es: 'Mudanza' },
+    /*
+     * 이름이 농담이다 — 친구 몇을 이삿짐센터라고 부른다. 「이사」는 사건의 이름이지만
+     * 이건 **와 주는 사람들**의 이름이라, 부탁하는 자리의 무게가 한결 가벼워진다.
+     * 밥친구·카페 메이트와 같은 결이다.
+     *
+     * 캐러셀 라벨(en: MOVING)은 안 바꾼다. 그 자리는 언제나 종목 이름이다 —
+     * 밥친구가 MEAL이고 카페 메이트가 CAFE인 것과 같다.
+     */
+    name: { ko: '이삿짐센터', en: 'Moving Crew', es: 'Mudanzas' },
     description: {
       ko: '무거운 것도 넷이 들면 가벼워요',
       en: 'Heavy things get light with four people.',
