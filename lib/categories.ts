@@ -120,26 +120,41 @@ export const DEFAULT_LOCATION_HINT: Msg = {
 // 배열 순서가 곧 홈 캐러셀 노출 순서다 (카드 번호 01·02…도 여기서 나온다)
 export const CATEGORIES: Category[] = [
   /*
-   * 카드 색은 밝기와 채도를 13색 전부 한 값으로 묶는다 — OKLCH L .55 / C .13.
-   * 색상(hue)은 예전 값을 그대로 물려받았다(빨강 31.8° … 분홍 336.9°).
+   * 카드 색은 밝기와 채도를 한 값으로 묶는다 — OKLCH L .55 / C .13.
    *
    * 밝기를 맞추는 이유 — HSL로 맞추면 같은 숫자라도 노랑이 파랑보다 밝아 보여 따로 논다.
    * 밝기가 같으면 크림색 글씨 대비도 함께 잡힌다.
    *
    * 채도를 「낼 수 있는 만큼」 내던 것을 그만뒀다. 그러면 청록 .09, 보라 .21이 되어
-   * 같은 규칙으로 만든 색인데도 카드마다 세기가 달라지고, 열세 장이 세로로 쌓이면
+   * 같은 규칙으로 만든 색인데도 카드마다 세기가 달라지고, 여러 장이 세로로 쌓이면
    * 전부가 같은 크기로 소리쳤다. .13에서 묶으면 한 가족으로 보인다.
    * (청록·올리브·초록은 sRGB 한계가 .13보다 낮아 .093~.128로 살짝 못 미친다 — 어쩔 수 없다)
    *
-   * 색상은 각도가 아니라 「눈에 보이는 거리」로 벌린다. 빨강에서 시작해 한 바퀴 돌아
-   * 분홍으로 돌아오고, 밥친구(5°)에서 원이 닫힌다. 채도는 위의 .13을 그대로 쓸 것 —
-   * 하나만 더 내면 그 카드만 튄다.
+   * **이 배열의 순서가 곧 색상환의 순서다.** 밥친구(5°)에서 시작해 한 바퀴 돌아
+   * 생일파티(337°)로 닫힌다. 화면은 이 순서대로 그리므로 둘러보기가 빨강→주황→초록→
+   * 청록→파랑→보라→분홍으로 이어진다.
    *
-   * 카페와 헬스장은 그 원이 닫힌 뒤에 붙은 카드라 배열 순서와 색상환 순서가 어긋난다.
-   * 열네 장을 한 바퀴에 다 놓을 수 없어서 생긴 일이고, 둘은 제일 넓게 비어 있던 구간
-   * (독서나눔 55° ~ 테니스 121°)에 17°·24°·25° 간격으로 나눠 넣었다.
-   * 예전에는 카페가 51°로 독서나눔(55°)과 4° 차이라 같은 색으로 보였다.
+   * 예전에는 그렇지 않았다. 원이 한 번 닫힌 뒤에 붙은 카드들(카페·헬스장·이사·여행·
+   * 별보러가자)이 배열 맨 뒤에 쌓여서, 색은 한 체계인데 **순서가 그걸 안 따라가** 랜덤해
+   * 보였다. 색을 고친 게 아니라 줄을 다시 세운 것이다.
+   *
+   * **새 카테고리는 맨 뒤가 아니라 제 색상 자리에 끼워 넣을 것.** 그리고 이웃과 10° 안쪽으로
+   * 붙지 않게 할 것 — 붙어야 한다면 밝기가 크게 달라야 한다(여행 .76, 별보러가자 .34가
+   * 그래서 이웃과 6~7°인데도 안 헷갈린다).
    */
+  {
+    slug: 'meal',
+    emoji: '🍚',
+    en: 'MEAL',
+    color: '#AE4C67',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '밥친구', en: 'Meal Buddy', es: 'Compañero de comida' },
+    description: { ko: '혼밥도 좋지만 오늘은 말고', en: 'Solo dining, but not tonight.', es: 'Comer solo está bien, pero hoy no.' },
+    titleLabel: { ko: '메뉴', en: 'Menu', es: 'Menú' },
+    locationLabel: { ko: '식당', en: 'Restaurant', es: 'Restaurante' },
+    locationHint: { ko: '예: 대장금 Overland Park', en: 'e.g. Dae Jang Geum, Overland Park', es: 'p. ej. Dae Jang Geum, Overland Park' },
+  },
   {
     slug: 'soccer',
     emoji: '⚽',
@@ -188,6 +203,83 @@ export const CATEGORIES: Category[] = [
         },
       ],
     },
+  },
+  {
+    slug: 'cafe',
+    emoji: '☕',
+    en: 'CAFE',
+    color: '#9B6400',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '카페 메이트', en: 'Café Mate', es: 'Compañero de café' },
+    description: { ko: '콘센트 자리는 선착순입니다', en: 'Outlets are first come, first served.', es: 'Los enchufes son por orden de llegada.' },
+    locationLabel: { ko: '카페', en: 'Café', es: 'Cafetería' },
+    locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall', es: 'p. ej. Starbucks 135th & Nall' },
+  },
+  /*
+   * 여행 — 텍사스에 다녀오고 나서 열었다. 정재호 님이 색과 한 줄까지 정해 제안했다.
+   *
+   * 「텍사스」로 만들지 않은 이유: 다음 여행에서 또 카테고리를 만들어야 하고, 지난 것은
+   * 목록에 내려야 한다. 갈 곳은 모임마다 다르니 그건 titleLabel로 받는다 — 카드에
+   * 〈텍사스〉로 붙는다.
+   *
+   * **이 카드만 글씨가 진하다.** 받은 색(#E9A300)이 열여섯 장 중 유일하게 밝은 쪽이라
+   * (OKLCH L .76, 나머지는 .55) 크림색 글씨를 얹으면 대비가 1.97:1 — 글자가 안 읽힌다.
+   * 색을 어둡게 고치는 대신 글씨를 바꿨다: 제안한 사람이 고른 색이 카드의 정체고,
+   * 읽히게 만드는 것은 우리 몫이다. 진한 글씨로는 7.3:1이다.
+   *
+   * 색상(78°)은 카페(72°)와 헬스장(96°) 사이인데, 밝기가 크게 달라 같은 색으로 안 보인다.
+   */
+  {
+    slug: 'trip',
+    emoji: '🧳',
+    en: 'TRIP',
+    color: '#E9A300',
+    // 이 카드만 진한 글씨 — 위 주석 참고 (나머지 열다섯 장은 크림색이다)
+    fg: '#1E241F',
+    kind: 'posts',
+    name: { ko: '여행', en: 'Trip', es: 'Viaje' },
+    description: {
+      ko: '현실 도피하러 떠납니다',
+      en: 'Leaving reality behind for a bit.',
+      es: 'Nos vamos a escapar de la realidad.',
+    },
+    // 여행은 하루가 아니라 며칠이다 — 시각 대신 날짜 범위를 받는다
+    dateRange: true,
+    // 며칠 치 사진은 찍은 순서로 늘어놓아야 어디를 어떻게 돌았는지가 보인다
+    timeline: true,
+    // 어디로 갔는지가 이 카드에서 제일 먼저 묻는 것이라 제목 자리에 받는다
+    titleLabel: { ko: '어디로 (선택)', en: 'Where to (optional)', es: 'Adónde (opcional)' },
+    titleOptions: [
+      { ko: '텍사스', en: 'Texas', es: 'Texas' },
+      { ko: '콜로라도', en: 'Colorado', es: 'Colorado' },
+      { ko: '시카고', en: 'Chicago', es: 'Chicago' },
+    ],
+    locationLabel: { ko: '모이는 곳', en: 'Meeting point', es: 'Punto de encuentro' },
+    locationHint: {
+      ko: '예: 오버랜드파크 코스트코 주차장',
+      en: 'e.g. Costco parking lot, Overland Park',
+      es: 'p. ej. aparcamiento de Costco, Overland Park',
+    },
+    lodgingLabel: { ko: '숙소 (선택)', en: 'Where you stay (optional)', es: 'Alojamiento (opcional)' },
+    lodgingHint: {
+      ko: '예: 오스틴 에어비앤비',
+      en: 'e.g. Airbnb in Austin',
+      es: 'p. ej. Airbnb en Austin',
+    },
+    proposedBy: '정재호',
+  },
+  {
+    slug: 'gym',
+    emoji: '🏋️',
+    en: 'GYM',
+    color: '#857000',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
+    description: { ko: '봐줄 사람 있으면 한 개 더', en: 'One more rep with a spotter.', es: 'Una repetición más si alguien te cuida.' },
+    locationLabel: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
+    locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
   },
   {
     slug: 'tennis',
@@ -243,7 +335,8 @@ export const CATEGORIES: Category[] = [
     slug: 'baking',
     emoji: '🧁',
     en: 'BAKING',
-    color: '#038189',
+    /* 182° — 이사(206°)와 4°밖에 안 떨어져 있어서 옮겼다. 위 머리 주석 참고 */
+    color: '#008476',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '베이킹 클래스', en: 'Baking Class', es: 'Clase de repostería' },
@@ -251,108 +344,6 @@ export const CATEGORIES: Category[] = [
     titleLabel: { ko: '만들 것', en: 'What we’re baking', es: 'Qué horneamos' },
     locationLabel: { ko: '장소', en: 'Place', es: 'Lugar' },
     locationHint: { ko: '예: 우리집 / OP 베이킹 스튜디오', en: 'e.g. my place / OP baking studio', es: 'p. ej. mi casa / estudio de repostería en OP' },
-  },
-  {
-    slug: 'running',
-    emoji: '🏃',
-    en: 'RUNNING',
-    color: '#0179B5',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '러닝 크루', en: 'Running Crew', es: 'Grupo de running' },
-    description: { ko: '이 날씨에 러닝 크루 제안은 좀..', en: 'Who suggested this category in this weather?', es: '¿Quién propuso esto con este clima?' },
-    locationHint: { ko: '예: Indian Creek Trail', en: 'e.g. Indian Creek Trail', es: 'p. ej. Indian Creek Trail' },
-    proposedBy: '지유',
-  },
-  {
-    slug: 'pickleball',
-    emoji: '🥒',
-    en: 'PICKLEBALL',
-    color: '#4270BC',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '피클볼', en: 'Pickleball', es: 'Pickleball' },
-    description: { ko: '다들 그렇게 시작했답니다', en: 'Everyone started that way.', es: 'Todos empezamos así.' },
-  },
-  {
-    slug: 'game',
-    emoji: '🎮',
-    en: 'GAME',
-    color: '#6765BB',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '게임', en: 'Game', es: 'Videojuegos' },
-    description: { ko: '듀오 구합니다', en: 'Looking for a duo.', es: 'Busco dúo.' },
-    titleLabel: { ko: '게임', en: 'Game', es: 'Juego' },
-    titleOptions: [
-      { ko: '리그 오브 레전드', en: 'League of Legends', es: 'League of Legends' },
-      { ko: '오버워치', en: 'Overwatch', es: 'Overwatch' },
-    ],
-    // 온라인으로 모이는 일이 많아 "장소"가 꼭 물리적인 곳은 아니다
-    locationLabel: { ko: '어디서', en: 'Where', es: 'Dónde' },
-    locationHint: { ko: '예: 디스코드 / 우리집', en: 'e.g. Discord / my place', es: 'p. ej. Discord / mi casa' },
-    proposedBy: '라민 야말',
-  },
-  {
-    slug: 'bowling',
-    emoji: '🎳',
-    en: 'BOWLING',
-    color: '#885AAB',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '볼링', en: 'Bowling', es: 'Bolos' },
-    description: { ko: '양말만 챙겨 오세요', en: 'Just bring socks.', es: 'Solo trae calcetines.' },
-  },
-  {
-    slug: 'birthday',
-    emoji: '🎂',
-    en: 'BIRTHDAY',
-    color: '#A0508D',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '생일파티', en: 'Birthday Party', es: 'Cumpleaños' },
-    description: { ko: '많을수록 좋은 자리니까요', en: 'The more, the better.', es: 'Cuantos más, mejor.' },
-    // 생일 모임에서 제일 먼저 알아야 할 건 누구 생일인가다
-    titleLabel: { ko: '누구 생일', en: 'Whose birthday', es: 'De quién es el cumple' },
-    locationHint: { ko: '예: 우리집 / 대장금 Overland Park', en: 'e.g. my place / Dae Jang Geum, Overland Park', es: 'p. ej. mi casa / Dae Jang Geum, Overland Park' },
-    proposedBy: '박진욱',
-  },
-  {
-    slug: 'meal',
-    emoji: '🍚',
-    en: 'MEAL',
-    color: '#AE4C67',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '밥친구', en: 'Meal Buddy', es: 'Compañero de comida' },
-    description: { ko: '혼밥도 좋지만 오늘은 말고', en: 'Solo dining, but not tonight.', es: 'Comer solo está bien, pero hoy no.' },
-    titleLabel: { ko: '메뉴', en: 'Menu', es: 'Menú' },
-    locationLabel: { ko: '식당', en: 'Restaurant', es: 'Restaurante' },
-    locationHint: { ko: '예: 대장금 Overland Park', en: 'e.g. Dae Jang Geum, Overland Park', es: 'p. ej. Dae Jang Geum, Overland Park' },
-  },
-  {
-    slug: 'cafe',
-    emoji: '☕',
-    en: 'CAFE',
-    color: '#9B6400',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '카페 메이트', en: 'Café Mate', es: 'Compañero de café' },
-    description: { ko: '콘센트 자리는 선착순입니다', en: 'Outlets are first come, first served.', es: 'Los enchufes son por orden de llegada.' },
-    locationLabel: { ko: '카페', en: 'Café', es: 'Cafetería' },
-    locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall', es: 'p. ej. Starbucks 135th & Nall' },
-  },
-  {
-    slug: 'gym',
-    emoji: '🏋️',
-    en: 'GYM',
-    color: '#857000',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
-    description: { ko: '봐줄 사람 있으면 한 개 더', en: 'One more rep with a spotter.', es: 'Una repetición más si alguien te cuida.' },
-    locationLabel: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
-    locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
   },
   /*
    * 이사 — 루민 님이 색과 함께 제안했다. 「이사 도와줄 사람 찾기」다.
@@ -408,58 +399,27 @@ export const CATEGORIES: Category[] = [
     },
     proposedBy: '루민',
   },
-  /*
-   * 여행 — 텍사스에 다녀오고 나서 열었다. 정재호 님이 색과 한 줄까지 정해 제안했다.
-   *
-   * 「텍사스」로 만들지 않은 이유: 다음 여행에서 또 카테고리를 만들어야 하고, 지난 것은
-   * 목록에 내려야 한다. 갈 곳은 모임마다 다르니 그건 titleLabel로 받는다 — 카드에
-   * 〈텍사스〉로 붙는다.
-   *
-   * **이 카드만 글씨가 진하다.** 받은 색(#E9A300)이 열여섯 장 중 유일하게 밝은 쪽이라
-   * (OKLCH L .76, 나머지는 .55) 크림색 글씨를 얹으면 대비가 1.97:1 — 글자가 안 읽힌다.
-   * 색을 어둡게 고치는 대신 글씨를 바꿨다: 제안한 사람이 고른 색이 카드의 정체고,
-   * 읽히게 만드는 것은 우리 몫이다. 진한 글씨로는 7.3:1이다.
-   *
-   * 색상(78°)은 카페(72°)와 헬스장(96°) 사이인데, 밝기가 크게 달라 같은 색으로 안 보인다.
-   */
   {
-    slug: 'trip',
-    emoji: '🧳',
-    en: 'TRIP',
-    color: '#E9A300',
-    // 이 카드만 진한 글씨 — 위 주석 참고 (나머지 열다섯 장은 크림색이다)
-    fg: '#1E241F',
+    slug: 'running',
+    emoji: '🏃',
+    en: 'RUNNING',
+    color: '#0179B5',
+    fg: '#F6F4EE',
     kind: 'posts',
-    name: { ko: '여행', en: 'Trip', es: 'Viaje' },
-    description: {
-      ko: '현실 도피하러 떠납니다',
-      en: 'Leaving reality behind for a bit.',
-      es: 'Nos vamos a escapar de la realidad.',
-    },
-    // 여행은 하루가 아니라 며칠이다 — 시각 대신 날짜 범위를 받는다
-    dateRange: true,
-    // 며칠 치 사진은 찍은 순서로 늘어놓아야 어디를 어떻게 돌았는지가 보인다
-    timeline: true,
-    // 어디로 갔는지가 이 카드에서 제일 먼저 묻는 것이라 제목 자리에 받는다
-    titleLabel: { ko: '어디로 (선택)', en: 'Where to (optional)', es: 'Adónde (opcional)' },
-    titleOptions: [
-      { ko: '텍사스', en: 'Texas', es: 'Texas' },
-      { ko: '콜로라도', en: 'Colorado', es: 'Colorado' },
-      { ko: '시카고', en: 'Chicago', es: 'Chicago' },
-    ],
-    locationLabel: { ko: '모이는 곳', en: 'Meeting point', es: 'Punto de encuentro' },
-    locationHint: {
-      ko: '예: 오버랜드파크 코스트코 주차장',
-      en: 'e.g. Costco parking lot, Overland Park',
-      es: 'p. ej. aparcamiento de Costco, Overland Park',
-    },
-    lodgingLabel: { ko: '숙소 (선택)', en: 'Where you stay (optional)', es: 'Alojamiento (opcional)' },
-    lodgingHint: {
-      ko: '예: 오스틴 에어비앤비',
-      en: 'e.g. Airbnb in Austin',
-      es: 'p. ej. Airbnb en Austin',
-    },
-    proposedBy: '정재호',
+    name: { ko: '러닝 크루', en: 'Running Crew', es: 'Grupo de running' },
+    description: { ko: '이 날씨에 러닝 크루 제안은 좀..', en: 'Who suggested this category in this weather?', es: '¿Quién propuso esto con este clima?' },
+    locationHint: { ko: '예: Indian Creek Trail', en: 'e.g. Indian Creek Trail', es: 'p. ej. Indian Creek Trail' },
+    proposedBy: '지유',
+  },
+  {
+    slug: 'pickleball',
+    emoji: '🥒',
+    en: 'PICKLEBALL',
+    color: '#4270BC',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '피클볼', en: 'Pickleball', es: 'Pickleball' },
+    description: { ko: '다들 그렇게 시작했답니다', en: 'Everyone started that way.', es: 'Todos empezamos así.' },
   },
   /*
    * 일식 하루짜리 카드. 끝나면 관리자 화면에서 목록에 내린다 (지우지 않는다 —
@@ -492,6 +452,49 @@ export const CATEGORIES: Category[] = [
       en: 'e.g. Clinton Lake parking lot',
       es: 'p. ej. aparcamiento de Clinton Lake',
     },
+  },
+  {
+    slug: 'game',
+    emoji: '🎮',
+    en: 'GAME',
+    color: '#6765BB',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '게임', en: 'Game', es: 'Videojuegos' },
+    description: { ko: '듀오 구합니다', en: 'Looking for a duo.', es: 'Busco dúo.' },
+    titleLabel: { ko: '게임', en: 'Game', es: 'Juego' },
+    titleOptions: [
+      { ko: '리그 오브 레전드', en: 'League of Legends', es: 'League of Legends' },
+      { ko: '오버워치', en: 'Overwatch', es: 'Overwatch' },
+    ],
+    // 온라인으로 모이는 일이 많아 "장소"가 꼭 물리적인 곳은 아니다
+    locationLabel: { ko: '어디서', en: 'Where', es: 'Dónde' },
+    locationHint: { ko: '예: 디스코드 / 우리집', en: 'e.g. Discord / my place', es: 'p. ej. Discord / mi casa' },
+    proposedBy: '라민 야말',
+  },
+  {
+    slug: 'bowling',
+    emoji: '🎳',
+    en: 'BOWLING',
+    color: '#885AAB',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '볼링', en: 'Bowling', es: 'Bolos' },
+    description: { ko: '양말만 챙겨 오세요', en: 'Just bring socks.', es: 'Solo trae calcetines.' },
+  },
+  {
+    slug: 'birthday',
+    emoji: '🎂',
+    en: 'BIRTHDAY',
+    color: '#A0508D',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '생일파티', en: 'Birthday Party', es: 'Cumpleaños' },
+    description: { ko: '많을수록 좋은 자리니까요', en: 'The more, the better.', es: 'Cuantos más, mejor.' },
+    // 생일 모임에서 제일 먼저 알아야 할 건 누구 생일인가다
+    titleLabel: { ko: '누구 생일', en: 'Whose birthday', es: 'De quién es el cumple' },
+    locationHint: { ko: '예: 우리집 / 대장금 Overland Park', en: 'e.g. my place / Dae Jang Geum, Overland Park', es: 'p. ej. mi casa / Dae Jang Geum, Overland Park' },
+    proposedBy: '박진욱',
   },
 ];
 
