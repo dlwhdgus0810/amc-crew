@@ -82,7 +82,11 @@ export default function CategoryCard({
       href={category.kind === 'movie' ? '/movie' : `/c/${category.slug}`}
       ref={nodeRef}
       className={`car-card ${dragging ? 'dragging' : ''}`}
-      style={{ background: category.color, color: category.fg, ...style }}
+      style={{
+        background: `var(--cat-${category.slug}, ${category.color})`,
+        color: `var(--cat-${category.slug}-fg, ${category.fg})`,
+        ...style,
+      }}
       data-slug={category.slug}
       draggable={false}
       // 끄는 중인 카드에서 손을 떼면 링크가 눌린 것으로 처리되므로 막는다

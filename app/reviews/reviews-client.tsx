@@ -86,14 +86,14 @@ export default function ReviewsClient({ initial }: { initial: { rows: RecentRevi
                   */}
                 {r.postId ? (
                   <Link href={`/p/${r.postId}#reviews`} className="feed-review-meta">
-                    <span className="feed-review-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
+                    <span className="feed-review-cat" style={cat ? { background: `var(--cat-${cat.slug})`, color: `var(--cat-${cat.slug}-fg)` } : undefined}>
                       {cat?.emoji} {label}
                     </span>
                     <span>{whenLabelShort(r.date, r.startTime, locale, r.endDate)}</span>
                   </Link>
                 ) : (
                   <span className="feed-review-meta">
-                    <span className="feed-review-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
+                    <span className="feed-review-cat" style={cat ? { background: `var(--cat-${cat.slug})`, color: `var(--cat-${cat.slug}-fg)` } : undefined}>
                       {cat?.emoji} {label}
                     </span>
                     <span>{whenLabelShort(r.date, r.startTime, locale, r.endDate)}</span>

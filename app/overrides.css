@@ -2904,3 +2904,14 @@ body:has(.sky-scope.night) .tabbar a.active {
   padding-bottom: 6px;
   margin-bottom: -6px;
 }
+
+/* 카드 색 테마 고르기 (관리자) — 이름·설명·미리보기 여섯 칸이 한 줄 */
+.theme-pick { display: flex; align-items: center; gap: 12px; padding: 10px 0; cursor: pointer; }
+.theme-pick + .theme-pick { border-top: 1px solid var(--border-soft); }
+.theme-pick input { flex: none; margin: 0; }
+.theme-pick-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.theme-pick-name { font-weight: 600; }
+.theme-pick-body .hint { margin: 0; }
+/* 미리보기 — 여섯 장이면 톤이 읽힌다. 색만 보여주는 자리라 테두리는 안 두른다 */
+.theme-swatches { flex: none; display: flex; border-radius: 999px; overflow: hidden; }
+.theme-swatches span { width: 14px; height: 22px; display: block; }

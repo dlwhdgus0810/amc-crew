@@ -749,7 +749,15 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
             <button
               key={c.slug}
               className={`seg ${subs.has(c.slug) ? 'on' : ''}`}
-              style={subs.has(c.slug) ? { background: c.color, borderColor: c.color, color: c.fg } : undefined}
+              style={
+                subs.has(c.slug)
+                  ? {
+                      background: `var(--cat-${c.slug})`,
+                      borderColor: `var(--cat-${c.slug})`,
+                      color: `var(--cat-${c.slug}-fg)`,
+                    }
+                  : undefined
+              }
               onClick={() => toggleSub(c.slug)}
             >
               {t(c.name)}

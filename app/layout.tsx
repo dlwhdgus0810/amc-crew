@@ -5,6 +5,7 @@
    ============================================================ */
 
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { IBM_Plex_Mono, IBM_Plex_Sans_KR, Space_Grotesk } from 'next/font/google';
 import Link from 'next/link';
 import NavLinks, { ContextTabs } from './nav';
@@ -19,6 +20,7 @@ import ViewingAs from './viewing-as';
 import { I18nProvider } from './i18n';
 import { SessionProvider } from './session';
 import { getViewer } from '@/lib/session';
+import { CARD_THEME_COOKIE, cardThemeCss, toCardTheme } from '@/lib/card-theme';
 import { getLocale } from '@/lib/locale';
 import { SITE_URL } from '@/lib/site';
 import { HTML_LANG, pick } from '@/lib/i18n';
@@ -122,9 +124,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
    * 세션을 여기서 한 번 읽어 화면 전체가 나눠 쓴다 — 예전에는 탭바·정지 가리개·
    * 대리 보기 띠·알림 권유가 각자 /api/auth/me를 불러 한 번 열 때 여섯 번이 나갔다.
    */
-  const [locale, viewer] = await Promise.all([getLocale(), getViewer()]);
+  const [locale, viewer, jar] = await Promise.all([getLocale(), getViewer(), cookies()]);
+  const cardTheme = toCardTheme(jar.get(CARD_THEME_COOKIE)?.value);
   return (
     <html lang={HTML_LANG[locale]} className={`${sans.variable} ${mono.variable} ${grotesk.variable}`}>
+      <head>
+        {/*
+          * 카드 색을 변수로 심는다. 여기 한 곳에서 정하면 색을 쓰는 일곱 자리가
+          * 그대로 따라온다 (lib/card-theme.ts의 cardThemeCss).
+          */}
+        <style dangerouslySetInnerHTML={{ __html: cardThemeCss(cardTheme) }} />
+      </head>
       <body>
         <I18nProvider locale={locale}>
           <SessionProvider value={viewer}>

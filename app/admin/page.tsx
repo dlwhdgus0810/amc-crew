@@ -4,7 +4,16 @@ import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import { HTML_LANG, type Msg } from '@/lib/i18n';
 import { TEST_USERS } from '@/lib/test-users';
+import { useRouter } from 'next/navigation';
 import { CATEGORIES } from '@/lib/categories';
+import {
+  CARD_THEME_COOKIE,
+  CARD_THEME_MAX_AGE,
+  CARD_THEMES,
+  cardColors,
+  toCardTheme,
+  type CardTheme,
+} from '@/lib/card-theme';
 import { entryLabel } from '@/lib/datefmt';
 import { useViewer } from '../session';
 import { shrinkToJpeg, THUMB_EDGE, uploadThumbOnly } from '@/lib/photo-client';
@@ -151,6 +160,11 @@ const T = {
   viaOsm: { ko: 'OpenStreetMap', en: 'OpenStreetMap' },
   placeNone: { ko: '이름을 붙일 사진이 없어요.', en: 'Nothing to name.' },
   placeFailed: { ko: '붙이다 멈췄어요: {why}', en: 'Stopped: {why}' },
+  themeTitle: { ko: '카드 색 테마', en: 'Card color theme' },
+  themeHint: {
+    ko: '카테고리 카드의 색을 갈아 끼워요. 아직 관리자만 쓸 수 있고, 고른 테마는 이 기기에서만 보여요 — 다른 사람 화면은 그대로예요.',
+    en: 'Swaps the colors on category cards. Admins only for now, and the choice only applies to this device — nobody else’s screen changes.',
+  },
   noticeLinkLabel: { ko: '보러 갈 곳 (선택)', en: 'Where it takes them (optional)' },
   noticeLinkHint: {
     ko: '적어 두면 공지에 「보러 가기」 버튼이 붙어요. 앱 안의 경로만 돼요 — /photos, /reviews, /p/모임아이디처럼요.',
@@ -307,6 +321,22 @@ export default function AdminPage() {
   const [thumbBusy, setThumbBusy] = useState<{ done: number; total: number } | null>(null);
   const [exifBusy, setExifBusy] = useState(false);
   const [placeBusy, setPlaceBusy] = useState(false);
+  const router = useRouter();
+  const [themeOpen, setThemeOpen] = useState(false);
+  /*
+   * 지금 걸린 테마는 쿠키에 있다. 서버가 그걸 읽어 색 변수를 심으므로(app/layout.tsx),
+   * 여기서는 쿠키를 바꾸고 화면을 다시 그리라고만 하면 된다.
+   */
+  const [theme, setTheme] = useState<CardTheme>('default');
+  useEffect(() => {
+    const m = document.cookie.match(/(?:^|; )card-theme=([^;]*)/);
+    setTheme(toCardTheme(m ? decodeURIComponent(m[1]!) : undefined));
+  }, []);
+  function pickTheme(next: CardTheme) {
+    document.cookie = `${CARD_THEME_COOKIE}=${next}; path=/; max-age=${CARD_THEME_MAX_AGE}; samesite=lax`;
+    setTheme(next);
+    router.refresh();
+  }
   const [deleted, setDeleted] = useState<
     { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
   >(null);
@@ -1162,6 +1192,44 @@ export default function AdminPage() {
                 <button className="secondary" disabled={placeBusy} onClick={backfillPlaces}>
                   {placeBusy ? t(T.placeBusy) : t(T.placeRun)}
                 </button>
+              </div>
+            </>
+          )}
+
+          <h1 className="admin-sec">
+            <button className="collapse-h1" aria-expanded={themeOpen} onClick={() => setThemeOpen((v) => !v)}>
+              {t(T.themeTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {themeOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {themeOpen && (
+            <>
+              <p className="subtitle">{t(T.themeHint)}</p>
+              <div className="card">
+                {(Object.keys(CARD_THEMES) as CardTheme[]).map((key) => (
+                  <label key={key} className="theme-pick">
+                    <input
+                      type="radio"
+                      name="card-theme"
+                      checked={theme === key}
+                      onChange={() => pickTheme(key)}
+                    />
+                    <span className="theme-pick-body">
+                      <span className="theme-pick-name">{t(CARD_THEMES[key].label)}</span>
+                      <span className="hint">{t(CARD_THEMES[key].note)}</span>
+                    </span>
+                    {/* 고르기 전에 어떤 색인지 보이게 — 여섯 장이면 톤이 읽힌다 */}
+                    <span className="theme-swatches" aria-hidden>
+                      {cardColors(key)
+                        .slice(0, 6)
+                        .map((c) => (
+                          <span key={c.slug} style={{ background: c.color }} />
+                        ))}
+                    </span>
+                  </label>
+                ))}
               </div>
             </>
           )}

@@ -193,7 +193,7 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
                           {/* 얼굴 자리에 카테고리 색을 둔다 — 목록에서 카드를 알아보는 것이 그 색이다 */}
                           <span
                             className="ava cat-ava"
-                            style={cat ? { background: cat.color, color: cat.fg } : undefined}
+                            style={cat ? { background: `var(--cat-${cat.slug})`, color: `var(--cat-${cat.slug}-fg)` } : undefined}
                           >
                             <CatIcon slug={c.slug} />
                           </span>

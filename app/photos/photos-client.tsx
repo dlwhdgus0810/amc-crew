@@ -149,7 +149,7 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
               */}
             {g.postId ? (
               <Link href={`/p/${g.postId}`} className="wall-head">
-                <span className="wall-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
+                <span className="wall-cat" style={cat ? { background: `var(--cat-${cat.slug})`, color: `var(--cat-${cat.slug}-fg)` } : undefined}>
                   {cat?.emoji} {label}
                 </span>
                 <span className="wall-when">{whenLabelShort(g.date, g.startTime, locale, g.endDate)}</span>
@@ -162,7 +162,7 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
               </Link>
             ) : (
               <span className="wall-head">
-                <span className="wall-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
+                <span className="wall-cat" style={cat ? { background: `var(--cat-${cat.slug})`, color: `var(--cat-${cat.slug}-fg)` } : undefined}>
                   {cat?.emoji} {label}
                 </span>
                 <span className="wall-when">{whenLabelShort(g.date, g.startTime, locale, g.endDate)}</span>
