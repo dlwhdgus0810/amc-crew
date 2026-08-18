@@ -31,6 +31,127 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-18T09:00',
+    notable: true,
+    title: { ko: '이삿짐센터가 생겼어요', en: 'There’s a Moving Crew now' },
+    items: [
+      {
+        ko: '이사 도와줄 사람을 찾는 자리예요. 루민 님이 제안했어요.',
+        en: 'A place to ask for hands on moving day. 루민 suggested it.',
+      },
+      {
+        ko: '「짐 있는 곳」과 「이사 갈 곳」을 따로 적어요 — 도우러 가는 사람은 어디로 갈지, 얼마나 멀리 옮기는지 둘 다 알아야 하니까요.',
+        en: 'You write where the stuff is and where it’s going — whoever comes needs both: where to show up, and how far it all has to travel.',
+      },
+      {
+        ko: '둘러보기의 카드가 색깔 순서로 늘어서요. 빨강에서 시작해 한 바퀴 돌아 분홍으로 돌아와요.',
+        en: 'The cards in Browse are in color order now — starting at red, all the way around, back to pink.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-17T21:00',
+    notable: true,
+    title: { ko: '여행 사진이 찍은 순서로 늘어서요', en: 'Trip photos line up in the order you took them' },
+    items: [
+      {
+        ko: '격자 대신 날짜별로, 그날 멈춘 자리별로 늘어서요. 사진에 원래 들어 있던 시각과 좌표를 읽는 거라 따로 적을 건 없어요.',
+        en: 'Instead of a grid, they group by day and by each place you stopped. It reads the time and coordinates already inside the photo — you don’t type anything.',
+      },
+      {
+        ko: '자리마다 이름이 붙어요 — 「Somisomi」, 「Carrollton, TX」처럼요. 숙소 근처에서 찍은 것은 「숙소」라고 나와요.',
+        en: 'Each stop gets a name — “Somisomi”, “Carrollton, TX”. Anything taken near where you stayed just says “Where we stayed”.',
+      },
+      {
+        ko: '이름이 틀렸으면 눌러서 고칠 수 있어요. 거기 있던 사람만 아는 게 있으니까요.',
+        en: 'If a name is wrong, tap it and fix it. Some things only the people who were there know.',
+      },
+      {
+        ko: '모아보기에서도 여행 사진은 같은 모양으로 보여요.',
+        en: 'Keepsakes shows trip photos the same way.',
+      },
+      {
+        ko: '카톡으로 받은 사진은 시각과 자리가 지워져 있어서 안 늘어서요. 사진 앱에서 직접 골라 올려주세요.',
+        en: 'Photos forwarded through KakaoTalk arrive with the time and place stripped out, so they can’t line up. Pick them straight from your photo app instead.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-17T18:00',
+    notable: true,
+    title: { ko: '정산을 여러 개 올릴 수 있어요', en: 'A meetup can have more than one settle-up' },
+    items: [
+      {
+        ko: '한 사람이 여러 번 결제했거나, 여러 사람이 각자 낸 것도 각각 올릴 수 있어요. 정산마다 받는 사람이 달라도 돼요.',
+        en: 'One person paying several times, or several people each paying — each goes up separately, and each can have a different person collecting.',
+      },
+      {
+        ko: '정산이 많으면 접혀요. 접힌 줄에 누가 받는지, 총액, 내 몫이 다 적혀 있어서 대개 펼치지 않아도 돼요.',
+        en: 'When there are several, they come collapsed. The one line shows who’s collecting, the total, and your share — usually that’s all you need.',
+      },
+      {
+        ko: '맨 위에 「보낼 돈 · 받을 돈」 한 줄이 생겼어요. 같은 사람에게 갈 돈은 묶어서 보여줘요 — 어차피 한 번에 보내니까요.',
+        en: 'There’s a line at the top: what you send, and what you get back. Money going to the same person is added up, since you’ll send it in one go anyway.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-17T14:00',
+    title: { ko: '여행 카테고리가 생겼어요', en: 'There’s a Trip category now' },
+    items: [
+      { ko: '정재호 님이 제안했어요.', en: '정재호 suggested it.' },
+      {
+        ko: '시각 대신 날짜 범위로 만들어요 — 8/14(금) ~ 8/16(일). 숙소도 적을 수 있어요.',
+        en: 'You set a date range instead of a start time — Fri Aug 14 ~ Sun Aug 16. There’s a spot for where you’re staying, too.',
+      },
+      {
+        ko: '예정과 지난을 나누지 않고 한 줄로, 최신 여행부터 보여줘요.',
+        en: 'No upcoming/past tabs — one list, newest trip first.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-14T10:00',
+    title: { ko: '사진을 회원 모두에게 열 수 있어요', en: 'You can open a meetup’s photos to everyone' },
+    items: [
+      {
+        ko: '한 모임에 20장까지 바로 보여요. 전에는 6장에서 끊겼어요.',
+        en: 'Up to twenty photos show at once — it used to stop at six.',
+      },
+      {
+        ko: '방장과 관리자가 그 모임 사진을 회원 전체에게 열 수 있어요. 비공개 모임이나 익명 모임도요.',
+        en: 'Hosts and admins can open a meetup’s photos to every member — private and anonymous meetups too.',
+      },
+      {
+        ko: '열어도 모임 자체는 안 열려요. 안 갔던 사람은 사진만 보고, 그 모임 페이지로는 못 들어가고 원본도 못 받아요.',
+        en: 'Opening the photos doesn’t open the meetup. People who weren’t there see the photos only — they can’t reach the meetup page, and they can’t take the originals.',
+      },
+      {
+        ko: '모아보기에서 열려 있는 모임에는 「전체공개」가 붙어요.',
+        en: 'In Keepsakes, an opened meetup is marked “Open to all”.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-13T22:00',
+    notable: true,
+    title: { ko: '사진을 폰에 그대로 받을 수 있어요', en: 'Photos save straight to your phone' },
+    items: [
+      {
+        ko: '「원본 받기」가 앱을 벗어나지 않아요. 전에는 딴 화면으로 튕겨서 돌아올 방법이 없었어요.',
+        en: 'Saving the original no longer throws you out of the app. It used to land on a page with no way back.',
+      },
+      {
+        ko: '여러 장이면 「n장 전부 받기」가 붙어요. 압축 파일이 아니라 사진 그대로라 사진 앱에 바로 들어가요.',
+        en: 'With more than one there’s “Download all n”. They come as photos, not a zip, so they land in your photo app.',
+      },
+      {
+        ko: '모아보기가 빨라졌어요. 격자에 작은 사진을 쓰게 해서 첫 화면이 훨씬 가벼워졌어요.',
+        en: 'Keepsakes got faster — the grid uses a small copy now, so the first screenful is a fraction of what it was.',
+      },
+    ],
+  },
+  {
     at: '2026-08-13T16:30',
     title: { ko: '알림은 프로필 맨 위 오른쪽에 있어요', en: 'Alerts are at the top right of Profile' },
     items: [
