@@ -173,6 +173,52 @@ async function joinQuery(limit: number): Promise<RankSeed[]> {
   return withProfiles(rows, limit);
 }
 
+/** 카테고리 순위 한 줄 — 이름은 화면이 붙인다 (여기는 slug만 안다) */
+export interface CategoryRank {
+  slug: string;
+  /** 끝난 공개 모임 수 */
+  meetups: number;
+  /** 그 모임들에 이름을 올린 사람 수를 다 더한 것 (연인원) */
+  people: number;
+}
+
+/**
+ * 카테고리 순위 — 어느 종목이 실제로 굴러갔나.
+ *
+ * 사람 순위와 세는 규칙을 맞춘다: 끝난 것만, 공개 모임만. 비공개 모임(visibility='link')은
+ * 링크를 받은 사람만 아는 자리라, 그 수가 순위표에 실리면 「저기서 뭔가 열리고 있다」가
+ * 새어 나간다 — 명단이 아니라 숫자만으로도 그렇다.
+ *
+ * 익명 카테고리는 여기서는 **뺄 이유가 없다.** 사람 순위에서 빼는 것은 이름이 실려서인데
+ * 이 표에 실리는 것은 종목과 숫자뿐이고, 그 숫자는 카테고리 화면을 열면 이미 보인다.
+ *
+ * 순위는 모임 수로 매긴다. 연인원으로 매기면 「열다섯 명이 한 번 모인 것」이
+ * 「셋이 열두 번 모인 것」을 이기는데, 이 표가 답해야 하는 것은 「어느 종목이
+ * 계속 굴러가나」다. 연인원은 옆에 같이 적어 둔다.
+ */
+async function categoryQuery(): Promise<CategoryRank[]> {
+  const db = await getDb();
+  // endedSql()이 posts를 p로 부르므로 여기서도 같은 별칭을 쓴다
+  const p = alias(posts, 'p');
+  const rows = await db
+    .select({
+      slug: p.category,
+      meetups: sql<number>`count(distinct p.id)::int`,
+      people: sql<number>`count(${postParticipants.userId})::int`,
+    })
+    .from(p)
+    .leftJoin(postParticipants, eq(postParticipants.postId, p.id))
+    .where(and(eq(p.visibility, 'public'), isNull(p.deletedAt), endedSql()))
+    .groupBy(p.category)
+    .orderBy(
+      desc(sql`count(distinct p.id)`),
+      desc(sql`count(${postParticipants.userId})`),
+      // 동률이면 slug로 고정한다 — 새로고침마다 순서가 바뀌면 순위표로 안 읽힌다
+      asc(p.category)
+    );
+  return rows.map((r) => ({ slug: r.slug, meetups: r.meetups, people: r.people }));
+}
+
 /*
  * 두 순위표는 요청 사이에도 남겨 둔다.
  *
@@ -185,6 +231,10 @@ export const hostRanking = unstable_cache(hostQuery, ['host-ranking'], {
   revalidate: 300,
 });
 export const joinRanking = unstable_cache(joinQuery, ['join-ranking'], {
+  tags: [POSTS_TAG],
+  revalidate: 300,
+});
+export const categoryRanking = unstable_cache(categoryQuery, ['category-ranking'], {
   tags: [POSTS_TAG],
   revalidate: 300,
 });

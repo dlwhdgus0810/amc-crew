@@ -2807,3 +2807,12 @@ body:has(.sky-scope.night) .tabbar a.active {
 /* 낼 것이 없는 정산은 한 톤 죽인다 — 훑을 때 눈이 안 걸려야 한다 */
 .settle-row-mine.muted { color: var(--text-dim); font-weight: 500; }
 .settle-row .collapse-caret { flex: none; color: var(--text-dim); }
+
+/*
+ * 리더보드의 카테고리 줄 — 얼굴 자리에 그 카테고리의 색을 둔다.
+ * 목록에서 카드를 알아보는 것이 이름보다 색이라, 순위표에서도 같은 것을 보여준다.
+ */
+.host-rank .ava.cat-ava {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 600;
+}

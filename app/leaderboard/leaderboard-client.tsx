@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { formatPoints, hostTier, HOST_TIERS, ranksOf } from '@/lib/hosting';
+import { catDisplayName, getCategory } from '@/lib/categories';
+import CatIcon from '../cat-icon';
 import { useT } from '../i18n';
 
 interface HostRank {
@@ -11,10 +13,17 @@ interface HostRank {
   count: number;
 }
 
+interface CategoryRank {
+  slug: string;
+  meetups: number;
+  people: number;
+}
+
 /** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx). 로그인 전이면 null */
 export interface LeaderboardInitial {
   hosts: HostRank[];
   joiners: HostRank[];
+  categories: CategoryRank[];
 }
 
 const T = {
@@ -32,6 +41,20 @@ const T = {
   },
   tabHosts: { ko: '호스팅 순위', en: 'Hosted', es: 'Organizadas' },
   tabJoiners: { ko: '참여 순위', en: 'Joined', es: 'Apuntadas' },
+  tabCats: { ko: '카테고리 순위', en: 'Categories', es: 'Categorías' },
+  /* 「몇 번 모였나」가 순위고, 연인원은 옆에 곁들인다 */
+  catCount: { ko: '{n}번', en: '{n} meetups', es: '{n} quedadas' },
+  catPeople: { ko: '연인원 {n}명', en: '{n} seats filled', es: '{n} asistencias' },
+  emptyCats: {
+    ko: '아직 끝난 모임이 없어요.',
+    en: 'No meetups have wrapped up yet.',
+    es: 'Todavía no ha terminado ninguna quedada.',
+  },
+  catNote: {
+    ko: '몇 번 모였는지로 세요. 연인원은 그 모임들에 이름을 올린 사람을 다 더한 수예요.',
+    en: 'Ranked by how many meetups happened. “Seats filled” adds up everyone who signed up across them.',
+    es: 'Se ordena por cuántas quedadas hubo. «Asistencias» suma a todos los que se apuntaron.',
+  },
   countJoin: { ko: '{n}회 참가', en: 'Joined {n}', es: 'Apuntadas {n}' },
   emptyJoin: { ko: '아직 아무도 참가하지 않았어요.', en: 'Nobody has joined anything yet.', es: 'Todavía nadie se ha apuntado a nada.' },
   empty: { ko: '아직 아무도 모임을 열지 않았어요. 첫 주최자가 되어보세요!', en: 'Nobody has hosted yet — be the first!', es: 'Todavía nadie ha organizado nada: ¡sé el primero!' },
@@ -47,8 +70,8 @@ const T = {
 
 /** 종합 주최 랭킹 — 둘러보기에서 들어온다 */
 export default function LeaderboardClient({ initial }: { initial: LeaderboardInitial | null }) {
-  const [board, setBoard] = useState<LeaderboardInitial>(initial ?? { hosts: [], joiners: [] });
-  const [tab, setTab] = useState<'hosts' | 'joiners'>('hosts');
+  const [board, setBoard] = useState<LeaderboardInitial>(initial ?? { hosts: [], joiners: [], categories: [] });
+  const [tab, setTab] = useState<'hosts' | 'joiners' | 'cats'>('hosts');
   const t = useT();
 
   // 서버가 다시 그려 새 prop이 오면 상태로 옮긴다 (useState의 첫 값은 처음 한 번만 쓰인다)
@@ -59,6 +82,8 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
   /* 스티커는 주최 횟수로만 붙는다 — 참가 순위에서는 등급을 보여주지 않는다 */
   const list = tab === 'hosts' ? board.hosts : board.joiners;
   const ranks = ranksOf(list.map((h) => h.count));
+  // 카테고리도 같은 규칙으로 등수를 매긴다 — 모임 수가 같으면 같은 등수다
+  const catRanks = ranksOf(board.categories.map((c) => c.meetups));
 
   return (
     <>
@@ -77,9 +102,46 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
             <button className={`seg ${tab === 'joiners' ? 'on' : ''}`} onClick={() => setTab('joiners')}>
               {t(T.tabJoiners)}
             </button>
+            <button className={`seg ${tab === 'cats' ? 'on' : ''}`} onClick={() => setTab('cats')}>
+              {t(T.tabCats)}
+            </button>
           </div>
 
-          {list.length === 0 ? (
+          {tab === 'cats' ? (
+            board.categories.length === 0 ? (
+              <p className="hint">{t(T.emptyCats)}</p>
+            ) : (
+              <>
+                <p className="hint" style={{ marginTop: -4 }}>{t(T.catNote)}</p>
+                <div className="host-rank board">
+                  <ol>
+                    {board.categories.map((c, i) => {
+                      const cat = getCategory(c.slug);
+                      return (
+                        <li key={c.slug}>
+                          <span className="host-rank-no">
+                            {['🥇', '🥈', '🥉'][catRanks[i]! - 1] ?? `${catRanks[i]}`}
+                          </span>
+                          {/* 얼굴 자리에 카테고리 색을 둔다 — 목록에서 카드를 알아보는 것이 그 색이다 */}
+                          <span
+                            className="ava cat-ava"
+                            style={cat ? { background: cat.color, color: cat.fg } : undefined}
+                          >
+                            <CatIcon slug={c.slug} />
+                          </span>
+                          <span className="host-rank-name">
+                            {cat ? t(catDisplayName(c.slug)) : c.slug}
+                            <span className="host-rank-tier">{t(T.catPeople, { n: c.people })}</span>
+                          </span>
+                          <span className="host-rank-count">{t(T.catCount, { n: c.meetups })}</span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              </>
+            )
+          ) : list.length === 0 ? (
             <p className="hint">{tab === 'hosts' ? t(T.empty) : t(T.emptyJoin)}</p>
           ) : (
             <div className="host-rank board">
