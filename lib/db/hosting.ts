@@ -9,6 +9,7 @@ import { Locale } from '../i18n';
 import { adminIds } from '../auth';
 import { openEndCutoffTime, pastCutoff } from '../dates';
 import { POSTS_TAG } from '../cache-tags';
+import { Board } from '../hosting';
 
 /**
  * 모임 주최 점수.
@@ -392,6 +393,23 @@ export const contribRanking = unstable_cache(contribQuery, ['contrib-ranking'], 
   tags: [POSTS_TAG],
   revalidate: 300,
 });
+
+/**
+ * 세 순위표의 점수를 **한 사람도 자르지 않고** 전부.
+ *
+ * 등급 알림이 쓴다 (lib/db/tiers.ts). 순위표는 상위 몇 명만 그리지만 등급은 열 위 밖에서도
+ * 오른다 — 열한 번째 사람이 새싹이 되는 것이 그 사람에게는 제일 반가운 일이다.
+ *
+ * 순위표가 쓰는 것과 **같은 함수**를 부른다. 여기서 SQL을 따로 쓰면 알림은 「올랐다」고
+ * 하는데 표에는 안 오르는 날이 온다 — 관리자를 빼는 규칙 하나만 어긋나도 그렇게 된다.
+ * 이름·사진까지 딸려 오는 것은 낭비지만 하루 한 번이고 회원이 마흔 명이다.
+ */
+export async function allBoardCounts(): Promise<Record<Board, Map<string, number>>> {
+  const all = Number.MAX_SAFE_INTEGER;
+  const [host, join, contrib] = await Promise.all([hostQuery(all), joinQuery(all), contribQuery(all)]);
+  const map = (rows: { id: string; count: number }[]) => new Map(rows.map((r) => [r.id, r.count]));
+  return { host: map(host), join: map(join), contrib: map(contrib) };
+}
 
 /** 집계 결과에 이름 재료·사진을 붙이고 관리자를 뺀다 (두 랭킹이 같은 규칙을 쓰게) */
 async function withProfiles(rows: { id: string; n: number }[], limit: number): Promise<RankSeed[]> {

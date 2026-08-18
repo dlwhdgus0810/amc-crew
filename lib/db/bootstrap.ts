@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   gender text,
   locale text,
   last_seen timestamptz,
+  tier_seen jsonb,
   venmo text,
   zelle text,
   news_alerts boolean NOT NULL DEFAULT false,

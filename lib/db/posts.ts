@@ -810,6 +810,29 @@ async function sendNotice(notice: Notice, linkUrl: string): Promise<void> {
  * 각자 모임에 들어갈 때마다 진동이 오게 되고, 그러면 사람들이 알림부터 꺼 버린다.
  * 이 경로에는 sendNotice가 아예 없어서 "조용한 알림"이 구조로 지켜진다.
  */
+/**
+ * 인앱 알림 + 앱 푸시. 걸어 둘 모임이 없는 소식에도 쓸 수 있게 링크를 직접 받는다.
+ *
+ * 바로 아래 insertInAppNotice와 짝이다 — 저쪽은 폰을 안 울리는 길이고 이쪽은 울리는 길이다.
+ * 어느 쪽으로 보낼지는 부르는 사람이 고른다. 「친구가 모임에 들어왔다」는 저쪽이고
+ * 「등급이 올랐다」는 이쪽이다.
+ */
+export async function insertPushNotice(
+  recipients: string[],
+  postId: string | null,
+  kind: string,
+  linkUrl: string,
+  render: (locale: Locale) => string
+): Promise<void> {
+  const notice = await buildNotice(recipients, render);
+  if (notice.rows.length === 0) return;
+  const db = await getDb();
+  await db
+    .insert(notifications)
+    .values(notice.rows.map((r) => ({ id: crypto.randomUUID(), userId: r.userId, postId, kind, message: r.message })));
+  await sendNotice(notice, linkUrl);
+}
+
 export async function insertInAppNotice(
   recipients: string[],
   postId: string | null,

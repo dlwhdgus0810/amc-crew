@@ -755,14 +755,19 @@ body:has(.poster-zoom) nav.tabbar {
    * 보였지만, 지금 배지는 한 가지 색의 얇은 선이다(app/tier-icon.tsx). 얼굴 사진 위에
    * 선만 얹으면 사진 무늬에 그대로 묻힌다 — 그림을 바꾸면서 딸려 온 문제라 여기 적어 둔다.
    *
-   * 원은 카드 바탕색이고 테두리는 한 올이다. 아이콘 버튼처럼 보이지 않을 만큼만 두른다.
+   * **원 안은 등급 색으로 채운다** (--tier, lib/hosting.ts의 TIER_COLORS). 그림을 칠하지
+   * 않고 원을 칠하는 이유는 크기다 — 10px에 그려진 얇은 선은 색을 입혀 봐야 화면의 몇 픽셀
+   * 뿐이라 무슨 색인지 안 읽힌다. 원을 채우면 같은 자리에서 색이 먼저 보이고 그림이 그
+   * 위에 남는다. 변수가 안 오면 예전처럼 흰 원이다.
+   *
+   * 테두리는 카드 색으로 한 올 — 얼굴 사진과 색 원 사이를 띄우는 자리다.
    */
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-mid);
+  background: var(--tier, var(--surface));
+  border: 1px solid var(--surface);
+  color: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -779,13 +784,17 @@ body:has(.poster-zoom) nav.tabbar {
   width: 10px;
   height: 10px;
   stroke-width: 2.8;
-  color: var(--text);
 }
-/* 등급표 줄의 배지는 카드 위에 놓이므로 바탕 원이 필요 없다 — 선만 그린다 */
+/*
+ * 등급표 줄의 배지도 같은 색 원이다.
+ *
+ * 예전엔 여기만 선으로 그렸다 — 카드 위라 원이 없어도 보였으니까. 그런데 그러면
+ * 등급표에서 본 그림과 사람 얼굴에 붙은 그림이 서로 다른 물건처럼 보인다. 등급표는
+ * 「이걸 받는다」를 보여 주는 자리라 받게 될 것과 같은 모양이어야 한다.
+ */
 .tier-sticker .tier-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--text);
+  width: 15px;
+  height: 15px;
 }
 
 .host-rank {
@@ -911,11 +920,15 @@ body:has(.poster-zoom) nav.tabbar {
   gap: 10px;
 }
 .tier-sticker {
-  width: 24px;
+  width: 26px;
+  height: 26px;
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 999px;
+  background: var(--tier, var(--surface-2));
+  color: var(--surface);
 }
 .tier-name {
   flex: 1;

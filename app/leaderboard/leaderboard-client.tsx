@@ -155,7 +155,10 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
                         <span className="ava">
                           {c.avatar ? <img src={c.avatar} alt="" /> : c.name.slice(0, 1)}
                           {tierOf(CONTRIB_TIERS, c.count) && (
-                            <span className="host-sticker">
+                            <span
+                              className="host-sticker"
+                              style={{ '--tier': tierOf(CONTRIB_TIERS, c.count)!.color } as React.CSSProperties}
+                            >
                               <TierIcon id={tierOf(CONTRIB_TIERS, c.count)!.icon} />
                             </span>
                           )}
@@ -225,7 +228,7 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
                       <span className="ava">
                         {h.avatar ? <img src={h.avatar} alt="" /> : h.name.slice(0, 1)}
                         {tier && (
-                        <span className="host-sticker">
+                        <span className="host-sticker" style={{ '--tier': tier.color } as React.CSSProperties}>
                           <TierIcon id={tier.icon} />
                         </span>
                       )}
@@ -260,7 +263,7 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
             <ul className="tier-list">
               {(tab === 'hosts' ? HOST_TIERS : tab === 'joiners' ? JOIN_TIERS : CONTRIB_TIERS).map((tier) => (
                 <li key={tier.min}>
-                  <span className="tier-sticker">
+                  <span className="tier-sticker" style={{ '--tier': tier.color } as React.CSSProperties}>
                     <TierIcon id={tier.icon} />
                   </span>
                   <span className="tier-name">{t(tier.label)}</span>

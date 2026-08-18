@@ -1912,7 +1912,11 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                   */}
                 {anonCat ? '·' : p.avatar ? <img src={p.avatar} alt="" /> : p.name.slice(0, 1)}
                 {hostTier(p.hostCount) && (
-                  <span className="host-sticker" title={t(hostTier(p.hostCount)!.label)}>
+                  <span
+                    className="host-sticker"
+                    title={t(hostTier(p.hostCount)!.label)}
+                    style={{ '--tier': hostTier(p.hostCount)!.color } as React.CSSProperties}
+                  >
                     <TierIcon id={hostTier(p.hostCount)!.icon} />
                   </span>
                 )}

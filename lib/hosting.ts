@@ -13,15 +13,37 @@ export interface HostTier {
   /** 배지 그림의 이름 — app/tier-icon.tsx의 PATHS 키다 (이모지가 아니다) */
   icon: string;
   label: Msg;
+  /** 배지 바탕색. 칸 번호로 정해지므로 손으로 적지 않는다 — ladder()가 채운다 */
+  color: string;
+}
+
+/**
+ * 등급 색 — **칸 번호로 정한다.** 첫 칸은 초록, 마지막 칸은 호박색.
+ *
+ * 세 순위표가 같은 사다리를 쓴다. 주최 3칸과 참여 3칸이 같은 색이면 「어느 표에서든
+ * 세 번째까지 왔다」가 색 하나로 읽히고, 표마다 색을 따로 두면 그 뜻이 사라진다.
+ * 그림이 하는 말(무엇으로 올랐나)과 색이 하는 말(얼마나 올랐나)이 서로 안 겹친다.
+ *
+ * 넷 다 크림(#F6F4EE) 대비 4.6:1을 넘게 잡았다. 배지 안의 그림이 크림색 얇은 선이고,
+ * 등급표에서는 이 원이 크림 카드 위에 놓인다 — 한 색으로 두 대비를 다 감당해야 한다.
+ * 그래서 최고 등급이 금색이 아니다. 진짜 금색(#E6AD00)은 크림 대비가 1.85:1이라
+ * 카드 위에서 원이 사라진다. 밝기를 포기하는 대신 색조를 초록→파랑→보라→호박으로
+ * 돌려서 「올라간다」를 만들었다.
+ */
+export const TIER_COLORS = ['#018039', '#0472BD', '#815ABC', '#AC5701'];
+
+/** 등급표에 색을 입힌다 — 칸 번호가 곧 색이라 손으로 적을 것이 없다 */
+function ladder(specs: Omit<HostTier, 'color'>[]): HostTier[] {
+  return specs.map((s, i) => ({ ...s, color: TIER_COLORS[i] ?? TIER_COLORS[TIER_COLORS.length - 1]! }));
 }
 
 /** 낮은 등급부터 — hostTier()가 뒤에서부터 찾는다 */
-export const HOST_TIERS: HostTier[] = [
+export const HOST_TIERS: HostTier[] = ladder([
   { min: 5, icon: 'sprout', label: { ko: '새싹 호스트', en: 'Sprout host', es: 'Anfitrión brote' } },
   { min: 15, icon: 'star', label: { ko: '단골 호스트', en: 'Regular host', es: 'Anfitrión habitual' } },
   { min: 30, icon: 'flame', label: { ko: '열정 호스트', en: 'Fired-up host', es: 'Anfitrión en racha' } },
   { min: 60, icon: 'crown', label: { ko: '전설의 호스트', en: 'Legendary host', es: 'Anfitrión legendario' } },
-];
+]);
 
 /**
  * 참여 등급 — 얼마나 자주 나오나 (횟수).
@@ -36,12 +58,12 @@ export const HOST_TIERS: HostTier[] = [
  * 위 두 칸(20·30)은 지금 아무도 못 닿는다. 그건 그대로 둔다 — 닿을 자리가 남아 있는 것이
  * 등급표의 쓸모다. (재 본 분포: 38명, 최고 15회, 중앙 4회)
  */
-export const JOIN_TIERS: HostTier[] = [
+export const JOIN_TIERS: HostTier[] = ladder([
   { min: 5, icon: 'stamp', label: { ko: '얼굴 도장', en: 'Showing up', es: 'Se deja ver' } },
   { min: 12, icon: 'again', label: { ko: '단골', en: 'Regular', es: 'Habitual' } },
   { min: 20, icon: 'calendarCheck', label: { ko: '개근', en: 'Never misses', es: 'No falla' } },
   { min: 30, icon: 'anchor', label: { ko: '붙박이', en: 'Always there', es: 'Siempre está' } },
-];
+]);
 
 /**
  * 기여 등급 — 사진·댓글·후기·승인된 제안으로 쌓은 점수 (lib/db/hosting.ts의 CONTRIB).
@@ -53,12 +75,12 @@ export const JOIN_TIERS: HostTier[] = [
  * 비어 있는 것이 오래갈 텐데, 그게 목표로 쓸모가 있다.
  * (재 본 분포: 점수가 있는 사람 14명, 최고 26점)
  */
-export const CONTRIB_TIERS: HostTier[] = [
+export const CONTRIB_TIERS: HostTier[] = ladder([
   { min: 10, icon: 'camera', label: { ko: '기록 시작', en: 'Started keeping', es: 'Empieza a registrar' } },
   { min: 20, icon: 'pen', label: { ko: '부지런한 손', en: 'Busy hands', es: 'Manos ocupadas' } },
   { min: 35, icon: 'photos', label: { ko: '기록 담당', en: 'Keeper of records', es: 'Encargado del archivo' } },
   { min: 60, icon: 'trophy', label: { ko: '기록 대장', en: 'Chief archivist', es: 'Jefe del archivo' } },
-];
+]);
 
 /** 점수 → 등급 (첫 칸에 못 미치면 null). 세 순위표가 같은 함수를 쓴다 */
 export function tierOf(tiers: HostTier[], count: number): HostTier | null {
@@ -98,3 +120,26 @@ export function ranksOf(counts: number[]): number[] {
   }
   return out;
 }
+
+/**
+ * 순위표 세 장의 이름 — 등급 알림이 「무엇으로 올랐는지」 말하려면 이 이름이 필요하다.
+ *
+ * 등급표(HOST/JOIN/CONTRIB_TIERS)는 각자 따로 있었고 화면도 탭마다 골라 썼는데,
+ * 알림을 보내는 쪽은 세 장을 한 번에 훑는다. 여기 모아 두지 않으면 그 쪽에 if 세 개가
+ * 생기고, 표를 하나 더 만드는 날 그 세 개를 다 찾아 고쳐야 한다.
+ */
+export const BOARDS = ['host', 'join', 'contrib'] as const;
+export type Board = (typeof BOARDS)[number];
+
+export const BOARD_TIERS: Record<Board, HostTier[]> = {
+  host: HOST_TIERS,
+  join: JOIN_TIERS,
+  contrib: CONTRIB_TIERS,
+};
+
+/** 순위표 이름 — 알림 문구에 들어간다 (화면의 탭 이름과 같은 말로 맞춰 뒀다) */
+export const BOARD_LABEL: Record<Board, Msg> = {
+  host: { ko: '주최', en: 'Hosting', es: 'Anfitrión' },
+  join: { ko: '참여', en: 'Attendance', es: 'Asistencia' },
+  contrib: { ko: '기여도', en: 'Contribution', es: 'Contribución' },
+};

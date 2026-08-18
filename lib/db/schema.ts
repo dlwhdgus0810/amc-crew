@@ -54,6 +54,16 @@ export const users = pgTable('users', {
    * 일부러 최신 시각 하나만 덮어쓴다. 이력을 쌓으면 "누가 언제 들어왔나" 기록이 되어버린다.
    */
   lastSeen: timestamp('last_seen', { withTimezone: true }),
+  /**
+   * 등급 알림을 어디까지 보냈나 — 순위표별로 마지막으로 알린 등급의 min.
+   * `{ host: 15, join: 5, contrib: 0 }` 꼴이고, 등급이 없으면 0이다.
+   *
+   * **칸이 비어 있는 것과 0인 것이 다르다.** 비어 있으면 「아직 안 재봤다」라서
+   * 그 회원의 지금 등급을 조용히 적어 두기만 하고 알리지 않는다 — 이 기능을 켠 날
+   * 이미 오래전에 받은 등급이 서른 명에게 한꺼번에 울리는 것을 막는 자리다
+   * (lib/db/tiers.ts). 순위표를 새로 하나 더 만들어도 같은 규칙이 그대로 먹는다.
+   */
+  tierSeen: jsonb('tier_seen').$type<Record<string, number>>(),
   /** Venmo 아이디 — 정산에서 "보내기" 링크를 만들 때만 쓴다 (@ 없이 저장) */
   venmo: text('venmo'),
   /**

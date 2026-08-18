@@ -26,6 +26,8 @@ export const NOTIF = {
   news: 'news',
   /** 참가신청 인원이 다 모였다 — 그 카테고리 화면으로 */
   signup: 'signup',
+  /** 등급이 올랐다 — 순위표로 */
+  tier: 'tier',
 } as const;
 
 /**

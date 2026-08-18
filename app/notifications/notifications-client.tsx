@@ -190,6 +190,8 @@ export default function NotificationsClient({ initial }: { initial: Notification
               ? `/p/${n.postId}`
               : FRIEND_KINDS.includes(n.kind ?? '')
                 ? '/friends'
+                : n.kind === NOTIF.tier
+                  ? '/leaderboard'
                 /*
                  * 참가신청 알림은 걸어 둘 모임이 없다 — 「이제 날짜를 정해봐요」인데
                  * 정할 자리로 못 가면 그 알림이 할 일이 없다. 보낼 곳은 kind에 실려 온다.
