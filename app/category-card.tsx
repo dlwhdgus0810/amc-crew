@@ -85,6 +85,12 @@ export default function CategoryCard({
       style={{
         background: `var(--cat-${category.slug}, ${category.color})`,
         color: `var(--cat-${category.slug}-fg, ${category.fg})`,
+        /*
+         * 페이지 바탕에 묻히는 밝은 카드에만 한 올 두른다 (lib/card-theme.ts의 edgeFor).
+         * 테두리가 아니라 안쪽 그림자인 이유는 자리다 — border를 주면 밝은 카드만
+         * 2px 커져서 격자에서 저 혼자 어긋난다.
+         */
+        boxShadow: `inset 0 0 0 1px var(--cat-${category.slug}-edge, transparent)`,
         ...style,
       }}
       data-slug={category.slug}

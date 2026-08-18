@@ -1220,13 +1220,26 @@ export default function AdminPage() {
                       <span className="theme-pick-name">{t(CARD_THEMES[key].label)}</span>
                       <span className="hint">{t(CARD_THEMES[key].note)}</span>
                     </span>
-                    {/* 고르기 전에 어떤 색인지 보이게 — 여섯 장이면 톤이 읽힌다 */}
+                    {/*
+                      * 고르기 전에 어떤 색인지 보이게.
+                      *
+                      * 앞에서 여섯 장을 자르지 않고 **처음부터 끝까지 골고루** 뽑는다.
+                      * 테마들이 밝은 데서 어두운 데로 내려가는 그라데이션이라, 앞 여섯 장은
+                      * 전부 밝은 쪽이다 — 「초콜릿」을 크림색 여섯 칸으로 보여 주게 된다.
+                      */}
                     <span className="theme-swatches" aria-hidden>
-                      {cardColors(key)
-                        .slice(0, 6)
-                        .map((c) => (
-                          <span key={c.slug} style={{ background: c.color }} />
-                        ))}
+                      {(() => {
+                        const all = cardColors(key);
+                        const n = Math.min(6, all.length);
+                        return Array.from({ length: n }, (_, i) => all[Math.round((i * (all.length - 1)) / (n - 1))]!).map(
+                          (c) => (
+                            <span
+                              key={c.slug}
+                              style={{ background: c.color, boxShadow: `inset 0 0 0 1px ${c.edge ?? 'transparent'}` }}
+                            />
+                          )
+                        );
+                      })()}
                     </span>
                   </label>
                 ))}

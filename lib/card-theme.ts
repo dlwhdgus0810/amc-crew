@@ -18,7 +18,14 @@ import { Msg } from './i18n';
 export const CARD_THEME_COOKIE = 'card-theme';
 export const CARD_THEME_MAX_AGE = 400 * 24 * 60 * 60;
 
-export type CardTheme = 'default' | 'wildflowers';
+export type CardTheme =
+  | 'default'
+  | 'wildflowers'
+  | 'lushforest'
+  | 'mossyhollow'
+  | 'chocolate'
+  | 'inkwash'
+  | 'blueeclipse';
 
 export interface CardThemeDef {
   label: Msg;
@@ -26,10 +33,13 @@ export interface CardThemeDef {
   /**
    * 고정점. null이면 카테고리가 들고 있는 색을 그대로 쓴다 (기본 테마).
    * 두 개 이상이면 몇 개든 된다 — 카드 수에 맞춰 자리를 잡고 사이를 채운다.
+   *
+   * **밝은 쪽에서 어두운 쪽으로 적는다.** 받은 팔레트는 대개 순서가 뒤죽박죽인데
+   * (「Lush forest」는 진초록 다음이 거의 흰색이다) 그대로 두면 열일곱 장이 밝았다
+   * 어두웠다를 두 번 오간다. 와일드플라워만 예외다 — 거기는 어느 색이 몇 번째인지를
+   * 직접 지정받았다.
    */
   stops: string[] | null;
-  /** 카드 위 글씨. 고정점마다 밝기가 달라서 한 색으로 다 덮을 수 있는 값을 골라야 한다 */
-  fg: string | null;
 }
 
 export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
@@ -41,15 +51,8 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       es: 'Colores intensos con texto crema, lo de siempre.',
     },
     stops: null,
-    fg: null,
   },
-  /*
-   * 와일드플라워.
-   *
-   * 글씨를 #101010으로 둔 이유: 고정점 넷의 밝기가 .61~.85로 벌어져 있어서 제일 어두운
-   * #519755가 문제가 된다. 크림은 3.23:1, 카드에서 쓰던 진한 색(#1E241F)은 4.45:1로
-   * 둘 다 4.5에 못 미친다. 본문색 #101010이면 거기서 5.35:1, 제일 밝은 칸에서 12.22:1이다.
-   */
+  // 와일드플라워 — 받은 순서 그대로다 (「첫 카드는 #a8dcab, 마지막은 #be91be」)
   wildflowers: {
     label: { ko: '와일드플라워', en: 'Wildflowers', es: 'Flores silvestres' },
     note: {
@@ -58,12 +61,56 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       es: 'Empieza en verde claro, pasa por verde intenso y rosa, y acaba en malva.',
     },
     stops: ['#A8DCAB', '#519755', '#DBAAA7', '#BE91BE'],
-    fg: '#101010',
+  },
+  lushforest: {
+    label: { ko: '깊은 숲', en: 'Lush forest', es: 'Bosque frondoso' },
+    note: {
+      ko: '연둣빛에서 시작해 짙은 전나무색으로 내려가요.',
+      en: 'Starts in pale mint and descends into deep fir.',
+      es: 'Empieza en menta pálida y baja hasta abeto oscuro.',
+    },
+    stops: ['#CFFFDC', '#68BA7F', '#2E6F40', '#253D2C'],
+  },
+  mossyhollow: {
+    label: { ko: '이끼 골짜기', en: 'Mossy hollow', es: 'Hondonada de musgo' },
+    note: {
+      ko: '연한 풀빛에서 올리브를 지나 짙은 이끼색으로.',
+      en: 'Pale grass through olive into dark moss.',
+      es: 'Verde claro, oliva y musgo oscuro.',
+    },
+    stops: ['#D4DE95', '#BAC095', '#636B2F', '#3D4127'],
+  },
+  chocolate: {
+    label: { ko: '초콜릿', en: 'Chocolate truffle', es: 'Trufa de chocolate' },
+    note: {
+      ko: '크림색에서 캐러멜을 지나 다크 초콜릿으로. 폭이 제일 넓은 테마예요.',
+      en: 'Cream through caramel into dark chocolate — the widest range of the set.',
+      es: 'De crema a caramelo y chocolate negro.',
+    },
+    stops: ['#FDFBD4', '#C05800', '#713600', '#38240D'],
+  },
+  inkwash: {
+    label: { ko: '수묵', en: 'Ink wash', es: 'Aguada de tinta' },
+    note: {
+      ko: '아이보리에서 회색을 지나 먹색으로. 색이 제일 얌전해요.',
+      en: 'Ivory through grey into charcoal — the quietest of the set.',
+      es: 'De marfil a gris y carbón, el más sobrio.',
+    },
+    stops: ['#FFFFE3', '#CBCBCB', '#6D8196', '#4A4A4A'],
+  },
+  blueeclipse: {
+    label: { ko: '푸른 밤', en: 'Blue eclipse', es: 'Eclipse azul' },
+    note: {
+      ko: '연보랏빛 남색에서 자정에 가까운 남색으로. 처음부터 끝까지 어두운 테마예요.',
+      en: 'Lilac-blue down to near-midnight navy — dark from first card to last.',
+      es: 'De azul lila a azul casi medianoche, oscuro de principio a fin.',
+    },
+    stops: ['#8686AC', '#505081', '#272757', '#0F0E47'],
   },
 };
 
 export function toCardTheme(v: string | undefined): CardTheme {
-  return v === 'wildflowers' ? 'wildflowers' : 'default';
+  return v != null && v in CARD_THEMES ? (v as CardTheme) : 'default';
 }
 
 /* ── 색 섞기 ──────────────────────────────────────────────────────────
@@ -130,12 +177,72 @@ function ramp(stops: string[], n: number): string[] {
   });
 }
 
-/** 그 테마에서 카테고리마다 쓸 바탕색·글씨색 */
-export function cardColors(theme: CardTheme): { slug: string; color: string; fg: string }[] {
+/** 본문색과 크림 — 카드 위 글씨는 이 둘 중 하나다 (앱이 이미 쓰는 두 색이라 새로 안 만든다) */
+const TEXT_DARK = '#101010';
+const TEXT_CREAM = '#F6F4EE';
+/** 페이지 바탕 (globals.css의 --bg) — 카드가 여기 묻히는지 재는 데 쓴다 */
+const PAGE_BG = '#F7F6F2';
+
+/** WCAG 명암비 */
+function contrast(a: string, b: string): number {
+  const lum = (hex: string) => {
+    const [r, g, b2] = [1, 3, 5].map((i) => toLinear(parseInt(hex.slice(i, i + 2), 16) / 255));
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * b2!;
+  };
+  const [x, y] = [lum(a), lum(b)];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+/**
+ * 카드 위 글씨는 **카드마다 따로** 고른다.
+ *
+ * 테마 하나에 글씨 한 색으로는 안 된다. 「초콜릿」은 크림(#FDFBD4)에서 시작해 다크
+ * 초콜릿(#38240D)으로 끝나는데, 그 두 장을 한 색으로 덮을 방법이 없다 — 위를 살리면
+ * 아래가 죽는다. 두 후보 중 더 잘 보이는 쪽을 카드마다 고르면 이 문제가 사라지고,
+ * 색을 몇 개 더 늘려도 다시 안 걸린다.
+ *
+ * 와일드플라워는 이렇게 골라도 열일곱 장이 전부 #101010이라 예전과 같다.
+ *
+ * **비슷하면 크림 쪽으로 기운다.** 「초콜릿」의 #C05800은 검정 4.19:1, 크림 4.15:1로
+ * 사실상 동점인데, 그냥 큰 쪽을 고르면 그 카드만 검은 글씨가 되고 바로 아래 거의 같은
+ * 주황색 카드는 크림 글씨가 된다 — 붙어 있는 두 장이 이유 없이 달라 보인다. 진짜로
+ * 밝은 카드에서만 검은 글씨가 나오게 15% 차이를 요구한다.
+ */
+const DARK_TEXT_MARGIN = 1.15;
+function textOn(bg: string): string {
+  return contrast(bg, TEXT_DARK) >= contrast(bg, TEXT_CREAM) * DARK_TEXT_MARGIN ? TEXT_DARK : TEXT_CREAM;
+}
+
+/**
+ * 페이지 바탕에 묻히는 카드에만 두르는 실선.
+ *
+ * 「수묵」의 첫 색은 #FFFFE3다. 페이지 바탕(#F7F6F2)과 대비가 1.06:1이라 카드가 아니라
+ * 그냥 글자 몇 줄이 떠 있는 것처럼 보인다 — 받은 팔레트에 아이보리와 연둣빛이 흔해서
+ * 다섯 테마 중 셋이 여기 걸린다.
+ *
+ * 어두운 카드에는 안 두른다 (null). 안 그러면 원래 멀쩡하던 기본 테마까지 테두리가 생긴다.
+ * 선 색은 그 카드 색을 눌러서 만든다 — 회색 선을 두르면 어느 테마에도 안 속한 줄이 생긴다.
+ */
+const EDGE_NEEDED_BELOW = 1.6;
+function edgeFor(bg: string): string | null {
+  if (contrast(bg, PAGE_BG) >= EDGE_NEEDED_BELOW) return null;
+  const [L, a, b] = hexToLab(bg);
+  return labToHex([Math.max(0, L - 0.14), a, b]);
+}
+
+/** 그 테마에서 카테고리마다 쓸 바탕색·글씨색, 그리고 필요하면 테두리색 */
+export function cardColors(theme: CardTheme): { slug: string; color: string; fg: string; edge: string | null }[] {
   const def = CARD_THEMES[theme];
-  if (!def.stops || !def.fg) return CATEGORIES.map((c) => ({ slug: c.slug, color: c.color, fg: c.fg }));
+  if (!def.stops) {
+    return CATEGORIES.map((c) => ({ slug: c.slug, color: c.color, fg: c.fg, edge: edgeFor(c.color) }));
+  }
   const colors = ramp(def.stops, CATEGORIES.length);
-  return CATEGORIES.map((c, i) => ({ slug: c.slug, color: colors[i]!, fg: def.fg! }));
+  return CATEGORIES.map((c, i) => ({
+    slug: c.slug,
+    color: colors[i]!,
+    fg: textOn(colors[i]!),
+    edge: edgeFor(colors[i]!),
+  }));
 }
 
 /**
@@ -146,7 +253,10 @@ export function cardColors(theme: CardTheme): { slug: string; color: string; fg:
  */
 export function cardThemeCss(theme: CardTheme): string {
   const vars = cardColors(theme)
-    .map((c) => `--cat-${c.slug}:${c.color};--cat-${c.slug}-fg:${c.fg}`)
+    .map(
+      (c) =>
+        `--cat-${c.slug}:${c.color};--cat-${c.slug}-fg:${c.fg};--cat-${c.slug}-edge:${c.edge ?? 'transparent'}`
+    )
     .join(';');
   return `:root{${vars}}`;
 }

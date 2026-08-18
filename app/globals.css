@@ -292,7 +292,7 @@ button.big-cta .arrow { color: #fff; }
   display: inline-flex; align-items: center; gap: 6px;
   opacity: 0.78; cursor: pointer;
 }
-@media (hover: hover) { .sub-toggle:hover { opacity: 1; background: rgba(255, 255, 255, 0.16); } }
+@media (hover: hover) { .sub-toggle:hover { opacity: 1; background: color-mix(in srgb, currentColor 16%, transparent); } }
 .sub-toggle.on { opacity: 1; border-color: currentColor; }
 .sub-toggle .star { font-size: 13px; line-height: 1; }
 .car-drag {
@@ -627,25 +627,23 @@ th { color: var(--text-dim); font-family: var(--mono); font-size: 10.5px; font-w
 .car-icon {
   width: 34px; height: 34px; min-height: 0; padding: 0; flex: none;
   border-radius: 999px; background: transparent; color: inherit;
-  border: 1px solid currentColor; border-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; line-height: 1; cursor: pointer;
 }
-@media (hover: hover) { .car-icon:hover { opacity: 1; background: rgba(255, 255, 255, 0.18); } }
-.car-icon.on { background: rgba(255, 255, 255, 0.22); border-color: transparent; }
-/* 밝은 카드(노랑 등)는 흰 오버레이가 보이지 않으므로 어두운 쪽으로 */
-.car-card[style*='rgb(233, 163, 0)'] .car-icon,
-.car-card[style*='#E9A300'] .car-icon { border-color: rgba(16, 16, 16, 0.28); }
-@media (hover: hover) {
-  .car-card[style*='rgb(233, 163, 0)'] .car-icon:hover,
-  .car-card[style*='#E9A300'] .car-icon:hover { background: rgba(16, 16, 16, 0.1); }
-}
-.car-card[style*='rgb(233, 163, 0)'] .car-icon.on,
-.car-card[style*='#E9A300'] .car-icon.on { background: rgba(16, 16, 16, 0.14); }
+@media (hover: hover) { .car-icon:hover { opacity: 1; background: color-mix(in srgb, currentColor 16%, transparent); } }
+.car-icon.on { background: color-mix(in srgb, currentColor 20%, transparent); border-color: transparent; }
+/*
+ * 예전엔 밝은 카드(노랑 #E9A300) 하나를 style 문자열로 집어내서 여기만 어두운 선을 줬다.
+ * 테마가 생기면서 그 방식이 두 번 깨진다 — 카드 색이 CSS 변수라 style에는 변수 이름과
+ * 예전 색이 남고(그래서 어두워진 카드가 밝은 카드 취급을 받는다), 밝은 카드도 하나가
+ * 아니라 열 장이 넘는다. currentColor는 이미 그 카드에 맞게 고른 글씨색이라
+ * (lib/card-theme.ts의 textOn) 색을 따로 알아낼 필요가 없어진다.
+ */
 
 .car-foot {
   display: flex; align-items: center; gap: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.24);
+  border-top: 1px solid color-mix(in srgb, currentColor 26%, transparent);
   padding-top: 12px; min-width: 0;
 }
 .car-foot-when { font-family: var(--mono); font-size: 11px; opacity: 0.85; flex: none; }
