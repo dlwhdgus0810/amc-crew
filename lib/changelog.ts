@@ -31,6 +31,65 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-18T17:30',
+    title: { ko: '자잘한 손질 둘', en: 'Two small fixes' },
+    items: [
+      {
+        ko: '후기 페이지에서 여행이 「8/14(금) ~ 8/16(일)」로 나와요. 시작한 날만 찍혀서 하루짜리처럼 보였어요.',
+        en: 'On the Reviews page a trip now reads “Fri Aug 14 ~ Sun Aug 16”. It used to show only the first day, as if it were a one-day thing.',
+      },
+      {
+        ko: '모아보기에서 여행 사진의 날짜 글씨가 다른 카테고리와 같은 크기가 됐어요. 여행 묶음만 유난히 커 보였어요.',
+        en: 'In Keepsakes, the dates inside a trip’s photos are the same size as everything else now — that one group used to shout.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-18T17:00',
+    title: { ko: '리더보드에 순위가 둘 늘었어요', en: 'Two more boards on the leaderboard' },
+    items: [
+      {
+        ko: '「기여도」 — 사진·댓글·후기·승인된 카테고리 제안을 셉니다. 승인된 제안 10점, 후기 5점, 사진과 댓글은 1점씩이에요.',
+        en: '“Contributed” — photos, comments, reviews, and approved category proposals. An approved proposal is 10, a review 5, a photo or comment 1 each.',
+      },
+      {
+        ko: '사진과 댓글은 「한 모임에서」 5점·3점까지만 세요. 한 번에 몰아 올리는 것보다 여러 모임에 조금씩 남기는 쪽이 높아져요.',
+        en: 'Photos and comments count up to 5 and 3 per meetup — leaving a little across many meetups beats dumping a pile into one.',
+      },
+      {
+        ko: '「카테고리」 — 어느 종목이 실제로 많이 굴러갔는지. 몇 번 모였는지로 세고 연인원도 같이 보여줘요. 비공개 모임은 세지 않아요.',
+        en: '“Categories” — which ones actually kept going. Ranked by how many meetups happened, with the total turnout beside it. Private meetups aren’t counted.',
+      },
+      {
+        ko: '참여와 기여도에도 등급 스티커가 붙어요. 문턱은 각자 달라요 — 참여는 3·8·15·25회, 기여도는 5·15·30·60점이에요.',
+        en: 'Turnout and contributions get tier stickers too, on their own scales — 3/8/15/25 for turnout, 5/15/30/60 points for contributions.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-18T14:00',
+    notable: true,
+    title: { ko: '후기는 이름 없이 올라가요', en: 'Reviews go up without your name' },
+    items: [
+      {
+        ko: '이제 모든 후기에 이름이 안 붙어요. 아쉬웠던 점도 편하게 적어주세요 — 열여섯 명이 서로 아는 사이라, 이름이 붙어 있으면 좋은 말만 남게 되니까요. 점수를 안 매기는 것과 같은 이유예요.',
+        en: 'No review carries a name anymore. Say the awkward parts too — we all know each other here, and with a name attached only the nice things get written. Same reason there are no scores.',
+      },
+      {
+        ko: '자기가 쓴 후기는 자기에게만 이름이 보여요. 고치거나 지우려면 찾을 수 있어야 하니까요.',
+        en: 'You still see your own name on your own review — you need to find it to change or delete it.',
+      },
+      {
+        ko: '비공개 모임의 후기도 모아보기에 올라와요. 이름이 없으니 누가 어디에 갔는지는 드러나지 않아요. 대신 그 모임으로 들어가는 링크는 안 붙어요 — 부르지 않은 사람에게 초대가 나가면 안 되니까요.',
+        en: 'Reviews from private meetups show up in Keepsakes too. With no name on them, they don’t reveal who went where. They just don’t link into the meetup — an invitation shouldn’t go out to someone who wasn’t asked.',
+      },
+      {
+        ko: '기여도 순위에서 후기는 5점으로 세지만, 누가 몇 개 썼는지는 적지 않아요.',
+        en: 'A review is worth 5 points on the contributions board, but we don’t list how many anyone wrote.',
+      },
+    ],
+  },
+  {
     at: '2026-08-18T09:00',
     notable: true,
     title: { ko: '이삿짐센터가 생겼어요', en: 'There’s a Moving Crew now' },
