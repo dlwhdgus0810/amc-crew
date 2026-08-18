@@ -22,13 +22,46 @@ export const HOST_TIERS: HostTier[] = [
   { min: 60, sticker: '👑', label: { ko: '전설의 호스트', en: 'Legendary host', es: 'Anfitrión legendario' } },
 ];
 
-/** 주최 점수 → 등급 (첫 칸에 못 미치면 null) */
-export function hostTier(count: number): HostTier | null {
+/**
+ * 참여 등급 — 얼마나 자주 나오나 (횟수).
+ *
+ * 문턱이 호스팅과 다르다. 호스팅 점수는 「연 모임의 참가 인원 합」이라 한 번에 열댓 점씩
+ * 오르는데, 참여는 한 번 나가면 1이다. 지금 회원들이 7~15회 사이라 그 폭에 맞춰 잡았다 —
+ * 호스팅의 5/15/30/60을 그대로 쓰면 아무도 두 번째 칸을 못 넘는다.
+ */
+export const JOIN_TIERS: HostTier[] = [
+  { min: 3, sticker: '🌿', label: { ko: '얼굴 도장', en: 'Showing up', es: 'Se deja ver' } },
+  { min: 8, sticker: '🤝', label: { ko: '단골', en: 'Regular', es: 'Habitual' } },
+  { min: 15, sticker: '🎉', label: { ko: '개근', en: 'Never misses', es: 'No falla' } },
+  { min: 25, sticker: '🏅', label: { ko: '붙박이', en: 'Always there', es: 'Siempre está' } },
+];
+
+/**
+ * 기여 등급 — 사진·댓글·후기·승인된 제안으로 쌓은 점수 (lib/db/hosting.ts의 CONTRIB).
+ *
+ * 사진과 댓글이 모임당 5점·3점에서 막히므로 점수가 천천히 오른다. 지금 상위가 26점이라
+ * 60점 칸은 한동안 아무도 못 닿는데, 그건 그대로 둔다 — 닿을 자리가 남아 있는 것이
+ * 등급표의 쓸모다.
+ */
+export const CONTRIB_TIERS: HostTier[] = [
+  { min: 5, sticker: '📷', label: { ko: '기록 시작', en: 'Started keeping', es: 'Empieza a registrar' } },
+  { min: 15, sticker: '✍️', label: { ko: '부지런한 손', en: 'Busy hands', es: 'Manos ocupadas' } },
+  { min: 30, sticker: '📚', label: { ko: '기록 담당', en: 'Keeper of records', es: 'Encargado del archivo' } },
+  { min: 60, sticker: '🏆', label: { ko: '기록 대장', en: 'Chief archivist', es: 'Jefe del archivo' } },
+];
+
+/** 점수 → 등급 (첫 칸에 못 미치면 null). 세 순위표가 같은 함수를 쓴다 */
+export function tierOf(tiers: HostTier[], count: number): HostTier | null {
   let tier: HostTier | null = null;
-  for (const t of HOST_TIERS) {
+  for (const t of tiers) {
     if (count >= t.min) tier = t;
   }
   return tier;
+}
+
+/** 주최 점수 → 등급 (첫 칸에 못 미치면 null) */
+export function hostTier(count: number): HostTier | null {
+  return tierOf(HOST_TIERS, count);
 }
 
 /**

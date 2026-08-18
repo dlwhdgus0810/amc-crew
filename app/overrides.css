@@ -2832,3 +2832,21 @@ body:has(.sky-scope.night) .tabbar a.active {
 .wall-group .tl-time { font-size: 12.5px; }
 .wall-group .tl-place,
 .wall-group .tl-map { font-size: 12px; }
+
+/*
+ * 탭이 넷인 줄 — 리더보드. 좁은 화면(PWA)에서 두 줄로 접히던 것을 한 줄에 세운다.
+ *
+ * flex-wrap을 끄는 것만으로는 안 된다. 알약마다 좌우 18px 여백이 붙어 있어서 넷이면
+ * 여백만 144px이고, 375px 화면에서 글자가 들어갈 자리가 남지 않는다. 그래서 여백을
+ * 줄이고 남은 폭을 넷이 나눠 갖게 한다(flex: 1).
+ *
+ * 글자는 안 접는다 — 알약 안에서 두 줄이 되면 높이가 들쭉날쭉해진다. 대신 좁을수록
+ * 글씨를 한 단 줄인다.
+ */
+.seg-group.seg-tight { flex-wrap: nowrap; }
+.seg-group.seg-tight .seg {
+  flex: 1 1 0; min-width: 0; padding: 0 10px; white-space: nowrap;
+}
+@media (max-width: 400px) {
+  .seg-group.seg-tight .seg { padding: 0 6px; font-size: 13px; }
+}

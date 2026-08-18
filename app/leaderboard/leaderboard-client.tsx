@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatPoints, hostTier, HOST_TIERS, ranksOf } from '@/lib/hosting';
+import { CONTRIB_TIERS, formatPoints, HOST_TIERS, JOIN_TIERS, ranksOf, tierOf } from '@/lib/hosting';
 import { catDisplayName, getCategory } from '@/lib/categories';
 import CatIcon from '../cat-icon';
 import { useT } from '../i18n';
@@ -46,10 +46,11 @@ const T = {
     en: 'Points land once a meetup is over — upcoming ones aren’t counted yet.',
     es: 'Los puntos se suman cuando la quedada termina: las próximas aún no cuentan.',
   },
-  tabHosts: { ko: '호스팅 순위', en: 'Hosted', es: 'Organizadas' },
-  tabJoiners: { ko: '참여 순위', en: 'Joined', es: 'Apuntadas' },
-  tabCats: { ko: '카테고리 순위', en: 'Categories', es: 'Categorías' },
-  tabContrib: { ko: '기여도 순위', en: 'Contributed', es: 'Aportes' },
+  /* 넷이 한 줄에 서야 해서 「순위」를 뗐다 — 제목이 이미 「리더보드」다 */
+  tabHosts: { ko: '호스팅', en: 'Hosted', es: 'Organizadas' },
+  tabJoiners: { ko: '참여', en: 'Joined', es: 'Apuntadas' },
+  tabCats: { ko: '카테고리', en: 'Categories', es: 'Categorías' },
+  tabContrib: { ko: '기여도', en: 'Contributed', es: 'Aportes' },
   /* 점수만 보면 「왜 내가 저 사람보다 낮지」가 남는다 — 무엇으로 쌓였는지 같이 적는다 */
   contribParts: { ko: '사진 {p} · 댓글 {c}', en: '{p} photos · {c} comments', es: '{p} fotos · {c} comentarios' },
   contribProposal: { ko: ' · 제안 {n}', en: ' · {n} proposals', es: ' · {n} propuestas' },
@@ -86,6 +87,9 @@ const T = {
   },
   count: { ko: '{n}점', en: '{n} pts', es: '{n} pts' },
   tiersTitle: { ko: '호스트 등급', en: 'Host tiers', es: 'Niveles de anfitrión' },
+  tiersJoin: { ko: '참여 등급', en: 'Turnout tiers', es: 'Niveles de asistencia' },
+  tiersContrib: { ko: '기여 등급', en: 'Contribution tiers', es: 'Niveles de aporte' },
+  tierFromN: { ko: '{n}회부터', en: 'From {n}', es: 'Desde {n}' },
   tierFrom: { ko: '{n}점부터', en: 'From {n} pts', es: 'Desde {n} pts' },
 };
 
@@ -119,7 +123,7 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
         <p className="hint">{t(T.loginNeeded)}</p>
       ) : (
         <>
-          <div className="seg-group" style={{ marginBottom: 14 }}>
+          <div className="seg-group seg-tight" style={{ marginBottom: 14 }}>
             <button className={`seg ${tab === 'hosts' ? 'on' : ''}`} onClick={() => setTab('hosts')}>
               {t(T.tabHosts)}
             </button>
@@ -147,7 +151,12 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
                         <span className="host-rank-no">
                           {['🥇', '🥈', '🥉'][contribRanks[i]! - 1] ?? `${contribRanks[i]}`}
                         </span>
-                        <span className="ava">{c.avatar ? <img src={c.avatar} alt="" /> : c.name.slice(0, 1)}</span>
+                        <span className="ava">
+                          {c.avatar ? <img src={c.avatar} alt="" /> : c.name.slice(0, 1)}
+                          {tierOf(CONTRIB_TIERS, c.count) && (
+                            <span className="host-sticker">{tierOf(CONTRIB_TIERS, c.count)!.sticker}</span>
+                          )}
+                        </span>
                         <span className="host-rank-name">
                           {c.name}
                           {/* 0인 항목은 안 적는다 — 「후기 0」이 줄줄이 붙으면 읽을 것이 없어진다 */}
@@ -205,8 +214,8 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
                 {list.map((h, i) => {
                   // 점수가 같으면 같은 등수 — 메달도 등수를 따라간다 (lib/hosting.ts)
                   const rank = ranks[i]!;
-                  // 등급 스티커는 주최에 붙는 훈장이라 참가 순위에서는 달지 않는다
-                  const tier = tab === 'hosts' ? hostTier(h.count) : null;
+                  // 두 탭이 각자의 등급표를 쓴다 — 점수가 오르는 속도가 달라서 문턱이 다르다
+                  const tier = tierOf(tab === 'hosts' ? HOST_TIERS : JOIN_TIERS, h.count);
                   return (
                     <li key={h.id}>
                       <span className="host-rank-no">{['🥇', '🥈', '🥉'][rank - 1] ?? `${rank}`}</span>
@@ -233,17 +242,23 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
         </>
       )}
 
-      {/* 다음 스티커까지 얼마나 남았는지 보여야 동기가 된다 — 등급은 주최에만 붙으므로 그 탭에서만 */}
-      {tab === 'hosts' && (
+      {/*
+        * 다음 스티커까지 얼마나 남았는지 보여야 동기가 된다.
+        * 카테고리 탭에는 안 붙인다 — 거기 줄은 사람이 아니라 종목이라 등급이 없다.
+        */}
+      {tab !== 'cats' && (
         <>
-          <h2>{t(T.tiersTitle)}</h2>
+          <h2>{t(tab === 'hosts' ? T.tiersTitle : tab === 'joiners' ? T.tiersJoin : T.tiersContrib)}</h2>
           <div className="card">
             <ul className="tier-list">
-              {HOST_TIERS.map((tier) => (
+              {(tab === 'hosts' ? HOST_TIERS : tab === 'joiners' ? JOIN_TIERS : CONTRIB_TIERS).map((tier) => (
                 <li key={tier.min}>
                   <span className="tier-sticker">{tier.sticker}</span>
                   <span className="tier-name">{t(tier.label)}</span>
-                  <span className="tier-min">{t(T.tierFrom, { n: tier.min })}</span>
+                  {/* 참여는 횟수라 「N회부터」, 나머지는 점수라 「N점부터」 */}
+                  <span className="tier-min">
+                    {t(tab === 'joiners' ? T.tierFromN : T.tierFrom, { n: tier.min })}
+                  </span>
                 </li>
               ))}
             </ul>
