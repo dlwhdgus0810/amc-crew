@@ -2850,3 +2850,18 @@ body:has(.sky-scope.night) .tabbar a.active {
 @media (max-width: 400px) {
   .seg-group.seg-tight .seg { padding: 0 6px; font-size: 13px; }
 }
+
+/*
+ * 등급 스티커가 아래로 잘리던 것.
+ *
+ * .ava-stack에 overflow: hidden이 걸려 있다(사람이 많을 때 가로로 넘치는 것을 자르려고).
+ * 스티커는 아바타 오른쪽 아래로 4px 나와 있어서 그 자름에 같이 걸렸다.
+ *
+ * overflow-y만 visible로 풀 수는 없다 — 한 축이 hidden이면 다른 축의 visible은 auto가
+ * 되어 스크롤 상자가 된다. 그래서 **자를 상자 자체를 아래로 넓힌다**: 안쪽 여백을 6px
+ * 주고 같은 만큼 바깥 여백을 빼면, 잘리는 경계는 내려가고 줄 높이(44px)는 그대로다.
+ */
+.ava-stack {
+  padding-bottom: 6px;
+  margin-bottom: -6px;
+}
