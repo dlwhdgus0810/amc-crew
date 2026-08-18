@@ -34,7 +34,8 @@ const T = {
 };
 
 export interface RecentReviewView {
-  postId: string;
+  /** 비공개 모임이면 null — 그 모임으로 가는 길을 아예 안 준다 (lib/db/reviews.ts) */
+  postId: string | null;
   category: string;
   title: string | null;
   date: string | null;
@@ -75,14 +76,27 @@ export default function ReviewsClient({ initial }: { initial: { rows: RecentRevi
             const cat = getCategory(r.category);
             const label = cat ? t(catDisplayName(r.category)) : r.category;
             return (
-              <li key={`${r.postId}:${r.userId || r.updatedAt}`} className="card feed-review">
+              <li key={`${r.postId ?? r.category}:${r.updatedAt}`} className="card feed-review">
                 <p className="feed-review-body">{r.body}</p>
-                <Link href={`/p/${r.postId}#reviews`} className="feed-review-meta">
-                  <span className="feed-review-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
-                    {cat?.emoji} {label}
+                {/*
+                  * 머리줄은 **갈 곳이 있을 때만** 링크다. 비공개 모임이면 id가 안 내려와서
+                  * (lib/db/reviews.ts) 종목과 날짜만 적는다 — 사진 쪽과 같은 규칙이다.
+                  */}
+                {r.postId ? (
+                  <Link href={`/p/${r.postId}#reviews`} className="feed-review-meta">
+                    <span className="feed-review-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
+                      {cat?.emoji} {label}
+                    </span>
+                    <span>{whenLabelShort(r.date, r.startTime, locale)}</span>
+                  </Link>
+                ) : (
+                  <span className="feed-review-meta">
+                    <span className="feed-review-cat" style={cat ? { background: cat.color, color: cat.fg } : undefined}>
+                      {cat?.emoji} {label}
+                    </span>
+                    <span>{whenLabelShort(r.date, r.startTime, locale)}</span>
                   </span>
-                  <span>{whenLabelShort(r.date, r.startTime, locale)}</span>
-                </Link>
+                )}
                 <span className="feed-review-by">
                   {r.name} · {timeAgo(r.updatedAt, locale)}
                 </span>

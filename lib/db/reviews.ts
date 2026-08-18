@@ -2,7 +2,6 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { postReviews, posts, users } from './schema';
 import { nameOf, UNKNOWN_NAME } from '../store';
-import { isAnonymous } from '../categories';
 import { Locale, Msg, pick } from '../i18n';
 
 /**
@@ -31,7 +30,13 @@ export interface ReviewView {
 
 /** 모아보기 한 줄 — 어느 모임의 후기인지까지 들고 간다 */
 export interface RecentReview extends ReviewView {
-  postId: string;
+  /**
+   * 그 모임으로 가는 길. **비공개 모임이면 null이다.**
+   *
+   * /p/{id}는 비공개 모임에서 곧 초대장이라, 화면에 링크를 안 그려도 값이 실려 나가면
+   * 초대가 나간 셈이 된다 (사진 쪽에서 같은 일을 겪었다 — lib/db/photos.ts의 postId).
+   */
+  postId: string | null;
   category: string;
   title: string | null;
   date: string | null;
@@ -138,6 +143,7 @@ export async function recentReviews(
       body: postReviews.body,
       updatedAt: postReviews.updatedAt,
       postId: posts.id,
+      visibility: posts.visibility,
       category: posts.category,
       title: posts.title,
       date: posts.date,
@@ -149,18 +155,25 @@ export async function recentReviews(
     .innerJoin(posts, eq(posts.id, postReviews.postId))
     .innerJoin(users, eq(users.id, postReviews.userId))
     .where(
-      and(
-        isNull(postReviews.deletedAt),
-        isNull(posts.deletedAt),
-        eq(posts.visibility, 'public')
-      )
+      /*
+       * 비공개 모임의 후기도 싣는다.
+       *
+       * 이름이 안 붙으니 「누가 어디에 갔다」는 안 드러나고, 후기의 쓸모가 「저기 재미있었대」를
+       * 회원 모두가 보는 것이라 자리를 가릴 이유가 남지 않는다.
+       *
+       * 대신 **그 모임으로 가는 길은 안 준다** (아래 postId). 사진에서 이미 한 번 겪은
+       * 일이다 — /p/{id}는 비공개 모임에서 곧 초대장이라, 화면에 링크를 안 그려도 값이
+       * 실려 나가면 초대가 나간 셈이 된다.
+       */
+      and(isNull(postReviews.deletedAt), isNull(posts.deletedAt))
     )
     .orderBy(desc(postReviews.updatedAt))
     .limit(limit);
 
   return rows.map((r) => ({
     ...mask(r, viewerId, locale),
-    postId: r.postId,
+    // 비공개 모임이면 id를 안 준다 (위 주석) — 종목·제목·날짜는 후기를 읽을 수 있게 남긴다
+    postId: r.visibility === 'public' ? r.postId : null,
     category: r.category,
     title: r.title,
     date: r.date,
@@ -168,13 +181,24 @@ export async function recentReviews(
   }));
 }
 
-/** 한 줄을 화면에 내보낼 모양으로 — 익명 가리기가 여기 한 곳에만 있다 */
+/**
+ * 한 줄을 화면에 내보낼 모양으로 — 익명 가리기가 여기 한 곳에만 있다.
+ *
+ * **후기는 카테고리를 가리지 않고 전부 이름 없이 나간다.** 예전에는 익명 카테고리에서만
+ * 가렸는데, 열여섯 명이 서로 아는 사이에서는 이름이 붙는 것만으로 「아쉬웠다」를 못 쓴다.
+ * 점수를 안 매기는 것과 같은 이유다.
+ *
+ * 이름만 지우는 것으로는 부족하다 — 회원번호와 얼굴도 같이 지운다. id를 남기면 개발자
+ * 도구를 여는 것만으로 누가 썼는지 읽히고, 얼굴은 이름보다 더 잘 알아본다.
+ *
+ * 쓴 사람 본인에게만 mine으로 알려 준다. 자기가 쓴 것을 못 찾으면 고치지도 지우지도
+ * 못하고, 그건 본인이 이미 아는 사실이라 새로 새는 것이 없다.
+ */
 function mask(
   r: {
     userId: string;
     body: string;
     updatedAt: Date;
-    category: string;
     allowNicknames: boolean;
     user: { id: string; kakaoName: string; nickname: string | null; nameEn: string | null; avatar: string | null };
   },
@@ -182,7 +206,7 @@ function mask(
   locale: Locale
 ): ReviewView {
   const mine = Boolean(viewerId && r.userId === viewerId);
-  const hidden = isAnonymous(r.category) && !mine;
+  const hidden = !mine;
   return {
     userId: hidden ? '' : r.userId,
     name: hidden ? pick(locale, ANON) : nameOf(r.user, UNKNOWN_NAME, locale, !r.allowNicknames),

@@ -189,8 +189,6 @@ async function joinQuery(limit: number): Promise<RankSeed[]> {
 const CONTRIB = {
   /** 승인된 카테고리 제안 — 앱을 바꾸는 일이고 아주 드물다 */
   proposal: 10,
-  /** 후기 — 글을 써야 하고 모임당 하나뿐이라 상한이 필요 없다 */
-  review: 5,
   photo: 1,
   comment: 1,
   /** 사진·댓글은 **한 모임에서** 이만큼까지만 점수가 된다 */
@@ -198,16 +196,21 @@ const CONTRIB = {
   commentCap: 3,
 };
 
+/*
+ * 후기 수는 **여기에 담지 않는다.**
+ *
+ * 점수에서 뺐어도 값이 브라우저로 내려가면 개발자 도구를 여는 것만으로 「지유 후기 1」이
+ * 읽힌다 — 화면에 안 그리는 것으로는 부족하다. 익명 카테고리의 회원번호를 지우는 것과
+ * 같은 이유다 (lib/db/photos.ts).
+ */
 export interface ContribSeed extends RankSeed {
   photos: number;
   comments: number;
-  reviews: number;
   proposals: number;
 }
 export interface ContribRank extends HostRank {
   photos: number;
   comments: number;
-  reviews: number;
   proposals: number;
 }
 
@@ -217,13 +220,20 @@ export function contribNames(seeds: ContribSeed[], locale: Locale): ContribRank[
     ...rankNames([s], locale)[0]!,
     photos: s.photos,
     comments: s.comments,
-    reviews: s.reviews,
     proposals: s.proposals,
   }));
 }
 
 /**
- * 기록 순위 — 사진·댓글·후기·승인된 카테고리 제안.
+ * 기록 순위 — 사진·댓글·승인된 카테고리 제안.
+ *
+ * **후기는 세지 않는다.** 이름 없이 올라가는 글이라(lib/db/reviews.ts) 사람별로 세는
+ * 순간 그 숫자가 곧 누가 썼는지가 된다. 후기는 모임당 한 명이 하나뿐이어서 「후기 수 =
+ * 후기를 쓴 모임 수」이고, 어느 모임에 후기가 하나 뜬 뒤 누군가의 수가 하나 늘면
+ * 그 사람이 쓴 것이다 — 열여섯 명에 후기 넷인 속도에서는 거의 매번 짚힌다.
+ *
+ * 점수에서만 빼는 것으로는 부족해서 값 자체를 안 담는다 (위 ContribSeed).
+ * 후기를 기리고 싶으면 사람에 안 붙는 자리에 세면 된다 — 카테고리 순위의 한 칸 같은 곳.
  *
  * **비공개 모임도 센다.** 호스팅·참여 순위와 다른 점이다. 저쪽은 「몇 명이 모였나」가
  * 곧 점수라 안 보이는 자리에서 점수가 크게 나는 것이 문제지만, 여기서 세는 것은
@@ -252,28 +262,21 @@ async function contribQuery(limit: number): Promise<ContribSeed[]> {
           SELECT user_id, post_id, count(*) AS c FROM post_comments
           WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1, 2
         ) x GROUP BY 1
-      ), rv AS (
-        SELECT user_id, count(*) AS n FROM post_reviews
-        WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1
       ), rq AS (
         SELECT user_id, count(*) AS n FROM category_requests WHERE status = 'approved' GROUP BY 1
       ), ids AS (
-        SELECT user_id FROM ph UNION SELECT user_id FROM cm
-        UNION SELECT user_id FROM rv UNION SELECT user_id FROM rq
+        SELECT user_id FROM ph UNION SELECT user_id FROM cm UNION SELECT user_id FROM rq
       )
       SELECT i.user_id,
         COALESCE(ph.n, 0)::int AS photos,
         COALESCE(cm.n, 0)::int AS comments,
-        COALESCE(rv.n, 0)::int AS reviews,
         COALESCE(rq.n, 0)::int AS proposals,
         (COALESCE(ph.n, 0) * ${CONTRIB.photo}
          + COALESCE(cm.n, 0) * ${CONTRIB.comment}
-         + COALESCE(rv.n, 0) * ${CONTRIB.review}
          + COALESCE(rq.n, 0) * ${CONTRIB.proposal})::int AS score
       FROM ids i
       LEFT JOIN ph ON ph.user_id = i.user_id
       LEFT JOIN cm ON cm.user_id = i.user_id
-      LEFT JOIN rv ON rv.user_id = i.user_id
       LEFT JOIN rq ON rq.user_id = i.user_id
       -- 동률일 때 순서가 흔들리면 새로고침마다 자리가 바뀐다 — id로 고정한다
       ORDER BY score DESC, i.user_id ASC
@@ -291,7 +294,6 @@ async function contribQuery(limit: number): Promise<ContribSeed[]> {
       ...s,
       photos: Number(r?.photos ?? 0),
       comments: Number(r?.comments ?? 0),
-      reviews: Number(r?.reviews ?? 0),
       proposals: Number(r?.proposals ?? 0),
     };
   });

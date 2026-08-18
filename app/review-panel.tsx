@@ -34,6 +34,15 @@ const T = {
     es: 'Solo quien estuvo allí puede dejar una reseña.',
   },
   left: { ko: '{n}자 남음', en: '{n} left', es: 'Quedan {n}' },
+  /*
+   * 쓰기 전에 알려 준다. 이름이 붙는 줄 알고 쓰는 것과 안 붙는 줄 알고 쓰는 것은
+   * 아예 다른 글이 되므로, 다 쓴 뒤에 알려 주면 늦다.
+   */
+  anonNote: {
+    ko: '후기는 이름 없이 올라가요. 아쉬웠던 점도 편하게 적어주세요.',
+    en: 'Reviews go up without your name — say the awkward parts too.',
+    es: 'Las reseñas se publican sin tu nombre: cuenta también lo que no salió bien.',
+  },
 };
 
 export interface ReviewItem {
@@ -117,6 +126,8 @@ export default function ReviewPanel({
 
         {canWrite ? (
           <div className="review-write">
+            {/* 이름이 안 붙는다는 것을 쓰기 전에 알려 준다 */}
+            <p className="hint" style={{ margin: '0 0 8px' }}>{t(T.anonNote)}</p>
             <input
               type="text"
               value={draft}

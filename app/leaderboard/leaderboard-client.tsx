@@ -22,7 +22,6 @@ interface CategoryRank {
 interface ContribRank extends HostRank {
   photos: number;
   comments: number;
-  reviews: number;
   proposals: number;
 }
 
@@ -53,7 +52,6 @@ const T = {
   tabContrib: { ko: '기록 순위', en: 'Keepers', es: 'Registros' },
   /* 점수만 보면 「왜 내가 저 사람보다 낮지」가 남는다 — 무엇으로 쌓였는지 같이 적는다 */
   contribParts: { ko: '사진 {p} · 댓글 {c}', en: '{p} photos · {c} comments', es: '{p} fotos · {c} comentarios' },
-  contribReview: { ko: ' · 후기 {n}', en: ' · {n} reviews', es: ' · {n} reseñas' },
   contribProposal: { ko: ' · 제안 {n}', en: ' · {n} proposals', es: ' · {n} propuestas' },
   emptyContrib: {
     ko: '아직 아무도 남긴 게 없어요.',
@@ -61,9 +59,9 @@ const T = {
     es: 'Todavía nadie ha dejado nada.',
   },
   contribNote: {
-    ko: '승인된 카테고리 제안 10점, 후기 5점, 사진·댓글 1점씩이에요. 사진과 댓글은 한 모임에서 5점·3점까지만 세요 — 한 번에 몰아 올리는 것보다 여러 모임에 남기는 쪽이 높아지게요.',
-    en: 'An approved category proposal is 10, a review 5, a photo or comment 1 each. Photos and comments count up to 5 and 3 per meetup — spreading across meetups beats dumping into one.',
-    es: 'Una propuesta de categoría aprobada vale 10, una reseña 5, y cada foto o comentario 1. Las fotos y comentarios cuentan hasta 5 y 3 por quedada.',
+    ko: '승인된 카테고리 제안 10점, 사진·댓글 1점씩이에요. 사진과 댓글은 한 모임에서 5점·3점까지만 세요 — 한 번에 몰아 올리는 것보다 여러 모임에 남기는 쪽이 높아지게요. 후기는 이름 없이 올라가서 세지 않아요.',
+    en: 'An approved category proposal is 10, a photo or comment 1 each. Photos and comments count up to 5 and 3 per meetup — spreading across meetups beats dumping into one. Reviews go up without a name, so they aren’t counted.',
+    es: 'Una propuesta de categoría aprobada vale 10 y cada foto o comentario 1. Las fotos y comentarios cuentan hasta 5 y 3 por quedada. Las reseñas se publican sin nombre, así que no se cuentan.',
   },
   /* 「몇 번 모였나」가 순위고, 연인원은 옆에 곁들인다 */
   catCount: { ko: '{n}번', en: '{n} meetups', es: '{n} quedadas' },
@@ -155,7 +153,6 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
                           {/* 0인 항목은 안 적는다 — 「후기 0」이 줄줄이 붙으면 읽을 것이 없어진다 */}
                           <span className="host-rank-tier">
                             {t(T.contribParts, { p: c.photos, c: c.comments })}
-                            {c.reviews > 0 && t(T.contribReview, { n: c.reviews })}
                             {c.proposals > 0 && t(T.contribProposal, { n: c.proposals })}
                           </span>
                         </span>
