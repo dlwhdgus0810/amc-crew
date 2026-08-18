@@ -173,6 +173,130 @@ async function joinQuery(limit: number): Promise<RankSeed[]> {
   return withProfiles(rows, limit);
 }
 
+/**
+ * 「기록」 순위의 셈법.
+ *
+ * 행동마다 값이 다르다. 그냥 더하면 사진이 다 먹는다 — 실제로 재 보니 사진 62·댓글 49에
+ * 후기 4·승인된 제안 8이라, 단순 합계는 「사진 많이 올린 사람 순위」가 되고 나머지 셋은
+ * 장식이 된다.
+ *
+ * **모임당 상한이 핵심이다.** 한 모임에 열 장을 몰아 올린 사람이 있었는데, 상한이 없으면
+ * 업로드 한 번이 댓글 열 번을 이긴다. 상한을 걸면 몰아 올리는 것보다 **여러 모임에 남기는
+ * 것**이 이기고, 이 표가 기리려는 것이 그쪽이다 — 어느 모임에 가든 기록을 남기는 사람.
+ *
+ * 댓글 상한을 낮게 잡은 이유는 따로 있다. 대화를 점수로 바꾸면 「ㅋㅋ」가 는다.
+ */
+const CONTRIB = {
+  /** 승인된 카테고리 제안 — 앱을 바꾸는 일이고 아주 드물다 */
+  proposal: 10,
+  /** 후기 — 글을 써야 하고 모임당 하나뿐이라 상한이 필요 없다 */
+  review: 5,
+  photo: 1,
+  comment: 1,
+  /** 사진·댓글은 **한 모임에서** 이만큼까지만 점수가 된다 */
+  photoCap: 5,
+  commentCap: 3,
+};
+
+export interface ContribSeed extends RankSeed {
+  photos: number;
+  comments: number;
+  reviews: number;
+  proposals: number;
+}
+export interface ContribRank extends HostRank {
+  photos: number;
+  comments: number;
+  reviews: number;
+  proposals: number;
+}
+
+/** 담아 둔 재료에 보는 사람의 언어로 이름을 붙인다 — rankNames와 같은 이유로 캐시 밖에서 */
+export function contribNames(seeds: ContribSeed[], locale: Locale): ContribRank[] {
+  return seeds.map((s) => ({
+    ...rankNames([s], locale)[0]!,
+    photos: s.photos,
+    comments: s.comments,
+    reviews: s.reviews,
+    proposals: s.proposals,
+  }));
+}
+
+/**
+ * 기록 순위 — 사진·댓글·후기·승인된 카테고리 제안.
+ *
+ * **비공개 모임도 센다.** 호스팅·참여 순위와 다른 점이다. 저쪽은 「몇 명이 모였나」가
+ * 곧 점수라 안 보이는 자리에서 점수가 크게 나는 것이 문제지만, 여기서 세는 것은
+ * 「기록을 남긴 손」이고 비공개 모임에서 사진을 올린 것도 같은 일이다. 숫자만 오르므로
+ * 어디였는지는 안 드러난다. 빼면 사진의 44%와 후기 전부가 사라져(재 보니 62→35, 4→0)
+ * 표가 「공개 모임에 사진 올린 사람」이라는 훨씬 좁은 것을 재게 된다.
+ *
+ * **익명 카테고리는 뺀다.** 거기 활동은 어디에도 이름으로 안 싣기로 한 것이라,
+ * 점수 한 점도 예외를 두지 않는다.
+ *
+ * 끝났는지는 안 본다 — 사진과 댓글은 모임이 끝나야 생기는 것이 아니다.
+ */
+async function contribQuery(limit: number): Promise<ContribSeed[]> {
+  const db = await getDb();
+  const rows = resultRows(
+    await db.execute(sql`
+      WITH ok AS (
+        SELECT p.id FROM posts p WHERE p.deleted_at IS NULL AND ${notAnonymous()}
+      ), ph AS (
+        SELECT user_id, SUM(LEAST(c, ${CONTRIB.photoCap})) AS n FROM (
+          SELECT user_id, post_id, count(*) AS c FROM post_photos
+          WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1, 2
+        ) x GROUP BY 1
+      ), cm AS (
+        SELECT user_id, SUM(LEAST(c, ${CONTRIB.commentCap})) AS n FROM (
+          SELECT user_id, post_id, count(*) AS c FROM post_comments
+          WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1, 2
+        ) x GROUP BY 1
+      ), rv AS (
+        SELECT user_id, count(*) AS n FROM post_reviews
+        WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1
+      ), rq AS (
+        SELECT user_id, count(*) AS n FROM category_requests WHERE status = 'approved' GROUP BY 1
+      ), ids AS (
+        SELECT user_id FROM ph UNION SELECT user_id FROM cm
+        UNION SELECT user_id FROM rv UNION SELECT user_id FROM rq
+      )
+      SELECT i.user_id,
+        COALESCE(ph.n, 0)::int AS photos,
+        COALESCE(cm.n, 0)::int AS comments,
+        COALESCE(rv.n, 0)::int AS reviews,
+        COALESCE(rq.n, 0)::int AS proposals,
+        (COALESCE(ph.n, 0) * ${CONTRIB.photo}
+         + COALESCE(cm.n, 0) * ${CONTRIB.comment}
+         + COALESCE(rv.n, 0) * ${CONTRIB.review}
+         + COALESCE(rq.n, 0) * ${CONTRIB.proposal})::int AS score
+      FROM ids i
+      LEFT JOIN ph ON ph.user_id = i.user_id
+      LEFT JOIN cm ON cm.user_id = i.user_id
+      LEFT JOIN rv ON rv.user_id = i.user_id
+      LEFT JOIN rq ON rq.user_id = i.user_id
+      -- 동률일 때 순서가 흔들리면 새로고침마다 자리가 바뀐다 — id로 고정한다
+      ORDER BY score DESC, i.user_id ASC
+    `)
+  );
+  const by = new Map(rows.map((r) => [String(r.user_id), r]));
+  // 관리자를 빼고 자르는 것은 다른 순위와 같은 함수에 맡긴다 (규칙이 갈리면 안 된다)
+  const seeds = await withProfiles(
+    rows.map((r) => ({ id: String(r.user_id), n: Number(r.score) })),
+    limit
+  );
+  return seeds.map((s) => {
+    const r = by.get(s.id);
+    return {
+      ...s,
+      photos: Number(r?.photos ?? 0),
+      comments: Number(r?.comments ?? 0),
+      reviews: Number(r?.reviews ?? 0),
+      proposals: Number(r?.proposals ?? 0),
+    };
+  });
+}
+
 /** 카테고리 순위 한 줄 — 이름은 화면이 붙인다 (여기는 slug만 안다) */
 export interface CategoryRank {
   slug: string;
@@ -235,6 +359,15 @@ export const joinRanking = unstable_cache(joinQuery, ['join-ranking'], {
   revalidate: 300,
 });
 export const categoryRanking = unstable_cache(categoryQuery, ['category-ranking'], {
+  tags: [POSTS_TAG],
+  revalidate: 300,
+});
+/*
+ * 기록 순위는 POSTS_TAG로 지워지지 않는 것들(사진·댓글·후기·제안)을 센다.
+ * 그래서 5분마다 스스로 다시 읽는 것이 사실상 유일한 갱신이다 — 사진을 올리자마자
+ * 점수가 오르지는 않는다. 순위표에 그 정도 지연은 괜찮다.
+ */
+export const contribRanking = unstable_cache(contribQuery, ['contrib-ranking'], {
   tags: [POSTS_TAG],
   revalidate: 300,
 });

@@ -19,11 +19,19 @@ interface CategoryRank {
   people: number;
 }
 
+interface ContribRank extends HostRank {
+  photos: number;
+  comments: number;
+  reviews: number;
+  proposals: number;
+}
+
 /** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx). 로그인 전이면 null */
 export interface LeaderboardInitial {
   hosts: HostRank[];
   joiners: HostRank[];
   categories: CategoryRank[];
+  contrib: ContribRank[];
 }
 
 const T = {
@@ -42,6 +50,21 @@ const T = {
   tabHosts: { ko: '호스팅 순위', en: 'Hosted', es: 'Organizadas' },
   tabJoiners: { ko: '참여 순위', en: 'Joined', es: 'Apuntadas' },
   tabCats: { ko: '카테고리 순위', en: 'Categories', es: 'Categorías' },
+  tabContrib: { ko: '기록 순위', en: 'Keepers', es: 'Registros' },
+  /* 점수만 보면 「왜 내가 저 사람보다 낮지」가 남는다 — 무엇으로 쌓였는지 같이 적는다 */
+  contribParts: { ko: '사진 {p} · 댓글 {c}', en: '{p} photos · {c} comments', es: '{p} fotos · {c} comentarios' },
+  contribReview: { ko: ' · 후기 {n}', en: ' · {n} reviews', es: ' · {n} reseñas' },
+  contribProposal: { ko: ' · 제안 {n}', en: ' · {n} proposals', es: ' · {n} propuestas' },
+  emptyContrib: {
+    ko: '아직 아무도 남긴 게 없어요.',
+    en: 'Nobody has left anything yet.',
+    es: 'Todavía nadie ha dejado nada.',
+  },
+  contribNote: {
+    ko: '승인된 카테고리 제안 10점, 후기 5점, 사진·댓글 1점씩이에요. 사진과 댓글은 한 모임에서 5점·3점까지만 세요 — 한 번에 몰아 올리는 것보다 여러 모임에 남기는 쪽이 높아지게요.',
+    en: 'An approved category proposal is 10, a review 5, a photo or comment 1 each. Photos and comments count up to 5 and 3 per meetup — spreading across meetups beats dumping into one.',
+    es: 'Una propuesta de categoría aprobada vale 10, una reseña 5, y cada foto o comentario 1. Las fotos y comentarios cuentan hasta 5 y 3 por quedada.',
+  },
   /* 「몇 번 모였나」가 순위고, 연인원은 옆에 곁들인다 */
   catCount: { ko: '{n}번', en: '{n} meetups', es: '{n} quedadas' },
   catPeople: { ko: '연인원 {n}명', en: '{n} seats filled', es: '{n} asistencias' },
@@ -70,8 +93,10 @@ const T = {
 
 /** 종합 주최 랭킹 — 둘러보기에서 들어온다 */
 export default function LeaderboardClient({ initial }: { initial: LeaderboardInitial | null }) {
-  const [board, setBoard] = useState<LeaderboardInitial>(initial ?? { hosts: [], joiners: [], categories: [] });
-  const [tab, setTab] = useState<'hosts' | 'joiners' | 'cats'>('hosts');
+  const [board, setBoard] = useState<LeaderboardInitial>(
+    initial ?? { hosts: [], joiners: [], categories: [], contrib: [] }
+  );
+  const [tab, setTab] = useState<'hosts' | 'joiners' | 'cats' | 'contrib'>('hosts');
   const t = useT();
 
   // 서버가 다시 그려 새 prop이 오면 상태로 옮긴다 (useState의 첫 값은 처음 한 번만 쓰인다)
@@ -84,6 +109,7 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
   const ranks = ranksOf(list.map((h) => h.count));
   // 카테고리도 같은 규칙으로 등수를 매긴다 — 모임 수가 같으면 같은 등수다
   const catRanks = ranksOf(board.categories.map((c) => c.meetups));
+  const contribRanks = ranksOf(board.contrib.map((c) => c.count));
 
   return (
     <>
@@ -105,9 +131,42 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
             <button className={`seg ${tab === 'cats' ? 'on' : ''}`} onClick={() => setTab('cats')}>
               {t(T.tabCats)}
             </button>
+            <button className={`seg ${tab === 'contrib' ? 'on' : ''}`} onClick={() => setTab('contrib')}>
+              {t(T.tabContrib)}
+            </button>
           </div>
 
-          {tab === 'cats' ? (
+          {tab === 'contrib' ? (
+            board.contrib.length === 0 ? (
+              <p className="hint">{t(T.emptyContrib)}</p>
+            ) : (
+              <>
+                <p className="hint" style={{ marginTop: -4 }}>{t(T.contribNote)}</p>
+                <div className="host-rank board">
+                  <ol>
+                    {board.contrib.map((c, i) => (
+                      <li key={c.id}>
+                        <span className="host-rank-no">
+                          {['🥇', '🥈', '🥉'][contribRanks[i]! - 1] ?? `${contribRanks[i]}`}
+                        </span>
+                        <span className="ava">{c.avatar ? <img src={c.avatar} alt="" /> : c.name.slice(0, 1)}</span>
+                        <span className="host-rank-name">
+                          {c.name}
+                          {/* 0인 항목은 안 적는다 — 「후기 0」이 줄줄이 붙으면 읽을 것이 없어진다 */}
+                          <span className="host-rank-tier">
+                            {t(T.contribParts, { p: c.photos, c: c.comments })}
+                            {c.reviews > 0 && t(T.contribReview, { n: c.reviews })}
+                            {c.proposals > 0 && t(T.contribProposal, { n: c.proposals })}
+                          </span>
+                        </span>
+                        <span className="host-rank-count">{t(T.count, { n: c.count })}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </>
+            )
+          ) : tab === 'cats' ? (
             board.categories.length === 0 ? (
               <p className="hint">{t(T.emptyCats)}</p>
             ) : (
