@@ -26,27 +26,36 @@ export const HOST_TIERS: HostTier[] = [
  * 참여 등급 — 얼마나 자주 나오나 (횟수).
  *
  * 문턱이 호스팅과 다르다. 호스팅 점수는 「연 모임의 참가 인원 합」이라 한 번에 열댓 점씩
- * 오르는데, 참여는 한 번 나가면 1이다. 지금 회원들이 7~15회 사이라 그 폭에 맞춰 잡았다 —
- * 호스팅의 5/15/30/60을 그대로 쓰면 아무도 두 번째 칸을 못 넘는다.
+ * 오르는데, 참여는 한 번 나가면 1이다.
+ *
+ * 문턱을 정하는 기준은 **순위표에 보이는 열 명이 갈리는가**다. 3/8/15로 뒀을 때 상위
+ * 열 명 중 여덟이 같은 「단골」이었다 — 다 같은 스티커를 달면 등급표가 아무 말도 안 한다.
+ * 5/12로 올리니 여섯 대 넷으로 갈린다.
+ *
+ * 위 두 칸(20·30)은 지금 아무도 못 닿는다. 그건 그대로 둔다 — 닿을 자리가 남아 있는 것이
+ * 등급표의 쓸모다. (재 본 분포: 38명, 최고 15회, 중앙 4회)
  */
 export const JOIN_TIERS: HostTier[] = [
-  { min: 3, sticker: '🌿', label: { ko: '얼굴 도장', en: 'Showing up', es: 'Se deja ver' } },
-  { min: 8, sticker: '🤝', label: { ko: '단골', en: 'Regular', es: 'Habitual' } },
-  { min: 15, sticker: '🎉', label: { ko: '개근', en: 'Never misses', es: 'No falla' } },
-  { min: 25, sticker: '🏅', label: { ko: '붙박이', en: 'Always there', es: 'Siempre está' } },
+  { min: 5, sticker: '🌿', label: { ko: '얼굴 도장', en: 'Showing up', es: 'Se deja ver' } },
+  { min: 12, sticker: '🤝', label: { ko: '단골', en: 'Regular', es: 'Habitual' } },
+  { min: 20, sticker: '🎉', label: { ko: '개근', en: 'Never misses', es: 'No falla' } },
+  { min: 30, sticker: '🏅', label: { ko: '붙박이', en: 'Always there', es: 'Siempre está' } },
 ];
 
 /**
  * 기여 등급 — 사진·댓글·후기·승인된 제안으로 쌓은 점수 (lib/db/hosting.ts의 CONTRIB).
  *
- * 사진과 댓글이 모임당 5점·3점에서 막히므로 점수가 천천히 오른다. 지금 상위가 26점이라
- * 60점 칸은 한동안 아무도 못 닿는데, 그건 그대로 둔다 — 닿을 자리가 남아 있는 것이
- * 등급표의 쓸모다.
+ * 참여와 같은 기준으로 잡았다. 5/15로 뒀을 때 점수가 있는 열넷 중 여섯이 한꺼번에
+ * 「부지런한 손」이었다. 10/20으로 올리니 네 명과 세 명으로 갈린다.
+ *
+ * 사진과 댓글이 모임당 5점·3점에서 막히므로 점수가 천천히 오른다 — 그래서 위 두 칸이
+ * 비어 있는 것이 오래갈 텐데, 그게 목표로 쓸모가 있다.
+ * (재 본 분포: 점수가 있는 사람 14명, 최고 26점)
  */
 export const CONTRIB_TIERS: HostTier[] = [
-  { min: 5, sticker: '📷', label: { ko: '기록 시작', en: 'Started keeping', es: 'Empieza a registrar' } },
-  { min: 15, sticker: '✍️', label: { ko: '부지런한 손', en: 'Busy hands', es: 'Manos ocupadas' } },
-  { min: 30, sticker: '📚', label: { ko: '기록 담당', en: 'Keeper of records', es: 'Encargado del archivo' } },
+  { min: 10, sticker: '📷', label: { ko: '기록 시작', en: 'Started keeping', es: 'Empieza a registrar' } },
+  { min: 20, sticker: '✍️', label: { ko: '부지런한 손', en: 'Busy hands', es: 'Manos ocupadas' } },
+  { min: 35, sticker: '📚', label: { ko: '기록 담당', en: 'Keeper of records', es: 'Encargado del archivo' } },
   { min: 60, sticker: '🏆', label: { ko: '기록 대장', en: 'Chief archivist', es: 'Jefe del archivo' } },
 ];
 
