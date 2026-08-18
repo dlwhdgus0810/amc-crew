@@ -2816,3 +2816,19 @@ body:has(.sky-scope.night) .tabbar a.active {
   display: flex; align-items: center; justify-content: center;
   font-size: 15px; font-weight: 600;
 }
+
+/*
+ * 모아보기 안의 타임라인은 글씨를 한 단 낮춘다.
+ *
+ * 모임 화면에서는 타임라인이 그 화면의 뼈대라 날짜가 14px/700으로 서 있어도 된다.
+ * 모아보기에서는 아니다 — 거기서 제일 위에 서야 하는 것은 **어느 모임인지**(.wall-head)이고,
+ * 그건 12.5px/450이다. 안쪽 날짜가 그보다 크고 굵으면 여행 묶음만 소리치고, 다른
+ * 카테고리 묶음과 크기가 안 맞는다.
+ *
+ * 그래서 크기는 바깥과 같게 맞추고 굵기만 남긴다. 날짜가 하루의 경계라는 것은 그것으로
+ * 충분히 읽히고, 여행 묶음이 다른 묶음보다 커 보이지 않는다.
+ */
+.wall-group .tl-date { font-size: 12.5px; font-weight: 600; }
+.wall-group .tl-time { font-size: 12.5px; }
+.wall-group .tl-place,
+.wall-group .tl-map { font-size: 12px; }
