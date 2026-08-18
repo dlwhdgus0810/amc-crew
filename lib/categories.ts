@@ -130,8 +130,9 @@ export const CATEGORIES: Category[] = [
    * 전부가 같은 크기로 소리쳤다. .13에서 묶으면 한 가족으로 보인다.
    * (청록·올리브·초록은 sRGB 한계가 .13보다 낮아 .093~.128로 살짝 못 미친다 — 어쩔 수 없다)
    *
-   * **이 배열의 순서가 곧 색상환의 순서다.** 밥친구(5°)에서 시작해 한 바퀴 돌아
-   * 생일파티(337°)로 닫힌다. 화면은 이 순서대로 그리므로 둘러보기가 빨강→주황→초록→
+   * **이 배열의 순서가 곧 색상환의 순서다.** 축구(32°)에서 시작해 한 바퀴 돌아
+   * 밥친구(5°=365°)로 닫힌다. 빨강에서 출발하는 것이 시작으로 읽힌다 — 분홍은 원이
+   * 닫히는 자리라 거기서 시작하면 첫 장이 「돌아온 색」이 되어 어긋나 보인다. 화면은 이 순서대로 그리므로 둘러보기가 빨강→주황→초록→
    * 청록→파랑→보라→분홍으로 이어진다.
    *
    * 예전에는 그렇지 않았다. 원이 한 번 닫힌 뒤에 붙은 카드들(카페·헬스장·이사·여행·
@@ -142,19 +143,6 @@ export const CATEGORIES: Category[] = [
    * 붙지 않게 할 것 — 붙어야 한다면 밝기가 크게 달라야 한다(여행 .76, 별보러가자 .34가
    * 그래서 이웃과 6~7°인데도 안 헷갈린다).
    */
-  {
-    slug: 'meal',
-    emoji: '🍚',
-    en: 'MEAL',
-    color: '#AE4C67',
-    fg: '#F6F4EE',
-    kind: 'posts',
-    name: { ko: '밥친구', en: 'Meal Buddy', es: 'Compañero de comida' },
-    description: { ko: '혼밥도 좋지만 오늘은 말고', en: 'Solo dining, but not tonight.', es: 'Comer solo está bien, pero hoy no.' },
-    titleLabel: { ko: '메뉴', en: 'Menu', es: 'Menú' },
-    locationLabel: { ko: '식당', en: 'Restaurant', es: 'Restaurante' },
-    locationHint: { ko: '예: 대장금 Overland Park', en: 'e.g. Dae Jang Geum, Overland Park', es: 'p. ej. Dae Jang Geum, Overland Park' },
-  },
   {
     slug: 'soccer',
     emoji: '⚽',
@@ -495,6 +483,19 @@ export const CATEGORIES: Category[] = [
     titleLabel: { ko: '누구 생일', en: 'Whose birthday', es: 'De quién es el cumple' },
     locationHint: { ko: '예: 우리집 / 대장금 Overland Park', en: 'e.g. my place / Dae Jang Geum, Overland Park', es: 'p. ej. mi casa / Dae Jang Geum, Overland Park' },
     proposedBy: '박진욱',
+  },
+  {
+    slug: 'meal',
+    emoji: '🍚',
+    en: 'MEAL',
+    color: '#AE4C67',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '밥친구', en: 'Meal Buddy', es: 'Compañero de comida' },
+    description: { ko: '혼밥도 좋지만 오늘은 말고', en: 'Solo dining, but not tonight.', es: 'Comer solo está bien, pero hoy no.' },
+    titleLabel: { ko: '메뉴', en: 'Menu', es: 'Menú' },
+    locationLabel: { ko: '식당', en: 'Restaurant', es: 'Restaurante' },
+    locationHint: { ko: '예: 대장금 Overland Park', en: 'e.g. Dae Jang Geum, Overland Park', es: 'p. ej. Dae Jang Geum, Overland Park' },
   },
 ];
 
