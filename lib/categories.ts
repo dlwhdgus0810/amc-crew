@@ -130,6 +130,16 @@ export const CATEGORIES: Category[] = [
    * 전부가 같은 크기로 소리쳤다. .13에서 묶으면 한 가족으로 보인다.
    * (청록·올리브·초록은 sRGB 한계가 .13보다 낮아 .093~.128로 살짝 못 미친다 — 어쩔 수 없다)
    *
+   * **이웃 간격은 밝기가 같은 열다섯 장 안에서 19~28°로 맞춰 둔다.**
+   * 균등하게(360÷15=24°) 딱 나누지는 않는다 — 눈이 색상 변화를 구간마다 다르게 느껴서,
+   * 각도를 똑같이 벌리면 오히려 청록 쪽 서너 장이 한 색으로 보인다. 숫자로 대강 나누고
+   * 붙어 보이는 데만 손으로 벌린다.
+   *
+   * 청록(195~225°)은 sRGB가 채도를 .09까지밖에 못 낸다. 그래서 그 구간의 카드
+   * (베이킹·이삿짐센터·러닝)는 다른 장보다 조금 묽다 — 색상을 아무리 벌려도 못 고친다.
+   * 러닝을 241°에서 234°로 당겨 이삿짐센터와의 35° 구멍을 메웠고, 그 값이 채도를
+   * .128에서 .115로 떨어뜨렸다. 구멍이 보이는 것보다는 낫다고 봤다.
+   *
    * **이 배열의 순서가 곧 색상환의 순서다.** 축구(32°)에서 시작해 한 바퀴 돌아
    * 밥친구(5°=365°)로 닫힌다. 빨강에서 출발하는 것이 시작으로 읽힌다 — 분홍은 원이
    * 닫히는 자리라 거기서 시작하면 첫 장이 「돌아온 색」이 되어 어긋나 보인다. 화면은 이 순서대로 그리므로 둘러보기가 빨강→주황→초록→
@@ -158,7 +168,7 @@ export const CATEGORIES: Category[] = [
     emoji: '📚',
     en: 'BOOK CLUB',
     // 축구(31.8°)와 테니스(120.8°) 사이 — 이 구간에서 C .13을 그대로 낼 수 있는 자리다
-    color: '#AA5910',
+    color: '#AB5816',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '독서나눔', en: 'Book Club', es: 'Club de lectura' },
@@ -285,7 +295,7 @@ export const CATEGORIES: Category[] = [
     slug: 'camping',
     emoji: '🏕️',
     en: 'CAMPING',
-    color: '#3D843A',
+    color: '#418337',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '캠핑', en: 'Camping', es: 'Camping' },
@@ -323,8 +333,8 @@ export const CATEGORIES: Category[] = [
     slug: 'baking',
     emoji: '🧁',
     en: 'BAKING',
-    /* 182° — 이사(206°)와 4°밖에 안 떨어져 있어서 옮겼다. 위 머리 주석 참고 */
-    color: '#008476',
+    /* 183° — 원래 202°로 이사(206°)와 4°밖에 안 떨어져 있었다. 위 머리 주석 참고 */
+    color: '#008477',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '베이킹 클래스', en: 'Baking Class', es: 'Clase de repostería' },
@@ -391,7 +401,7 @@ export const CATEGORIES: Category[] = [
     slug: 'running',
     emoji: '🏃',
     en: 'RUNNING',
-    color: '#0179B5',
+    color: '#007BAA',
     fg: '#F6F4EE',
     kind: 'posts',
     name: { ko: '러닝 크루', en: 'Running Crew', es: 'Grupo de running' },
