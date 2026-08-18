@@ -25,7 +25,8 @@ export type CardTheme =
   | 'mossyhollow'
   | 'chocolate'
   | 'inkwash'
-  | 'blueeclipse';
+  | 'blueeclipse'
+  | 'goldentaupe';
 
 export interface CardThemeDef {
   label: Msg;
@@ -97,6 +98,20 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       es: 'De carbón a gris y marfil, el más sobrio.',
     },
     stops: ['#4A4A4A', '#6D8196', '#CBCBCB', '#FFFFE3'],
+  },
+  goldentaupe: {
+    label: { ko: '금빛 모래', en: 'Golden taupe', es: 'Topo dorado' },
+    note: {
+      ko: '캐러멜에서 금빛과 카키를 지나 크림으로. 처음부터 끝까지 밝은 테마예요.',
+      en: 'Caramel through gold and khaki into cream — light from first card to last.',
+      es: 'De caramelo a oro y caqui, y termina en crema.',
+    },
+    /*
+     * 받은 넷 중 가운데 둘(#D4AF37 금빛, #BDB76B 카키)이 밝기가 .767로 똑같다. 그래서
+     * 그 구간은 밝기가 아니라 채도만 움직인다 — 제일 진한 금빛에서 물이 빠지듯 카키로
+     * 간다. 순서를 뒤집어 카키를 먼저 두면 채도가 내려갔다 올라갔다 해서 그 흐름이 끊긴다.
+     */
+    stops: ['#CE8946', '#D4AF37', '#BDB76B', '#FDFBD4'],
   },
   blueeclipse: {
     label: { ko: '푸른 밤', en: 'Blue eclipse', es: 'Eclipse azul' },
