@@ -189,6 +189,22 @@ async function joinQuery(limit: number): Promise<RankSeed[]> {
 const CONTRIB = {
   /** 승인된 카테고리 제안 — 앱을 바꾸는 일이고 아주 드물다 */
   proposal: 10,
+  /**
+   * 후기 — 점수에는 들어가되 **몇 개인지는 아무 데도 안 내보낸다.**
+   *
+   * 후기는 이름 없이 올라간다(lib/db/reviews.ts). 그래서 사람별 후기 수를 표에 적으면
+   * 그 숫자가 곧 누가 썼는지가 된다 — 모임당 한 명이 하나뿐이라 「후기 수 = 후기를 쓴
+   * 모임 수」이기 때문이다.
+   *
+   * 솔직히 말하면 이건 완전한 가림이 아니다. 나머지 항목이 화면에 적혀 있으니
+   * (점수 − 사진 − 댓글 − 제안×10) ÷ 5로 후기 수가 되나온다. 그걸 알고도 이렇게 두는
+   * 이유는, 사람을 망설이게 하는 것이 산수가 아니라 **내 글 밑에 내 이름이 있는 것**이라서다.
+   * 이름과 횟수가 표에 없으면 쓰는 쪽의 부담은 사라진다.
+   *
+   * 완전히 가리려면 사람별 내역을 통째로 안 보여줘야 하는데, 그러면 「왜 내가 저 사람보다
+   * 낮지」에 답할 것이 없어진다. 그 값을 치를 만한 자리가 아니라고 봤다.
+   */
+  review: 5,
   photo: 1,
   comment: 1,
   /** 사진·댓글은 **한 모임에서** 이만큼까지만 점수가 된다 */
@@ -225,15 +241,11 @@ export function contribNames(seeds: ContribSeed[], locale: Locale): ContribRank[
 }
 
 /**
- * 기여도 순위 — 사진·댓글·승인된 카테고리 제안.
+ * 기여도 순위 — 사진·댓글·후기·승인된 카테고리 제안.
  *
- * **후기는 세지 않는다.** 이름 없이 올라가는 글이라(lib/db/reviews.ts) 사람별로 세는
- * 순간 그 숫자가 곧 누가 썼는지가 된다. 후기는 모임당 한 명이 하나뿐이어서 「후기 수 =
- * 후기를 쓴 모임 수」이고, 어느 모임에 후기가 하나 뜬 뒤 누군가의 수가 하나 늘면
- * 그 사람이 쓴 것이다 — 열여섯 명에 후기 넷인 속도에서는 거의 매번 짚힌다.
- *
- * 점수에서만 빼는 것으로는 부족해서 값 자체를 안 담는다 (위 ContribSeed).
- * 후기를 기리고 싶으면 사람에 안 붙는 자리에 세면 된다 — 카테고리 순위의 한 칸 같은 곳.
+ * **후기는 점수에만 들어간다.** 몇 개인지는 어디에도 안 내보낸다 — 이름 없이 올라가는
+ * 글이라(lib/db/reviews.ts) 사람별 후기 수가 곧 누가 썼는지가 되기 때문이다.
+ * 위 CONTRIB.review에 어디까지 가려지고 어디부터 안 가려지는지 적어 뒀다.
  *
  * **비공개 모임도 센다.** 호스팅·참여 순위와 다른 점이다. 저쪽은 「몇 명이 모였나」가
  * 곧 점수라 안 보이는 자리에서 점수가 크게 나는 것이 문제지만, 여기서 세는 것은
@@ -262,21 +274,28 @@ async function contribQuery(limit: number): Promise<ContribSeed[]> {
           SELECT user_id, post_id, count(*) AS c FROM post_comments
           WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1, 2
         ) x GROUP BY 1
+      ), rv AS (
+        SELECT user_id, count(*) AS n FROM post_reviews
+        WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1
       ), rq AS (
         SELECT user_id, count(*) AS n FROM category_requests WHERE status = 'approved' GROUP BY 1
       ), ids AS (
-        SELECT user_id FROM ph UNION SELECT user_id FROM cm UNION SELECT user_id FROM rq
+        SELECT user_id FROM ph UNION SELECT user_id FROM cm
+        UNION SELECT user_id FROM rv UNION SELECT user_id FROM rq
       )
       SELECT i.user_id,
         COALESCE(ph.n, 0)::int AS photos,
         COALESCE(cm.n, 0)::int AS comments,
         COALESCE(rq.n, 0)::int AS proposals,
+        -- 후기는 점수에만 더한다. reviews 칸을 안 뽑는 것이 곧 「안 내보낸다」다
         (COALESCE(ph.n, 0) * ${CONTRIB.photo}
          + COALESCE(cm.n, 0) * ${CONTRIB.comment}
+         + COALESCE(rv.n, 0) * ${CONTRIB.review}
          + COALESCE(rq.n, 0) * ${CONTRIB.proposal})::int AS score
       FROM ids i
       LEFT JOIN ph ON ph.user_id = i.user_id
       LEFT JOIN cm ON cm.user_id = i.user_id
+      LEFT JOIN rv ON rv.user_id = i.user_id
       LEFT JOIN rq ON rq.user_id = i.user_id
       -- 동률일 때 순서가 흔들리면 새로고침마다 자리가 바뀐다 — id로 고정한다
       ORDER BY score DESC, i.user_id ASC
@@ -365,7 +384,7 @@ export const categoryRanking = unstable_cache(categoryQuery, ['category-ranking'
   revalidate: 300,
 });
 /*
- * 기여도 순위는 POSTS_TAG로 지워지지 않는 것들(사진·댓글·제안)을 센다.
+ * 기여도 순위는 POSTS_TAG로 지워지지 않는 것들(사진·댓글·후기·제안)을 센다.
  * 그래서 5분마다 스스로 다시 읽는 것이 사실상 유일한 갱신이다 — 사진을 올리자마자
  * 점수가 오르지는 않는다. 순위표에 그 정도 지연은 괜찮다.
  */
