@@ -225,7 +225,7 @@ export function contribNames(seeds: ContribSeed[], locale: Locale): ContribRank[
 }
 
 /**
- * 기록 순위 — 사진·댓글·승인된 카테고리 제안.
+ * 기여도 순위 — 사진·댓글·승인된 카테고리 제안.
  *
  * **후기는 세지 않는다.** 이름 없이 올라가는 글이라(lib/db/reviews.ts) 사람별로 세는
  * 순간 그 숫자가 곧 누가 썼는지가 된다. 후기는 모임당 한 명이 하나뿐이어서 「후기 수 =
@@ -365,7 +365,7 @@ export const categoryRanking = unstable_cache(categoryQuery, ['category-ranking'
   revalidate: 300,
 });
 /*
- * 기록 순위는 POSTS_TAG로 지워지지 않는 것들(사진·댓글·후기·제안)을 센다.
+ * 기여도 순위는 POSTS_TAG로 지워지지 않는 것들(사진·댓글·제안)을 센다.
  * 그래서 5분마다 스스로 다시 읽는 것이 사실상 유일한 갱신이다 — 사진을 올리자마자
  * 점수가 오르지는 않는다. 순위표에 그 정도 지연은 괜찮다.
  */

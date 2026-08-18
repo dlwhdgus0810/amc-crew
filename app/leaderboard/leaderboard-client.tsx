@@ -49,7 +49,7 @@ const T = {
   tabHosts: { ko: '호스팅 순위', en: 'Hosted', es: 'Organizadas' },
   tabJoiners: { ko: '참여 순위', en: 'Joined', es: 'Apuntadas' },
   tabCats: { ko: '카테고리 순위', en: 'Categories', es: 'Categorías' },
-  tabContrib: { ko: '기록 순위', en: 'Keepers', es: 'Registros' },
+  tabContrib: { ko: '기여도 순위', en: 'Contributed', es: 'Aportes' },
   /* 점수만 보면 「왜 내가 저 사람보다 낮지」가 남는다 — 무엇으로 쌓였는지 같이 적는다 */
   contribParts: { ko: '사진 {p} · 댓글 {c}', en: '{p} photos · {c} comments', es: '{p} fotos · {c} comentarios' },
   contribProposal: { ko: ' · 제안 {n}', en: ' · {n} proposals', es: ' · {n} propuestas' },
@@ -126,11 +126,11 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
             <button className={`seg ${tab === 'joiners' ? 'on' : ''}`} onClick={() => setTab('joiners')}>
               {t(T.tabJoiners)}
             </button>
-            <button className={`seg ${tab === 'cats' ? 'on' : ''}`} onClick={() => setTab('cats')}>
-              {t(T.tabCats)}
-            </button>
             <button className={`seg ${tab === 'contrib' ? 'on' : ''}`} onClick={() => setTab('contrib')}>
               {t(T.tabContrib)}
+            </button>
+            <button className={`seg ${tab === 'cats' ? 'on' : ''}`} onClick={() => setTab('cats')}>
+              {t(T.tabCats)}
             </button>
           </div>
 
