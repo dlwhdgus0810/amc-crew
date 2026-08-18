@@ -355,6 +355,52 @@ export const CATEGORIES: Category[] = [
     locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
   },
   /*
+   * 이사 — 루민 님이 색과 함께 제안했다. 「이사 도와줄 사람 찾기」다.
+   *
+   * 이 카테고리만 성격이 다르다. 나머지 열여섯은 **같이 놀 사람**을 찾는 자리인데
+   * 여기는 **부탁하는 자리**다. 그래서 한 줄을 「재밌어요」가 아니라 「힘 안 들어요」
+   * 쪽으로 적는다 — 부탁받은 쪽이 망설이는 지점이 거기다.
+   *
+   * 색: 받은 값 그대로다 (#00838F). 베이킹(#038189)과 거의 같은 청록이라 캐러셀에서
+   * 나란히 놓이면 구분이 어렵다. 제안한 사람이 고른 색이 카드의 정체라 바꾸지 않고 두되,
+   * 이 사실은 적어 둔다 — 바꾸기로 하면 여기 한 줄이다.
+   * 크림색 글씨로 대비 4.11:1이라 우리가 지키는 4.5에 조금 못 미친다. 진한 글씨는
+   * 3.50이라 더 나쁘다 — 둘 중 나은 쪽을 쓴다.
+   */
+  {
+    slug: 'moving',
+    emoji: '📦',
+    en: 'MOVING',
+    color: '#00838F',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '이사', en: 'Moving', es: 'Mudanza' },
+    description: {
+      ko: '무거운 것도 넷이 들면 가벼워요',
+      en: 'Heavy things get light with four people.',
+      es: 'Lo pesado pesa poco entre cuatro.',
+    },
+    locationLabel: { ko: '짐 있는 곳', en: 'Where the stuff is', es: 'Dónde están las cosas' },
+    /* 만들기 화면이 이 문구를 괄호로 감싼다 — 여기 또 괄호를 쓰면 괄호가 겹쳐 나온다 */
+    locationHint: {
+      ko: '예: 오버랜드파크 아파트 3층',
+      en: 'e.g. Overland Park apartment, 3rd floor',
+      es: 'p. ej. apartamento en Overland Park, 3.º piso',
+    },
+    /*
+     * 도착지. **lodging 칸을 빌려 쓴다** — DB 이름은 숙소지만 실제로는 「두 번째 장소」다.
+     * 여행에서 모이는 곳/숙소가 갈리는 것과 같은 자리이고, 이사에서는 출발지/도착지다.
+     * 칸을 새로 만들면 스키마가 하나 늘고 두 칸 중 하나는 언제나 비어 있게 된다.
+     */
+    lodgingLabel: { ko: '이사 갈 곳 (선택)', en: 'Where it’s going (optional)', es: 'Adónde va (opcional)' },
+    lodgingHint: {
+      ko: '예: 레넥사 타운홈',
+      en: 'e.g. townhome in Lenexa',
+      es: 'p. ej. casa adosada en Lenexa',
+    },
+    proposedBy: '루민',
+  },
+  /*
    * 여행 — 텍사스에 다녀오고 나서 열었다. 정재호 님이 색과 한 줄까지 정해 제안했다.
    *
    * 「텍사스」로 만들지 않은 이유: 다음 여행에서 또 카테고리를 만들어야 하고, 지난 것은
