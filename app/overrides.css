@@ -2816,6 +2816,13 @@ body:has(.sky-scope.night) .tabbar a.active {
   display: flex; align-items: center; justify-content: center;
   font-size: 15px; font-weight: 600;
 }
+/*
+ * 동그라미 안에서는 왼쪽 여백을 뗀다.
+ *
+ * .cat-icon의 margin-left는 「여행 🧳」처럼 **이름 뒤에** 놓으려고 둔 것이다. 여기서는
+ * 아이콘 하나만 가운데 서야 하는데 그 여백이 그대로 붙어 오른쪽으로 밀려 있었다.
+ */
+.host-rank .cat-ava .cat-icon { margin-left: 0; }
 
 /*
  * 모아보기 안의 타임라인은 글씨를 한 단 낮춘다.
