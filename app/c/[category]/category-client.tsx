@@ -20,6 +20,7 @@ import SkyBgm from '@/app/sky-bgm';
 import TranslateLine from '@/app/translate-line';
 import TermsPopup from '@/app/terms-popup';
 import { hostTier } from '@/lib/hosting';
+import TierIcon from '../../tier-icon';
 import {useLocale, useT} from '../../i18n';
 import {
   dateLabel as fmtDate,
@@ -1912,7 +1913,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
                 {anonCat ? '·' : p.avatar ? <img src={p.avatar} alt="" /> : p.name.slice(0, 1)}
                 {hostTier(p.hostCount) && (
                   <span className="host-sticker" title={t(hostTier(p.hostCount)!.label)}>
-                    {hostTier(p.hostCount)!.sticker}
+                    <TierIcon id={hostTier(p.hostCount)!.icon} />
                   </span>
                 )}
               </span>

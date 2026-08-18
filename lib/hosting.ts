@@ -10,16 +10,17 @@ import { Msg } from './i18n';
 export interface HostTier {
   /** 이 점수부터 이 등급 */
   min: number;
-  sticker: string;
+  /** 배지 그림의 이름 — app/tier-icon.tsx의 PATHS 키다 (이모지가 아니다) */
+  icon: string;
   label: Msg;
 }
 
 /** 낮은 등급부터 — hostTier()가 뒤에서부터 찾는다 */
 export const HOST_TIERS: HostTier[] = [
-  { min: 5, sticker: '🌱', label: { ko: '새싹 호스트', en: 'Sprout host', es: 'Anfitrión brote' } },
-  { min: 15, sticker: '⭐', label: { ko: '단골 호스트', en: 'Regular host', es: 'Anfitrión habitual' } },
-  { min: 30, sticker: '🔥', label: { ko: '열정 호스트', en: 'Fired-up host', es: 'Anfitrión en racha' } },
-  { min: 60, sticker: '👑', label: { ko: '전설의 호스트', en: 'Legendary host', es: 'Anfitrión legendario' } },
+  { min: 5, icon: 'sprout', label: { ko: '새싹 호스트', en: 'Sprout host', es: 'Anfitrión brote' } },
+  { min: 15, icon: 'star', label: { ko: '단골 호스트', en: 'Regular host', es: 'Anfitrión habitual' } },
+  { min: 30, icon: 'flame', label: { ko: '열정 호스트', en: 'Fired-up host', es: 'Anfitrión en racha' } },
+  { min: 60, icon: 'crown', label: { ko: '전설의 호스트', en: 'Legendary host', es: 'Anfitrión legendario' } },
 ];
 
 /**
@@ -36,10 +37,10 @@ export const HOST_TIERS: HostTier[] = [
  * 등급표의 쓸모다. (재 본 분포: 38명, 최고 15회, 중앙 4회)
  */
 export const JOIN_TIERS: HostTier[] = [
-  { min: 5, sticker: '🌿', label: { ko: '얼굴 도장', en: 'Showing up', es: 'Se deja ver' } },
-  { min: 12, sticker: '🤝', label: { ko: '단골', en: 'Regular', es: 'Habitual' } },
-  { min: 20, sticker: '🎉', label: { ko: '개근', en: 'Never misses', es: 'No falla' } },
-  { min: 30, sticker: '🏅', label: { ko: '붙박이', en: 'Always there', es: 'Siempre está' } },
+  { min: 5, icon: 'stamp', label: { ko: '얼굴 도장', en: 'Showing up', es: 'Se deja ver' } },
+  { min: 12, icon: 'again', label: { ko: '단골', en: 'Regular', es: 'Habitual' } },
+  { min: 20, icon: 'calendarCheck', label: { ko: '개근', en: 'Never misses', es: 'No falla' } },
+  { min: 30, icon: 'anchor', label: { ko: '붙박이', en: 'Always there', es: 'Siempre está' } },
 ];
 
 /**
@@ -53,10 +54,10 @@ export const JOIN_TIERS: HostTier[] = [
  * (재 본 분포: 점수가 있는 사람 14명, 최고 26점)
  */
 export const CONTRIB_TIERS: HostTier[] = [
-  { min: 10, sticker: '📷', label: { ko: '기록 시작', en: 'Started keeping', es: 'Empieza a registrar' } },
-  { min: 20, sticker: '✍️', label: { ko: '부지런한 손', en: 'Busy hands', es: 'Manos ocupadas' } },
-  { min: 35, sticker: '📚', label: { ko: '기록 담당', en: 'Keeper of records', es: 'Encargado del archivo' } },
-  { min: 60, sticker: '🏆', label: { ko: '기록 대장', en: 'Chief archivist', es: 'Jefe del archivo' } },
+  { min: 10, icon: 'camera', label: { ko: '기록 시작', en: 'Started keeping', es: 'Empieza a registrar' } },
+  { min: 20, icon: 'pen', label: { ko: '부지런한 손', en: 'Busy hands', es: 'Manos ocupadas' } },
+  { min: 35, icon: 'photos', label: { ko: '기록 담당', en: 'Keeper of records', es: 'Encargado del archivo' } },
+  { min: 60, icon: 'trophy', label: { ko: '기록 대장', en: 'Chief archivist', es: 'Jefe del archivo' } },
 ];
 
 /** 점수 → 등급 (첫 칸에 못 미치면 null). 세 순위표가 같은 함수를 쓴다 */

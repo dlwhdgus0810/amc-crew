@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { CONTRIB_TIERS, formatPoints, HOST_TIERS, JOIN_TIERS, ranksOf, tierOf } from '@/lib/hosting';
 import { catDisplayName, getCategory } from '@/lib/categories';
 import CatIcon from '../cat-icon';
+import TierIcon from '../tier-icon';
 import { useT } from '../i18n';
 
 interface HostRank {
@@ -154,7 +155,9 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
                         <span className="ava">
                           {c.avatar ? <img src={c.avatar} alt="" /> : c.name.slice(0, 1)}
                           {tierOf(CONTRIB_TIERS, c.count) && (
-                            <span className="host-sticker">{tierOf(CONTRIB_TIERS, c.count)!.sticker}</span>
+                            <span className="host-sticker">
+                              <TierIcon id={tierOf(CONTRIB_TIERS, c.count)!.icon} />
+                            </span>
                           )}
                         </span>
                         <span className="host-rank-name">
@@ -221,7 +224,11 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
                       <span className="host-rank-no">{['🥇', '🥈', '🥉'][rank - 1] ?? `${rank}`}</span>
                       <span className="ava">
                         {h.avatar ? <img src={h.avatar} alt="" /> : h.name.slice(0, 1)}
-                        {tier && <span className="host-sticker">{tier.sticker}</span>}
+                        {tier && (
+                        <span className="host-sticker">
+                          <TierIcon id={tier.icon} />
+                        </span>
+                      )}
                       </span>
                       <span className="host-rank-name">
                         {h.name}
@@ -253,7 +260,9 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
             <ul className="tier-list">
               {(tab === 'hosts' ? HOST_TIERS : tab === 'joiners' ? JOIN_TIERS : CONTRIB_TIERS).map((tier) => (
                 <li key={tier.min}>
-                  <span className="tier-sticker">{tier.sticker}</span>
+                  <span className="tier-sticker">
+                    <TierIcon id={tier.icon} />
+                  </span>
                   <span className="tier-name">{t(tier.label)}</span>
                   {/* 참여는 횟수라 「N회부터」, 나머지는 점수라 「N점부터」 */}
                   <span className="tier-min">

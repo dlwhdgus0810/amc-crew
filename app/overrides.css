@@ -741,8 +741,8 @@ body:has(.poster-zoom) nav.tabbar {
 }
 .host-sticker {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
+  right: -5px;
+  bottom: -5px;
   /*
    * 아바타는 -7px씩 겹쳐 쌓이고 뒤 순서가 위에 그려진다. 스티커는 오른쪽 아래에 있어서
    * 그대로 두면 다음 아바타에 절반쯤 덮인다(마지막 사람만 온전히 보였다).
@@ -750,11 +750,42 @@ body:has(.poster-zoom) nav.tabbar {
    * 스티커에 z-index를 주면 뒤따르는 아바타들 위로 올라온다.
    */
   z-index: 2;
-  /* 배경 원 없이 이모지만 얹는다 — 원이 있으면 스티커가 아니라 아이콘 버튼처럼 보인다.
-     대신 조금 키우고 그림자를 깔아 아바타 위에서도 형태가 살게 한다 */
-  font-size: 12px;
-  line-height: 1;
-  filter: drop-shadow(0 0 1.5px var(--surface)) drop-shadow(0 1px 1px rgba(16, 16, 16, 0.35));
+  /*
+   * **이제는 바탕 원을 둔다.** 예전 이모지는 제 색과 형태를 갖고 있어서 그냥 얹어도
+   * 보였지만, 지금 배지는 한 가지 색의 얇은 선이다(app/tier-icon.tsx). 얼굴 사진 위에
+   * 선만 얹으면 사진 무늬에 그대로 묻힌다 — 그림을 바꾸면서 딸려 온 문제라 여기 적어 둔다.
+   *
+   * 원은 카드 바탕색이고 테두리는 한 올이다. 아이콘 버튼처럼 보이지 않을 만큼만 두른다.
+   */
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(16, 16, 16, 0.14);
+}
+/*
+ * 작게 그릴 때는 획을 굵혀야 한다.
+ *
+ * 24 격자에 굵기 1.8인 그림을 9px로 줄이면 실제 획이 0.68px가 되어 화면에서 흐려진다.
+ * 크기만 줄이고 굵기를 그대로 두면 배지가 있는지 없는지 모르게 된다 — 그림을 작게 쓰는
+ * 자리마다 다시 만날 문제라 여기 적어 둔다.
+ */
+.host-sticker .tier-icon {
+  width: 10px;
+  height: 10px;
+  stroke-width: 2.8;
+  color: var(--text);
+}
+/* 등급표 줄의 배지는 카드 위에 놓이므로 바탕 원이 필요 없다 — 선만 그린다 */
+.tier-sticker .tier-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text);
 }
 
 .host-rank {
@@ -882,8 +913,9 @@ body:has(.poster-zoom) nav.tabbar {
 .tier-sticker {
   width: 24px;
   flex: none;
-  text-align: center;
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .tier-name {
   flex: 1;
