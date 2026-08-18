@@ -34,10 +34,10 @@ export interface CardThemeDef {
    * 고정점. null이면 카테고리가 들고 있는 색을 그대로 쓴다 (기본 테마).
    * 두 개 이상이면 몇 개든 된다 — 카드 수에 맞춰 자리를 잡고 사이를 채운다.
    *
-   * **밝은 쪽에서 어두운 쪽으로 적는다.** 받은 팔레트는 대개 순서가 뒤죽박죽인데
+   * **어두운 쪽에서 밝은 쪽으로 적는다.** 받은 팔레트는 대개 순서가 뒤죽박죽인데
    * (「Lush forest」는 진초록 다음이 거의 흰색이다) 그대로 두면 열일곱 장이 밝았다
-   * 어두웠다를 두 번 오간다. 와일드플라워만 예외다 — 거기는 어느 색이 몇 번째인지를
-   * 직접 지정받았다.
+   * 어두웠다를 두 번 오간다. 첫 카드가 제일 진하고 내려갈수록 옅어진다.
+   * 와일드플라워만 예외다 — 거기는 어느 색이 몇 번째인지를 직접 지정받았다.
    */
   stops: string[] | null;
 }
@@ -65,47 +65,47 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
   lushforest: {
     label: { ko: '깊은 숲', en: 'Lush forest', es: 'Bosque frondoso' },
     note: {
-      ko: '연둣빛에서 시작해 짙은 전나무색으로 내려가요.',
-      en: 'Starts in pale mint and descends into deep fir.',
-      es: 'Empieza en menta pálida y baja hasta abeto oscuro.',
+      ko: '짙은 전나무색에서 시작해 연둣빛으로 올라가요.',
+      en: 'Starts in deep fir and rises to pale mint.',
+      es: 'Empieza en abeto oscuro y sube hasta menta pálida.',
     },
-    stops: ['#CFFFDC', '#68BA7F', '#2E6F40', '#253D2C'],
+    stops: ['#253D2C', '#2E6F40', '#68BA7F', '#CFFFDC'],
   },
   mossyhollow: {
     label: { ko: '이끼 골짜기', en: 'Mossy hollow', es: 'Hondonada de musgo' },
     note: {
-      ko: '연한 풀빛에서 올리브를 지나 짙은 이끼색으로.',
-      en: 'Pale grass through olive into dark moss.',
-      es: 'Verde claro, oliva y musgo oscuro.',
+      ko: '짙은 이끼색에서 올리브를 지나 연한 풀빛으로.',
+      en: 'Dark moss through olive into pale grass.',
+      es: 'Musgo oscuro, oliva y verde claro.',
     },
-    stops: ['#D4DE95', '#BAC095', '#636B2F', '#3D4127'],
+    stops: ['#3D4127', '#636B2F', '#BAC095', '#D4DE95'],
   },
   chocolate: {
     label: { ko: '초콜릿', en: 'Chocolate truffle', es: 'Trufa de chocolate' },
     note: {
-      ko: '크림색에서 캐러멜을 지나 다크 초콜릿으로. 폭이 제일 넓은 테마예요.',
-      en: 'Cream through caramel into dark chocolate — the widest range of the set.',
-      es: 'De crema a caramelo y chocolate negro.',
+      ko: '다크 초콜릿에서 캐러멜을 지나 크림색으로. 폭이 제일 넓은 테마예요.',
+      en: 'Dark chocolate through caramel into cream — the widest range of the set.',
+      es: 'De chocolate negro a caramelo y crema.',
     },
-    stops: ['#FDFBD4', '#C05800', '#713600', '#38240D'],
+    stops: ['#38240D', '#713600', '#C05800', '#FDFBD4'],
   },
   inkwash: {
     label: { ko: '수묵', en: 'Ink wash', es: 'Aguada de tinta' },
     note: {
-      ko: '아이보리에서 회색을 지나 먹색으로. 색이 제일 얌전해요.',
-      en: 'Ivory through grey into charcoal — the quietest of the set.',
-      es: 'De marfil a gris y carbón, el más sobrio.',
+      ko: '먹색에서 회색을 지나 아이보리로. 색이 제일 얌전해요.',
+      en: 'Charcoal through grey into ivory — the quietest of the set.',
+      es: 'De carbón a gris y marfil, el más sobrio.',
     },
-    stops: ['#FFFFE3', '#CBCBCB', '#6D8196', '#4A4A4A'],
+    stops: ['#4A4A4A', '#6D8196', '#CBCBCB', '#FFFFE3'],
   },
   blueeclipse: {
     label: { ko: '푸른 밤', en: 'Blue eclipse', es: 'Eclipse azul' },
     note: {
-      ko: '연보랏빛 남색에서 자정에 가까운 남색으로. 처음부터 끝까지 어두운 테마예요.',
-      en: 'Lilac-blue down to near-midnight navy — dark from first card to last.',
-      es: 'De azul lila a azul casi medianoche, oscuro de principio a fin.',
+      ko: '자정에 가까운 남색에서 연보랏빛 남색으로. 처음부터 끝까지 어두운 테마예요.',
+      en: 'Near-midnight navy up to lilac-blue — dark from first card to last.',
+      es: 'De azul casi medianoche a azul lila, oscuro de principio a fin.',
     },
-    stops: ['#8686AC', '#505081', '#272757', '#0F0E47'],
+    stops: ['#0F0E47', '#272757', '#505081', '#8686AC'],
   },
 };
 
