@@ -177,8 +177,7 @@ function ramp(stops: string[], n: number): string[] {
   });
 }
 
-/** 본문색과 크림 — 카드 위 글씨는 이 둘 중 하나다 (앱이 이미 쓰는 두 색이라 새로 안 만든다) */
-const TEXT_DARK = '#101010';
+/** 어두운 카드 위의 글씨 — 앱이 이미 쓰는 크림색 */
 const TEXT_CREAM = '#F6F4EE';
 /** WCAG 명암비 */
 function contrast(a: string, b: string): number {
@@ -191,6 +190,36 @@ function contrast(a: string, b: string): number {
 }
 
 /**
+ * 밝은 카드 위의 글씨 — **그 카드 색을 어둡게 내린 것.** 검정이 아니다.
+ *
+ * 파스텔 카드에 #101010을 얹으면 읽히기는 하는데 화면이 딱딱해진다. 연둣빛 카드 위의
+ * 새까만 글씨는 카드와 아무 관계가 없는 색이라 글자만 도려낸 것처럼 뜬다. 색상(a·b)은
+ * 그대로 두고 밝기만 내리면 민트 위에는 짙은 전나무색이, 장미빛 위에는 짙은 밤색이,
+ * 연보라 위에는 짙은 자두색이 앉는다 — 읽히는 정도는 같은데 훨씬 부드럽다.
+ *
+ * **고정된 대비가 아니라 고정된 밝기 차로 내린다.** 「7:1이 될 때까지 내린다」로 해 봤더니
+ * 원래 좀 어두운 카드(#519755 같은)에서는 끝까지 내려도 못 닿아서 결국 새까매졌다 —
+ * 부드럽게 만들려고 넣은 규칙이 정작 제일 딱딱한 카드를 만든다. 밝기 차를 고정하면
+ * 어느 카드에서나 같은 만큼만 어두워진다.
+ *
+ * .45는 재서 골랐다. .40이면 흐리게 깔리는 설명 줄(opacity .8)이 3.2까지 내려가고,
+ * .50이면 색이 거의 검정이 된다. .45에서 제목이 5.2~6.2:1, 설명이 3.8~4.3:1로,
+ * 기본 테마가 지금 내는 값(설명 3.7:1)보다 낫다.
+ *
+ * 아주 밝은 카드(「수묵」의 #FFFFE3)는 .45만 내려도 회색빛이라 최소 대비를 따로 건다.
+ */
+const DARK_TEXT_DROP = 0.45;
+const DARK_TEXT_MIN = 5;
+function darkTextOn(bg: string): string {
+  const [L, a, b] = hexToLab(bg);
+  let dark = labToHex([Math.max(0.12, L - DARK_TEXT_DROP), a, b]);
+  for (let l = L - DARK_TEXT_DROP; l >= 0.12 && contrast(dark, bg) < DARK_TEXT_MIN; l -= 0.004) {
+    dark = labToHex([l, a, b]);
+  }
+  return dark;
+}
+
+/**
  * 카드 위 글씨는 **카드마다 따로** 고른다.
  *
  * 테마 하나에 글씨 한 색으로는 안 된다. 「초콜릿」은 크림(#FDFBD4)에서 시작해 다크
@@ -198,16 +227,15 @@ function contrast(a: string, b: string): number {
  * 아래가 죽는다. 두 후보 중 더 잘 보이는 쪽을 카드마다 고르면 이 문제가 사라지고,
  * 색을 몇 개 더 늘려도 다시 안 걸린다.
  *
- * 와일드플라워는 이렇게 골라도 열일곱 장이 전부 #101010이라 예전과 같다.
- *
- * **비슷하면 크림 쪽으로 기운다.** 「초콜릿」의 #C05800은 검정 4.19:1, 크림 4.15:1로
- * 사실상 동점인데, 그냥 큰 쪽을 고르면 그 카드만 검은 글씨가 되고 바로 아래 거의 같은
+ * **비슷하면 크림 쪽으로 기운다.** 「초콜릿」의 #C05800은 어두운 쪽과 크림이 사실상
+ * 동점인데, 그냥 큰 쪽을 고르면 그 카드만 어두운 글씨가 되고 바로 아래 거의 같은
  * 주황색 카드는 크림 글씨가 된다 — 붙어 있는 두 장이 이유 없이 달라 보인다. 진짜로
- * 밝은 카드에서만 검은 글씨가 나오게 15% 차이를 요구한다.
+ * 밝은 카드에서만 어두운 글씨가 나오게 15% 차이를 요구한다.
  */
 const DARK_TEXT_MARGIN = 1.15;
 function textOn(bg: string): string {
-  return contrast(bg, TEXT_DARK) >= contrast(bg, TEXT_CREAM) * DARK_TEXT_MARGIN ? TEXT_DARK : TEXT_CREAM;
+  const dark = darkTextOn(bg);
+  return contrast(bg, dark) >= contrast(bg, TEXT_CREAM) * DARK_TEXT_MARGIN ? dark : TEXT_CREAM;
 }
 
 /**
