@@ -56,19 +56,19 @@ html[data-season='petal'] .card-season i {
 /* 자리 + 흔들리는 폭·주기. 낱개마다 달라야 한 덩어리로 움직이지 않는다.
    넷은 색을 조금 달리 둔다 — 바탕색에서 멀어지면 파낸 자리로 안 보이고 스티커가 된다. */
 html[data-season='petal'] .card-season i:nth-child(1)  { left: calc(3.125% - 8px);  --sw: 4deg; --pd: 3.1s; --pt: -0.4s; }
-html[data-season='petal'] .card-season i:nth-child(2)  { left: calc(9.375% - 8px);  --sw: 6deg; --pd: 2.6s; --pt: -1.7s; background: #F6E4EA; }
+html[data-season='petal'] .card-season i:nth-child(2)  { left: calc(9.375% - 8px);  --sw: 6deg; --pd: 2.6s; --pt: -1.7s; background: #EEBFCE; }
 html[data-season='petal'] .card-season i:nth-child(3)  { left: calc(15.625% - 8px); }
 html[data-season='petal'] .card-season i:nth-child(4)  { left: calc(21.875% - 8px); --sw: 3deg; --pd: 3.8s; --pt: -0.9s; }
 html[data-season='petal'] .card-season i:nth-child(5)  { left: calc(28.125% - 8px); --sw: 7deg; --pd: 2.9s; --pt: -2.3s; }
-html[data-season='petal'] .card-season i:nth-child(6)  { left: calc(34.375% - 8px); --sw: 5deg; --pd: 3.4s; --pt: -0.2s; background: #EFEDE4; }
+html[data-season='petal'] .card-season i:nth-child(6)  { left: calc(34.375% - 8px); --sw: 5deg; --pd: 3.4s; --pt: -0.2s; background: #D8E0BC; }
 html[data-season='petal'] .card-season i:nth-child(7)  { left: calc(40.625% - 8px); --sw: 4deg; --pd: 2.4s; --pt: -1.1s; }
 html[data-season='petal'] .card-season i:nth-child(8)  { left: calc(46.875% - 8px); }
 html[data-season='petal'] .card-season i:nth-child(9)  { left: calc(53.125% - 8px); --sw: 6deg; --pd: 3.6s; --pt: -2.8s; }
-html[data-season='petal'] .card-season i:nth-child(10) { left: calc(59.375% - 8px); --sw: 3deg; --pd: 3.0s; --pt: -0.6s; background: #FAEFF2; }
+html[data-season='petal'] .card-season i:nth-child(10) { left: calc(59.375% - 8px); --sw: 3deg; --pd: 3.0s; --pt: -0.6s; background: #F7CFDD; }
 html[data-season='petal'] .card-season i:nth-child(11) { left: calc(65.625% - 8px); --sw: 7deg; --pd: 2.7s; --pt: -1.9s; }
 html[data-season='petal'] .card-season i:nth-child(12) { left: calc(71.875% - 8px); --sw: 5deg; --pd: 4.1s; --pt: -1.3s; }
 html[data-season='petal'] .card-season i:nth-child(13) { left: calc(78.125% - 8px); }
-html[data-season='petal'] .card-season i:nth-child(14) { left: calc(84.375% - 8px); --sw: 4deg; --pd: 2.8s; --pt: -2.5s; background: #F3E9EC; }
+html[data-season='petal'] .card-season i:nth-child(14) { left: calc(84.375% - 8px); --sw: 4deg; --pd: 2.8s; --pt: -2.5s; background: #E6C9D3; }
 html[data-season='petal'] .card-season i:nth-child(15) { left: calc(90.625% - 8px); --sw: 6deg; --pd: 3.3s; --pt: -0.8s; }
 html[data-season='petal'] .card-season i:nth-child(16) { left: calc(96.875% - 8px); --sw: 3deg; --pd: 3.9s; --pt: -1.6s; }
 /*
@@ -78,7 +78,7 @@ html[data-season='petal'] .card-season i:nth-child(16) { left: calc(96.875% - 8p
  */
 html[data-season='petal'] .card-season i:nth-child(3) {
   --dx: 1; --dy: 1; --rot: 1;
-  animation: kk-petal-peel calc(7s * var(--rate, 1)) linear calc(0s + var(--seed, 0s)) infinite;
+  animation: kk-petal-peel calc(13s * var(--rate, 1)) linear calc(0s + var(--seed, 0s)) infinite;
 }
 html[data-season='petal'] .card-season i:nth-child(8) {
   --dx: 0.62; --dy: 1.18; --rot: -1;
@@ -86,7 +86,7 @@ html[data-season='petal'] .card-season i:nth-child(8) {
 }
 html[data-season='petal'] .card-season i:nth-child(13) {
   --dx: -0.9; --dy: 0.78; --rot: 1;
-  animation: kk-petal-peel calc(7.8s * var(--rate, 1)) linear calc(4.6s + var(--seed, 0s)) infinite;
+  animation: kk-petal-peel calc(11s * var(--rate, 1)) linear calc(4.6s + var(--seed, 0s)) infinite;
 }
 /*
  * ── 카드마다 다르게 ──────────────────────────────────────────
@@ -141,21 +141,45 @@ html[data-season='petal'] .car-card .car-icon::before {
   inset: -1px;
   background: currentColor;
   opacity: 0.45;
+  transition: opacity 0.18s ease;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 12 A5.64 5.64 0 1 1 19.8 14.76 A5.64 5.64 0 1 1 18.35 19.24 A5.64 5.64 0 1 1 13.65 19.24 A5.64 5.64 0 1 1 12.2 14.76 A5.64 5.64 0 1 1 16 12 Z' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 12 A5.64 5.64 0 1 1 19.8 14.76 A5.64 5.64 0 1 1 18.35 19.24 A5.64 5.64 0 1 1 13.65 19.24 A5.64 5.64 0 1 1 12.2 14.76 A5.64 5.64 0 1 1 16 12 Z' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 /*
- * 구독 중일 때.
+ * 버튼 안의 것은 감춘다 — 이 테마에서 버튼은 「꽃 하나」다.
  *
- * 기본 규칙(globals.css)은 이 상태를 **바탕색**으로 알린다. 그런데 위에서 곡률을 0으로
- * 둬서 그 바탕이 네모가 된다 — 꽃 윤곽 뒤에 사각형이 깔린다. 바탕을 걷고 대신 꽃 윤곽을
- * 진하게 해서, 켜고 끄는 것이 같은 그림 안에서 읽히게 한다.
+ * 별이든 종이든 꽃 안에 또 그림이 들어가면 30px 안에 두 개가 겹친다. 무엇을 하는
+ * 버튼인지는 aria-label이 들고 있으므로 낭독기에는 영향이 없다.
+ */
+html[data-season='petal'] .car-card .car-icon > * {
+  display: none;
+}
+/*
+ * 눌리면 꽃이 색으로 채워진다.
+ *
+ * 마스크를 윤곽선(stroke)에서 **면**(fill)으로 갈아 끼운다. 단색이 아니라 가운데에서
+ * 밖으로 흐르는 색이다 — 수술은 노란살, 잎 뿌리는 진분홍, 잎끝은 거의 흰 연분홍.
+ * 경계를 부드럽게 두는 것이 중요하다: 딱 진 색띠는 30px 안에서 과녁처럼 보이고
+ * 꽃으로 안 읽힌다. 색은 이 테마의 팔레트(#C9647E · #E5A6B6)에서 가져왔다.
+ *
+ * globals.css가 이 상태에 주는 네모 바탕은 걷는다 — 위에서 곡률을 0으로 둔 탓에
+ * 꽃 뒤에 사각형이 깔린다.
  */
 html[data-season='petal'] .car-card .car-icon.on {
   background: transparent;
 }
 html[data-season='petal'] .car-card .car-icon.on::before {
-  opacity: 0.95;
+  opacity: 1;
+  background: radial-gradient(circle at 50% 52%, #F7D774 0 9%, #D9546F 24%, #E9A0B4 48%, #FBE0E8 80%);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 12 A5.64 5.64 0 1 1 19.8 14.76 A5.64 5.64 0 1 1 18.35 19.24 A5.64 5.64 0 1 1 13.65 19.24 A5.64 5.64 0 1 1 12.2 14.76 A5.64 5.64 0 1 1 16 12 Z' fill='%23fff'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 12 A5.64 5.64 0 1 1 19.8 14.76 A5.64 5.64 0 1 1 18.35 19.24 A5.64 5.64 0 1 1 13.65 19.24 A5.64 5.64 0 1 1 12.2 14.76 A5.64 5.64 0 1 1 16 12 Z' fill='%23fff'/%3E%3C/svg%3E");
+}
+/*
+ * 구독은 연둣빛 꽃. 즐겨찾기 버튼만 .star를 품고 있어서 그것으로 갈라낸다 —
+ * 같은 팔레트의 연둣빛(#C7D2A6)이라 벚꽃 사이에 섞인 잎색으로 읽힌다.
+ */
+html[data-season='petal'] .car-card .car-icon.on:not(:has(.star))::before {
+  background: radial-gradient(circle at 50% 52%, #F4EDA8 0 9%, #9FBE7E 24%, #C7D2A6 48%, #E9EFD8 80%);
 }
 
 @keyframes kk-petal-sway {
@@ -170,7 +194,7 @@ html[data-season='petal'] .car-card .car-icon.on::before {
 @keyframes kk-petal-peel {
   0%, 36% { transform: none; opacity: 1; }
   42%     { transform: translate(calc(var(--dx, 1) * 5px), -6px) rotate(calc(var(--rot, 1) * 18deg)); opacity: 1; }
-  93%     { transform: translate(calc(var(--dx, 1) * 142px), calc(var(--dy, 1) * -106px)) rotate(calc(var(--rot, 1) * 380deg)); opacity: 0; }
+  93%     { transform: translate(calc(var(--dx, 1) * 200px), calc(var(--dy, 1) * -130px)) rotate(calc(var(--rot, 1) * 380deg)); opacity: 0; }
   94%     { transform: none; opacity: 0; }
   100%    { transform: none; opacity: 1; }
 }
