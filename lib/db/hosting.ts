@@ -513,3 +513,77 @@ export async function boardScoresFor(userId: string): Promise<{ host: number; jo
     contrib: Number(contribRows[0]?.score ?? 0),
   };
 }
+
+/**
+ * 회원 전부의 세 점수 — **관리자도 포함, 한 번에.**
+ *
+ * boardScoresFor는 한 사람만 보고, 그 사람마다 세 번 물어본다. 관리자 화면은 쉰 명이
+ * 넘는 명단을 한 번에 그리므로 그대로 부르면 백 번 넘게 물어보게 된다. 여기서는
+ * 사람 수와 무관하게 세 번이다.
+ *
+ * 순위표(withProfiles)와 달리 관리자를 안 뺀다 — 코인은 활동을 세는 것이라 표에
+ * 세우지 않는 것과는 다른 이야기다 (boardScoresFor 주석 참고).
+ */
+export async function allBoardScores(): Promise<Map<string, { host: number; join: number; contrib: number }>> {
+  const db = await getDb();
+  const p = alias(posts, 'p');
+
+  const [hostRows, joinRows, contribRows] = await Promise.all([
+    db.execute(sql`SELECT user_id, points FROM (${points()}) s`).then(resultRows),
+    db
+      .select({ id: postParticipants.userId, n: sql<number>`count(*)::int` })
+      .from(postParticipants)
+      .innerJoin(p, eq(p.id, postParticipants.postId))
+      .where(
+        and(eq(p.visibility, 'public'), isNull(p.deletedAt), notInArray(p.category, ANONYMOUS_SLUGS), endedSql())
+      )
+      .groupBy(postParticipants.userId),
+    db
+      .execute(
+        sql`
+        WITH ok AS (
+          SELECT p.id FROM posts p WHERE p.deleted_at IS NULL AND ${notAnonymous()}
+        ), ph AS (
+          SELECT user_id, SUM(LEAST(c, ${CONTRIB.photoCap})) AS n FROM (
+            SELECT user_id, post_id, count(*) AS c FROM post_photos
+            WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1, 2
+          ) x GROUP BY 1
+        ), cm AS (
+          SELECT user_id, SUM(LEAST(c, ${CONTRIB.commentCap})) AS n FROM (
+            SELECT user_id, post_id, count(*) AS c FROM post_comments
+            WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1, 2
+          ) x GROUP BY 1
+        ), rv AS (
+          SELECT user_id, count(*) AS n FROM post_reviews
+          WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1
+        ), rq AS (
+          SELECT user_id, count(*) AS n FROM category_requests WHERE status = 'approved' GROUP BY 1
+        ), ids AS (
+          SELECT user_id FROM ph UNION SELECT user_id FROM cm
+          UNION SELECT user_id FROM rv UNION SELECT user_id FROM rq
+        )
+        SELECT i.user_id,
+          (COALESCE(ph.n, 0) * ${CONTRIB.photo}
+           + COALESCE(cm.n, 0) * ${CONTRIB.comment}
+           + COALESCE(rv.n, 0) * ${CONTRIB.review}
+           + COALESCE(rq.n, 0) * ${CONTRIB.proposal})::int AS score
+        FROM ids i
+        LEFT JOIN ph ON ph.user_id = i.user_id
+        LEFT JOIN cm ON cm.user_id = i.user_id
+        LEFT JOIN rv ON rv.user_id = i.user_id
+        LEFT JOIN rq ON rq.user_id = i.user_id
+      `
+      )
+      .then(resultRows),
+  ]);
+
+  const out = new Map<string, { host: number; join: number; contrib: number }>();
+  const at = (id: string) => {
+    if (!out.has(id)) out.set(id, { host: 0, join: 0, contrib: 0 });
+    return out.get(id)!;
+  };
+  for (const r of hostRows) at(String(r.user_id)).host = Number(r.points);
+  for (const r of joinRows) at(r.id).join = r.n;
+  for (const r of contribRows) at(String(r.user_id)).contrib = Number(r.score);
+  return out;
+}

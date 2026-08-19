@@ -3182,3 +3182,24 @@ body:has(.sky-scope.night) .tabbar a.active {
   color: rgba(255, 255, 255, 0.75);
   font-size: 12px;
 }
+
+/* ── 관리자: 코인과 산 테마 ───────────────────────────────────
+   쉰 명이 넘는 줄이라 한 줄에 다 담되, 눈이 먼저 가야 할 것(이름·산 테마·남은 코인)만
+   또렷하게 두고 셈의 재료는 흐리게 깐다. */
+.wallet-list { list-style: none; margin: 0; padding: 0; }
+.wallet-list li {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--border-soft);
+  font-size: 13.5px;
+}
+.wallet-list li:last-child { border-bottom: none; }
+.wallet-who { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; min-width: 0; font-weight: 600; }
+.wallet-owned {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+  padding: 1px 7px; border-radius: 999px;
+  background: #E4F0E3; color: #2B5C2B;
+}
+.wallet-parts { font-size: 11.5px; font-weight: 400; color: var(--text-dim); font-family: var(--mono); }
+.wallet-coins { flex: none; font-family: var(--mono); font-size: 14px; }
+/* 쓴 코인은 남은 값 옆에 작게 — 「원래 얼마였나」가 궁금할 때만 필요하다 */
+.wallet-coins em { font-style: normal; font-size: 11px; color: var(--text-dim); margin-left: 5px; }

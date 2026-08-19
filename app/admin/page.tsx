@@ -163,6 +163,15 @@ const T = {
   placeFailed: { ko: '붙이다 멈췄어요: {why}', en: 'Stopped: {why}' },
   themeTitle: { ko: '카드 색 테마', en: 'Card color theme' },
   shopLink: { ko: '테마 상점 열기 →', en: 'Open the theme shop →' },
+  walletTitle: { ko: '코인과 산 테마', en: 'Coins and purchases' },
+  walletHint: {
+    ko: '누가 무엇을 샀고 코인이 얼마 남았는지. 값을 정할 때 「지금 값이면 몇 명이나 살 수 있나」를 보는 자리예요.',
+    en: 'Who bought what, and how many coins they have left. Use it to see how many people can afford the current price.',
+  },
+  walletSum: { ko: '{n}명 · 산 사람 {buyers}명 · 지금 값으로 살 수 있는 사람 {can}명', en: '{n} members · {buyers} have bought · {can} can afford one now' },
+  walletCols: { ko: '주최 · 정성 · 참여', en: 'host · care · turnout' },
+  walletNone: { ko: '아직 아무도 안 샀어요.', en: 'Nobody has bought anything yet.' },
+  walletLoad: { ko: '불러오기', en: 'Load' },
   themeHint: {
     ko: '카테고리 카드의 색을 갈아 끼워요. 아직 관리자만 쓸 수 있고, 고른 테마는 이 기기에서만 보여요 — 다른 사람 화면은 그대로예요.',
     en: 'Swaps the colors on category cards. Admins only for now, and the choice only applies to this device — nobody else’s screen changes.',
@@ -325,6 +334,10 @@ export default function AdminPage() {
   const [placeBusy, setPlaceBusy] = useState(false);
   const router = useRouter();
   const [themeOpen, setThemeOpen] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);
+  const [wallets, setWallets] = useState<
+    { id: string; name: string; host: number; join: number; contrib: number; earned: number; spent: number; left: number; owned: string[] }[] | null
+  >(null);
   /*
    * 지금 걸린 테마는 쿠키에 있다. 서버가 그걸 읽어 색 변수를 심으므로(app/layout.tsx),
    * 여기서는 쿠키를 바꾸고 화면을 다시 그리라고만 하면 된다.
@@ -460,6 +473,12 @@ export default function AdminPage() {
     } finally {
       setHideBusy(false);
     }
+  }
+
+  /* 열 때 한 번만 읽는다 — 쉰 명 넘는 집계라 화면을 열 때마다 칠 이유가 없다 */
+  async function loadWallets() {
+    const res = await fetch('/api/admin/wallets', { cache: 'no-store' });
+    if (res.ok) setWallets((await res.json()).wallets ?? []);
   }
 
   async function loadEveryone() {
@@ -1257,6 +1276,63 @@ export default function AdminPage() {
 
       {isKakaoAdmin && (
         <>
+          <h1 className="admin-sec">
+            <button
+              className="collapse-h1"
+              aria-expanded={walletOpen}
+              onClick={() => {
+                const next = !walletOpen;
+                setWalletOpen(next);
+                if (next && wallets === null) void loadWallets();
+              }}
+            >
+              {t(T.walletTitle)}
+              <span className="collapse-caret" aria-hidden>
+                {walletOpen ? '⌃' : '⌄'}
+              </span>
+            </button>
+          </h1>
+          {walletOpen && (
+            <>
+              <p className="subtitle">{t(T.walletHint)}</p>
+              {wallets === null ? (
+                <p className="hint">{t(T.walletLoad)}…</p>
+              ) : (
+                <div className="card">
+                  <p className="hint" style={{ margin: '0 0 10px' }}>
+                    {t(T.walletSum, {
+                      n: wallets.length,
+                      buyers: wallets.filter((w) => w.owned.length > 0).length,
+                      can: wallets.filter((w) => w.left >= 50).length,
+                    })}
+                  </p>
+                  <ul className="wallet-list">
+                    {wallets.map((w) => (
+                      <li key={w.id}>
+                        <span className="wallet-who">
+                          {w.name}
+                          {/* 산 것이 있으면 그것부터 — 이 표를 보러 오는 첫 이유다 */}
+                          {w.owned.map((th) => (
+                            <span key={th} className="wallet-owned">
+                              {CARD_THEMES[th as CardTheme] ? t(CARD_THEMES[th as CardTheme].label) : th}
+                            </span>
+                          ))}
+                          <span className="wallet-parts">
+                            {t(T.walletCols)} {Math.floor(w.host)} · {w.contrib} · {w.join}
+                          </span>
+                        </span>
+                        <span className="wallet-coins">
+                          {w.left}
+                          {w.spent > 0 && <em>-{w.spent}</em>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+
           <h1 className="admin-sec">
             <button className="collapse-h1" aria-expanded={newsOpen} onClick={() => setNewsOpen((v) => !v)}>
               {t(T.newsTitle)}

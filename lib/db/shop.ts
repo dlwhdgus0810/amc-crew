@@ -1,8 +1,10 @@
 import { and, eq } from 'drizzle-orm';
 import { getDb } from './index';
-import { themePurchases } from './schema';
-import { boardScoresFor } from './hosting';
+import { themePurchases, users } from './schema';
+import { allBoardScores, boardScoresFor } from './hosting';
 import { coinsEarned, priceOf } from '../shop';
+import { nameOf, UNKNOWN_NAME } from '../store';
+import type { Locale } from '../i18n';
 
 /**
  * 테마 상점 — 코인 셈과 사기.
@@ -63,4 +65,55 @@ export async function buyTheme(userId: string, theme: string): Promise<BuyResult
    */
   await db.insert(themePurchases).values({ userId, theme, coins: price }).onConflictDoNothing();
   return { ok: true, left: wallet.left - price };
+}
+
+/** 관리자 화면의 한 줄 */
+export interface WalletRow extends Wallet {
+  id: string;
+  name: string;
+}
+
+/**
+ * 회원 전부의 지갑 — 관리자 화면이 쓴다.
+ *
+ * walletOf를 사람마다 부르면 쉰 명에 이백 번 넘게 물어보게 된다. 여기서는 사람 수와
+ * 무관하게 다섯 번이다 (점수 셋 + 산 기록 + 이름).
+ *
+ * **한 번도 활동이 없는 사람도 넣는다.** 코인 0으로 명단에 있어야 「이 사람은 왜 없지」가
+ * 안 생긴다 — 관리자 화면은 전체를 보는 자리다.
+ */
+export async function allWallets(locale: Locale): Promise<WalletRow[]> {
+  const db = await getDb();
+  const [scores, buys, people] = await Promise.all([
+    allBoardScores(),
+    db.select().from(themePurchases),
+    db
+      .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn })
+      .from(users),
+  ]);
+
+  const boughtBy = new Map<string, { theme: string; coins: number }[]>();
+  for (const b of buys) {
+    if (!boughtBy.has(b.userId)) boughtBy.set(b.userId, []);
+    boughtBy.get(b.userId)!.push({ theme: b.theme, coins: b.coins });
+  }
+
+  return people
+    .map((p) => {
+      const s = scores.get(p.id) ?? { host: 0, join: 0, contrib: 0 };
+      const mine = boughtBy.get(p.id) ?? [];
+      const earned = coinsEarned(s);
+      const spent = mine.reduce((n, r) => n + r.coins, 0);
+      return {
+        id: p.id,
+        name: nameOf(p, UNKNOWN_NAME, locale),
+        ...s,
+        earned,
+        spent,
+        left: earned - spent,
+        owned: mine.map((r) => r.theme),
+      };
+    })
+    /* 산 사람을 먼저, 그다음 코인 많은 순 — 관리자가 보러 오는 이유가 그 둘이다 */
+    .sort((a, b) => b.owned.length - a.owned.length || b.left - a.left || a.name.localeCompare(b.name));
 }
