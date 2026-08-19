@@ -51,7 +51,7 @@ const T = {
   tabHosts: { ko: '호스팅', en: 'Hosted', es: 'Organizadas' },
   tabJoiners: { ko: '참여', en: 'Joined', es: 'Apuntadas' },
   tabCats: { ko: '카테고리', en: 'Categories', es: 'Categorías' },
-  tabContrib: { ko: '기여도', en: 'Contributed', es: 'Aportes' },
+  tabContrib: { ko: '정성', en: 'Contributed', es: 'Aportes' },
   /* 점수만 보면 「왜 내가 저 사람보다 낮지」가 남는다 — 무엇으로 쌓였는지 같이 적는다 */
   contribParts: { ko: '사진 {p} · 댓글 {c}', en: '{p} photos · {c} comments', es: '{p} fotos · {c} comentarios' },
   contribProposal: { ko: ' · 제안 {n}', en: ' · {n} proposals', es: ' · {n} propuestas' },
@@ -89,7 +89,7 @@ const T = {
   count: { ko: '{n}점', en: '{n} pts', es: '{n} pts' },
   tiersTitle: { ko: '호스트 등급', en: 'Host tiers', es: 'Niveles de anfitrión' },
   tiersJoin: { ko: '참여 등급', en: 'Turnout tiers', es: 'Niveles de asistencia' },
-  tiersContrib: { ko: '기여 등급', en: 'Contribution tiers', es: 'Niveles de aporte' },
+  tiersContrib: { ko: '정성 등급', en: 'Contribution tiers', es: 'Niveles de aporte' },
   tierFromN: { ko: '{n}회부터', en: 'From {n}', es: 'Desde {n}' },
   tierFrom: { ko: '{n}점부터', en: 'From {n} pts', es: 'Desde {n} pts' },
 };

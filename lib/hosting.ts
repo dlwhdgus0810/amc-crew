@@ -51,7 +51,7 @@ export const JOIN_TIERS: HostTier[] = [
 ];
 
 /**
- * 기여 등급 — 사진·댓글·후기·승인된 제안으로 쌓은 점수 (lib/db/hosting.ts의 CONTRIB).
+ * 정성 등급 — 사진·댓글·후기·승인된 제안으로 쌓은 점수 (lib/db/hosting.ts의 CONTRIB).
  *
  * 참여와 같은 기준으로 잡았다. 5/15로 뒀을 때 점수가 있는 열넷 중 여섯이 한꺼번에
  * 「부지런한 손」이었다. 10/20으로 올리니 네 명과 세 명으로 갈린다.
@@ -126,5 +126,5 @@ export const BOARD_TIERS: Record<Board, HostTier[]> = {
 export const BOARD_LABEL: Record<Board, Msg> = {
   host: { ko: '주최', en: 'Hosting', es: 'Anfitrión' },
   join: { ko: '참여', en: 'Attendance', es: 'Asistencia' },
-  contrib: { ko: '기여도', en: 'Contribution', es: 'Contribución' },
+  contrib: { ko: '정성', en: 'Contribution', es: 'Contribución' },
 };
