@@ -58,6 +58,11 @@
         this.readTint();
         /* 프레임당 방울 수. 0.1이면 초당 6개쯤 */
         this.rate = +(this.getAttribute('rate') || 0.1);
+        /*
+         * 물튀김을 어느 판으로 그릴지 — <html data-splash>가 정한다 (관리자 화면에서 고른다).
+         * 연결할 때 한 번만 읽는다: 바꾸면 화면을 다시 부르므로 그때 새로 읽힌다.
+         */
+        this.v2 = document.documentElement.dataset.splash === 'v2';
 
         this.drops = [];
         this.spray = [];
@@ -193,21 +198,33 @@
           this.target = Math.min(h * 0.28, this.target + 2);
           const n = 1 + ((Math.random() * 2) | 0);
           /*
-           * spread는 **이 한 번의 물튀김**이 벌어지는 폭이다 — 방울마다 달라서 어떤 것은
-           * 거의 안 튀고 어떤 것은 크게 벌어진다. 입자마다 따로 뽑지 않고 한 번의
+           * v2의 spread는 **이 한 번의 물튀김**이 벌어지는 폭이다 — 방울마다 달라서 어떤
+           * 것은 거의 안 튀고 어떤 것은 크게 벌어진다. 입자마다 따로 뽑지 않고 한 번의
            * 물튀김이 나눠 갖는다: 같은 방울이 만든 것이니 크기가 같아야 한다.
+           * v1에서는 이 값이 없고 입자마다 제멋대로 튄다.
            */
-          const spread = 0.35 + Math.random() * 0.85;
+          const spread = this.v2 ? 0.35 + Math.random() * 0.85 : 0;
           for (let k = 0; k < n; k++) {
-            this.spray.push({
-              x: d.x,
-              y: sy,
-              /* 수직으로 솟지 않고 수면을 따라 퍼진다 — 가로가 세로보다 네 배 크다 */
-              vx: (Math.random() * 2 - 1) * 2.2 * spread,
-              vy: -(0.55 + Math.random() * 0.75) * spread,
-              r: (0.5 + Math.random() * 0.5) * (0.7 + spread * 0.4),
-              a: 0.7,
-            });
+            this.spray.push(
+              this.v2
+                ? {
+                    x: d.x,
+                    y: sy,
+                    /* 수직으로 솟지 않고 수면을 따라 퍼진다 — 가로가 세로보다 네 배 크다 */
+                    vx: (Math.random() * 2 - 1) * 2.2 * spread,
+                    vy: -(0.55 + Math.random() * 0.75) * spread,
+                    r: (0.5 + Math.random() * 0.5) * (0.7 + spread * 0.4),
+                    a: 0.7,
+                  }
+                : {
+                    x: d.x,
+                    y: sy,
+                    vx: (Math.random() * 2 - 1) * 1.1,
+                    vy: -(0.4 + Math.random() * 1.3),
+                    r: 0.5 + Math.random() * 0.6,
+                    a: 0.7,
+                  }
+            );
           }
           this.rings.push({ x: d.x, r: 1.5, a: 0.5, age: 0 });
         }
@@ -219,13 +236,22 @@
           s.y += s.vy * dt;
           s.a -= 0.016 * dt;
           s.r -= 0.009 * dt;
-          /*
-           * 물튀김은 수면에서만 산다 — 수면보다 14px 넘게 올라가면 지우고(공중에 뜬
-           * 동그라미가 남지 않게), 내려오다 수면 아래로 가면 물에 다시 들어간 것이다.
-           * 그 x 자리의 수면을 재므로 물결을 따라다닌다.
-           */
-          const wy = this.waveY(s.x);
-          if (s.a <= 0 || s.r <= 0 || s.y < wy - 14 || (s.vy > 0 && s.y > wy)) this.spray.splice(i, 1);
+          if (s.a <= 0 || s.r <= 0) {
+            this.spray.splice(i, 1);
+            continue;
+          }
+          if (this.v2) {
+            /*
+             * v2: 물튀김은 수면에서만 산다 — 수면보다 14px 넘게 올라가면 지우고(공중에 뜬
+             * 동그라미가 남지 않게), 내려오다 수면 아래로 가면 물에 다시 들어간 것이다.
+             * 그 x 자리의 수면을 재므로 물결을 따라다닌다.
+             */
+            const wy = this.waveY(s.x);
+            if (s.y < wy - 14 || (s.vy > 0 && s.y > wy)) this.spray.splice(i, 1);
+          } else if (s.y > h) {
+            /* v1: 카드 밑으로 나갈 때까지 산다 — 수면과 무관하다 */
+            this.spray.splice(i, 1);
+          }
         }
 
         for (let i = this.rings.length - 1; i >= 0; i--) {
