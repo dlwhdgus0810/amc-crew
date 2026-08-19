@@ -31,6 +31,92 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-19T12:30',
+    notable: true,
+    title: { ko: '테마 상점이 생겼어요', en: 'There’s a theme shop now' },
+    items: [
+      {
+        ko: '리더보드 오른쪽 위 「테마 상점」으로 들어가요. 그동안 모임을 열고, 나가고, 사진과 댓글을 남긴 만큼 코인이 쌓여 있어요 — 따로 모을 것 없이 이미 쌓인 거예요.',
+        en: 'Open it from “Theme shop”, top right of the leaderboard. Coins are already there — everything you’ve hosted, shown up for, and left behind has been adding up.',
+      },
+      {
+        ko: '코인은 주최 점수 + 정성 점수 + 참여 횟수×3이에요. 참여에만 3을 곱하는 건 눈금이 달라서예요 — 모임 한 번 여는 것과 한 번 나가는 것은 점수가 붙는 속도가 아주 달라요.',
+        en: 'Coins are hosting + contributions + turnout×3. Turnout is tripled because the scales differ: hosting a meetup and showing up to one earn points at very different speeds.',
+      },
+      {
+        ko: '지금은 「여름 · 장마」 하나를 50코인에 팔아요. 비 오는 창밖 같은 청회색 테마인데, 카드 안에 실제로 비가 내리고 아래에 물이 차올라요. 글씨도 고운바탕으로 바뀌고요.',
+        en: 'Right now there’s one: “Summer · Rainy season”, 50 coins. Slate blue like a rainy window — rain actually falls inside each card and water pools at the bottom. The type changes too.',
+      },
+      {
+        ko: '산 테마는 프로필의 「카드 테마」에서 골라요. 고른 테마는 그 기기에서만 보여요 — 다른 사람 화면은 그대로예요.',
+        en: 'Pick what you own under “Card theme” in your profile. Your pick shows on that device only — everyone else sees theirs.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-19T10:00',
+    notable: true,
+    title: { ko: '정산에 「보냈어요」를 찍을 수 있어요', en: 'Mark a settle-up as sent' },
+    items: [
+      {
+        ko: '보내고 나서 자기 줄의 「보냈어요」를 눌러주세요. 받는 사람이 벤모 알림과 명단을 번갈아 보며 누가 냈는지 세지 않아도 돼요 — 열 명 넘게 나눠 내는 정산도 있으니까요.',
+        en: 'After you send, tap “I sent it” on your own line. Whoever’s collecting no longer has to flip between their payment app and the list — some of these are split more than ten ways.',
+      },
+      {
+        ko: '낸 줄은 흐려져요. 남은 줄만 또렷하게 남아서, 세지 않아도 누가 아직인지 보여요. 명단 위에 「4/9명 보냄」도 적혀 있고, 정산을 접어 둬도 그 숫자는 보여요.',
+        en: 'Paid lines fade out, so only the ones still owing stay sharp — you don’t have to count. There’s a “4/9 sent” line above the list, and it shows even when the settle-up is collapsed.',
+      },
+      {
+        ko: '받는 사람은 남의 줄도 눌러서 「받았어요」로 바꿀 수 있어요. 현금으로 받았거나 잘못 눌린 걸 정리할 때 쓰세요. 본인이 찍은 것은 「보냄」, 받은 사람이 확인한 것은 「확인」으로 갈려서 보여요.',
+        en: 'If you’re collecting, you can tick other people’s lines as received — for cash, or to fix a mistap. “Sent” means they said so; “Received” means you confirmed it.',
+      },
+      {
+        ko: '다시 알리기를 열면 아직 안 낸 사람만 골라져 있어요. 낸 사람에게 또 보내라고 알리는 건 재촉이 아니라 실수니까요.',
+        en: 'The reminder picker now starts with only the people who haven’t paid. Nudging someone who already paid isn’t pushy, it’s just wrong.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-19T09:45',
+    title: { ko: '후기는 50자부터예요', en: 'Reviews start at 50 characters' },
+    items: [
+      {
+        ko: '「재밌었어요」 한 마디는 쓴 사람에게도 읽는 사람에게도 남는 게 없어서, 쉰 자를 채워야 올라가게 했어요. 그 길이면 무엇이 어땠는지에 「그래서 다음엔」까지 적게 돼요.',
+        en: 'A four-word review leaves nothing behind for anyone, so it now takes fifty characters. That’s about enough to say what it was like and what you’d do next time.',
+      },
+      {
+        ko: '쓰는 칸 옆에 「50자 더」처럼 모자란 만큼이 보여요. 다 채우면 남은 글자 수로 바뀌어요.',
+        en: 'The counter shows how many you still need, then flips to how many you have left.',
+      },
+      {
+        ko: '이미 올라간 짧은 후기는 그대로 있어요. 지난 걸 다시 쓰게 하는 규칙이 아니라 앞으로 쓸 것에만 걸리는 문턱이에요.',
+        en: 'Reviews already up stay as they are — this only applies to new ones.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-19T09:30',
+    title: { ko: '「기여도」가 「정성」이 됐어요', en: '“Contributed” is now “Care”' },
+    items: [
+      {
+        ko: '「기여도」는 인사고과에서 쓰는 말 같아서 바꿨어요. 세는 것도 사진 올리고 댓글 달고 카테고리 제안한 것이라, 「기여 정도」보다 「정성」이 실제로 하는 일에 가까워요.',
+        en: 'The old name read like a performance review. What it counts is photos, comments and proposals — closer to care than to a score.',
+      },
+      {
+        ko: '점수도 조정했어요. 승인된 카테고리 제안이 7점, 후기가 3점이에요 (사진과 댓글은 그대로 1점씩).',
+        en: 'The weights changed too: an approved category proposal is 7, a review 3 (photos and comments stay at 1).',
+      },
+      {
+        ko: '등급 배지 안에 색이 들어갔어요. 새싹은 잎 초록, 도장은 인주 빨강, 왕관과 트로피는 금색 — 그림에 맞는 색이에요.',
+        en: 'The tier badges are filled in now — leaf green for the sprout, ink red for the stamp, gold for the crown and trophy. Each one gets the color of the thing it draws.',
+      },
+      {
+        ko: '등급이 오르면 다음 날 아침에 알려드려요. 점수는 모임이 끝나야 오르는 거라 그때그때가 아니라 하루에 한 번 모아서 봐요.',
+        en: 'When you move up a tier, you’ll hear about it the next morning. Points only move once a meetup is over, so it’s checked once a day rather than moment to moment.',
+      },
+    ],
+  },
+  {
     at: '2026-08-18T17:30',
     title: { ko: '자잘한 손질 둘', en: 'Two small fixes' },
     items: [
