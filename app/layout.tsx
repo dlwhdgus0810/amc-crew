@@ -205,7 +205,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           * (커스텀 엘리먼트 업그레이드). 카드가 먼저 보이고 물이 잠시 뒤에 생긴다.
           */}
         {RAIN_MODE === 'canvas' && themeDeco(cardTheme) === 'rain' && (
-          <script src="/rain-canvas.js" defer />
+          <>
+            <script src="/rain-canvas.js" defer />
+            {/* 화면 전체의 비 — 카드를 만나면 위 캔버스에 방울을 넘긴다 */}
+            <script src="/rain-field.js" defer />
+          </>
         )}
       </head>
       <body>

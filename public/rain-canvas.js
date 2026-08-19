@@ -56,15 +56,12 @@
            어두운 카드는 크림, 밝은 카드는 짙은 청회색이 되어 열일곱 장에 색을 따로
            정할 필요가 없다. CSS의 currentColor와 같은 이야기다. */
         this.readTint();
-        /* 프레임당 방울 수. 0.1이면 초당 6개쯤 */
-        this.rate = +(this.getAttribute('rate') || 0.1);
 
         this.drops = [];
         this.spray = [];
         this.rings = [];
         this.level = 7;
         this.target = 7;
-        this.acc = 0;
         this.t = 0;
         this.vis = true;
         this.dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -122,6 +119,32 @@
         g.fillRect(2, 0, 2, 80);
       }
 
+      /**
+       * 배경에서 내려오던 방울을 넘겨받는다 (public/rain-field.js).
+       *
+       * **속도·길이·폭·원근을 그대로 이어받는 것이 핵심이다.** 하나라도 다르면 카드 위
+       * 가장자리에서 방울이 튀거나 굵기가 바뀌어서, 넘어온 티가 난다. 여기서 새로 정하는
+       * 것은 「이 방울이 물까지 갈지」 하나뿐이다 — 뒤쪽 방울은 대개 중간에 흐려지며
+       * 사라지고, 닿은 방울에만 물튀김과 파문이 생긴다.
+       *
+       * 마흔 개에서 끊는다. 카드가 화면을 거의 다 덮을 때 넘어오는 양이 많아지는데,
+       * 그만큼 다 그려도 보기에 달라지는 것이 없다.
+       */
+      adopt(d) {
+        if (!this.drops || this.drops.length > 40) return;
+        const fades = d.z < 0.74 && Math.random() < 0.8;
+        this.drops.push({
+          x: d.x,
+          y: d.y,
+          z: d.z,
+          life: 1,
+          vy: d.vy,
+          len: d.len,
+          wd: d.wd,
+          fadeAt: fades ? this.h * (0.3 + Math.random() * 0.45) : Infinity,
+        });
+      }
+
       loop(rt) {
         this.raf = requestAnimationFrame((t) => this.loop(t));
         if (!this.vis || !this.w || !this.h) return;
@@ -139,39 +162,6 @@
       step(dt) {
         const { w, h } = this;
         this.t += dt / 60;
-
-        this.acc += this.rate * dt;
-        while (this.acc >= 1) {
-          this.acc -= 1;
-          /*
-           * z는 원근이다 (0.45가 뒤, 1이 앞). 원근에 따라 길이·폭·속도·진하기가 달라진다.
-           * 뒤에 있는 방울은 대개 중간에 흐려지며 사라진다 — 모든 방울이 물에 닿지 않고,
-           * 닿은 방울에만 물튀김이 생긴다.
-           */
-          const z = 0.45 + Math.random() * 0.55;
-          const fades = z < 0.74 && Math.random() < 0.8;
-          this.drops.push({
-            x: Math.random() * w,
-            y: -14,
-            z,
-            life: 1,
-            /*
-             * 배경의 비(app/overrides.css의 .season-rain)와 **같은 px/s**로 떨어진다.
-             *
-             * 예전에는 프레임당 0.34~1.12px, 즉 20~67px/s였는데 배경은 919px/s였다 —
-             * 같은 화면에서 배경 비가 카드 비보다 열 배 넘게 빨라서, 카드가 유리창이
-             * 아니라 딴 세상처럼 보였다. 지금은 앞쪽 방울이 470px/s 언저리이고
-             * 배경도 거기 맞춰 느려졌다.
-             *
-             * 떨어지는 속도만 바뀐다 — 방울이 생기는 빈도(rate)는 그대로라 수면에
-             * 닿는 개수가 같고, 따라서 수위가 균형을 찾는 자리도 그대로다.
-             */
-            vy: (2.45 + Math.random() * 3.15) * (0.6 + z * 0.8),
-            len: (16 + Math.random() * 18) * z,
-            wd: 1 + z * 0.9,
-            fadeAt: fades ? h * (0.3 + Math.random() * 0.45) : Infinity,
-          });
-        }
 
         for (let i = this.drops.length - 1; i >= 0; i--) {
           const d = this.drops[i];

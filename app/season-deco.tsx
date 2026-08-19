@@ -14,6 +14,15 @@
 
 import { usePathname } from 'next/navigation';
 
+/* <rain-field>는 커스텀 엘리먼트다 (public/rain-field.js) — React 19는 JSX 이름을 React 밑에서 찾는다 */
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      'rain-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { rate?: string };
+    }
+  }
+}
+
 /**
  * 장식을 깔 화면.
  *
@@ -36,9 +45,18 @@ export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | null }) 
   if (!kind || !DECORATED.some((re) => re.test(path))) return null;
   return (
     <div aria-hidden="true" className={`season-deco season-${kind}`}>
-      {Array.from({ length: COUNT[kind] }, (_, i) => (
-        <span key={i} />
-      ))}
+      {/*
+        * 비는 캔버스 하나가 화면 전체를 맡는다 (public/rain-field.js). 낱개 <span>으로
+        * 두면 방울이 어디쯤 있는지 코드가 몰라서, 카드를 만났을 때 그 방울을 카드에
+        * 넘겨줄 수가 없다 — 배경 비와 카드 비가 따로 노는 이유가 그것이었다.
+        *
+        * 꽃잎은 지금처럼 낱개다. 넘겨줄 데가 없으므로 알 필요도 없다.
+        */}
+      {kind === 'rain' ? (
+        <rain-field />
+      ) : (
+        Array.from({ length: COUNT[kind] }, (_, i) => <span key={i} />)
+      )}
     </div>
   );
 }
