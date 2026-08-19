@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useT } from './i18n';
 
 const T = {
@@ -86,11 +87,19 @@ function withBold(text: string) {
 
 export default function InstallPrompt() {
   const t = useT();
+  const path = usePathname();
   const [mode, setMode] = useState<Mode>(null);
   const [deferred, setDeferred] = useState<InstallEvent | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  /*
+   * 테마 미리보기(app/preview/page.tsx)는 홈을 그대로 띄우는 자리라 이 배너까지 딸려
+   * 온다. 상점의 작은 틀 안에서는 배너가 카드 위에 얹혀 테마를 가리고, 게다가 그 안의
+   * *설치하기*·*닫기*는 미리보기에서 누를 것이 아니다.
+   */
+  const hidden = path === '/preview';
 
   useEffect(() => {
+    if (hidden) return;
     if (localStorage.getItem(DISMISS_KEY)) return;
 
     const ua = navigator.userAgent;
@@ -118,7 +127,7 @@ export default function InstallPrompt() {
     };
     window.addEventListener('beforeinstallprompt', onPrompt);
     return () => window.removeEventListener('beforeinstallprompt', onPrompt);
-  }, []);
+  }, [hidden]);
 
   function close() {
     localStorage.setItem(DISMISS_KEY, '1');
@@ -147,7 +156,7 @@ export default function InstallPrompt() {
     }
   }
 
-  if (!mode) return null;
+  if (hidden || !mode) return null;
 
   const isKakao = mode === 'kakao-ios' || mode === 'kakao-android';
   const title = isKakao ? t(T.kakaoTitle) : t(T.installTitle);

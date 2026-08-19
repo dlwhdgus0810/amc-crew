@@ -103,13 +103,28 @@
        * 방울이 뿌옇게 보이는 효과가 공짜로 생긴다.
        */
       sprite() {
-        const s = this._sp || (this._sp = document.createElement('canvas'));
+        this._sp = this.makeSprite(this.tint, this._sp);
+        /* 카드 색이 바뀌면 넘어온 색으로 그려 둔 것도 다시 만들게 둔다 */
+        this._outTint = null;
+      }
+
+      /** 넘어온 방울이 처음에 입고 들어오는 색 — 배경 비의 색이다 (public/rain-field.js) */
+      outSprite(tint) {
+        if (this._outTint !== tint) {
+          this._spo = this.makeSprite(tint, this._spo);
+          this._outTint = tint;
+        }
+        return this._spo;
+      }
+
+      makeSprite(tint, canvas) {
+        const s = canvas || document.createElement('canvas');
         s.width = 6;
         s.height = 80;
         const g = s.getContext('2d');
         const grad = g.createLinearGradient(0, 0, 0, 80);
-        grad.addColorStop(0, 'rgba(' + this.tint + ',0)');
-        grad.addColorStop(1, 'rgba(' + this.tint + ',1)');
+        grad.addColorStop(0, 'rgba(' + tint + ',0)');
+        grad.addColorStop(1, 'rgba(' + tint + ',1)');
         g.clearRect(0, 0, 6, 80);
         g.fillStyle = grad;
         g.globalAlpha = 0.35;
@@ -117,6 +132,7 @@
         g.fillRect(4, 0, 1, 80);
         g.globalAlpha = 1;
         g.fillRect(2, 0, 2, 80);
+        return s;
       }
 
       /**
@@ -129,6 +145,10 @@
        *
        * 마흔 개에서 끊는다. 카드가 화면을 거의 다 덮을 때 넘어오는 양이 많아지는데,
        * 그만큼 다 그려도 보기에 달라지는 것이 없다.
+       *
+       * d.y는 **줄기의 위 끝**이다(여기서는 y에서 y+len까지 그린다). 배경 쪽은 아래 끝을
+       * 기준으로 들고 있어서 넘길 때 len을 빼서 준다 — public/rain-field.js가 한다.
+       * 넘어오는 순간 y는 음수다: 줄기가 카드 위 선에 걸쳐 있고 위쪽은 배경이 그린다.
        */
       adopt(d) {
         if (!this.drops || this.drops.length > 40) return;
@@ -141,6 +161,8 @@
           vy: d.vy,
           len: d.len,
           wd: d.wd,
+          /* 들어올 때 입고 있던 색 — 카드 색과 다르면 draw가 서서히 갈아입힌다 */
+          from: d.tint && d.tint !== this.tint ? d.tint : null,
           fadeAt: fades ? this.h * (0.3 + Math.random() * 0.45) : Infinity,
         });
       }
@@ -263,7 +285,21 @@
 
         for (const d of this.drops) {
           const wd = d.wd + (1 - d.life) * 3.5;
-          ctx.globalAlpha = (0.2 + d.z * 0.34) * d.life;
+          const a = (0.2 + d.z * 0.34) * d.life;
+          /*
+           * 넘어온 방울은 **배경 색으로 들어와 카드 색으로 물든다.**
+           *
+           * 카드 밖 비는 밝은 페이지 위라 짙은 청회색이고 카드 안 비는 어두운 카드 위라
+           * 크림이다 — 어느 한쪽으로 통일할 수가 없다. 그래서 카드 위 선에서 색이 딱
+           * 갈리는데, 그게 굵기가 변한 것처럼 보인다. 줄기 길이의 두 배쯤 내려오는 동안
+           * 갈아입히면 어디서 바뀌었는지 짚을 수 없게 된다.
+           */
+          const b = d.from ? Math.min(1, Math.max(0, (d.y + d.len) / (d.len * 2.2))) : 1;
+          if (b < 1) {
+            ctx.globalAlpha = a * (1 - b);
+            ctx.drawImage(this.outSprite(d.from), d.x - wd / 2, d.y, wd, d.len);
+          }
+          ctx.globalAlpha = a * b;
           ctx.drawImage(this._sp, d.x - wd / 2, d.y, wd, d.len);
         }
         ctx.globalAlpha = 1;
