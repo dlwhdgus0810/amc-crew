@@ -91,8 +91,73 @@ const dayNumber = (date: string) => Math.floor(Date.parse(`${date}T00:00:00Z`) /
  * 날짜를 세어 고른다 — 무작위가 아니라서 같은 날 열면 누구나 같은 줄을 보고,
  * 화면을 다시 그려도 문구가 바뀌지 않는다.
  */
-export function statementOfDay(today: string): Statement {
-    const n = STATEMENTS.length;
+/**
+ * 시즌 테마일 때 대신 도는 줄.
+ *
+ * 목록을 통째로 갈아 끼운다 — 기본 문구에 몇 개를 섞으면 봄 테마를 켜 놓고도 열흘에
+ * 한 번만 봄 문구가 나온다. 그러면 테마를 켠 티가 안 난다.
+ *
+ * 도는 방식은 같다. 날짜로 골라서 같은 날 열면 누구나 같은 줄을 본다.
+ */
+const SEASON_STATEMENTS: Record<string, Statement[]> = {
+    cherryblossom: [
+        {
+            top: {ko: '꽃은 오래 안 갑니다.', en: 'The blossoms don’t last.', es: 'Las flores no duran.'},
+            bottom: {ko: '이번 주말에 보러 가요.', en: 'Let’s go see them this weekend.', es: 'Vamos a verlas este finde.'},
+        },
+        {
+            top: {ko: '날이 풀렸어요.', en: 'It’s warmed up.', es: 'Ha entrado el buen tiempo.'},
+            bottom: {ko: '이제 밖에서 만나도 됩니다.', en: 'We can meet outside now.', es: 'Ya podemos quedar fuera.'},
+        },
+        {
+            top: {ko: '겨우내 안 본 얼굴이 있죠.', en: 'Some faces you haven’t seen all winter.', es: 'Hay caras que no ves desde el invierno.'},
+            bottom: {ko: '봄이니까 한 번 부르세요.', en: 'It’s spring — call them out.', es: 'Es primavera: escríbeles.'},
+        },
+        {
+            top: {ko: '벚꽃 아래 자리 잡고,', en: 'Find a spot under the blossoms,', es: 'Busca un sitio bajo los cerezos,'},
+            bottom: {ko: '아무거나 먹으면 됩니다.', en: 'and eat whatever you brought.', es: 'y come lo que sea.'},
+        },
+        {
+            top: {ko: '오늘 안 나가면,', en: 'If you don’t go out today,', es: 'Si hoy no sales,'},
+            bottom: {ko: '내년에 또 이 말을 합니다.', en: 'you’ll be saying this again next year.', es: 'volverás a decir esto el año que viene.'},
+        },
+    ],
+    rainyseason: [
+        {
+            top: {ko: '비 온다고 취소하지 않아요.', en: 'Rain isn’t a cancellation.', es: 'La lluvia no cancela nada.'},
+            bottom: {ko: '지붕 있는 데로 옮기면 됩니다.', en: 'We just move somewhere with a roof.', es: 'Nos movemos a un sitio con techo.'},
+        },
+        {
+            top: {ko: '창밖은 비,', en: 'Rain outside,', es: 'Fuera llueve,'},
+            bottom: {ko: '안에는 사람.', en: 'people inside.', es: 'dentro hay gente.'},
+        },
+        {
+            top: {ko: '장마엔 집에 있기 쉽죠.', en: 'It’s easy to stay in during the rains.', es: 'En temporada de lluvias es fácil quedarse en casa.'},
+            bottom: {ko: '그래서 더 부르는 겁니다.', en: 'That’s exactly why we ask.', es: 'Por eso justamente escribimos.'},
+        },
+        {
+            top: {ko: '우산 하나면 됩니다.', en: 'One umbrella is enough.', es: 'Con un paraguas basta.'},
+            bottom: {ko: '나머지는 여기서 정해요.', en: 'The rest gets decided here.', es: 'Lo demás se decide aquí.'},
+        },
+        {
+            top: {ko: '빗소리 들으며 뭐 하죠?', en: 'What do you do with rain in the background?', es: '¿Qué haces con la lluvia de fondo?'},
+            bottom: {ko: '커피든 영화든, 같이요.', en: 'Coffee, a film — together.', es: 'Café o peli, pero juntos.'},
+        },
+    ],
+};
+
+/**
+ * 그날의 문구.
+ *
+ * 날짜를 세어 고른다 — 무작위가 아니라서 같은 날 열면 누구나 같은 줄을 보고,
+ * 화면을 다시 그려도 문구가 바뀌지 않는다.
+ *
+ * 시즌 테마면 그쪽 목록에서 고른다. 기준 날짜(ANCHOR)는 같이 쓴다 — 목록 길이가
+ * 달라서 어차피 다른 줄이 나오고, 기준을 따로 두면 테마를 껐다 켤 때마다 순서가 튄다.
+ */
+export function statementOfDay(today: string, theme?: string): Statement {
+    const list = (theme && SEASON_STATEMENTS[theme]) || STATEMENTS;
+    const n = list.length;
     const i = (((dayNumber(today) - dayNumber(ANCHOR)) % n) + n) % n;
-    return STATEMENTS[i]!;
+    return list[i]!;
 }

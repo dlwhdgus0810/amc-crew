@@ -6,7 +6,9 @@ import { nextMeetupByCategory } from '@/lib/db/next-meetups';
 import { signupCounts } from '@/lib/db/signups';
 import { hiddenSlugs } from '@/lib/db/hidden';
 import { CATEGORIES, POST_CATEGORY_SLUGS } from '@/lib/categories';
+import { cookies } from 'next/headers';
 import { statementOfDay } from '@/lib/statements';
+import { CARD_THEME_COOKIE, toCardTheme } from '@/lib/card-theme';
 import { todayLocal } from '@/lib/dates';
 import { pick } from '@/lib/i18n';
 import HomeClient from './home-client';
@@ -59,7 +61,8 @@ export default async function HubPage() {
    * 같은 줄이 나온다.
    */
   const locale = await getLocale();
-  const today = statementOfDay(todayLocal());
+  // 시즌 테마면 첫 줄도 계절 목록에서 고른다 (lib/statements.ts)
+  const today = statementOfDay(todayLocal(), toCardTheme((await cookies()).get(CARD_THEME_COOKIE)?.value));
   return (
     <>
       <div className="statement">

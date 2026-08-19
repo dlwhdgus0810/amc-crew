@@ -21,6 +21,7 @@ import { I18nProvider } from './i18n';
 import { SessionProvider } from './session';
 import { getViewer } from '@/lib/session';
 import SeasonDeco from './season-deco';
+import { CardThemeProvider } from './card-theme-context';
 import { CARD_THEME_COOKIE, cardThemeCss, themeBarColor, themeDeco, toCardTheme } from '@/lib/card-theme';
 import { getLocale } from '@/lib/locale';
 import { SITE_URL } from '@/lib/site';
@@ -176,6 +177,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* 배경 장식 — 장식을 깔 화면은 season-deco.tsx가 경로로 골랐다 */}
         <SeasonDeco kind={themeDeco(cardTheme)} />
         <I18nProvider locale={locale}>
+          <CardThemeProvider value={cardTheme}>
           <SessionProvider value={viewer}>
           <ServiceWorkerRegistrar />
           <ChromeAutoHide />
@@ -200,6 +202,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {/* 정지된 회원에게는 이 화면이 전부를 덮는다 (실제 차단은 서버에서) */}
           <BanGate />
           </SessionProvider>
+          </CardThemeProvider>
         </I18nProvider>
       </body>
     </html>

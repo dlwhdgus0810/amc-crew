@@ -9,7 +9,8 @@
    ============================================================ */
 
 import Link from 'next/link';
-import { Category, catDisplayName } from '@/lib/categories';
+import { Category, catDisplayName, descriptionFor } from '@/lib/categories';
+import { useCardTheme } from './card-theme-context';
 import CatIcon from './cat-icon';
 import { useT } from './i18n';
 
@@ -70,6 +71,7 @@ export default function CategoryCard({
   summary?: { when?: string; detail?: string } | null;
 }) {
   const t = useT();
+  const theme = useCardTheme();
   // 카드 전체가 링크라 토글 클릭이 이동으로 새지 않게 막는다
   const stop = (fn: () => void) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -177,7 +179,8 @@ export default function CategoryCard({
           {t(catDisplayName(category.slug))}
           <CatIcon slug={category.slug} />
         </div>
-        <div className="car-desc">{t(category.description)}</div>
+        {/* 시즌 테마에서는 계절 문구로 바뀐다 (lib/categories.ts의 descriptionFor) */}
+        <div className="car-desc">{t(descriptionFor(category, theme))}</div>
       </div>
       {summary && (
         <div className="car-foot">

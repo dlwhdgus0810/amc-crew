@@ -3225,3 +3225,41 @@ html[data-season='rain'] .card-season em {
     display: none;
   }
 }
+
+/* ── 시즌 테마 — 카드가 차례로 올라온다 ─────────────────────────
+   열일곱 장이 한꺼번에 나타나면 화면이 한 번에 갈리는데, 60ms씩 밀면 위에서
+   아래로 훑는 것처럼 읽힌다.
+
+   시즌 테마에서만 건다. 기본 테마의 첫인상을 말없이 바꿀 이유가 없다 —
+   그래서 :root 변수가 아니라 html[data-season]을 본다.
+
+   지연은 :nth-child로 준다. CSS는 자식 번호로 계산을 못 해서 열일곱 줄을
+   그냥 적었다 — 카테고리가 열일곱이라 이걸로 끝난다. 넘어가는 카드는 지연 없이
+   같이 뜨는데, 그쯤이면 어차피 화면 밖이다. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-season] .cat-grid > *,
+  html[data-season] .car > * {
+    animation: kk-card-in 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  html[data-season] .cat-grid > *:nth-child(1),  html[data-season] .car > *:nth-child(1)  { animation-delay: 0ms; }
+  html[data-season] .cat-grid > *:nth-child(2),  html[data-season] .car > *:nth-child(2)  { animation-delay: 60ms; }
+  html[data-season] .cat-grid > *:nth-child(3),  html[data-season] .car > *:nth-child(3)  { animation-delay: 120ms; }
+  html[data-season] .cat-grid > *:nth-child(4),  html[data-season] .car > *:nth-child(4)  { animation-delay: 180ms; }
+  html[data-season] .cat-grid > *:nth-child(5),  html[data-season] .car > *:nth-child(5)  { animation-delay: 240ms; }
+  html[data-season] .cat-grid > *:nth-child(6),  html[data-season] .car > *:nth-child(6)  { animation-delay: 300ms; }
+  html[data-season] .cat-grid > *:nth-child(7),  html[data-season] .car > *:nth-child(7)  { animation-delay: 360ms; }
+  html[data-season] .cat-grid > *:nth-child(8),  html[data-season] .car > *:nth-child(8)  { animation-delay: 420ms; }
+  html[data-season] .cat-grid > *:nth-child(9),  html[data-season] .car > *:nth-child(9)  { animation-delay: 480ms; }
+  html[data-season] .cat-grid > *:nth-child(10), html[data-season] .car > *:nth-child(10) { animation-delay: 540ms; }
+  html[data-season] .cat-grid > *:nth-child(11), html[data-season] .car > *:nth-child(11) { animation-delay: 600ms; }
+  html[data-season] .cat-grid > *:nth-child(12), html[data-season] .car > *:nth-child(12) { animation-delay: 660ms; }
+  html[data-season] .cat-grid > *:nth-child(13), html[data-season] .car > *:nth-child(13) { animation-delay: 720ms; }
+  html[data-season] .cat-grid > *:nth-child(14), html[data-season] .car > *:nth-child(14) { animation-delay: 780ms; }
+  html[data-season] .cat-grid > *:nth-child(15), html[data-season] .car > *:nth-child(15) { animation-delay: 840ms; }
+  html[data-season] .cat-grid > *:nth-child(16), html[data-season] .car > *:nth-child(16) { animation-delay: 900ms; }
+  html[data-season] .cat-grid > *:nth-child(n + 17), html[data-season] .car > *:nth-child(n + 17) { animation-delay: 960ms; }
+}
+@keyframes kk-card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
