@@ -152,6 +152,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={HTML_LANG[locale]}
       className={`${sans.variable} ${mono.variable} ${grotesk.variable} ${dodum.variable} ${batang.variable}`}
+      /*
+       * 시즌 테마일 때만 붙는 표시. CSS는 지금 무슨 테마인지 알 방법이 없는데
+       * (변수 값만 내려간다) 카드 등장 지연은 시즌에서만 걸어야 해서 이 고리가 필요하다.
+       */
+      data-season={themeDeco(cardTheme) ?? undefined}
     >
       <head>
         {/*

@@ -52,6 +52,12 @@ export interface SeasonTokens {
   accentSoft: string;
   r: string;
   rSm: string;
+  /**
+   * 카드 네 귀퉁이의 곡률. 네 방향이 달라서 --r과 따로 둔다 — 벚꽃은 아래가
+   * 평평해지며 가장자리가 살아나고(꽃잎 물결이 거기 얹힌다), 장마는 위가 처마처럼
+   * 각지고 아래는 물이 고인 듯 둥글다.
+   */
+  cardR: string;
   tabbarR: string;
   iconStroke: string;
   /** app/layout.tsx가 심는 next/font 변수 이름 (--font-dodum / --font-batang) */
@@ -187,6 +193,7 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       accentSoft: '#F6E4EA',
       r: '20px',
       rSm: '14px',
+      cardR: '20px 20px 4px 4px',
       tabbarR: '26px',
       iconStroke: '1.5',
       font: 'dodum',
@@ -215,6 +222,7 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       accentSoft: '#E0EAEE',
       r: '18px',
       rSm: '12px',
+      cardR: '3px 3px 22px 22px',
       tabbarR: '26px',
       iconStroke: '1.2',
       font: 'batang',
@@ -400,6 +408,7 @@ export function cardThemeCss(theme: CardTheme): string {
         `--accent-soft:${t.accentSoft}`,
         `--r:${t.r}`,
         `--r-sm:${t.rSm}`,
+        `--card-r:${t.cardR}`,
         `--tabbar-r:${t.tabbarR}`,
         `--icon-stroke:${t.iconStroke}`,
       ].join(';')

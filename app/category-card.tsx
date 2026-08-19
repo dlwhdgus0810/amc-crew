@@ -110,6 +110,38 @@ export default function CategoryCard({
           <b />
         </span>
       )}
+      {/*
+        * 시즌 테마의 카드 장식 — 벚꽃은 아래 가장자리의 꽃잎 물결, 장마는 카드 안에
+        * 내리는 비와 고인 물, 그리고 밖에 맺히는 이슬.
+        *
+        * **왜 항상 그리고 CSS로 가리는가.** 이 컴포넌트는 클라이언트이고 테마를 모른다.
+        * prop으로 내리려면 부르는 쪽(app/page.tsx·app/categories/page.tsx)까지 따라
+        * 고쳐야 해서, layout.tsx가 <html data-season>에 한 글자만 두고 CSS가 갈라지게
+        * 했다. 시즌 테마가 아니면 이 낱개들은 display:none이라 아무것도 그리지 않는다.
+        *
+        * **낱개가 무엇이 되는지는 CSS가 정한다** (app/overrides.css) — .meteors와 같은
+        * 방식이다. 벚꽃에서는 i 열여섯 개가 가장자리 꽃잎이고, 장마에서는 앞의 여섯이
+        * 빗줄기, 그다음 다섯이 이슬, em이 고인 물이다.
+        */}
+      <span className="card-season" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+        <em />
+      </span>
       <div className="car-top">
         <span className="car-idx">
           {dragHandle}
