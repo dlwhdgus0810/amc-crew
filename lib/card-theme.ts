@@ -42,21 +42,6 @@ export const PREVIEW_MAX_AGE = 300;
  */
 export const PREVIEW_CARDS = ['soccer', 'movienight', 'pickleball'];
 
-/**
- * 장마 물튀김의 판 — 관리자 화면에서 골라 견준다 (public/rain-canvas.js).
- *
- *  v1 — 입자마다 제멋대로 튀고, 카드 밑으로 나갈 때까지 산다.
- *  v2 — 한 번의 물튀김이 벌어지는 폭을 나눠 갖고 수면을 따라 퍼진다. 수면에서
- *       14px 넘게 올라가면 사라지고, 내려오다 수면에 닿으면 물에 들어간다.
- *
- * 기본은 v1이다 — 지금까지 나가던 모양을 말없이 바꾸지 않는다. 골라 보고 정하면
- * 그때 기본값을 옮기고 이 갈래를 지우면 된다.
- */
-export const SPLASH_COOKIE = 'rain-splash';
-export type Splash = 'v1' | 'v2';
-export function toSplash(v: string | undefined): Splash {
-  return v === 'v2' ? 'v2' : 'v1';
-}
 
 export type CardTheme =
   | 'default'

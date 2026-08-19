@@ -25,8 +25,6 @@ import { CardThemeProvider } from './card-theme-context';
 import {
   CARD_THEME_COOKIE,
   PREVIEW_COOKIE,
-  SPLASH_COOKIE,
-  toSplash,
   cardThemeCss,
   themeBarColor,
   themeDeco,
@@ -187,8 +185,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
        */
       data-season={themeDeco(cardTheme) ?? undefined}
       data-rain={RAIN_MODE}
-      /* 장마 물튀김의 판 — 관리자가 고른다 (public/rain-canvas.js가 읽는다) */
-      data-splash={toSplash(jar.get(SPLASH_COOKIE)?.value)}
     >
       <head>
         {/*

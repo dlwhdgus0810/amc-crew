@@ -11,7 +11,6 @@ import {
   CARD_THEME_COOKIE,
   CARD_THEME_MAX_AGE,
   CARD_THEMES,
-  SPLASH_COOKIE,
   cardColors,
   toCardTheme,
   type CardTheme,
@@ -173,21 +172,6 @@ const T = {
   walletCols: { ko: '주최 · 정성 · 참여', en: 'host · care · turnout' },
   walletNone: { ko: '아직 아무도 안 샀어요.', en: 'Nobody has bought anything yet.' },
   walletLoad: { ko: '불러오기', en: 'Load' },
-  splashTitle: { ko: '장마 물튀김', en: 'Rain splash' },
-  splashHint: {
-    ko: '방울이 물에 닿을 때의 모양을 두 판으로 견줍니다. 장마 테마를 켜고 카드를 봐주세요 — 고르면 화면을 다시 불러요.',
-    en: 'Two takes on what happens when a drop hits the water. Turn on the rainy theme and watch a card — picking one reloads the page.',
-  },
-  splashV1: { ko: 'v1 — 지금 나가는 것', en: 'v1 — what ships today' },
-  splashV1Desc: {
-    ko: '입자마다 제멋대로 튀고, 카드 밑으로 나갈 때까지 남아요.',
-    en: 'Each particle flies off on its own and lives until it leaves the card.',
-  },
-  splashV2: { ko: 'v2 — 수면을 따라', en: 'v2 — along the surface' },
-  splashV2Desc: {
-    ko: '한 번의 물튀김이 벌어지는 폭을 나눠 가져서, 어떤 방울은 거의 안 튀고 어떤 방울은 크게 번져요. 위로 솟지 않고 수면을 따라 퍼지고, 수면을 벗어나면 사라져요.',
-    en: 'One splash shares a spread, so some barely move and some open wide. They travel along the surface instead of shooting up, and vanish once they leave it.',
-  },
   themeHint: {
     ko: '카테고리 카드의 색을 갈아 끼워요. 아직 관리자만 쓸 수 있고, 고른 테마는 이 기기에서만 보여요 — 다른 사람 화면은 그대로예요.',
     en: 'Swaps the colors on category cards. Admins only for now, and the choice only applies to this device — nobody else’s screen changes.',
@@ -351,19 +335,6 @@ export default function AdminPage() {
   const router = useRouter();
   const [themeOpen, setThemeOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
-  const [splashOpen, setSplashOpen] = useState(false);
-  const [splash, setSplash] = useState<'v1' | 'v2'>('v1');
-  useEffect(() => {
-    const m = document.cookie.match(/(?:^|; )rain-splash=([^;]*)/);
-    if (m?.[1] === 'v2') setSplash('v2');
-  }, []);
-
-  /* 커스텀 엘리먼트가 연결될 때 한 번 읽으므로 다시 그리는 것으로는 안 바뀐다 — 새로 부른다 */
-  function pickSplash(next: 'v1' | 'v2') {
-    document.cookie = `${SPLASH_COOKIE}=${next}; path=/; max-age=${CARD_THEME_MAX_AGE}; samesite=lax`;
-    setSplash(next);
-    location.reload();
-  }
   const [wallets, setWallets] = useState<
     { id: string; name: string; host: number; join: number; contrib: number; earned: number; spent: number; left: number; owned: string[] }[] | null
   >(null);
@@ -1305,36 +1276,6 @@ export default function AdminPage() {
 
       {isKakaoAdmin && (
         <>
-          <h1 className="admin-sec">
-            <button className="collapse-h1" aria-expanded={splashOpen} onClick={() => setSplashOpen((v) => !v)}>
-              {t(T.splashTitle)}
-              <span className="collapse-caret" aria-hidden>
-                {splashOpen ? '⌃' : '⌄'}
-              </span>
-            </button>
-          </h1>
-          {splashOpen && (
-            <>
-              <p className="subtitle">{t(T.splashHint)}</p>
-              <div className="card">
-                {(['v1', 'v2'] as const).map((key) => (
-                  <label key={key} className="theme-pick">
-                    <input
-                      type="radio"
-                      name="rain-splash"
-                      checked={splash === key}
-                      onChange={() => pickSplash(key)}
-                    />
-                    <span className="theme-pick-body">
-                      <span className="theme-pick-name">{t(key === 'v1' ? T.splashV1 : T.splashV2)}</span>
-                      <span className="hint">{t(key === 'v1' ? T.splashV1Desc : T.splashV2Desc)}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </>
-          )}
-
           <h1 className="admin-sec">
             <button
               className="collapse-h1"
