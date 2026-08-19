@@ -18,6 +18,12 @@ const T = {
   edit: { ko: '고치기', en: 'Edit', es: 'Editar' },
   cancel: { ko: '취소', en: 'Cancel', es: 'Cancelar' },
   remove: { ko: '정산 지우기', en: 'Delete the settle-up', es: 'Borrar el reparto' },
+  markSent: { ko: '보냈어요', en: 'I sent it', es: 'Ya lo envié' },
+  markUndo: { ko: '표시 지우기', en: 'Undo', es: 'Deshacer' },
+  sentSelf: { ko: '보냄', en: 'Sent', es: 'Enviado' },
+  sentConfirmed: { ko: '확인', en: 'Received', es: 'Recibido' },
+  /* 열 명이 넘는 정산에서 받을 사람이 제일 먼저 보고 싶은 줄 */
+  paidCount: { ko: '{done}/{all}명 보냄', en: '{done}/{all} sent', es: '{done}/{all} enviados' },
   removeConfirm: { ko: '정산을 지울까요?', en: 'Delete this settle-up?', es: '¿Borrar este reparto?' },
   save: { ko: '저장하고 알림 보내기', en: 'Save and notify', es: 'Guardar y avisar' },
   saving: { ko: '보내는 중…', en: 'Sending…', es: 'Enviando…' },
@@ -158,6 +164,8 @@ interface Share {
   name: string;
   avatar: string | null;
   cents: number;
+  /** 「보냈다」 표시. byPayee면 받을 사람이 확인해 준 것이다 */
+  paid: { at: string; byPayee: boolean } | null;
 }
 interface Item {
   id: string;
@@ -300,6 +308,8 @@ function OneSettlement({
   const [zelleInput, setZelleInput] = useState('');
   /* 다시 알리기 — 지금 고른 사람들 (마지막으로 보낸 시각은 위 prop이다) */
   const [remindOpen, setRemindOpen] = useState(false);
+  /** 지금 「보냈다」를 바꾸고 있는 줄 — 그 줄의 버튼만 잠근다 */
+  const [payBusy, setPayBusy] = useState<string | null>(null);
   const [remindPick, setRemindPick] = useState<Set<string>>(new Set());
 
   async function copyText(value: string) {
@@ -483,6 +493,33 @@ function OneSettlement({
     }
   }
 
+  /**
+   * 「보냈다」 표시 켜고 끄기.
+   *
+   * 낙관적으로 안 그린다 — 눌린 줄만 잠그고 서버 답을 기다렸다가 다시 읽는다. 여기서
+   * 미리 켜 두면, 남이 같은 줄을 끄고 있었을 때 화면에는 켜져 있고 DB에는 없는 상태가
+   * 남는다. 돈이 오갔다는 표시라 그 어긋남이 남는 쪽이 나쁘다.
+   */
+  async function markPaid(userId: string, paid: boolean) {
+    if (!settlement) return;
+    setPayBusy(userId);
+    try {
+      const res = await fetch(`/api/posts/${postId}/settlement/paid`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settlementId: settlement.id, userId, paid }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setMsg({ type: 'err', text: data?.error ?? t(T.failed) });
+        return;
+      }
+      onChanged();
+    } finally {
+      setPayBusy(null);
+    }
+  }
+
   async function remove() {
     if (!confirm(t(T.removeConfirm))) return;
     setBusy(true);
@@ -546,7 +583,10 @@ function OneSettlement({
   const canEdit = Boolean(currentUserId) && (!settlement || isPayee);
   /* 다시 알릴 수 있는 사람 = 받을 사람(또는 관리자), 대상 = 낼 금액이 있는 사람들 */
   const canRemind = Boolean(settlement) && (isPayee || isAdmin);
-  const remindTargets = (settlement?.shares ?? []).filter((sh) => sh.userId !== settlement?.payee.id);
+  /* 낼 사람들(받을 사람 자신은 뺀다) — 다시 알릴 대상이자 「몇 명 중 몇 명」의 분모다 */
+  const payTargets = (settlement?.shares ?? []).filter((sh) => sh.userId !== settlement?.payee.id);
+  const remindTargets = payTargets;
+  const paidCount = payTargets.filter((sh) => sh.paid).length;
 
   /** 받을 사람이 받을 돈 — 자기 몫은 빼고 남들이 낼 것만 */
   const owedToMe = (settlement?.shares ?? [])
@@ -570,6 +610,21 @@ function OneSettlement({
                 : mine
                   ? t(T.rowShare, { amount: formatCents(mine.cents) })
                   : t(T.rowNothing)}
+              {/*
+                * 접은 채로도 알아야 하는 것 하나씩. 받을 사람에게는 몇 명이 냈는지가,
+                * 낼 사람에게는 내가 이미 표시했는지가 그것이다 — 이걸 보려고 펴게
+                * 만들면 접어 둔 뜻이 없어진다.
+                */}
+              {isPayee && payTargets.length > 0 && (
+                <span className="settle-paid-tag">
+                  {t(T.paidCount, { done: paidCount, all: payTargets.length })}
+                </span>
+              )}
+              {!isPayee && mine?.paid && (
+                <span className={`settle-paid-tag ${mine.paid.byPayee ? 'ok' : ''}`}>
+                  {t(mine.paid.byPayee ? T.sentConfirmed : T.sentSelf)}
+                </span>
+              )}
             </span>
             <span className="collapse-caret" aria-hidden>
               {open ? '⌃' : '⌄'}
@@ -718,13 +773,46 @@ function OneSettlement({
               </li>
             </ul>
 
+            {/*
+              * 받을 사람에게는 몇 명이 냈는지를 명단 위에 먼저 보여 준다. 열 명이 넘는
+              * 정산에서는 줄을 하나하나 훑기 전에 이 숫자부터 보게 된다.
+              */}
+            {isPayee && payTargets.length > 0 && (
+              <div className="settle-paid-count">
+                {t(T.paidCount, { done: paidCount, all: payTargets.length })}
+              </div>
+            )}
+
             <ul className="settle-shares">
-              {settlement.shares.map((s) => (
-                <li key={s.userId}>
-                  <span>{s.name}</span>
-                  <span>{formatCents(s.cents)}</span>
-                </li>
-              ))}
+              {settlement.shares.map((s) => {
+                // 받을 사람 자신의 몫에는 표시할 것이 없다 — 자기에게 보낼 일이 없다
+                const owes = s.userId !== settlement.payee.id;
+                const canMark = owes && (s.userId === currentUserId || isPayee);
+                return (
+                  <li key={s.userId} className={s.paid ? 'paid' : ''}>
+                    <span>
+                      {s.name}
+                      {s.paid && (
+                        <span className={`settle-paid-tag ${s.paid.byPayee ? 'ok' : ''}`}>
+                          {t(s.paid.byPayee ? T.sentConfirmed : T.sentSelf)}
+                        </span>
+                      )}
+                    </span>
+                    <span className="settle-share-right">
+                      {canMark && (
+                        <button
+                          className="link-btn"
+                          disabled={payBusy === s.userId}
+                          onClick={() => void markPaid(s.userId, !s.paid)}
+                        >
+                          {t(s.paid ? T.markUndo : T.markSent)}
+                        </button>
+                      )}
+                      {formatCents(s.cents)}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
 
             {isPayee && !settlement.payee.venmo && !settlement.payee.zelle && (
@@ -737,7 +825,12 @@ function OneSettlement({
               */}
             {canRemind && remindTargets.length > 0 && !remindOpen && (
               <button className="link-btn" style={{ marginTop: 10 }} onClick={() => {
-                setRemindPick(new Set(remindTargets.map((r) => r.userId)));
+                /*
+                 * 처음 고를 때 **아직 안 낸 사람만** 켜 둔다. 낸 사람에게 다시 보내라고
+                 * 알리는 것은 재촉이 아니라 실수다. 아무도 표시를 안 했으면 예전처럼 전원이다.
+                 */
+                const unpaid = remindTargets.filter((r) => !r.paid);
+                setRemindPick(new Set((unpaid.length > 0 ? unpaid : remindTargets).map((r) => r.userId)));
                 setRemindOpen(true);
               }}>
                 {t(T.remindOpen)}

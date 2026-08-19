@@ -1276,6 +1276,29 @@ body:has(.viewing-as) .site-header { top: var(--viewing-as-h, 0px); }
 .settle-shares { margin-top: 14px; }
 .settle-shares li { color: var(--text-mid); font-size: 13.5px; }
 .settle-items li:last-child, .settle-shares li:last-child { border-bottom: none; }
+
+/* ── 「보냈다」 표시 ─────────────────────────────────────── */
+/*
+ * 낸 줄은 흐리게 죽인다 — 열 명이 넘는 명단에서 받을 사람이 찾는 것은 「낸 사람」이
+ * 아니라 **아직 안 낸 사람**이다. 남은 줄만 또렷하게 두면 세지 않아도 눈에 들어온다.
+ */
+.settle-shares li.paid { color: var(--text-dim); }
+.settle-shares li.paid > span:first-child { text-decoration: line-through; text-decoration-color: var(--border); }
+/* 금액은 예전 그대로 두고, 버튼만 그 앞에 붙는다 */
+.settle-share-right { display: inline-flex; align-items: baseline; gap: 10px; flex: none; }
+.settle-share-right .link-btn { font-size: 12px; }
+.settle-paid-tag {
+  margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+  background: var(--surface-2); color: var(--text-mid);
+  /* 취소선이 이름에만 걸리고 이 딱지에는 안 걸리게 */
+  text-decoration: none; display: inline-block; vertical-align: 1px;
+}
+/* 받은 사람이 확인해 준 줄 — 본인이 「보냈어요」만 누른 것과 무게가 다르다 */
+.settle-paid-tag.ok { background: #E4F0E3; color: #2B5C2B; }
+.settle-paid-count {
+  margin-top: 14px; font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+}
 /* min-width: 0 — 긴 이름 목록이 금액을 밀어내지 않게 */
 .settle-item-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .settle-item-who { font-size: 12px; color: var(--text-dim); }

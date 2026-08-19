@@ -10,6 +10,7 @@ import {
   settlementItems,
   settlements,
   settlementMembers,
+  settlementPaid,
   users,
 } from './schema';
 import { localName, NameRow, nameOf, UNKNOWN_NAME } from '../store';
@@ -51,7 +52,20 @@ export interface SettlementView {
     heads: number;
   }[];
   /** 사람별로 내야 할 금액 (0원인 사람은 빠진다). 받을 사람 본인도 자기 몫이 있으면 들어간다 */
-  shares: { userId: string; name: string; avatar: string | null; cents: number }[];
+  shares: {
+    userId: string;
+    name: string;
+    avatar: string | null;
+    cents: number;
+    /**
+     * 「보냈다」 표시. 아직 없으면 null.
+     *
+     * byPayee는 **받을 사람이 확인해 준 것**이라는 뜻이다. 낸 사람이 스스로 누른 것과
+     * 구분해서 보여 준다 — 벤모는 바로 꽂히지만 현금이나 Zelle은 며칠 걸리기도 해서,
+     * 받은 사람이 확인한 줄만 진짜 끝난 것이다.
+     */
+    paid: { at: string; byPayee: boolean } | null;
+  }[];
   totalCents: number;
   /** 모임에 없지만 이 정산에 넣은 사람들 (내 친구) — 낼 금액이 0이어도 목록에 남아야 한다 */
   extraMembers: { id: string; name: string }[];
@@ -241,6 +255,20 @@ export async function getSettlements(postId: string): Promise<SettlementView[]> 
   }
   const userById = new Map(userRows.map((u) => [u.id, u]));
 
+  /*
+   * 「보냈다」 표시를 정산 전부에 대해 한 번에 읽는다 — 정산마다 부르면 한 모임에
+   * 정산이 여섯 개일 때 질의가 여섯 번이 된다 (여행이 실제로 그렇다).
+   */
+  const paidRows = await db
+    .select()
+    .from(settlementPaid)
+    .where(inArray(settlementPaid.settlementId, ids));
+  const paidBy = new Map<string, Map<string, (typeof paidRows)[number]>>();
+  for (const r of paidRows) {
+    if (!paidBy.has(r.settlementId)) paidBy.set(r.settlementId, new Map());
+    paidBy.get(r.settlementId)!.set(r.userId, r);
+  }
+
   return rows.map((row) => {
     /*
      * 나눠 낼 사람은 **정산마다 다르다** — 참가자 전원 + 이 정산에만 넣은 사람.
@@ -264,12 +292,16 @@ export async function getSettlements(postId: string): Promise<SettlementView[]> 
 
     const shares = [...computeShares(items, participants)]
       .filter(([, cents]) => cents > 0)
-      .map(([userId, cents]) => ({
-        userId,
-        name: displayNameOf(userById.get(userId), UNKNOWN_NAME, locale),
-        avatar: userById.get(userId)?.avatar ?? null,
-        cents,
-      }))
+      .map(([userId, cents]) => {
+        const mark = paidBy.get(row.id)?.get(userId);
+        return {
+          userId,
+          name: displayNameOf(userById.get(userId), UNKNOWN_NAME, locale),
+          avatar: userById.get(userId)?.avatar ?? null,
+          cents,
+          paid: mark ? { at: mark.markedAt.toISOString(), byPayee: mark.markedBy === row.payeeId } : null,
+        };
+      })
       .sort((a, b) => b.cents - a.cents || a.name.localeCompare(b.name));
 
     const payee = userById.get(row.payeeId);
@@ -735,4 +767,59 @@ export async function settlementSummaries(
     });
   }
   return out;
+}
+
+/**
+ * 「보냈다」 표시를 켜고 끈다.
+ *
+ * 누를 수 있는 사람은 둘뿐이다 — **낸 본인**과 **받을 사람**. 본인이 누르는 것은
+ * 「보냈어요」이고 받을 사람이 누르는 것은 「받았어요」인데, 표시는 하나만 두고
+ * marked_by로 구분한다 (schema.ts의 settlementPaid).
+ *
+ * 남이 남의 줄을 켜지 못하게 하는 것이 이 함수의 핵심이다. 열 명이 나눠 내는 정산에서
+ * 아무나 남의 줄을 체크할 수 있으면 「누가 안 냈나」가 그 순간 못 믿을 값이 된다.
+ *
+ * 그 정산에 낼 금액이 있는 사람인지도 본다. 금액이 0인 사람에게 표시가 붙으면
+ * 화면에는 안 보이는 줄이 DB에만 남는다.
+ */
+export async function setSettlementPaid(
+  settlementId: string,
+  userId: string,
+  paid: boolean,
+  by: string
+): Promise<{ ok: boolean; reason?: 'not-found' | 'forbidden' | 'no-share' }> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ id: settlements.id, payeeId: settlements.payeeId, postId: settlements.postId })
+    .from(settlements)
+    .where(and(eq(settlements.id, settlementId), isNull(settlements.deletedAt)));
+  if (!row) return { ok: false, reason: 'not-found' };
+
+  // 본인 줄이거나, 내가 받을 정산이거나
+  if (by !== userId && by !== row.payeeId) return { ok: false, reason: 'forbidden' };
+
+  const view = await getSettlementById(settlementId);
+  const share = view?.shares.find((s) => s.userId === userId);
+  // 받을 사람 자신은 스스로에게 보낼 것이 없다 — 자기 몫이 있어도 표시할 자리가 아니다
+  if (!share || userId === row.payeeId) return { ok: false, reason: 'no-share' };
+
+  if (paid) {
+    await db
+      .insert(settlementPaid)
+      .values({ settlementId, userId, markedBy: by })
+      /*
+       * 이미 있으면 marked_by를 새로 누른 사람으로 덮는다. 낸 사람이 먼저 「보냈어요」를
+       * 누른 뒤 받은 사람이 확인하면 그때부터 확인된 줄이 되어야 한다 — 아무것도 안 하면
+       * 영영 「본인이 그렇다고 함」에 머문다.
+       */
+      .onConflictDoUpdate({
+        target: [settlementPaid.settlementId, settlementPaid.userId],
+        set: { markedBy: by, markedAt: new Date() },
+      });
+  } else {
+    await db
+      .delete(settlementPaid)
+      .where(and(eq(settlementPaid.settlementId, settlementId), eq(settlementPaid.userId, userId)));
+  }
+  return { ok: true };
 }

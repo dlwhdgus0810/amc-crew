@@ -184,6 +184,11 @@ export const E = {
     es: 'Una reseña tiene entre 50 y 200 caracteres.',
   },
   settleNotFound: { ko: '정산을 찾을 수 없어요.', en: 'No settle-up found.', es: 'No hay ninguna cuenta que dividir.' },
+  settlePaidForbidden: {
+    ko: '본인 것이거나 자기가 받을 정산에서만 표시할 수 있어요.',
+    en: 'You can only mark your own line, or lines in a settle-up you’re collecting.',
+    es: 'Solo puedes marcar tu línea o las de una cuenta que tú cobras.',
+  },
   settleParticipantOnly: {
     ko: '모임에 참가한 사람만 정산을 만들 수 있어요.',
     en: 'Only someone in the meetup can start a settle-up.',

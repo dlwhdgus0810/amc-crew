@@ -725,6 +725,38 @@ export const settlementMembers = pgTable(
   (t) => [primaryKey({ columns: [t.settlementId, t.userId] })]
 );
 
+/**
+ * 「보냈다」 표시 — 정산 하나에서 **낸 사람 한 명이 한 줄**이다.
+ *
+ * 열 명이 넘게 나눠 내는 정산이 있는데, 받는 사람은 벤모 알림 목록과 명단을 번갈아 보며
+ * 누가 아직 안 냈는지 세고 있었다. 줄이 있으면 냈고 없으면 안 낸 것이다.
+ *
+ * **누가 표시했는지(marked_by)를 같이 적는다.** 낸 사람이 스스로 「보냈어요」를 누른 것과
+ * 받은 사람이 「받았어요」로 확인한 것은 무게가 다르다 — 벤모는 바로 꽂히지만 현금이나
+ * Zelle은 며칠 걸리기도 해서, 받은 사람이 확인한 줄만 진짜 끝난 것이다. 두 상태를
+ * 따로 두는 대신 이 칸 하나로 구분한다.
+ *
+ * 정산을 지우면 같이 사라진다. 표시만 남아 봐야 가리킬 곳이 없다.
+ */
+export const settlementPaid = pgTable(
+  'settlement_paid',
+  {
+    settlementId: uuid('settlement_id')
+      .notNull()
+      .references(() => settlements.id, { onDelete: 'cascade' }),
+    /** 낸 사람 */
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    /** 표시한 사람 — 본인이거나 받을 사람이다 */
+    markedBy: text('marked_by')
+      .notNull()
+      .references(() => users.id),
+    markedAt: timestamp('marked_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.settlementId, t.userId] })]
+);
+
 export const settlementItemMembers = pgTable(
   'settlement_item_members',
   {
