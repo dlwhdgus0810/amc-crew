@@ -119,9 +119,43 @@ html[data-season='petal'] .car > *:nth-child(8n + 7) { --seed: -5.2s; --rate: 1.
 html[data-season='petal'] .cat-grid > *:nth-child(8n + 8),
 html[data-season='petal'] .car > *:nth-child(8n + 8) { --seed: -1.1s; --rate: 0.95; }
 
-/* 아이콘 버튼도 꽃잎 곡률을 따른다 */
+/*
+ * 아이콘 버튼 테두리를 꽃 모양으로.
+ *
+ * border-radius로는 안 된다 — 네 귀퉁이 곡률로 만들 수 있는 것은 잎이나 알약까지다.
+ * 그래서 다섯 잎 윤곽을 그린 SVG를 마스크로 쓰고 그 구멍으로 currentColor를 비춘다.
+ * 카드 글자색을 그대로 쓰므로 어두운 카드에서는 크림, 밝은 카드에서는 짙은 자두색이 된다.
+ *
+ * 마스크를 버튼 자체에 걸면 안의 ★·종 아이콘까지 잘려 나가므로 ::before에 건다.
+ * 안쪽 선이 생기지 않도록 원 다섯 개를 겹치지 않고, 반지름 11 원 위의 다섯 점을
+ * 바깥으로 부푼 호로 이었다 — 다섯 잎 윤곽 한 줄이다.
+ */
 html[data-season='petal'] .car-card .car-icon {
-  border-radius: 999px 8px 999px 8px;
+  border: none;
+  border-radius: 0;
+  position: relative;
+}
+html[data-season='petal'] .car-card .car-icon::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: currentColor;
+  opacity: 0.45;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 12 A5.64 5.64 0 1 1 19.8 14.76 A5.64 5.64 0 1 1 18.35 19.24 A5.64 5.64 0 1 1 13.65 19.24 A5.64 5.64 0 1 1 12.2 14.76 A5.64 5.64 0 1 1 16 12 Z' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 12 A5.64 5.64 0 1 1 19.8 14.76 A5.64 5.64 0 1 1 18.35 19.24 A5.64 5.64 0 1 1 13.65 19.24 A5.64 5.64 0 1 1 12.2 14.76 A5.64 5.64 0 1 1 16 12 Z' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/*
+ * 구독 중일 때.
+ *
+ * 기본 규칙(globals.css)은 이 상태를 **바탕색**으로 알린다. 그런데 위에서 곡률을 0으로
+ * 둬서 그 바탕이 네모가 된다 — 꽃 윤곽 뒤에 사각형이 깔린다. 바탕을 걷고 대신 꽃 윤곽을
+ * 진하게 해서, 켜고 끄는 것이 같은 그림 안에서 읽히게 한다.
+ */
+html[data-season='petal'] .car-card .car-icon.on {
+  background: transparent;
+}
+html[data-season='petal'] .car-card .car-icon.on::before {
+  opacity: 0.95;
 }
 
 @keyframes kk-petal-sway {
