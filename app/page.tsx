@@ -8,7 +8,7 @@ import { hiddenSlugs } from '@/lib/db/hidden';
 import { CATEGORIES, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { cookies } from 'next/headers';
 import { statementOfDay } from '@/lib/statements';
-import { CARD_THEME_COOKIE, toCardTheme } from '@/lib/card-theme';
+import { CARD_THEME_COOKIE, PREVIEW_COOKIE, toCardTheme } from '@/lib/card-theme';
 import { todayLocal } from '@/lib/dates';
 import { pick } from '@/lib/i18n';
 import HomeClient from './home-client';
@@ -61,8 +61,18 @@ export default async function HubPage() {
    * 같은 줄이 나온다.
    */
   const locale = await getLocale();
-  // 시즌 테마면 첫 줄도 계절 목록에서 고른다 (lib/statements.ts)
-  const today = statementOfDay(todayLocal(), toCardTheme((await cookies()).get(CARD_THEME_COOKIE)?.value));
+  /*
+   * 시즌 테마면 첫 줄도 계절 목록에서 고른다 (lib/statements.ts).
+   *
+   * 미리보기 쿠키를 먼저 보는 것은 레이아웃과 같은 규칙이다 — 이 화면이 미리보기
+   * 창 안에도 그대로 들어가므로(app/preview/page.tsx), 여기서 안 보면 카드 색은
+   * 봄인데 첫 줄만 평소 문구가 나온다.
+   */
+  const jar = await cookies();
+  const today = statementOfDay(
+    todayLocal(),
+    toCardTheme(jar.get(PREVIEW_COOKIE)?.value ?? jar.get(CARD_THEME_COOKIE)?.value)
+  );
   return (
     <>
       <div className="statement">

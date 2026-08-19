@@ -18,6 +18,18 @@ import { Msg } from './i18n';
 export const CARD_THEME_COOKIE = 'card-theme';
 export const CARD_THEME_MAX_AGE = 400 * 24 * 60 * 60;
 
+/**
+ * 미리보기 전용 쿠키.
+ *
+ * **경로를 /preview로 박아 둔다.** 그래서 이 쿠키는 미리보기 화면을 부를 때만 딸려
+ * 가고 나머지 화면에는 아예 전달되지 않는다 — 안 산 테마를 미리 본다고 앱 전체가
+ * 그 테마로 바뀌면 그건 미리보기가 아니라 그냥 주는 것이다.
+ *
+ * 잠깐만 살아 있으면 된다. 창을 닫고 나서까지 남을 이유가 없다.
+ */
+export const PREVIEW_COOKIE = 'preview-theme';
+export const PREVIEW_MAX_AGE = 300;
+
 export type CardTheme =
   | 'default'
   | 'wildflowers'

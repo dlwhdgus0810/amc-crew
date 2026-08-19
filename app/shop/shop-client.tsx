@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useT } from '../i18n';
-import { CARD_THEMES, type CardTheme } from '@/lib/card-theme';
-import { SHOP_T, SHOP_THEMES, THEME_PRICE } from '@/lib/shop';
+import { CARD_THEMES, PREVIEW_COOKIE, PREVIEW_MAX_AGE, type CardTheme } from '@/lib/card-theme';
+import { SHOP_T, SHOP_THEMES, SOON_THEMES, THEME_PRICE } from '@/lib/shop';
 import type { Wallet } from '@/lib/db/shop';
 
 /**
@@ -17,6 +17,25 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
   const [w, setW] = useState(wallet);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  /** 지금 미리보고 있는 테마 — null이면 창이 닫혀 있다 */
+  const [preview, setPreview] = useState<CardTheme | null>(null);
+
+  /*
+   * 미리보기는 진짜 홈 화면을 iframe으로 띄운다 (app/preview/page.tsx).
+   *
+   * 어느 테마로 보일지는 쿠키로 넘긴다 — iframe 주소에 실으면 레이아웃이 못 읽는다
+   * (레이아웃은 쿼리를 안 받는다). 쿠키 경로가 /preview라서 이 창 안에서만 먹고,
+   * 상점을 포함한 나머지 화면은 원래 테마 그대로다.
+   */
+  function openPreview(theme: CardTheme) {
+    document.cookie = `${PREVIEW_COOKIE}=${theme}; path=/preview; max-age=${PREVIEW_MAX_AGE}; samesite=lax`;
+    setPreview(theme);
+  }
+  function closePreview() {
+    // 창을 닫을 때 쿠키도 지운다 — 남겨 둘 이유가 없다
+    document.cookie = `${PREVIEW_COOKIE}=; path=/preview; max-age=0`;
+    setPreview(null);
+  }
 
   async function buy(theme: CardTheme) {
     setBusy(theme);
@@ -57,10 +76,10 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
       {msg && <div className={`msg ${msg.type === 'ok' ? 'ok' : 'err'}`}>{msg.text}</div>}
 
       <ul className="shop-list">
-        {SHOP_THEMES.map((key) => {
-          const price = THEME_PRICE[key]!;
+        {[...SHOP_THEMES, ...SOON_THEMES].map((key) => {
+          const price = THEME_PRICE[key];
           const owned = w.owned.includes(key);
-          const short = price - w.left;
+          const short = price == null ? 0 : price - w.left;
           return (
             <li key={key} className="card shop-item">
               <span className="shop-body">
@@ -74,7 +93,13 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
                 ))}
               </span>
               <span className="shop-buy">
-                {owned ? (
+                {/* 값이 없으면 아직 안 파는 것 — 미리보기만 열어 준다 */}
+                <button className="link-btn" onClick={() => openPreview(key)}>
+                  {t(SHOP_T.preview)}
+                </button>
+                {price == null ? (
+                  <span className="shop-soon">{t(SHOP_T.soon)}</span>
+                ) : owned ? (
                   <span className="shop-owned">{t(SHOP_T.owned)}</span>
                 ) : (
                   <>
@@ -90,6 +115,27 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
           );
         })}
       </ul>
+
+      {/*
+        * 미리보기 창 — 안에 든 것은 진짜 홈 화면이다 (app/preview/page.tsx).
+        * 폭을 폰만큼 잡아 둔다: 이 앱은 홈 화면에 깔려 폰에서 열리는 것이 기준이라,
+        * 넓은 창에 늘려 보여 주면 실제로 보게 될 모습과 다르다.
+        */}
+      {preview && (
+        <div className="preview-wrap" role="dialog" aria-modal="true">
+          <div className="preview-head">
+            <strong>{t(SHOP_T.previewOf, { name: t(CARD_THEMES[preview].label) })}</strong>
+            <button className="secondary" onClick={closePreview}>
+              {t(SHOP_T.close)}
+            </button>
+          </div>
+          <iframe
+            className="preview-frame"
+            src={`/preview?t=${preview}`}
+            title={t(SHOP_T.previewOf, { name: t(CARD_THEMES[preview].label) })}
+          />
+        </div>
+      )}
     </>
   );
 }

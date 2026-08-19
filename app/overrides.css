@@ -3123,3 +3123,46 @@ body:has(.sky-scope.night) .tabbar a.active {
 .shop-buy { display: flex; align-items: center; gap: 10px; flex: none; margin-left: auto; }
 .shop-price { font-family: var(--mono); font-size: 13px; }
 .shop-owned { font-size: 13px; font-weight: 700; color: var(--text-mid); }
+
+/* ── 테마 미리보기 창 ─────────────────────────────────────────
+   안에 든 것은 진짜 홈 화면이다 (app/preview/page.tsx를 iframe으로).
+   폭을 폰만큼 잡는 이유: 이 앱은 홈 화면에 깔려 폰에서 열리는 것이 기준이라,
+   넓은 창에 늘려 보여 주면 실제로 보게 될 모습과 다르다. */
+.preview-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(16, 16, 16, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+}
+.preview-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(390px, 100%);
+  color: #fff;
+  font-size: 14px;
+}
+.preview-head strong { flex: 1; min-width: 0; }
+.preview-frame {
+  width: min(390px, 100%);
+  /* 폰 비율에 맞추되 창을 넘지 않게 — 가로로 눕힌 화면에서도 잘리지 않는다 */
+  height: min(780px, calc(100dvh - 96px));
+  border: 0;
+  border-radius: 18px;
+  background: var(--bg);
+  box-shadow: 0 18px 50px rgba(16, 16, 16, 0.35);
+}
+.shop-soon {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+}

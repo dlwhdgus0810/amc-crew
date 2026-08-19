@@ -22,7 +22,14 @@ import { SessionProvider } from './session';
 import { getViewer } from '@/lib/session';
 import SeasonDeco from './season-deco';
 import { CardThemeProvider } from './card-theme-context';
-import { CARD_THEME_COOKIE, cardThemeCss, themeBarColor, themeDeco, toCardTheme } from '@/lib/card-theme';
+import {
+  CARD_THEME_COOKIE,
+  PREVIEW_COOKIE,
+  cardThemeCss,
+  themeBarColor,
+  themeDeco,
+  toCardTheme,
+} from '@/lib/card-theme';
 import { getLocale } from '@/lib/locale';
 import { SITE_URL } from '@/lib/site';
 import { HTML_LANG, pick } from '@/lib/i18n';
@@ -163,7 +170,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
    * 대리 보기 띠·알림 권유가 각자 /api/auth/me를 불러 한 번 열 때 여섯 번이 나갔다.
    */
   const [locale, viewer, jar] = await Promise.all([getLocale(), getViewer(), cookies()]);
-  const cardTheme = toCardTheme(jar.get(CARD_THEME_COOKIE)?.value);
+  /*
+   * 미리보기 쿠키가 있으면 그것이 이긴다. 그 쿠키는 경로가 /preview라 미리보기 화면을
+   * 부를 때만 딸려 오므로, 다른 화면은 늘 자기가 고른 테마 그대로다.
+   */
+  const cardTheme = toCardTheme(jar.get(PREVIEW_COOKIE)?.value ?? jar.get(CARD_THEME_COOKIE)?.value);
   return (
     <html
       lang={HTML_LANG[locale]}

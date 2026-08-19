@@ -36,6 +36,15 @@ export const THEME_PRICE: Partial<Record<CardTheme, number>> = {
 /** 상점에 내놓은 테마 — 목록의 순서가 곧 화면 순서다 */
 export const SHOP_THEMES = Object.keys(THEME_PRICE) as CardTheme[];
 
+/**
+ * 만들어는 뒀지만 아직 안 파는 것.
+ *
+ * 상점에 「추가 예정」으로 세워 두고 미리보기만 열어 준다. 값을 정하면 THEME_PRICE로
+ * 옮기면 되고, 그러면 자동으로 살 수 있는 줄이 된다 — 살 수 있는지 없는지는 값이
+ * 있느냐로만 갈린다 (priceOf).
+ */
+export const SOON_THEMES: CardTheme[] = ['cherryblossom'];
+
 export function priceOf(theme: string): number | null {
   return THEME_PRICE[theme as CardTheme] ?? null;
 }
@@ -58,4 +67,8 @@ export const SHOP_T = {
   buying: { ko: '사는 중…', en: 'Buying…', es: 'Comprando…' },
   bought: { ko: '샀어요. 관리자 화면에서 골라 쓸 수 있어요.', en: 'Bought — pick it on the admin screen.', es: 'Comprada: elígela en la pantalla de administración.' },
   failed: { ko: '사지 못했어요.', en: 'Couldn’t buy that.', es: 'No se pudo comprar.' },
+  soon: { ko: '추가 예정', en: 'Coming soon', es: 'Próximamente' },
+  preview: { ko: '미리보기', en: 'Preview', es: 'Vista previa' },
+  previewOf: { ko: '{name} — 홈 화면', en: '{name} — home screen', es: '{name} — pantalla de inicio' },
+  close: { ko: '닫기', en: 'Close', es: 'Cerrar' },
 } satisfies Record<string, Msg>;
