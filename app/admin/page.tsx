@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
 import { HTML_LANG, type Msg } from '@/lib/i18n';
@@ -161,6 +162,7 @@ const T = {
   placeNone: { ko: '이름을 붙일 사진이 없어요.', en: 'Nothing to name.' },
   placeFailed: { ko: '붙이다 멈췄어요: {why}', en: 'Stopped: {why}' },
   themeTitle: { ko: '카드 색 테마', en: 'Card color theme' },
+  shopLink: { ko: '테마 상점 열기 →', en: 'Open the theme shop →' },
   themeHint: {
     ko: '카테고리 카드의 색을 갈아 끼워요. 아직 관리자만 쓸 수 있고, 고른 테마는 이 기기에서만 보여요 — 다른 사람 화면은 그대로예요.',
     en: 'Swaps the colors on category cards. Admins only for now, and the choice only applies to this device — nobody else’s screen changes.',
@@ -1207,6 +1209,13 @@ export default function AdminPage() {
           {themeOpen && (
             <>
               <p className="subtitle">{t(T.themeHint)}</p>
+              {/*
+                * 상점 입구. 아직 여기 한 곳뿐이라 탭바에는 안 넣었다 —
+                * /shop 자체도 관리자만 열린다 (app/shop/page.tsx).
+                */}
+              <p style={{ margin: '0 0 12px' }}>
+                <Link href="/shop">{t(T.shopLink)}</Link>
+              </p>
               <div className="card">
                 {(Object.keys(CARD_THEMES) as CardTheme[]).map((key) => (
                   <label key={key} className="theme-pick">

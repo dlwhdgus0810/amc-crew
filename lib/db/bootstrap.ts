@@ -320,4 +320,12 @@ CREATE TABLE IF NOT EXISTS settlement_paid (
   marked_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (settlement_id, user_id)
 );
+
+CREATE TABLE IF NOT EXISTS theme_purchases (
+  user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  theme text NOT NULL,
+  coins integer NOT NULL,
+  bought_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, theme)
+);
 `;

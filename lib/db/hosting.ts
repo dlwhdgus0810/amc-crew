@@ -443,3 +443,73 @@ async function withProfiles(rows: { id: string; n: number }[], limit: number): P
     };
   });
 }
+
+/**
+ * 한 사람의 세 점수 — **관리자도 뺀 것 없이 그대로 센다.**
+ *
+ * 순위표 쪽(withProfiles)은 관리자를 뺀다. 표에 관리자가 얹혀 있으면 회원들끼리의
+ * 순위가 아니게 되기 때문인데, 그건 **표에 세우지 않는다**는 뜻이지 활동이 없다는
+ * 뜻이 아니다. 상점의 코인은 활동을 세는 것이라 여기서는 빼면 안 된다 — 빼면
+ * 관리자만 영영 아무것도 못 산다.
+ *
+ * 한 사람 것만 필요하므로 순위표처럼 전부 모아 자르지 않고 그 사람만 센다.
+ */
+export async function boardScoresFor(userId: string): Promise<{ host: number; join: number; contrib: number }> {
+  const db = await getDb();
+  const p = alias(posts, 'p');
+
+  const hostRows = resultRows(
+    await db.execute(sql`SELECT points FROM (${points()}) s WHERE user_id = ${userId}`)
+  );
+
+  const [joinRow] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(postParticipants)
+    .innerJoin(p, eq(p.id, postParticipants.postId))
+    .where(
+      and(
+        eq(postParticipants.userId, userId),
+        eq(p.visibility, 'public'),
+        isNull(p.deletedAt),
+        notInArray(p.category, ANONYMOUS_SLUGS),
+        endedSql()
+      )
+    );
+
+  /*
+   * 기여 점수는 순위표와 같은 셈법이어야 한다 — 화면에 「사진 12 · 댓글 4」로 적히는
+   * 그 값에서 코인이 나오므로, 여기서 따로 세면 두 숫자가 어긋난다.
+   */
+  const contribRows = resultRows(
+    await db.execute(sql`
+      WITH ok AS (
+        SELECT p.id FROM posts p WHERE p.deleted_at IS NULL AND ${notAnonymous()}
+      ), ph AS (
+        SELECT SUM(LEAST(c, ${CONTRIB.photoCap})) AS n FROM (
+          SELECT post_id, count(*) AS c FROM post_photos
+          WHERE deleted_at IS NULL AND user_id = ${userId} AND post_id IN (SELECT id FROM ok) GROUP BY 1
+        ) x
+      ), cm AS (
+        SELECT SUM(LEAST(c, ${CONTRIB.commentCap})) AS n FROM (
+          SELECT post_id, count(*) AS c FROM post_comments
+          WHERE deleted_at IS NULL AND user_id = ${userId} AND post_id IN (SELECT id FROM ok) GROUP BY 1
+        ) x
+      ), rv AS (
+        SELECT count(*) AS n FROM post_reviews
+        WHERE deleted_at IS NULL AND user_id = ${userId} AND post_id IN (SELECT id FROM ok)
+      ), rq AS (
+        SELECT count(*) AS n FROM category_requests WHERE status = 'approved' AND user_id = ${userId}
+      )
+      SELECT (COALESCE((SELECT n FROM ph), 0) * ${CONTRIB.photo}
+            + COALESCE((SELECT n FROM cm), 0) * ${CONTRIB.comment}
+            + COALESCE((SELECT n FROM rv), 0) * ${CONTRIB.review}
+            + COALESCE((SELECT n FROM rq), 0) * ${CONTRIB.proposal})::int AS score
+    `)
+  );
+
+  return {
+    host: Number(hostRows[0]?.points ?? 0),
+    join: joinRow?.n ?? 0,
+    contrib: Number(contribRows[0]?.score ?? 0),
+  };
+}

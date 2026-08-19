@@ -184,6 +184,16 @@ export const E = {
     es: 'Una reseña tiene entre 50 y 200 caracteres.',
   },
   settleNotFound: { ko: '정산을 찾을 수 없어요.', en: 'No settle-up found.', es: 'No hay ninguna cuenta que dividir.' },
+  shopShort: {
+    ko: '코인이 모자라요.',
+    en: 'Not enough coins.',
+    es: 'No tienes monedas suficientes.',
+  },
+  shopOwned: {
+    ko: '이미 가지고 있는 테마예요.',
+    en: 'You already own that theme.',
+    es: 'Ya tienes ese tema.',
+  },
   settlePaidForbidden: {
     ko: '본인 것이거나 자기가 받을 정산에서만 표시할 수 있어요.',
     en: 'You can only mark your own line, or lines in a settle-up you’re collecting.',

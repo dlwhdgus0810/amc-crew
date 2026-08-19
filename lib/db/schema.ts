@@ -771,6 +771,31 @@ export const settlementItemMembers = pgTable(
 );
 
 /**
+ * 산 테마 — 한 사람이 한 테마를 한 줄로 갖는다.
+ *
+ * 코인은 따로 쌓아 두지 않는다. **활동에서 계산해 내고 산 값을 빼는 방식**이다
+ * (lib/db/shop.ts) — 잔액을 칸에 들고 있으면 모임이 지워지거나 점수 규칙이 바뀔 때
+ * 그 칸과 실제 활동이 어긋나고, 어긋난 뒤에는 무엇이 맞는지 알 방법이 없다.
+ *
+ * 그래서 **그때 낸 값(coins)을 같이 적는다.** 값을 나중에 올리거나 내려도 이미 산
+ * 사람의 잔액이 따라 움직이면 안 된다.
+ */
+export const themePurchases = pgTable(
+  'theme_purchases',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** lib/card-theme.ts의 CardTheme 값 */
+    theme: text('theme').notNull(),
+    /** 살 때 낸 값 — 나중에 값이 바뀌어도 이 줄은 그대로다 */
+    coins: integer('coins').notNull(),
+    boughtAt: timestamp('bought_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.theme] })]
+);
+
+/**
  * 관리자가 감춰 둔 카테고리.
  *
  * 열네 장이 늘 다 보일 필요는 없다 — 계절이 지난 종목이나 당분간 안 여는 것을 내려두면
