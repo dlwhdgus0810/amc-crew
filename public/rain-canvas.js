@@ -210,9 +210,18 @@
                 ? {
                     x: d.x,
                     y: sy,
-                    /* 수직으로 솟지 않고 수면을 따라 퍼진다 — 가로가 세로보다 네 배 크다 */
+                    /*
+                     * v2는 **수면을 타고** 퍼진다. 가로로만 실제 속도를 주고, 세로는
+                     * 수면에서 얼마나 떴는지(lift)만 들고 있다 — 자리는 매 프레임
+                     * waveY(x)에서 그만큼 위로 잡는다.
+                     *
+                     * 그래서 입자가 바깥으로 갈수록 그 자리 물결의 높낮이를 그대로 탄다.
+                     * 예전처럼 vy로 날리면 태어난 자리의 높이만 기억한 채 포물선으로
+                     * 날아가서, 물결이 일렁이는데 물튀김만 딴 데 떠 있었다.
+                     */
                     vx: (Math.random() * 2 - 1) * 2.2 * spread,
-                    vy: -(0.55 + Math.random() * 0.75) * spread,
+                    lift: 0,
+                    vlift: (0.55 + Math.random() * 0.75) * spread,
                     r: (0.5 + Math.random() * 0.5) * (0.7 + spread * 0.4),
                     a: 0.7,
                   }
@@ -231,26 +240,24 @@
 
         for (let i = this.spray.length - 1; i >= 0; i--) {
           const s = this.spray[i];
-          s.vy += 0.09 * dt;
           s.x += s.vx * dt;
-          s.y += s.vy * dt;
           s.a -= 0.016 * dt;
           s.r -= 0.009 * dt;
-          if (s.a <= 0 || s.r <= 0) {
-            this.spray.splice(i, 1);
-            continue;
-          }
           if (this.v2) {
             /*
-             * v2: 물튀김은 수면에서만 산다 — 수면보다 14px 넘게 올라가면 지우고(공중에 뜬
-             * 동그라미가 남지 않게), 내려오다 수면 아래로 가면 물에 다시 들어간 것이다.
-             * 그 x 자리의 수면을 재므로 물결을 따라다닌다.
+             * v2: 뜬 높이만 굴리고 **자리는 물결에서 잡는다.** 그래서 바깥으로 퍼지는
+             * 동안 그 자리 수면의 높낮이를 그대로 탄다 — 물결이 일렁이면 물튀김도 같이
+             * 일렁인다. 다시 수면에 닿으면(lift <= 0) 물에 들어간 것이다.
              */
-            const wy = this.waveY(s.x);
-            if (s.y < wy - 14 || (s.vy > 0 && s.y > wy)) this.spray.splice(i, 1);
-          } else if (s.y > h) {
-            /* v1: 카드 밑으로 나갈 때까지 산다 — 수면과 무관하다 */
-            this.spray.splice(i, 1);
+            s.vlift -= 0.09 * dt;
+            s.lift += s.vlift * dt;
+            s.y = this.waveY(s.x) - s.lift;
+            if (s.a <= 0 || s.r <= 0 || s.lift <= 0) this.spray.splice(i, 1);
+          } else {
+            /* v1: 태어난 자리에서 포물선으로 날아가고, 카드 밑으로 나갈 때까지 산다 */
+            s.vy += 0.09 * dt;
+            s.y += s.vy * dt;
+            if (s.a <= 0 || s.r <= 0 || s.y > h) this.spray.splice(i, 1);
           }
         }
 
@@ -307,9 +314,38 @@
 
         ctx.lineWidth = 1;
         for (const p of this.rings) {
-          ctx.beginPath();
-          ctx.ellipse(p.x, this.waveY(p.x), p.r * 2.4, p.r * 0.7, 0, 0, Math.PI * 2);
+          /*
+           * 파문을 ellipse로 그리면 **평평한 타원**이 된다 — 수면은 일렁이는데 파문만
+           * 반듯해서 물 위가 아니라 물 앞에 떠 있는 것처럼 보였다.
+           *
+           * 대신 좌우로 훑으면서 그 자리의 waveY를 잡고, 거기서 위아래로 부풀린다.
+           * 고리의 가운데 선이 물결을 그대로 타므로 수면에 얹힌 것으로 보인다.
+           */
+          const rx = p.r * 2.4;
+          const ry = p.r * 0.7;
           ctx.strokeStyle = 'rgba(' + tint + ',' + p.a.toFixed(3) + ')';
+          if (!this.v2) {
+            /* v1은 예전 그대로 — 평평한 타원 */
+            ctx.beginPath();
+            ctx.ellipse(p.x, this.waveY(p.x), rx, ry, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            continue;
+          }
+          const STEP = 14;
+          ctx.beginPath();
+          for (let k = 0; k <= STEP; k++) {
+            const f = k / STEP;
+            const x = p.x - rx + 2 * rx * f;
+            const y = this.waveY(x) - ry * Math.sin(Math.PI * f);
+            if (k === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          for (let k = STEP; k >= 0; k--) {
+            const f = k / STEP;
+            const x = p.x - rx + 2 * rx * f;
+            ctx.lineTo(x, this.waveY(x) + ry * Math.sin(Math.PI * f));
+          }
+          ctx.closePath();
           ctx.stroke();
         }
 
