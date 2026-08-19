@@ -14,6 +14,23 @@ import { useCardTheme } from './card-theme-context';
 import CatIcon from './cat-icon';
 import { useT } from './i18n';
 
+/*
+ * <rain-canvas>는 커스텀 엘리먼트다 (public/rain-canvas.js) — TS에 이름만 알려 둔다.
+ *
+ * `declare global { namespace JSX }`가 아니라 'react' 모듈 안에 선언한다. React 19부터
+ * JSX 네임스페이스가 전역이 아니라 React 밑으로 옮겨서, 전역에 적으면 여기 태그가
+ * IntrinsicElements에 없다고 잡힌다.
+ */
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      'rain-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        rate?: string;
+      };
+    }
+  }
+}
+
 const T = {
   favoriteA11y: { ko: '즐겨찾기', en: 'Favourite', es: 'Favorito' },
   subscribeA11y: { ko: '구독 알림', en: 'Subscription alerts', es: 'Avisos de suscripción' },
@@ -125,6 +142,16 @@ export default function CategoryCard({
         * 방식이다. 벚꽃에서는 i 열여섯 개가 가장자리 꽃잎이고, 장마에서는 앞의 여섯이
         * 빗줄기, 그다음 다섯이 이슬, em이 고인 물이다.
         */}
+      {/*
+        * 장마 — 카드 안의 물. 캔버스가 그린다 (public/rain-canvas.js).
+        * 이것도 항상 그려 두고 CSS가 가린다 — 시즌이 아니면 display:none이라
+        * 커스텀 엘리먼트가 연결되지 않고 루프도 안 돈다.
+        *
+        * 색은 안 넘긴다 — 캔버스가 상속된 color를 읽는다. 어두운 카드에서는 크림,
+        * 밝은 카드에서는 짙은 청회색이 된다 (CSS의 currentColor와 같은 이야기다).
+        */}
+      <rain-canvas className="card-rain" rate="0.1" aria-hidden="true" />
+
       <span className="card-season" aria-hidden="true">
         <i />
         <i />

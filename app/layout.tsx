@@ -68,6 +68,21 @@ const grotesk = Space_Grotesk({
  * preload: false는 위와 같은 이유다 — 한글 글꼴은 unicode-range로 백 조각쯤 쪼개져 있는데
  * preload를 켜면 안 쓰는 조각까지 전부 받는다.
  */
+// 시즌 테마 — 카드 모양과 카드 장식 (2차에서 overrides.css에 붙였던 부분을 대신한다)
+import './season.css';
+
+/**
+ * 장마 테마에서 카드 안의 물을 무엇으로 그릴지.
+ *
+ *  'canvas' — 방울이 실제로 수위를 올리고, 떨어진 자리만 수면이 우묵해졌다 되살아난다.
+ *             카드마다 requestAnimationFrame 루프를 돌며 안 보이는 카드는 멈춘다.
+ *  'css'    — 키프레임만 쓴다. 메인 스레드 비용은 0이지만 수위가 적어 둔 계단이라
+ *             매번 같은 모양이 반복된다.
+ *
+ * 카드가 여러 장 보이는 화면에서 프레임이 모자라면 'css'로 내리면 된다.
+ */
+const RAIN_MODE: 'canvas' | 'css' = 'canvas';
+
 const dodum = Gowun_Dodum({
   subsets: ['latin'],
   weight: ['400'],
@@ -158,6 +173,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
        * (변수 값만 내려간다) 카드 등장 지연은 시즌에서만 걸어야 해서 이 고리가 필요하다.
        */
       data-season={themeDeco(cardTheme) ?? undefined}
+      data-rain={RAIN_MODE}
     >
       <head>
         {/*
@@ -172,6 +188,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           * 자리에서 색이 따라오게 하는 것은 이 meta다. 둘 다 둔다.
           */}
         <meta name="theme-color" content={themeBarColor(cardTheme)} />
+        {/*
+          * 카드 안의 물을 그리는 커스텀 엘리먼트 — **장마 테마일 때만** 받는다.
+          * defer라도 괜찮다: 엘리먼트가 나중에 정의되면 이미 있던 태그가 그때 연결된다
+          * (커스텀 엘리먼트 업그레이드). 카드가 먼저 보이고 물이 잠시 뒤에 생긴다.
+          */}
+        {RAIN_MODE === 'canvas' && themeDeco(cardTheme) === 'rain' && (
+          <script src="/rain-canvas.js" defer />
+        )}
       </head>
       <body>
         {/* 배경 장식 — 장식을 깔 화면은 season-deco.tsx가 경로로 골랐다 */}
