@@ -26,7 +26,39 @@ export type CardTheme =
   | 'chocolate'
   | 'inkwash'
   | 'blueeclipse'
-  | 'goldentaupe';
+  | 'goldentaupe'
+  | 'cherryblossom'
+  | 'rainyseason';
+
+/**
+ * 시즌 테마만 갖는 값.
+ *
+ * 색 테마 일곱 개는 카드 색만 바꾸므로 이 필드가 없다. 시즌 테마는 바탕·글씨·강조색·
+ * 곡률·서체·아이콘 굵기까지 바꾸기 때문에 카드 색과 같은 자리에서 한 번에 정한다.
+ *
+ * 여기 있는 값은 화면에 심을 CSS 변수와 일대일이다 (cardThemeCss 참고).
+ */
+export interface SeasonTokens {
+  bg: string;
+  surface: string;
+  surface2: string;
+  border: string;
+  borderSoft: string;
+  text: string;
+  textMid: string;
+  textDim: string;
+  accent: string;
+  accentDark: string;
+  accentSoft: string;
+  r: string;
+  rSm: string;
+  tabbarR: string;
+  iconStroke: string;
+  /** app/layout.tsx가 심는 next/font 변수 이름 (--font-dodum / --font-batang) */
+  font: 'dodum' | 'batang';
+  /** 배경 장식 종류 — app/season-deco.tsx가 읽는다 */
+  deco: 'petal' | 'rain';
+}
 
 export interface CardThemeDef {
   label: Msg;
@@ -41,6 +73,8 @@ export interface CardThemeDef {
    * 와일드플라워만 예외다 — 거기는 어느 색이 몇 번째인지를 직접 지정받았다.
    */
   stops: string[] | null;
+  /** 시즌 테마만 갖는다. 없으면 카드 색만 바뀌는 테마다. */
+  tokens?: SeasonTokens;
 }
 
 export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
@@ -121,6 +155,71 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       es: 'De azul casi medianoche a azul lila, oscuro de principio a fin.',
     },
     stops: ['#0F0E47', '#272757', '#505081', '#8686AC'],
+  },
+  /*
+   * ── 시즌 테마 ─────────────────────────────────────────────────────
+   * 색만 바꾸는 위쪽 테마들과 달리 화면 전체가 바뀐다. 관리자가 켜고 끄는 것으로만
+   * 바뀌고 자동 만료는 없다.
+   */
+  cherryblossom: {
+    label: { ko: '봄 · 벚꽃', en: 'Spring · Cherry blossom', es: 'Primavera · Cerezo' },
+    note: {
+      ko: '연분홍 바탕에 꽃잎이 내려앉는 테마. 서체도 고운돋움으로 바뀌어요.',
+      en: 'Pale pink with drifting petals; type switches to Gowun Dodum.',
+      es: 'Rosa pálido con pétalos que caen; la tipografía cambia a Gowun Dodum.',
+    },
+    stops: ['#8A3149', '#C9647E', '#E5A6B6', '#C7D2A6'],
+    tokens: {
+      bg: '#F7F2F4',
+      surface: '#FFFFFF',
+      surface2: '#F6E4EA',
+      border: '#EADEE2',
+      borderSoft: '#F3E9EC',
+      text: '#241B1E',
+      textMid: '#5C5259',
+      textDim: '#8E8189',
+      /*
+       * 글자와 면에 같은 값을 쓴다. 시안의 밝은 분홍(#C9647E)은 흰 글자와 3.7:1이라
+       * 버튼 면에 쓸 수 없어서 한 단 어두운 값을 골랐다.
+       */
+      accent: '#A8455F',
+      accentDark: '#8A3149',
+      accentSoft: '#F6E4EA',
+      r: '20px',
+      rSm: '14px',
+      tabbarR: '26px',
+      iconStroke: '1.5',
+      font: 'dodum',
+      deco: 'petal',
+    },
+  },
+  rainyseason: {
+    label: { ko: '여름 · 장마', en: 'Summer · Rainy season', es: 'Verano · Temporada de lluvias' },
+    note: {
+      ko: '비 오는 창밖 같은 청회색 테마. 서체도 고운바탕으로 바뀌어요.',
+      en: 'Slate blue like a rainy window; type switches to Gowun Batang.',
+      es: 'Azul pizarra de ventana lluviosa; la tipografía cambia a Gowun Batang.',
+    },
+    stops: ['#1F3D4A', '#2F5D6B', '#3D6875', '#9FB6C0'],
+    tokens: {
+      bg: '#E6EAEC',
+      surface: '#F4F7F8',
+      surface2: '#E0EAEE',
+      border: '#D5DDE1',
+      borderSoft: '#E4EBEE',
+      text: '#1B2529',
+      textMid: '#54636A',
+      textDim: '#7C888D',
+      accent: '#2E5C6E',
+      accentDark: '#1F3D4A',
+      accentSoft: '#E0EAEE',
+      r: '18px',
+      rSm: '12px',
+      tabbarR: '26px',
+      iconStroke: '1.2',
+      font: 'batang',
+      deco: 'rain',
+    },
   },
 };
 
@@ -278,5 +377,57 @@ export function cardThemeCss(theme: CardTheme): string {
   const vars = cardColors(theme)
     .map((c) => `--cat-${c.slug}:${c.color};--cat-${c.slug}-fg:${c.fg}`)
     .join(';');
-  return `:root{${vars}}`;
+  const t = CARD_THEMES[theme].tokens;
+  /*
+   * 시즌 서체는 앞에 세우고 Plex를 뒤에 남긴다 — 고운돋움·고운바탕에 없는 글자
+   * (기호·라틴 일부)는 Plex가 받는다.
+   */
+  const sans = t
+    ? `var(--font-${t.font}), var(--font-sans), 'IBM Plex Sans KR', sans-serif`
+    : `var(--font-sans), 'IBM Plex Sans KR', sans-serif`;
+  const season = t
+    ? [
+        `--bg:${t.bg}`,
+        `--surface:${t.surface}`,
+        `--surface-2:${t.surface2}`,
+        `--border:${t.border}`,
+        `--border-soft:${t.borderSoft}`,
+        `--text:${t.text}`,
+        `--text-mid:${t.textMid}`,
+        `--text-dim:${t.textDim}`,
+        `--accent:${t.accent}`,
+        `--accent-dark:${t.accentDark}`,
+        `--accent-soft:${t.accentSoft}`,
+        `--r:${t.r}`,
+        `--r-sm:${t.rSm}`,
+        `--tabbar-r:${t.tabbarR}`,
+        `--icon-stroke:${t.iconStroke}`,
+      ].join(';')
+    : '';
+  /*
+   * **:root이 아니라 html:root이다.**
+   *
+   * 이 이름들은 이미 임자가 있다 — globals.css와 color-8f.css가 색 열하나를 각각
+   * :root에 정의하고, --r/--r-sm은 globals.css, --sans는 font-plex.css에 있다.
+   * 같은 명시도끼리는 나중에 오는 쪽이 이기는데, 이 <style>이 import된 CSS보다
+   * 앞인지 뒤인지는 Next가 정하는 일이라 우리가 기댈 수 없다.
+   *
+   * html:root은 (0,1,1)이라 그 :root들(0,1,0)을 순서와 무관하게 이긴다. 덕분에
+   * CSS 파일은 한 줄도 고치지 않는다. 이름을 --kk-bg로 바꾸는 쪽은 쓰는 자리를
+   * 전부 따라 고쳐야 해서 접었다.
+   *
+   * overrides.css의 .sky-scope.night은 (0,2,0)이라 여기서도 이긴다 — 밤 화면으로
+   * 들어간 모임은 시즌 테마와 무관하게 밤색으로 남는다. 그게 맞다.
+   */
+  return `html:root{${vars};--sans:${sans}${season ? ';' + season : ''}}`;
+}
+
+/** 상단 바 색 — manifest.ts와 layout.tsx의 meta가 같이 읽는다 */
+export function themeBarColor(theme: CardTheme): string {
+  return CARD_THEMES[theme].tokens?.bg ?? '#F7F6F2';
+}
+
+/** 배경 장식 종류. 색만 바꾸는 테마는 null. */
+export function themeDeco(theme: CardTheme): 'petal' | 'rain' | null {
+  return CARD_THEMES[theme].tokens?.deco ?? null;
 }

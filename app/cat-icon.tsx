@@ -15,7 +15,15 @@ const base = {
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
+  /*
+   * 선 굵기는 시즌 테마가 바꾼다 (--icon-stroke: 벚꽃 1.5, 장마 1.2).
+   *
+   * 속성이 아니라 style에 들어가야 한다 — SVG 속성은 CSS 변수를 받지 못한다.
+   * 아래 strokeWidth는 그대로 남긴다: 표현 속성은 CSS에 지므로 변수가 없을 때만
+   * 쓰이는 대비값이 된다.
+   */
   strokeWidth: 1.8,
+  style: { strokeWidth: 'var(--icon-stroke, 1.8)' },
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
   'aria-hidden': true,

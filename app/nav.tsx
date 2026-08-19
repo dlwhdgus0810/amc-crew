@@ -41,8 +41,9 @@ const T = {
   create: { ko: '모임 만들기', en: 'New meetup', es: 'Crear quedada' },
 };
 
-/* 20px 라인 아이콘 — 굵기 1.8로 통일 */
-const icon = { className: 't-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+/* 20px 라인 아이콘 — 굵기 1.8로 통일. 시즌 테마에서는 --icon-stroke가 이긴다
+   (속성이 아니라 style이어야 CSS 변수를 받는다 — app/cat-icon.tsx와 같은 이유) */
+const icon = { className: 't-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, style: { strokeWidth: 'var(--icon-stroke, 1.8)' }, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
 const HomeIcon = () => (
   <svg {...icon} aria-hidden>

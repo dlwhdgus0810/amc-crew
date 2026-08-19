@@ -6,7 +6,7 @@
 
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
-import { IBM_Plex_Mono, IBM_Plex_Sans_KR, Space_Grotesk } from 'next/font/google';
+import { IBM_Plex_Mono, IBM_Plex_Sans_KR, Space_Grotesk, Gowun_Dodum, Gowun_Batang } from 'next/font/google';
 import Link from 'next/link';
 import NavLinks, { ContextTabs } from './nav';
 import ServiceWorkerRegistrar from './sw-register';
@@ -20,7 +20,8 @@ import ViewingAs from './viewing-as';
 import { I18nProvider } from './i18n';
 import { SessionProvider } from './session';
 import { getViewer } from '@/lib/session';
-import { CARD_THEME_COOKIE, cardThemeCss, toCardTheme } from '@/lib/card-theme';
+import SeasonDeco from './season-deco';
+import { CARD_THEME_COOKIE, cardThemeCss, themeBarColor, themeDeco, toCardTheme } from '@/lib/card-theme';
 import { getLocale } from '@/lib/locale';
 import { SITE_URL } from '@/lib/site';
 import { HTML_LANG, pick } from '@/lib/i18n';
@@ -58,6 +59,27 @@ const grotesk = Space_Grotesk({
   display: 'swap',
   preload: false,
   variable: '--font-grotesk',
+});
+/*
+ * 시즌 테마 전용 서체 둘. 테마가 켜지지 않은 동안 다운로드되지 않는다 — 변수 이름만 심어
+ * 둘 뿐이고, 실제 파일은 그 글꼴로 글자가 그려질 때 받는다.
+ *
+ * preload: false는 위와 같은 이유다 — 한글 글꼴은 unicode-range로 백 조각쯤 쪼개져 있는데
+ * preload를 켜면 안 쓰는 조각까지 전부 받는다.
+ */
+const dodum = Gowun_Dodum({
+  subsets: ['latin'],
+  weight: ['400'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-dodum',
+});
+const batang = Gowun_Batang({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-batang',
 });
 import './globals.css';
 // 타입 보정 — 굵기·행간·자간·라벨 표기만 (구조·서체는 그대로)
@@ -127,15 +149,27 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [locale, viewer, jar] = await Promise.all([getLocale(), getViewer(), cookies()]);
   const cardTheme = toCardTheme(jar.get(CARD_THEME_COOKIE)?.value);
   return (
-    <html lang={HTML_LANG[locale]} className={`${sans.variable} ${mono.variable} ${grotesk.variable}`}>
+    <html
+      lang={HTML_LANG[locale]}
+      className={`${sans.variable} ${mono.variable} ${grotesk.variable} ${dodum.variable} ${batang.variable}`}
+    >
       <head>
         {/*
           * 카드 색을 변수로 심는다. 여기 한 곳에서 정하면 색을 쓰는 일곱 자리가
           * 그대로 따라온다 (lib/card-theme.ts의 cardThemeCss).
+          * 시즌 테마에선 바탕·글씨·강조색·곡률·서체까지 같은 변수로 따라오며,
+          * 이름이 겹치는 :root들을 이기려고 html:root을 쓴다 (그 함수 주석 참고).
           */}
         <style dangerouslySetInnerHTML={{ __html: cardThemeCss(cardTheme) }} />
+        {/*
+          * 상단 바 색. 매니페스트는 설치할 때 한 번 읽고 마는 값이라, 테마를 바꾼 그
+          * 자리에서 색이 따라오게 하는 것은 이 meta다. 둘 다 둔다.
+          */}
+        <meta name="theme-color" content={themeBarColor(cardTheme)} />
       </head>
       <body>
+        {/* 배경 장식 — 장식을 깔 화면은 season-deco.tsx가 경로로 골랐다 */}
+        <SeasonDeco kind={themeDeco(cardTheme)} />
         <I18nProvider locale={locale}>
           <SessionProvider value={viewer}>
           <ServiceWorkerRegistrar />

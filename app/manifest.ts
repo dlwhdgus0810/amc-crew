@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { cookies } from 'next/headers';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
+import { CARD_THEME_COOKIE, themeBarColor, toCardTheme } from '@/lib/card-theme';
 
 const T = {
   name: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?' },
@@ -15,7 +17,8 @@ const T = {
  * 홈 화면에 추가하면 주소창 없는 앱처럼 열린다.
  */
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-  const locale = await getLocale();
+  const [locale, jar] = await Promise.all([getLocale(), cookies()]);
+  const theme = toCardTheme(jar.get(CARD_THEME_COOKIE)?.value);
   return {
     name: pick(locale, T.name),
     short_name: 'Kansas Korean', // 홈 화면 아이콘 아래 표시 (길면 잘린다)
@@ -24,7 +27,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     start_url: '/',
     display: 'standalone',
     background_color: '#F6F4EE', // 스플래시 배경 — 아이콘 종이색과 같은 값
-    theme_color: '#F7F6F2', // 상단 바 색 — 앱 배경(--bg)과 같아야 화면과 이어져 보인다
+    theme_color: themeBarColor(theme), // 상단 바 색 — 앱 배경(--bg)과 같아야 화면과 이어져 보인다
     icons: [
       // SVG를 먼저 둔다 — 지원하는 브라우저는 벡터를 골라 어느 크기에서도 또렷하다
       { src: '/icon.svg', type: 'image/svg+xml', sizes: 'any' },
