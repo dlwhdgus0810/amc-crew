@@ -248,9 +248,13 @@ html[data-season='rain'] .card-season em {
   opacity: 0.18;
   animation: kk-pool 14s linear infinite;
 }
-/* 아이콘 버튼도 컵 모양이라 안에 물이 찬다. 요소를 더 넣지 않고 배경 높이만 늘린다 */
+/*
+ * 아이콘 버튼은 물방울 모양 — 둥글다가 왼쪽 아래만 뾰족하다. 실제 방울이 어딘가에
+ * 맺힐 때 나는 모양이고, 안에 물이 차오르는 것과도 자연스럽게 맞는다.
+ * 요소를 더 넣지 않고 배경 높이만 늘린다.
+ */
 html[data-season='rain'] .car-card .car-icon {
-  border-radius: 2px 2px 12px 12px;
+  border-radius: 999px 999px 999px 3px;
   background: linear-gradient(transparent, color-mix(in srgb, currentColor 28%, transparent)) bottom / 100% 4px no-repeat;
   animation: kk-cup 9s ease-in-out var(--cd, 0s) infinite;
 }
@@ -288,6 +292,35 @@ html[data-season='rain'] .car-card .car-icon:nth-child(2) { --cd: 1.6s; }
   46%  { background-size: 100% 11px; }
   72%  { background-size: 100% 18px; }
   100% { background-size: 100% 4px; }
+}
+
+/* ══ 카드 표면 ════════════════════════════════════════════════
+   시안의 카드에는 단색 위에 얇은 결이 하나씩 얹혀 있다 — 벚꽃은 왼쪽 위 광택,
+   장마는 처마 선.
+
+   **::after로 얹는 이유.** category-card.tsx가 background: var(--cat-슬러그)를
+   인라인으로 칠한다. 인라인은 스타일시트를 이기므로 여기서 background를 다시 쓰면
+   묻힌다 — !important를 붙이면 되지만 그 방식은 나중에 무엇이 무엇을 덮었는지
+   알기 어려워진다. 덮어쓰는 대신 한 겹 위에 깐다.
+
+   카드에 isolation: isolate가 이미 있어서(위쪽) z-index: -1이 카드 배경 위·글자
+   아래에 놓인다. 흰색 백분율만 쓰므로 열일곱 장에 색을 따로 정하지 않아도 된다.
+   ══════════════════════════════════════════════════════════ */
+html[data-season] .car-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+/* 벚꽃 — 왼쪽 위에서 비스듬히 들어오는 광택 */
+html[data-season='petal'] .car-card::after {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 58%);
+}
+/* 장마 — 위 가장자리 3px 처마 선 */
+html[data-season='rain'] .car-card::after {
+  background: linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0)) top left / 100% 3px no-repeat;
 }
 
 /* 움직임을 줄여 달라고 한 사람에게는 멈춘다. 물결은 모양이라 남기고 흔들림만 끈다.
