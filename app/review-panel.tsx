@@ -23,9 +23,9 @@ const T = {
   heading: { ko: '후기', en: 'Reviews', es: 'Reseñas' },
   none: { ko: '아직 후기가 없어요.', en: 'No reviews yet.', es: 'Todavía no hay reseñas.' },
   placeholder: {
-    ko: '어땠는지 남겨주세요 (30자 이상)',
-    en: 'How was it? (30 characters or more)',
-    es: '¿Qué tal estuvo? (30 caracteres o más)',
+    ko: '어땠는지 남겨주세요 (50자 이상)',
+    en: 'How was it? (50 characters or more)',
+    es: '¿Qué tal estuvo? (50 caracteres o más)',
   },
   save: { ko: '남기기', en: 'Post', es: 'Publicar' },
   update: { ko: '고치기', en: 'Update', es: 'Cambiar' },
