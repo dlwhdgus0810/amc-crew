@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useT } from '../i18n';
 import { CARD_THEMES, PREVIEW_COOKIE, PREVIEW_MAX_AGE, type CardTheme } from '@/lib/card-theme';
 import { COIN, SHOP_T, SHOP_THEMES, SOON_THEMES, THEME_PRICE } from '@/lib/shop';
@@ -16,6 +17,9 @@ import type { Wallet } from '@/lib/db/shop';
  * 미리보기 안쪽 화면의 크기. 폰 폭에 헤더·첫 줄·카드 셋·탭바가 들어가는 높이다 —
  * 이 값으로 그린 뒤 창에 맞게 줄인다.
  */
+/* 권유 문구가 가리킬 값 — 지금 파는 것 중 제일 싼 것 */
+const CHEAPEST = Math.min(...Object.values(THEME_PRICE).filter((n): n is number => n != null));
+
 const PREVIEW_W = 390;
 const PREVIEW_H = 1080;
 
@@ -119,7 +123,20 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
             {t(SHOP_T.lockedBody, { n: -w.left })}
           </div>
         ) : (
-          <p className="hint">{t(SHOP_T.avatarNudge, { n: COIN.avatar })}</p>
+          <Link href="/profile" className="card coin-nudge">
+            <strong>{t(SHOP_T.avatarNudge, { n: COIN.avatar })}</strong>
+            <span className="hint">
+              {/* 사진을 올린 뒤에 남는 거리 — 지금 잔액이 아니라 그때의 잔액으로 센다 */}
+              {CHEAPEST - (w.left + COIN.avatar) > 0
+                ? t(SHOP_T.avatarNudgeMore, {
+                    n: CHEAPEST - (w.left + COIN.avatar),
+                    price: CHEAPEST,
+                    avatar: COIN.avatar,
+                  })
+                : t(SHOP_T.avatarNudgeEnough, { n: COIN.avatar })}
+            </span>
+            <span className="coin-nudge-go">{t(SHOP_T.avatarGo)}</span>
+          </Link>
         ))}
 
       {msg && <div className={`msg ${msg.type === 'ok' ? 'ok' : 'err'}`}>{msg.text}</div>}

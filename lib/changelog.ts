@@ -31,6 +31,28 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-19T17:30',
+    title: { ko: '프로필 사진에 20코인이 붙어요', en: 'A profile photo is worth 20 coins' },
+    items: [
+      {
+        ko: '프로필에 사진을 올려 두면 상점 코인이 20 더 붙어요. 지난 활동을 다시 세는 게 아니라 사진이 있는 동안 그냥 붙어 있는 값이에요 — 올리는 즉시 상점에 반영돼요.',
+        en: 'Keep a photo on your profile and 20 shop coins come with it. It isn’t a one-off reward for uploading — it’s attached to the photo being there, and it shows up in the shop the moment you add one.',
+      },
+      {
+        ko: '사진을 지우면 그 20코인도 같이 빠져요. 사진으로 받은 코인으로 테마를 산 뒤에 사진을 지우면 코인이 마이너스가 되고, 그동안은 산 테마도 잠겨요. 사진을 다시 올리면 바로 풀려요.',
+        en: 'Delete the photo and those 20 go with it. If you bought a theme with them and then delete it, your coins go negative and the theme locks until you put a photo back.',
+      },
+      {
+        ko: '정성 점수나 순위표는 그대로예요. 사진은 상점 코인에만 붙어요.',
+        en: 'Contribution scores and the leaderboards are untouched — the photo only counts in the shop.',
+      },
+      {
+        ko: '얼굴이 아니어도 괜찮아요. 명단이나 참여자 줄에서 서로 알아보기 쉬우라고 있는 거니까, 좋아하는 사진 아무거나 올려두셔도 돼요.',
+        en: 'It doesn’t have to be your face. It’s there so people can tell each other apart in lists and attendee rows — any picture you like works.',
+      },
+    ],
+  },
+  {
     at: '2026-08-19T16:30',
     title: { ko: '사기 전에 미리 보고, 장마는 손봤어요', en: 'Try before you buy — and the rain got fixed up' },
     items: [

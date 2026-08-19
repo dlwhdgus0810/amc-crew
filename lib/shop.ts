@@ -73,20 +73,37 @@ export function priceOf(theme: string): number | null {
 export const SHOP_T = {
   title: { ko: '테마 상점', en: 'Theme shop', es: 'Tienda de temas' },
   intro: {
-    ko: '모임을 열고, 나가고, 남긴 만큼 코인이 쌓여요. 쌓인 코인으로 테마를 삽니다.',
-    en: 'Hosting, showing up and leaving things behind all earn coins. Spend them on themes.',
-    es: 'Organizar, aparecer y dejar huella dan monedas. Gástalas en temas.',
+    ko: '모임을 열고, 나가고, 남긴 만큼 코인이 쌓여요. 프로필 사진을 올려 두면 거기에 20이 더 붙고요. 쌓인 코인으로 테마를 삽니다.',
+    en: 'Hosting, showing up and leaving things behind all earn coins — and a profile photo adds 20 on top. Spend them on themes.',
+    es: 'Organizar, aparecer y dejar huella dan monedas, y una foto de perfil suma 20 más. Gástalas en temas.',
   },
   /** 코인이 어디서 왔는지 — 안 적으면 숫자가 어디서 나온 건지 알 수 없다 */
   breakdown: { ko: '주최 {host} + 정성 {contrib} + 참여 {join}×3', en: 'Hosting {host} + contribution {contrib} + attendance {join}×3', es: 'Anfitrión {host} + aportes {contrib} + asistencia {join}×3' },
   /** 사진이 있는 사람에게 붙는 줄 — 위 breakdown 뒤에 이어 붙는다 */
   fromAvatar: { ko: '프로필 사진 +{n}', en: 'profile photo +{n}', es: 'foto de perfil +{n}' },
-  /** 사진이 없는 사람에게 뜨는 권유. 코인이 걸려 있다는 것을 여기서 처음 알게 된다 */
+  /**
+   * 사진이 없는 사람에게 뜨는 권유. 코인이 걸려 있다는 것을 여기서 처음 알게 된다.
+   *
+   * 힌트 글씨가 아니라 누를 수 있는 칸으로 둔다 — 읽고 나서 어디로 가야 하는지가
+   * 같이 있어야 실제로 올리러 간다.
+   */
   avatarNudge: {
-    ko: '프로필에 사진을 올리면 {n}코인이 더 붙어요. 사진을 내리면 그 {n}코인도 같이 빠져요.',
-    en: 'Put a photo on your profile and {n} more coins come with it. Take it down and those {n} go too.',
-    es: 'Pon una foto en tu perfil y llegan {n} monedas más. Si la quitas, esas {n} se van contigo.',
+    ko: '프로필에 사진을 올리면 {n}코인이 바로 더 붙어요',
+    en: 'A photo on your profile adds {n} coins right away',
+    es: 'Una foto en tu perfil suma {n} monedas al momento',
   },
+  avatarNudgeMore: {
+    ko: '{price}코인짜리 테마까지 {n}만 남아요. 사진을 내리면 그 {avatar}코인도 같이 빠져요.',
+    en: 'That leaves {n} to go for a {price}-coin theme. Take the photo down and those {avatar} go with it.',
+    es: 'Así te faltarían {n} para un tema de {price}. Si quitas la foto, esas {avatar} se van con ella.',
+  },
+  /** 사진 없이도 이미 살 수 있는 사람 — 거리를 적으면 「0만 남아요」가 된다 */
+  avatarNudgeEnough: {
+    ko: '사진을 내리면 그 {n}코인도 같이 빠져요.',
+    en: 'Take the photo down later and those {n} go with it.',
+    es: 'Si quitas la foto más adelante, esas {n} se van con ella.',
+  },
+  avatarGo: { ko: '프로필로 가기 →', en: 'Go to my profile →', es: 'Ir a mi perfil →' },
   /** 잔액이 마이너스라 산 테마가 잠긴 상태 */
   lockedTitle: { ko: '테마가 잠겨 있어요', en: 'Your themes are locked', es: 'Tus temas están bloqueados' },
   lockedBody: {
