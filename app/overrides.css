@@ -3149,10 +3149,17 @@ body:has(.sky-scope.night) .tabbar a.active {
   font-size: 14px;
 }
 .preview-head strong { flex: 1; min-width: 0; }
-.preview-frame {
+/* 줄인 화면이 놓일 자리 — 이 상자의 크기를 재서 얼마나 줄일지 정한다 */
+.preview-box {
   width: min(390px, 100%);
-  /* 폰 비율에 맞추되 창을 넘지 않게 — 가로로 눕힌 화면에서도 잘리지 않는다 */
-  height: min(780px, calc(100dvh - 96px));
+  height: calc(100dvh - 110px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.preview-frame {
+  flex: none;
+  transform-origin: top center;
   border: 0;
   border-radius: 18px;
   background: var(--bg);

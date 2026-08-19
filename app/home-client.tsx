@@ -91,7 +91,7 @@ export interface HomeInitial {
   hidden: string[];
 }
 
-export default function HubPage({ initial }: { initial: HomeInitial }) {
+export default function HubPage({ initial, only }: { initial: HomeInitial; only?: string[] }) {
   const [subs, setSubs] = useState<Set<string>>(() => new Set(initial.subs));
   // 즐겨찾기는 사용자가 정한 순서가 있으므로 배열로 들고 있는다
   const [favList, setFavList] = useState<string[]>(initial.favs);
@@ -317,15 +317,27 @@ export default function HubPage({ initial }: { initial: HomeInitial }) {
   /* 관리자가 내려 둔 카테고리는 어느 갈래로 골라도 빠진다 (즐겨찾기에 넣어 뒀어도) */
   const visible = CATEGORIES.filter((c) => !initial.hidden.includes(c.slug));
   const withUpcoming = visible.filter((c) => summaryFor(c.slug, c.kind)?.active);
+  /*
+   * only가 오면 그 셋만 그린다 — 테마 미리보기가 쓴다 (app/preview/page.tsx).
+   * 즐겨찾기도 다가오는 모임도 안 본다: 보는 사람마다 다른 카드가 뜨면 테마를 견줄 수 없다.
+   * 감춘 카테고리는 여기서도 뺀다.
+   */
+  const picked = only
+    ? only
+        .map(getCategory)
+        .filter((c): c is NonNullable<typeof c> => c !== undefined && !initial.hidden.includes(c.slug))
+    : null;
   const shown =
-    favList.length > 0
+    picked ??
+    (favList.length > 0
       ? favList
           .map(getCategory)
           .filter((c): c is NonNullable<typeof c> => c !== undefined && !initial.hidden.includes(c.slug))
       : withUpcoming.length > 0
         ? withUpcoming
-        : visible;
-  const canReorder = Boolean(user) && favList.length > 1;
+        : visible);
+  // 미리보기에서는 순서를 못 바꾼다 — 손가락도 안 받는 화면이다
+  const canReorder = !only && Boolean(user) && favList.length > 1;
 
   return (
     <>

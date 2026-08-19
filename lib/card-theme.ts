@@ -30,6 +30,18 @@ export const CARD_THEME_MAX_AGE = 400 * 24 * 60 * 60;
 export const PREVIEW_COOKIE = 'preview-theme';
 export const PREVIEW_MAX_AGE = 300;
 
+/**
+ * 미리보기 홈에 세울 카드.
+ *
+ * 진짜 홈은 그 사람의 즐겨찾기나 다가오는 모임에 따라 카드가 매번 다르다. 테마를 보러
+ * 온 자리에서 그러면 사람마다 다른 것을 보게 되고, 즐겨찾기가 하나뿐인 사람은 카드
+ * 한 장으로 테마를 판단하게 된다.
+ *
+ * 이 셋을 고른 이유는 **색 순서에서 멀리 떨어져 있어서**다 — lib/categories.ts의 차례로
+ * 1·8·12번째라, 그라데이션의 앞·가운데·끝이 한 화면에 같이 잡힌다.
+ */
+export const PREVIEW_CARDS = ['soccer', 'movienight', 'pickleball'];
+
 export type CardTheme =
   | 'default'
   | 'wildflowers'

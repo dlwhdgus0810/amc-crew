@@ -1,4 +1,5 @@
-import HubPage from '../page';
+import { HomeView } from '../home-view';
+import { PREVIEW_CARDS } from '@/lib/card-theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,12 @@ export const dynamic = 'force-dynamic';
  * 그 쿠키는 경로가 /preview여서 이 주소에서만 딸려 온다 — 상점에서 미리보기를 열어도
  * 나머지 화면은 원래 테마 그대로다.
  *
+ * 카드는 늘 같은 셋만 세운다 (PREVIEW_CARDS). 진짜 홈은 그 사람의 즐겨찾기나 다가오는
+ * 모임에 따라 카드가 매번 다른데, 테마를 견주러 온 자리에서 그러면 사람마다 다른 것을
+ * 보게 된다 — 즐겨찾기가 하나뿐인 사람은 카드 한 장으로 테마를 판단하게 된다.
+ *
  * 상점이 이 주소를 iframe으로 띄운다 (app/shop/shop-client.tsx).
  */
-export default HubPage;
+export default function PreviewPage() {
+  return <HomeView only={PREVIEW_CARDS} />;
+}

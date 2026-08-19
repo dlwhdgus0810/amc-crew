@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
 import { CARD_THEMES, PREVIEW_COOKIE, PREVIEW_MAX_AGE, type CardTheme } from '@/lib/card-theme';
 import { SHOP_T, SHOP_THEMES, SOON_THEMES, THEME_PRICE } from '@/lib/shop';
@@ -12,6 +12,13 @@ import type { Wallet } from '@/lib/db/shop';
  * 지갑은 서버가 계산해 내려 준다(app/shop/page.tsx). 산 뒤에는 서버가 준 새 지갑으로
  * 갈아 끼운다 — 여기서 빼기를 하면 화면의 잔액과 실제가 갈릴 수 있다.
  */
+/**
+ * 미리보기 안쪽 화면의 크기. 폰 폭에 헤더·첫 줄·카드 셋·탭바가 들어가는 높이다 —
+ * 이 값으로 그린 뒤 창에 맞게 줄인다.
+ */
+const PREVIEW_W = 390;
+const PREVIEW_H = 1080;
+
 export default function ShopClient({ wallet }: { wallet: Wallet }) {
   const t = useT();
   const [w, setW] = useState(wallet);
@@ -31,6 +38,30 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
     document.cookie = `${PREVIEW_COOKIE}=${theme}; path=/preview; max-age=${PREVIEW_MAX_AGE}; samesite=lax`;
     setPreview(theme);
   }
+  /*
+   * 미리보기는 **줄여서 전부 보여 준다.**
+   *
+   * 폰 폭(390)에 헤더·첫 줄·카드 셋·탭바를 세우면 1080px쯤 된다. 창은 그보다 짧으니
+   * 그냥 넣으면 마지막 카드가 탭바에 잘린다 — 세 장을 나란히 보라고 고른 것인데
+   * 하나가 반만 보이면 고른 뜻이 없다.
+   *
+   * 손가락을 안 받는 그림이라(pointer-events: none) 줄여도 잃는 것이 없다. 스크롤로
+   * 풀 수도 있지만 그러면 눌러서 나갈 수 있게 되고, 무엇보다 「한눈에」가 아니게 된다.
+   */
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    if (!preview) return;
+    const fit = () => {
+      const box = boxRef.current;
+      if (!box) return;
+      setScale(Math.min(1, box.clientHeight / PREVIEW_H, box.clientWidth / PREVIEW_W));
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [preview]);
+
   function closePreview() {
     // 창을 닫을 때 쿠키도 지운다 — 남겨 둘 이유가 없다
     document.cookie = `${PREVIEW_COOKIE}=; path=/preview; max-age=0`;
@@ -129,11 +160,21 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
               {t(SHOP_T.close)}
             </button>
           </div>
-          <iframe
-            className="preview-frame"
-            src={`/preview?t=${preview}`}
-            title={t(SHOP_T.previewOf, { name: t(CARD_THEMES[preview].label) })}
-          />
+          <div className="preview-box" ref={boxRef}>
+            <iframe
+              className="preview-frame"
+              style={{
+                width: PREVIEW_W,
+                height: PREVIEW_H,
+                transform: `scale(${scale})`,
+                // 줄인 만큼 자리도 줄어야 아래 한 줄이 붙어 온다
+                marginBottom: -(PREVIEW_H * (1 - scale)),
+                marginRight: -(PREVIEW_W * (1 - scale)),
+              }}
+              src={`/preview?t=${preview}`}
+              title={t(SHOP_T.previewOf, { name: t(CARD_THEMES[preview].label) })}
+            />
+          </div>
           {/* 눌러도 안 움직이는 것이 고장이 아니라 그렇게 만든 것임을 알려 준다 */}
           <span className="preview-note">{t(SHOP_T.previewNote)}</span>
         </div>
