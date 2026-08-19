@@ -49,7 +49,9 @@ html[data-season='petal'] .card-season i {
   border-radius: 60% 40% 55% 45%;
   background: var(--bg);
   transform-origin: 50% 0;
-  animation: kk-petal-sway var(--pd, 3s) ease-in-out var(--pt, 0s) infinite;
+  /* --rate·--seed는 카드마다 다르다 (아래 「카드마다 다르게」 참고) */
+  animation: kk-petal-sway calc(var(--pd, 3s) * var(--rate, 1)) ease-in-out
+    calc(var(--pt, 0s) + var(--seed, 0s)) infinite;
 }
 /* 자리 + 흔들리는 폭·주기. 낱개마다 달라야 한 덩어리로 움직이지 않는다.
    넷은 색을 조금 달리 둔다 — 바탕색에서 멀어지면 파낸 자리로 안 보이고 스티커가 된다. */
@@ -76,16 +78,47 @@ html[data-season='petal'] .card-season i:nth-child(16) { left: calc(96.875% - 8p
  */
 html[data-season='petal'] .card-season i:nth-child(3) {
   --dx: 1; --dy: 1; --rot: 1;
-  animation: kk-petal-peel 7s linear 0s infinite;
+  animation: kk-petal-peel calc(7s * var(--rate, 1)) linear calc(0s + var(--seed, 0s)) infinite;
 }
 html[data-season='petal'] .card-season i:nth-child(8) {
   --dx: 0.62; --dy: 1.18; --rot: -1;
-  animation: kk-petal-peel 8.6s linear 2.4s infinite;
+  animation: kk-petal-peel calc(8.6s * var(--rate, 1)) linear calc(2.4s + var(--seed, 0s)) infinite;
 }
 html[data-season='petal'] .card-season i:nth-child(13) {
   --dx: -0.9; --dy: 0.78; --rot: 1;
-  animation: kk-petal-peel 7.8s linear 4.6s infinite;
+  animation: kk-petal-peel calc(7.8s * var(--rate, 1)) linear calc(4.6s + var(--seed, 0s)) infinite;
 }
+/*
+ * ── 카드마다 다르게 ──────────────────────────────────────────
+ *
+ * 꽃잎의 흔들림 폭·주기는 **꽃잎 번호**에 붙어 있다(위 :nth-child). 그래서 카드가
+ * 달라도 세 번째 꽃잎은 언제나 같은 값이고, 열일곱 장이 한 몸처럼 같이 움직였다 —
+ * 카드 하나만 보면 그럴싸한데 여러 장이 한 화면에 서면 줄 맞춰 흔들리는 것이 보인다.
+ *
+ * CSS에는 난수가 없으므로 **카드 차례로 씨앗을 준다.** --seed는 시작 시각을 밀고
+ * --rate는 주기를 늘렸다 줄인다. 시작만 밀면 주기가 같아 언젠가 다시 맞아떨어지는데,
+ * 주기까지 어긋나면 영영 안 맞는다.
+ *
+ * 여덟 개를 돌려 쓴다. 열일곱 장을 다 다르게 두려면 규칙이 열일곱 줄이 되는데,
+ * 여덟 칸이면 같은 값이 다시 오는 자리가 화면 한 장 너머라 눈에 안 띈다.
+ */
+html[data-season='petal'] .cat-grid > *:nth-child(8n + 1),
+html[data-season='petal'] .car > *:nth-child(8n + 1) { --seed: 0s; --rate: 1; }
+html[data-season='petal'] .cat-grid > *:nth-child(8n + 2),
+html[data-season='petal'] .car > *:nth-child(8n + 2) { --seed: -1.7s; --rate: 0.93; }
+html[data-season='petal'] .cat-grid > *:nth-child(8n + 3),
+html[data-season='petal'] .car > *:nth-child(8n + 3) { --seed: -3.1s; --rate: 1.08; }
+html[data-season='petal'] .cat-grid > *:nth-child(8n + 4),
+html[data-season='petal'] .car > *:nth-child(8n + 4) { --seed: -0.6s; --rate: 0.97; }
+html[data-season='petal'] .cat-grid > *:nth-child(8n + 5),
+html[data-season='petal'] .car > *:nth-child(8n + 5) { --seed: -4.4s; --rate: 1.13; }
+html[data-season='petal'] .cat-grid > *:nth-child(8n + 6),
+html[data-season='petal'] .car > *:nth-child(8n + 6) { --seed: -2.3s; --rate: 0.89; }
+html[data-season='petal'] .cat-grid > *:nth-child(8n + 7),
+html[data-season='petal'] .car > *:nth-child(8n + 7) { --seed: -5.2s; --rate: 1.04; }
+html[data-season='petal'] .cat-grid > *:nth-child(8n + 8),
+html[data-season='petal'] .car > *:nth-child(8n + 8) { --seed: -1.1s; --rate: 0.95; }
+
 /* 아이콘 버튼도 꽃잎 곡률을 따른다 */
 html[data-season='petal'] .car-card .car-icon {
   border-radius: 999px 8px 999px 8px;
