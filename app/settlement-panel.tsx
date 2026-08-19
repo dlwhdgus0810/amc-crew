@@ -19,6 +19,8 @@ const T = {
   cancel: { ko: '취소', en: 'Cancel', es: 'Cancelar' },
   remove: { ko: '정산 지우기', en: 'Delete the settle-up', es: 'Borrar el reparto' },
   markSent: { ko: '보냈어요', en: 'I sent it', es: 'Ya lo envié' },
+  /* 받을 사람이 남의 줄을 켤 때 — 그쪽에서는 「보냈다」가 아니라 「받았다」다 */
+  markGot: { ko: '받았어요', en: 'Got it', es: 'Recibido' },
   markUndo: { ko: '표시 지우기', en: 'Undo', es: 'Deshacer' },
   sentSelf: { ko: '보냄', en: 'Sent', es: 'Enviado' },
   sentConfirmed: { ko: '확인', en: 'Received', es: 'Recibido' },
@@ -805,7 +807,7 @@ function OneSettlement({
                           disabled={payBusy === s.userId}
                           onClick={() => void markPaid(s.userId, !s.paid)}
                         >
-                          {t(s.paid ? T.markUndo : T.markSent)}
+                          {t(s.paid ? T.markUndo : s.userId === currentUserId ? T.markSent : T.markGot)}
                         </button>
                       )}
                       {formatCents(s.cents)}
