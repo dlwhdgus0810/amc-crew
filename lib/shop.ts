@@ -23,9 +23,13 @@ export function coinsEarned(s: { host: number; join: number; contrib: number }):
   return Math.floor(s.host * COIN.host + s.contrib * COIN.contrib + s.join * COIN.join);
 }
 
-/** 지금 상점에 걸린 것. 값이 다르면 여기서 갈라 두면 된다 */
+/**
+ * 지금 상점에 걸린 것. 값이 다르면 여기서 갈라 두면 된다.
+ *
+ * 봄·벚꽃은 아직 안 올렸다 — 코드는 그대로 있어서 한 줄 더하면 바로 걸린다.
+ * 상점에 없는 테마는 살 수도, 프로필에서 고를 수도 없다.
+ */
 export const THEME_PRICE: Partial<Record<CardTheme, number>> = {
-  cherryblossom: 50,
   rainyseason: 50,
 };
 

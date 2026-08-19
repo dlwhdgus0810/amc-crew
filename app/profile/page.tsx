@@ -3,6 +3,9 @@ import { getViewer } from '@/lib/session';
 import { getSubscriptions } from '@/lib/db/posts';
 import { getNewsAlerts } from '@/lib/db/news';
 import { hiddenSlugs } from '@/lib/db/hidden';
+import { cookies } from 'next/headers';
+import { walletOf } from '@/lib/db/shop';
+import { CARD_THEME_COOKIE, toCardTheme } from '@/lib/card-theme';
 import { dbGetUser } from '@/lib/db/users';
 import ProfileClient from './profile-client';
 
@@ -20,17 +23,34 @@ export const dynamic = 'force-dynamic';
 async function ProfileData() {
   const { user, unread } = await getViewer();
   if (!user) {
-    return <ProfileClient initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0, hidden: [] }} />;
+    return (
+      <ProfileClient
+        initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0, hidden: [], owned: [], theme: 'default' }}
+      />
+    );
   }
-  const [subs, newsAlerts, row, hidden] = await Promise.all([
+  const [subs, newsAlerts, row, hidden, wallet, jar] = await Promise.all([
     getSubscriptions(user.id),
     getNewsAlerts(user.id),
     dbGetUser(user.id),
     hiddenSlugs(),
+    // 산 테마를 여기서 읽는다 — 고를 수 있는 것이 산 것뿐이라 목록이 곧 이 값이다
+    walletOf(user.id),
+    cookies(),
   ]);
   return (
     // unread는 위 getViewer()가 이미 세어 둔 값이다 — 알림 줄 배지에만 쓴다
-    <ProfileClient initial={{ subs, newsAlerts, showPastPrivate: row?.showPastPrivate ?? false, unread, hidden }} />
+    <ProfileClient
+      initial={{
+        subs,
+        newsAlerts,
+        showPastPrivate: row?.showPastPrivate ?? false,
+        unread,
+        hidden,
+        owned: wallet.owned,
+        theme: toCardTheme(jar.get(CARD_THEME_COOKIE)?.value),
+      }}
+    />
   );
 }
 

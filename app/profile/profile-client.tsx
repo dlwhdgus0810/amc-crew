@@ -10,6 +10,13 @@ import { useRefreshSession, useViewer } from '../session';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
 import { formatZelle } from '@/lib/money';
 import PushToggle from '../push-toggle';
+import {
+  CARD_THEME_COOKIE,
+  CARD_THEME_MAX_AGE,
+  CARD_THEMES,
+  cardColors,
+  type CardTheme,
+} from '@/lib/card-theme';
 
 /** 저장할 사진 한 변의 길이 (px) */
 const AVATAR_PX = 256;
@@ -130,6 +137,18 @@ const T = {
   privacyOff: { ko: '지난 비공개 모임 숨김', en: 'Past private meetups hidden', es: 'Privadas pasadas ocultas' },
   privacyShow: { ko: '보이기', en: 'Show', es: 'Mostrar' },
   privacyHide: { ko: '숨기기', en: 'Hide', es: 'Ocultar' },
+  themeTitle: { ko: '카드 테마', en: 'Card theme', es: 'Tema de tarjetas' },
+  themeNone: {
+    ko: '아직 산 테마가 없어요. 리더보드 오른쪽 위 「테마 상점」에서 살 수 있어요.',
+    en: 'No themes yet — get one from the shop, top right of the leaderboard.',
+    es: 'Aún no tienes temas. Consíguelos en la tienda, arriba a la derecha de la clasificación.',
+  },
+  themeBasic: { ko: '기본', en: 'Default', es: 'Predeterminado' },
+  themeHint: {
+    ko: '고른 테마는 이 기기에서만 보여요 — 다른 사람 화면은 그대로예요.',
+    en: 'Your pick shows on this device only — everyone else sees theirs.',
+    es: 'Tu elección solo se ve en este dispositivo.',
+  },
   newsAlertsOn: { ko: '새 소식 알림 받는 중', en: 'Getting update alerts', es: 'Recibes avisos de novedades' },
   newsAlertsOff: { ko: '새 소식 알림 꺼짐', en: 'Update alerts off', es: 'Avisos de novedades desactivados' },
   newsAlertsEnable: { ko: '알림 켜기', en: 'Turn on', es: 'Activar' },
@@ -199,10 +218,22 @@ export interface ProfileInitial {
   showPastPrivate: boolean;
   /** 안 읽은 알림 수 — 아래 알림 줄의 배지에만 쓴다 (세는 것은 서버가 한다) */
   unread: number;
+  /** 상점에서 산 테마 (lib/db/shop.ts) — 고를 수 있는 것이 이것뿐이다 */
+  owned: string[];
+  /** 지금 켜 둔 테마 */
+  theme: CardTheme;
 }
 
 export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
   const router = useRouter();
+  const [theme, setTheme] = useState<CardTheme>(initial.theme);
+
+  /** 관리자 화면과 같은 방식 — 쿠키를 쓰고 서버 렌더를 다시 부른다 */
+  function pickTheme(next: CardTheme) {
+    document.cookie = `${CARD_THEME_COOKIE}=${next}; path=/; max-age=${CARD_THEME_MAX_AGE}; samesite=lax`;
+    setTheme(next);
+    router.refresh();
+  }
   /*
    * 프로필 화면의 첫 값은 레이아웃이 서버에서 읽어 둔 세션에서 가져온다 —
    * 예전에는 /api/auth/me를 다시 물어보고 답이 올 때까지 빈 화면이었다.
@@ -764,6 +795,51 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/*
+        * 산 테마 고르기.
+        *
+        * 관리자 화면의 선택기와 달리 **산 것만** 보여 준다 (기본은 늘 있다). 코드에 든
+        * 테마 여덟 개는 여기 안 나온다 — 상점에 안 올린 것을 프로필에서 고를 수 있으면
+        * 상점이 하는 일이 없어진다.
+        *
+        * 쿠키를 직접 쓰고 새로 그린다 — 관리자 화면이 하는 것과 같은 방식이다
+        * (lib/card-theme.ts의 CARD_THEME_COOKIE). 서버에 저장하지 않으므로 이 기기에서만
+        * 바뀐다.
+        */}
+      <h2>{t(T.themeTitle)}</h2>
+      <div className="card">
+        {initial.owned.length === 0 ? (
+          <p className="hint" style={{ margin: 0 }}>{t(T.themeNone)}</p>
+        ) : (
+          <>
+            {[...initial.owned, 'default'].reverse().map((key) => (
+              <label key={key} className="theme-pick">
+                <input
+                  type="radio"
+                  name="my-card-theme"
+                  checked={theme === key}
+                  onChange={() => pickTheme(key as CardTheme)}
+                />
+                <span className="theme-pick-body">
+                  <span className="theme-pick-name">
+                    {key === 'default' ? t(T.themeBasic) : t(CARD_THEMES[key as CardTheme].label)}
+                  </span>
+                  {key !== 'default' && <span className="hint">{t(CARD_THEMES[key as CardTheme].note)}</span>}
+                </span>
+                <span className="theme-swatches" aria-hidden>
+                  {(CARD_THEMES[key as CardTheme].stops ?? cardColors('default').slice(0, 4).map((c) => c.color)).map(
+                    (c) => (
+                      <span key={c} style={{ background: c }} />
+                    )
+                  )}
+                </span>
+              </label>
+            ))}
+            <p className="hint" style={{ margin: '10px 2px 0' }}>{t(T.themeHint)}</p>
+          </>
+        )}
       </div>
 
       {/*
