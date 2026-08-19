@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useT } from './i18n';
 import { timeAgo } from '@/lib/datefmt';
-import { REVIEW_MAX } from '@/lib/reviews';
+import { REVIEW_MAX, REVIEW_MIN } from '@/lib/reviews';
 
 /**
  * 모임 한줄 후기 — 끝난 모임에만 붙는다.
@@ -22,7 +22,11 @@ import { REVIEW_MAX } from '@/lib/reviews';
 const T = {
   heading: { ko: '후기', en: 'Reviews', es: 'Reseñas' },
   none: { ko: '아직 후기가 없어요.', en: 'No reviews yet.', es: 'Todavía no hay reseñas.' },
-  placeholder: { ko: '어땠는지 한 줄 남겨주세요', en: 'How was it? One line', es: '¿Qué tal estuvo? Una línea' },
+  placeholder: {
+    ko: '어땠는지 남겨주세요 (30자 이상)',
+    en: 'How was it? (30 characters or more)',
+    es: '¿Qué tal estuvo? (30 caracteres o más)',
+  },
   save: { ko: '남기기', en: 'Post', es: 'Publicar' },
   update: { ko: '고치기', en: 'Update', es: 'Cambiar' },
   clear: { ko: '지우기', en: 'Delete', es: 'Borrar' },
@@ -34,6 +38,8 @@ const T = {
     es: 'Solo quien estuvo allí puede dejar una reseña.',
   },
   left: { ko: '{n}자 남음', en: '{n} left', es: 'Quedan {n}' },
+  /* 아직 문턱을 못 넘었을 때 — 남은 칸이 아니라 모자란 칸을 센다 */
+  need: { ko: '{n}자 더', en: '{n} more', es: 'Faltan {n}' },
   /*
    * 쓰기 전에 알려 준다. 이름이 붙는 줄 알고 쓰는 것과 안 붙는 줄 알고 쓰는 것은
    * 아예 다른 글이 되므로, 다 쓴 뒤에 알려 주면 늦다.
@@ -97,6 +103,14 @@ export default function ReviewPanel({
 
   const text = draft.trim();
   const changed = text !== (mine?.body ?? '');
+  /*
+   * 서른 자를 못 채웠으면 못 올린다 (lib/reviews.ts의 REVIEW_MIN).
+   *
+   * 빈칸은 안 센다 — 서버가 trim한 뒤에 재기 때문에, 여기서 draft.length로 세면
+   * 공백 서른 개로 버튼이 열리고 눌렀을 때만 거절당한다.
+   */
+  const short = text.length < REVIEW_MIN;
+  const canSave = !busy && changed && !short;
 
   return (
     <>
@@ -134,10 +148,10 @@ export default function ReviewPanel({
               maxLength={REVIEW_MAX}
               placeholder={t(T.placeholder)}
               onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !busy && text && changed && save(text)}
+              onKeyDown={(e) => e.key === 'Enter' && canSave && save(text)}
             />
             <div className="field-row" style={{ marginTop: 10 }}>
-              <button disabled={busy || !text || !changed} onClick={() => save(text)}>
+              <button disabled={!canSave} onClick={() => save(text)}>
                 {busy ? t(T.saving) : t(mine ? T.update : T.save)}
               </button>
               {mine && (
@@ -145,8 +159,11 @@ export default function ReviewPanel({
                   {t(T.clear)}
                 </button>
               )}
+              {/* 문턱을 넘기 전에는 모자란 칸을, 넘고 나서는 남은 칸을 센다 */}
               <span className="hint" style={{ marginLeft: 'auto' }}>
-                {t(T.left, { n: REVIEW_MAX - draft.length })}
+                {short
+                  ? t(T.need, { n: REVIEW_MIN - text.length })
+                  : t(T.left, { n: REVIEW_MAX - draft.length })}
               </span>
             </div>
           </div>

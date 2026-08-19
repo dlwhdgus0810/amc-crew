@@ -4,7 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { getPostView } from '@/lib/db/posts';
 import { deleteReview, saveReview } from '@/lib/db/reviews';
-import { REVIEW_MAX } from '@/lib/reviews';
+import { REVIEW_MAX, REVIEW_MIN } from '@/lib/reviews';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +45,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const body = await req.json().catch(() => null);
   const text = typeof body?.body === 'string' ? body.body.trim() : '';
-  if (!text || text.length > REVIEW_MAX) return await errJson(E.reviewBody, 400);
+  // 길이는 서버가 판정한다 — 화면의 버튼만 막아 두면 그대로 요청을 보내는 길이 남는다
+  if (text.length < REVIEW_MIN || text.length > REVIEW_MAX) return await errJson(E.reviewBody, 400);
 
   await saveReview(id, g.user.id, text);
   return NextResponse.json({ ok: true });

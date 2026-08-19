@@ -179,9 +179,9 @@ export const E = {
     es: 'Solo quien estuvo en la quedada puede reseñarla.',
   },
   reviewBody: {
-    ko: '후기는 1~200자로 적어주세요.',
-    en: 'A review is 1–200 characters.',
-    es: 'Una reseña tiene entre 1 y 200 caracteres.',
+    ko: '후기는 30~200자로 적어주세요.',
+    en: 'A review is 30–200 characters.',
+    es: 'Una reseña tiene entre 30 y 200 caracteres.',
   },
   settleNotFound: { ko: '정산을 찾을 수 없어요.', en: 'No settle-up found.', es: 'No hay ninguna cuenta que dividir.' },
   settleParticipantOnly: {
