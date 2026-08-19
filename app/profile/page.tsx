@@ -25,7 +25,7 @@ async function ProfileData() {
   if (!user) {
     return (
       <ProfileClient
-        initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0, hidden: [], owned: [], theme: 'default' }}
+        initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0, hidden: [], owned: [], themeShort: 0, theme: 'default' }}
       />
     );
   }
@@ -48,6 +48,8 @@ async function ProfileData() {
         unread,
         hidden,
         owned: wallet.owned,
+        /* 사진을 내려 코인이 마이너스면 산 테마도 못 고른다 (lib/db/shop.ts의 themeAllowed) */
+        themeShort: wallet.left < 0 ? -wallet.left : 0,
         theme: toCardTheme(jar.get(CARD_THEME_COOKIE)?.value),
       }}
     />

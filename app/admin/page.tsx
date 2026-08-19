@@ -15,6 +15,7 @@ import {
   toCardTheme,
   type CardTheme,
 } from '@/lib/card-theme';
+import { COIN } from '@/lib/shop';
 import { entryLabel } from '@/lib/datefmt';
 import { useViewer } from '../session';
 import { shrinkToJpeg, THUMB_EDGE, uploadThumbOnly } from '@/lib/photo-client';
@@ -170,6 +171,7 @@ const T = {
   },
   walletSum: { ko: '{n}명 · 산 사람 {buyers}명 · 지금 값으로 살 수 있는 사람 {can}명', en: '{n} members · {buyers} have bought · {can} can afford one now' },
   walletCols: { ko: '주최 · 정성 · 참여', en: 'host · care · turnout' },
+  walletAvatar: { ko: '사진 +{n}', en: 'photo +{n}' },
   walletNone: { ko: '아직 아무도 안 샀어요.', en: 'Nobody has bought anything yet.' },
   walletLoad: { ko: '불러오기', en: 'Load' },
   themeHint: {
@@ -336,7 +338,7 @@ export default function AdminPage() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
   const [wallets, setWallets] = useState<
-    { id: string; name: string; host: number; join: number; contrib: number; earned: number; spent: number; left: number; owned: string[] }[] | null
+    { id: string; name: string; host: number; join: number; contrib: number; avatar: boolean; earned: number; spent: number; left: number; owned: string[] }[] | null
   >(null);
   /*
    * 지금 걸린 테마는 쿠키에 있다. 서버가 그걸 읽어 색 변수를 심으므로(app/layout.tsx),
@@ -1319,6 +1321,8 @@ export default function AdminPage() {
                           ))}
                           <span className="wallet-parts">
                             {t(T.walletCols)} {Math.floor(w.host)} · {w.contrib} · {w.join}
+                            {/* 사진 20은 활동이 아니라 지금 상태라 따로 적는다 — 내리면 사라지는 값이다 */}
+                            {w.avatar && ` · ${t(T.walletAvatar, { n: COIN.avatar })}`}
                           </span>
                         </span>
                         <span className="wallet-coins">

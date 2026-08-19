@@ -22,6 +22,8 @@ import { SessionProvider } from './session';
 import { getViewer } from '@/lib/session';
 import SeasonDeco from './season-deco';
 import { CardThemeProvider } from './card-theme-context';
+import { themeAllowed } from '@/lib/db/shop';
+import { priceOf } from '@/lib/shop';
 import {
   CARD_THEME_COOKIE,
   PREVIEW_COOKIE,
@@ -172,9 +174,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [locale, viewer, jar] = await Promise.all([getLocale(), getViewer(), cookies()]);
   /*
    * 미리보기 쿠키가 있으면 그것이 이긴다. 그 쿠키는 경로가 /preview라 미리보기 화면을
-   * 부를 때만 딸려 오므로, 다른 화면은 늘 자기가 고른 테마 그대로다.
+   * 부를 때만 딸려 오므로, 다른 화면은 늘 자기가 고른 테마 그대로다. 미리보기는 안 산
+   * 테마를 보여 주는 것이 목적이라 아래의 확인을 지나간다.
    */
-  const cardTheme = toCardTheme(jar.get(PREVIEW_COOKIE)?.value ?? jar.get(CARD_THEME_COOKIE)?.value);
+  const previewing = jar.get(PREVIEW_COOKIE)?.value;
+  const picked = toCardTheme(previewing ?? jar.get(CARD_THEME_COOKIE)?.value);
+  /*
+   * 값이 붙은 테마는 **여기서 자격을 확인한다.** 고른 테마는 쿠키라서, 확인하지 않으면
+   * 산 적 없는 테마를 손으로 넣어 쓸 수 있고 프로필 사진을 내려 코인이 마이너스가 된
+   * 뒤에도 계속 쓰게 된다 (lib/db/shop.ts의 themeAllowed).
+   *
+   * 기본 테마인 사람은 priceOf가 null이라 여기서 바로 끝난다 — DB를 안 부른다.
+   */
+  const cardTheme =
+    previewing || priceOf(picked) == null || (viewer.user && (await themeAllowed(viewer.user.id, picked)))
+      ? picked
+      : 'default';
   return (
     <html
       lang={HTML_LANG[locale]}

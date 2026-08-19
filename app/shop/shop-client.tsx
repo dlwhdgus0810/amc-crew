@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
 import { CARD_THEMES, PREVIEW_COOKIE, PREVIEW_MAX_AGE, type CardTheme } from '@/lib/card-theme';
-import { SHOP_T, SHOP_THEMES, SOON_THEMES, THEME_PRICE } from '@/lib/shop';
+import { COIN, SHOP_T, SHOP_THEMES, SOON_THEMES, THEME_PRICE } from '@/lib/shop';
 import type { Wallet } from '@/lib/db/shop';
 
 /**
@@ -100,9 +100,27 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
         <strong className="coin-amount">{w.left}</strong>
         <span className="coin-from">
           {t(SHOP_T.breakdown, { host: Math.floor(w.host), contrib: w.contrib, join: w.join })}
+          {w.avatar && ` + ${t(SHOP_T.fromAvatar, { n: COIN.avatar })}`}
           {w.spent > 0 && ` · ${t(SHOP_T.spent, { n: w.spent })}`}
         </span>
       </div>
+
+      {/*
+        * 사진이 없으면 권유, 잠겼으면 푸는 법.
+        *
+        * 코인이 걸려 있다는 것을 아는 자리가 여기뿐이다 — 프로필에는 사진 칸만 있고
+        * 거기에 값이 붙어 있다는 말이 없다.
+        */}
+      {!w.avatar &&
+        (w.left < 0 ? (
+          <div className="msg err">
+            <strong>{t(SHOP_T.lockedTitle)}</strong>
+            <br />
+            {t(SHOP_T.lockedBody, { n: -w.left })}
+          </div>
+        ) : (
+          <p className="hint">{t(SHOP_T.avatarNudge, { n: COIN.avatar })}</p>
+        ))}
 
       {msg && <div className={`msg ${msg.type === 'ok' ? 'ok' : 'err'}`}>{msg.text}</div>}
 

@@ -9,18 +9,39 @@ import { Msg } from './i18n';
  */
 
 /**
- * 코인 = 주최 + 정성 + 참여×3.
+ * 코인 = 주최 + 정성 + 참여×3 + 프로필 사진 20.
  *
  * 참여에만 3을 곱하는 이유는 눈금이 달라서다. 주최는 「연 모임의 참가 인원 합」이라
  * 한 번에 열댓 점씩 오르고 정성도 사진·댓글로 쌓이는데, 참여는 한 번 나가야 1이다.
  * 그대로 더하면 나가기만 하는 사람은 코인이 거의 안 모인다 — 이 앱이 제일 바라는
  * 행동이 그건데도.
+ *
+ * **프로필 사진 20은 「올린 상」이 아니라 「달고 있는 동안 붙는 값」이다.** 지급 기록을
+ * 남기지 않고 매번 지금 상태에서 센다 — 그래서 사진을 내리면 20도 같이 사라진다.
+ * 올렸다 바로 내려서 점수만 챙기는 길이 아예 안 생긴다. 이 앱의 다른 점수가 전부
+ * 그렇게 되어 있다 (lib/db/shop.ts 첫머리의 「잔액이라는 칸은 없다」).
+ *
+ * 정성 점수가 아니라 **코인에만** 얹는다. 정성 등급 문턱이 10·20·35·60인데 재 본
+ * 최고가 26점이라, 여기에 20을 더하면 사진 올린 사람이 두 칸을 한 번에 건너뛰고
+ * 등급 알림이 무더기로 나간다. 순위표와 등급은 활동을 재는 자리로 두고, 사진은
+ * 상점에서만 값을 갖게 한다.
  */
-export const COIN = { host: 1, contrib: 1, join: 3 } as const;
+export const COIN = { host: 1, contrib: 1, join: 3, avatar: 20 } as const;
 
-export function coinsEarned(s: { host: number; join: number; contrib: number }): number {
+/** 코인을 셀 재료 — avatar는 지금 프로필 사진이 있는지다 (얼마나 오래됐는지가 아니다) */
+export interface CoinSource {
+  host: number;
+  join: number;
+  contrib: number;
+  avatar: boolean;
+}
+
+export function coinsEarned(s: CoinSource): number {
   // 주최 점수만 .5 단위다 (호스트가 둘이면 나눠 갖는다) — 코인은 정수로 끊는다
-  return Math.floor(s.host * COIN.host + s.contrib * COIN.contrib + s.join * COIN.join);
+  return (
+    Math.floor(s.host * COIN.host + s.contrib * COIN.contrib + s.join * COIN.join) +
+    (s.avatar ? COIN.avatar : 0)
+  );
 }
 
 /**
@@ -58,6 +79,21 @@ export const SHOP_T = {
   },
   /** 코인이 어디서 왔는지 — 안 적으면 숫자가 어디서 나온 건지 알 수 없다 */
   breakdown: { ko: '주최 {host} + 정성 {contrib} + 참여 {join}×3', en: 'Hosting {host} + contribution {contrib} + attendance {join}×3', es: 'Anfitrión {host} + aportes {contrib} + asistencia {join}×3' },
+  /** 사진이 있는 사람에게 붙는 줄 — 위 breakdown 뒤에 이어 붙는다 */
+  fromAvatar: { ko: '프로필 사진 +{n}', en: 'profile photo +{n}', es: 'foto de perfil +{n}' },
+  /** 사진이 없는 사람에게 뜨는 권유. 코인이 걸려 있다는 것을 여기서 처음 알게 된다 */
+  avatarNudge: {
+    ko: '프로필에 사진을 올리면 {n}코인이 더 붙어요. 사진을 내리면 그 {n}코인도 같이 빠져요.',
+    en: 'Put a photo on your profile and {n} more coins come with it. Take it down and those {n} go too.',
+    es: 'Pon una foto en tu perfil y llegan {n} monedas más. Si la quitas, esas {n} se van contigo.',
+  },
+  /** 잔액이 마이너스라 산 테마가 잠긴 상태 */
+  lockedTitle: { ko: '테마가 잠겨 있어요', en: 'Your themes are locked', es: 'Tus temas están bloqueados' },
+  lockedBody: {
+    ko: '프로필 사진을 내려서 코인이 {n} 모자라요. 사진을 다시 올리면 바로 풀려요.',
+    en: 'Taking your profile photo down left you {n} short. Put it back and they unlock right away.',
+    es: 'Al quitar tu foto de perfil te faltan {n}. Vuelve a ponerla y se desbloquean al momento.',
+  },
   balance: { ko: '가진 코인', en: 'Your coins', es: 'Tus monedas' },
   spent: { ko: '쓴 코인 {n}', en: '{n} spent', es: '{n} gastadas' },
   price: { ko: '{n} 코인', en: '{n} coins', es: '{n} monedas' },

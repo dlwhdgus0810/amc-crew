@@ -9,6 +9,7 @@ import { PROFILE_UPDATED } from '../nav';
 import { useRefreshSession, useViewer } from '../session';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
 import { formatZelle } from '@/lib/money';
+import { COIN } from '@/lib/shop';
 import PushToggle from '../push-toggle';
 import {
   CARD_THEME_COOKIE,
@@ -43,6 +44,16 @@ const T = {
     ko: '정사각형으로 잘라 256px로 줄여서 저장해요. 지우면 이름 첫 글자가 보여요.',
     en: 'Cropped square and stored at 256px. Remove it to fall back to your initial.',
     es: 'Se recorta cuadrada y se guarda a 256px. Si la quitas, se usa tu inicial.',
+  },
+  photoCoinOff: {
+    ko: '사진을 올리면 상점 코인 {n}이 붙어요.',
+    en: 'A photo adds {n} shop coins.',
+    es: 'Una foto suma {n} monedas de la tienda.',
+  },
+  photoCoinOn: {
+    ko: '이 사진으로 상점 코인 {n}이 붙어 있어요. 지우면 그 {n}도 같이 빠져요.',
+    en: 'This photo is carrying {n} shop coins. Remove it and those {n} go too.',
+    es: 'Esta foto lleva {n} monedas de la tienda. Si la quitas, esas {n} se van también.',
   },
   photoSaved: { ko: '프로필 사진을 저장했어요.', en: 'Profile photo saved.', es: 'Foto de perfil guardada.' },
   photoRemoved: { ko: '프로필 사진을 지웠어요.', en: 'Profile photo removed.', es: 'Foto de perfil quitada.' },
@@ -143,6 +154,11 @@ const T = {
     en: 'No themes yet — get one from the shop, top right of the leaderboard.',
     es: 'Aún no tienes temas. Consíguelos en la tienda, arriba a la derecha de la clasificación.',
   },
+  themeLocked: {
+    ko: '프로필 사진을 내려서 코인이 {n} 모자라요. 산 테마는 그동안 잠겨 있어요 — 사진을 다시 올리면 바로 풀려요.',
+    en: 'Taking your profile photo down left you {n} coins short, so your themes are locked for now. Put it back and they unlock right away.',
+    es: 'Al quitar tu foto de perfil te faltan {n} monedas, así que tus temas están bloqueados. Vuelve a ponerla y se desbloquean al momento.',
+  },
   themeBasic: { ko: '기본', en: 'Default', es: 'Predeterminado' },
   themeHint: {
     ko: '고른 테마는 이 기기에서만 보여요 — 다른 사람 화면은 그대로예요.',
@@ -220,6 +236,13 @@ export interface ProfileInitial {
   unread: number;
   /** 상점에서 산 테마 (lib/db/shop.ts) — 고를 수 있는 것이 이것뿐이다 */
   owned: string[];
+  /**
+   * 코인이 모자란 만큼 (0이면 정상).
+   *
+   * 프로필 사진에 붙은 20코인으로 테마를 산 다음 사진을 내리면 잔액이 음수가 된다.
+   * 그동안은 산 테마도 못 고른다 — 그러지 않으면 「사고 나서 내리기」가 공짜가 된다.
+   */
+  themeShort: number;
   /** 지금 켜 둔 테마 */
   theme: CardTheme;
 }
@@ -522,6 +545,12 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
               )}
             </span>
             <span className="hint">{t(T.photoHint)}</span>
+            {/*
+              * 사진에 코인이 걸려 있다는 것을 아는 자리가 상점뿐이면, 정작 사진을 올리는
+              * 이 화면에서는 아무 이유도 안 보인다. 지우는 버튼 바로 옆에 「내리면 같이
+              * 빠진다」까지 적어 두는 것도 그래서다 — 지운 뒤에 알면 늦다.
+              */}
+            <span className="hint">{t(avatar ? T.photoCoinOn : T.photoCoinOff, { n: COIN.avatar })}</span>
           </span>
         </div>
       </div>
@@ -812,6 +841,9 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
       <div className="card">
         {initial.owned.length === 0 ? (
           <p className="hint" style={{ margin: 0 }}>{t(T.themeNone)}</p>
+        ) : initial.themeShort > 0 ? (
+          /* 잠긴 동안은 고르는 칸을 안 그린다 — 눌러도 안 되는 것을 보여 주면 고장으로 읽힌다 */
+          <p className="hint" style={{ margin: 0 }}>{t(T.themeLocked, { n: initial.themeShort })}</p>
         ) : (
           <>
             {[...initial.owned, 'default'].reverse().map((key) => (

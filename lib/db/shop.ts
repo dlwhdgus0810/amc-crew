@@ -1,6 +1,7 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { themePurchases, users } from './schema';
+import { unstable_cache } from 'next/cache';
 import { allBoardScores, boardScoresFor } from './hosting';
 import { coinsEarned, priceOf } from '../shop';
 import { nameOf, UNKNOWN_NAME } from '../store';
@@ -21,31 +22,67 @@ export interface Wallet {
   host: number;
   join: number;
   contrib: number;
+  /** 지금 프로필 사진이 있는지 — 있으면 코인 20이 붙어 있다 (lib/shop.ts의 COIN.avatar) */
+  avatar: boolean;
   /** 활동으로 번 코인 */
   earned: number;
   /** 여태 쓴 코인 */
   spent: number;
-  /** 지금 쓸 수 있는 코인 */
+  /**
+   * 지금 쓸 수 있는 코인. **마이너스로 내려갈 수 있다.**
+   *
+   * 사진 20으로 테마를 산 다음 사진을 내리면 번 값만 20 줄고 산 값은 그대로라 여기가
+   * 음수가 된다. 0으로 자르지 않는 것이 요점이다 — 자르면 「사고 나서 내리기」가
+   * 공짜가 된다. 음수인 동안은 산 테마도 잠긴다 (themeAllowed).
+   */
   left: number;
   owned: string[];
 }
 
+/** 사진 데이터를 안 읽는다 — 데이터 URL이라 쉰 명치를 끌어오면 그것만 몇 MB다 */
+const hasAvatar = sql<boolean>`(${users.avatar} IS NOT NULL)`;
+
 export async function walletOf(userId: string): Promise<Wallet> {
   const db = await getDb();
-  const [scores, rows] = await Promise.all([
+  const [scores, rows, me] = await Promise.all([
     boardScoresFor(userId),
     db.select().from(themePurchases).where(eq(themePurchases.userId, userId)),
+    db.select({ avatar: hasAvatar }).from(users).where(eq(users.id, userId)),
   ]);
-  const earned = coinsEarned(scores);
+  const avatar = me[0]?.avatar ?? false;
+  const earned = coinsEarned({ ...scores, avatar });
   const spent = rows.reduce((n, r) => n + r.coins, 0);
   return {
     ...scores,
+    avatar,
     earned,
     spent,
     left: earned - spent,
     owned: rows.map((r) => r.theme),
   };
 }
+
+/**
+ * 이 사람이 지금 이 테마를 쓸 수 있나 — **레이아웃이 화면마다 묻는다.**
+ *
+ * 고른 테마는 쿠키에 있어서(lib/card-theme.ts) 서버가 확인하지 않으면 산 적 없는
+ * 테마도 손으로 넣어 쓸 수 있고, 사진을 내려 코인이 마이너스가 된 뒤에도 계속 쓰게
+ * 된다 — 그러면 잠근다는 말이 아무것도 안 잠근다.
+ *
+ * 값이 붙은 테마일 때만 부른다. 기본 테마인 사람은 여기까지 오지 않는다.
+ *
+ * 1분 담아 둔다. 지갑을 세는 데 다섯 번을 물어보는데 그걸 화면마다 하면 테마를 산
+ * 사람만 앱이 느려진다. 사진을 내린 뒤 잠기기까지 최대 1분인데, 잠그는 목적이
+ * 「이득이 없게 하는 것」이지 「1초 안에 막는 것」이 아니라 그 정도면 된다.
+ */
+export const themeAllowed = unstable_cache(
+  async (userId: string, theme: string): Promise<boolean> => {
+    const w = await walletOf(userId);
+    return w.owned.includes(theme) && w.left >= 0;
+  },
+  ['theme-allowed'],
+  { revalidate: 60 }
+);
 
 export type BuyResult = { ok: true; left: number } | { ok: false; reason: 'not-for-sale' | 'owned' | 'short' };
 
@@ -88,7 +125,7 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
     allBoardScores(),
     db.select().from(themePurchases),
     db
-      .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn })
+      .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn, avatar: hasAvatar })
       .from(users),
   ]);
 
@@ -102,12 +139,14 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
     .map((p) => {
       const s = scores.get(p.id) ?? { host: 0, join: 0, contrib: 0 };
       const mine = boughtBy.get(p.id) ?? [];
-      const earned = coinsEarned(s);
+      const avatar = p.avatar ?? false;
+      const earned = coinsEarned({ ...s, avatar });
       const spent = mine.reduce((n, r) => n + r.coins, 0);
       return {
         id: p.id,
         name: nameOf(p, UNKNOWN_NAME, locale),
         ...s,
+        avatar,
         earned,
         spent,
         left: earned - spent,
