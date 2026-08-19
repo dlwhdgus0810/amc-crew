@@ -25,11 +25,15 @@
          * 다시 붙을 때는 처음부터 만들지 않고 **루프만 되살린다.**
          *
          * 홈에서 카드를 끌어 순서를 바꾸면(app/sortable-card.tsx) React가 그 노드를
-         * 옮기고, 옮기는 동안 disconnect → connect가 일어난다. 예전에는 여기서 그냥
-         * 돌아갔는데, disconnect가 이미 rAF를 끊어 놓아서 순서를 한 번 바꾼 카드는
-         * 비가 영영 멈춘 채로 남았다.
+         * 옮기고, 옮기는 동안 disconnect → connect가 일어난다. 그냥 돌아가면
+         * disconnect가 이미 끊어 놓은 rAF가 되살아나지 않아서, 순서를 한 번 바꾼
+         * 카드는 비가 영영 멈춘 채로 남는다.
+         *
+         * last를 지우는 것은 dt 때문이다 — 떨어져 있던 시간이 그대로 dt가 되면
+         * 돌아오는 첫 프레임에 방울이 뛴다 (2.5로 잘리긴 하지만 그것도 눈에 띈다).
          */
         if (this._on) {
+          this.last = 0;
           if (this.ro) this.ro.observe(this);
           if (this.io) this.io.observe(this);
           if (!matchMedia('(prefers-reduced-motion: reduce)').matches) this.loop();
@@ -93,35 +97,86 @@
         this.cv.height = Math.max(1, Math.round(this.h * this.dpr));
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
         this.readTint();
+        this.sprite();
       }
 
-      loop() {
-        this.raf = requestAnimationFrame(() => this.loop());
+      /*
+       * 방울을 사각형으로 그리면 1자가 된다. 위가 투명하고 아래로 진해지는 줄기 하나를 미리
+       * 그려 두고 방울마다 늘여 그린다. 가장자리를 약하게 둔 다음 넓게 키우면 부어지는
+       * 방울이 부풀어 보이는 효과가 공짜로 생긴다.
+       */
+      sprite() {
+        const s = this._sp || (this._sp = document.createElement('canvas'));
+        s.width = 6;
+        s.height = 80;
+        const g = s.getContext('2d');
+        const grad = g.createLinearGradient(0, 0, 0, 80);
+        grad.addColorStop(0, 'rgba(' + this.tint + ',0)');
+        grad.addColorStop(1, 'rgba(' + this.tint + ',1)');
+        g.clearRect(0, 0, 6, 80);
+        g.fillStyle = grad;
+        g.globalAlpha = 0.35;
+        g.fillRect(1, 0, 1, 80);
+        g.fillRect(4, 0, 1, 80);
+        g.globalAlpha = 1;
+        g.fillRect(2, 0, 2, 80);
+      }
+
+      loop(rt) {
+        this.raf = requestAnimationFrame((t) => this.loop(t));
         if (!this.vis || !this.w || !this.h) return;
-        this.step();
+        /*
+         * dt는 60Hz 한 프레임을 1로 본 배수다. 이게 없으면 120Hz 폰에서 비가 두 배 빨리 떨어진다
+         * — 아래 값들은 전부 60Hz 기준으로 맞춰 둔 것이다. 2.5로 잘라 두는 이유는 탭을
+         * 다른 곳에 뒀다 돌아올 때 방울이 한 번에 순간이동하지 않게 하려는 것이다.
+         */
+        const dt = this.last ? Math.min(2.5, (rt - this.last) / 16.667) : 1;
+        this.last = rt;
+        this.step(dt);
         this.draw();
       }
 
-      step() {
+      step(dt) {
         const { w, h } = this;
-        this.t += 1 / 60;
+        this.t += dt / 60;
 
-        this.acc += this.rate;
+        this.acc += this.rate * dt;
         while (this.acc >= 1) {
           this.acc -= 1;
+          /*
+           * z는 멀기다 (0.45가 뒤, 1이 앞). 멀기에 따라 길이·폭·속도·진하기가 달라진다.
+           * 뒤에 있는 방울은 대개 중간에 부어지며 사라진다 — 모든 방울이 물에 닿지 않고,
+           * 닿은 방울에만 물튀김이 생긴다.
+           */
+          const z = 0.45 + Math.random() * 0.55;
+          const fades = z < 0.74 && Math.random() < 0.8;
           this.drops.push({
             x: Math.random() * w,
-            y: -12,
-            vy: 0.9 + Math.random() * 1,
-            len: 9 + Math.random() * 13,
+            y: -14,
+            z,
+            life: 1,
+            vy: (0.35 + Math.random() * 0.45) * (0.6 + z * 0.8),
+            len: (16 + Math.random() * 18) * z,
+            wd: 1 + z * 0.9,
+            fadeAt: fades ? h * (0.3 + Math.random() * 0.45) : Infinity,
           });
         }
 
-        const surf = h - this.level;
         for (let i = this.drops.length - 1; i >= 0; i--) {
           const d = this.drops[i];
-          d.y += d.vy;
-          if (d.y < surf) continue;
+          d.y += d.vy * dt;
+          if (d.y > d.fadeAt) {
+            d.life -= 0.035 * dt;
+            /* 물에 닿지 않고 사라지므로 물튀김도 파문도 없다 */
+            if (d.life <= 0) { this.drops.splice(i, 1); continue; }
+          }
+          /*
+           * 방울의 **끝점**으로 잰다. 위쪽 끝으로 재면 줄기가 수면을 지나 카드 밑까지 보인다.
+           * 평평한 수위 대신 그 x 자리의 실제 물결 높이를 쓴다 — 수면이 일렁이므로
+           * 파문이 이는 자리도 같이 움직여야 한다.
+           */
+          const sy = this.waveY(d.x);
+          if (d.y + d.len < sy) continue;
           this.drops.splice(i, 1);
           /* 방울 하나가 목표 수위를 이만큼 올린다 */
           this.target = Math.min(h * 0.28, this.target + 2);
@@ -129,7 +184,7 @@
           for (let k = 0; k < n; k++) {
             this.spray.push({
               x: d.x,
-              y: surf,
+              y: sy,
               vx: (Math.random() * 2 - 1) * 1.1,
               vy: -(0.4 + Math.random() * 1.3),
               r: 0.5 + Math.random() * 0.6,
@@ -141,19 +196,19 @@
 
         for (let i = this.spray.length - 1; i >= 0; i--) {
           const s = this.spray[i];
-          s.vy += 0.09;
-          s.x += s.vx;
-          s.y += s.vy;
-          s.a -= 0.016;
-          s.r -= 0.009;
+          s.vy += 0.09 * dt;
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+          s.a -= 0.016 * dt;
+          s.r -= 0.009 * dt;
           if (s.a <= 0 || s.r <= 0 || s.y > h) this.spray.splice(i, 1);
         }
 
         for (let i = this.rings.length - 1; i >= 0; i--) {
           const p = this.rings[i];
-          p.r += 0.5;
-          p.a -= 0.01;
-          p.age += 1 / 60;
+          p.r += 0.5 * dt;
+          p.a -= 0.01 * dt;
+          p.age += dt / 60;
           if (p.a <= 0) this.rings.splice(i, 1);
         }
 
@@ -161,8 +216,8 @@
          * 수위는 방울이 닿는 순간 튀지 않는다 — target만 오르고 실제 수면이 그것을 천천히
          * 따라간다. 그냥 더하면 방울마다 팅 튀어 위아래로만 움직여 보인다.
          */
-        this.target = Math.max(6, this.target - (this.target * 0.006 + 0.02));
-        this.level += (this.target - this.level) * 0.05;
+        this.target = Math.max(6, this.target - (this.target * 0.006 + 0.02) * dt);
+        this.level += (this.target - this.level) * (1 - Math.pow(0.95, dt));
       }
 
       /** x 자리의 수면 높이 */
@@ -184,8 +239,12 @@
         const { ctx, w, h, tint } = this;
         ctx.clearRect(0, 0, w, h);
 
-        ctx.fillStyle = 'rgba(' + tint + ',.42)';
-        for (const d of this.drops) ctx.fillRect(d.x, d.y, 1.4, d.len);
+        for (const d of this.drops) {
+          const wd = d.wd + (1 - d.life) * 3.5;
+          ctx.globalAlpha = (0.2 + d.z * 0.34) * d.life;
+          ctx.drawImage(this._sp, d.x - wd / 2, d.y, wd, d.len);
+        }
+        ctx.globalAlpha = 1;
 
         ctx.beginPath();
         ctx.moveTo(0, h);

@@ -288,6 +288,10 @@ export const CATEGORIES: Category[] = [
       es: 'p. ej. Airbnb en Austin',
     },
     proposedBy: '정재호',
+    seasonal: {
+      cherryblossom: { ko: '지금 안 가면 꽃이 다 집니다', en: 'Go now or the blossoms are gone.', es: 'O vas ahora o se acaban las flores.' },
+      rainyseason: { ko: '어차피 실내가 반이에요', en: 'Half of it is indoors anyway.', es: 'La mitad del plan es bajo techo igualmente.' },
+    },
   },
   {
     slug: 'gym',
@@ -298,10 +302,6 @@ export const CATEGORIES: Category[] = [
     kind: 'posts',
     name: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
     description: { ko: '봐줄 사람 있으면 한 개 더', en: 'One more rep with a spotter.', es: 'Una repetición más si alguien te cuida.' },
-    seasonal: {
-      cherryblossom: { ko: '지금 안 가면 꽃이 다 집니다', en: 'Go now or the blossoms are gone.', es: 'O vas ahora o se acaban las flores.' },
-      rainyseason: { ko: '어차피 실내가 반이에요', en: 'Half of it is indoors anyway.', es: 'La mitad del plan es bajo techo igualmente.' },
-    },
     locationLabel: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
     locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
   },
@@ -498,6 +498,10 @@ export const CATEGORIES: Category[] = [
       en: 'e.g. Clinton Lake parking lot',
       es: 'p. ej. aparcamiento de Clinton Lake',
     },
+    seasonal: {
+      cherryblossom: { ko: '공기가 맑아 별이 잘 보여요', en: 'The air is clear — good night for stars.', es: 'El aire está limpio: buena noche de estrellas.' },
+      rainyseason: { ko: '구름 걷히는 날 바로 잡아요', en: 'We go the first night the clouds break.', es: 'Salimos la primera noche que se abra el cielo.' },
+    },
   },
   {
     slug: 'game',
@@ -508,10 +512,6 @@ export const CATEGORIES: Category[] = [
     kind: 'posts',
     name: { ko: '게임', en: 'Game', es: 'Videojuegos' },
     description: { ko: '듀오 구합니다', en: 'Looking for a duo.', es: 'Busco dúo.' },
-    seasonal: {
-      cherryblossom: { ko: '공기가 맑아 별이 잘 보여요', en: 'The air is clear — good night for stars.', es: 'El aire está limpio: buena noche de estrellas.' },
-      rainyseason: { ko: '구름 걷히는 날 바로 잡아요', en: 'We go the first night the clouds break.', es: 'Salimos la primera noche que se abra el cielo.' },
-    },
     titleLabel: { ko: '게임', en: 'Game', es: 'Juego' },
     titleOptions: [
       { ko: '리그 오브 레전드', en: 'League of Legends', es: 'League of Legends' },
