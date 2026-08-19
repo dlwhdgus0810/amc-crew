@@ -31,6 +31,32 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-19T16:30',
+    title: { ko: '사기 전에 미리 보고, 장마는 손봤어요', en: 'Try before you buy — and the rain got fixed up' },
+    items: [
+      {
+        ko: '상점에서 테마마다 「미리보기」를 누르면 홈 화면이 그 테마를 입은 채로 그대로 떠요. 색만 보는 게 아니라 카드 모양, 글씨, 배경에 내리는 것까지 다 움직이는 채로 보여요. 50코인을 쓰기 전에 한 번 보세요.',
+        en: 'Each theme in the shop has a “Preview” — the real home screen, wearing it. Not just the colors: card shapes, type, and whatever is falling in the background, all moving. Worth a look before you spend 50 coins.',
+      },
+      {
+        ko: '「봄 · 벚꽃」은 아직 살 수 없지만 미리보기는 열려 있어요. 어떤 건지 먼저 보고 코인을 모아 두세요.',
+        en: '“Spring · Cherry blossom” isn’t for sale yet, but the preview is open. Have a look and start saving.',
+      },
+      {
+        ko: '장마 테마에서 배경에 내리던 비가 카드로 이어져요. 전에는 배경 비와 카드 안의 비가 서로 다른 비라 속도도 달랐는데, 이제 한 방울이 그대로 카드 안으로 들어가 물에 떨어져요.',
+        en: 'In the rainy-season theme, a drop falling in the background now carries on into the card it lands on. They used to be two unrelated rains at different speeds; now one drop crosses the edge and hits the water.',
+      },
+      {
+        ko: '물에 떨어질 때 튀는 물방울도 일렁이는 수면을 타요. 전에는 수면은 출렁이는데 물튀김만 반듯하게 퍼져서 물 위가 아니라 물 앞에 떠 있는 것처럼 보였어요.',
+        en: 'The splash rides the moving surface now. The water used to undulate while the splash spread out flat, so it looked like it was in front of the water rather than on it.',
+      },
+      {
+        ko: '즐겨찾기 표시와 버튼 모양도 테마를 따라가요. 장마에서는 빗방울 자국(◌·◉)에 버튼이 물방울 모양이고 안에 물이 차올라요. 벚꽃에서는 꽃(✿·❀)에 다섯 잎 꽃 버튼이고요.',
+        en: 'The favourite mark and the button shape follow the theme. In the rain it’s a raindrop ring (◌·◉) on a droplet-shaped button that slowly fills with water; in the cherry theme, a blossom (✿·❀) on a five-petal button.',
+      },
+    ],
+  },
+  {
     at: '2026-08-19T12:30',
     notable: true,
     title: { ko: '테마 상점이 생겼어요', en: 'There’s a theme shop now' },
