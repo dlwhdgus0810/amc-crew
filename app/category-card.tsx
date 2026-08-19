@@ -11,6 +11,8 @@
 import Link from 'next/link';
 import { Category, catDisplayName, descriptionFor } from '@/lib/categories';
 import { useCardTheme } from './card-theme-context';
+import { themeDeco } from '@/lib/card-theme';
+import SeasonStar from './season-star';
 import CatIcon from './cat-icon';
 import { useT } from './i18n';
 
@@ -89,6 +91,8 @@ export default function CategoryCard({
 }) {
   const t = useT();
   const theme = useCardTheme();
+  /* 시즌 테마면 즐겨찾기 별을 그 계절 그림으로 바꾼다 (app/season-star.tsx) */
+  const deco = themeDeco(theme);
   // 카드 전체가 링크라 토글 클릭이 이동으로 새지 않게 막는다
   const stop = (fn: () => void) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -185,7 +189,7 @@ export default function CategoryCard({
               aria-label={t(T.favoriteA11y)}
             >
               <span className="star" aria-hidden="true">
-                {isFavorite ? '★' : '☆'}
+                {deco ? <SeasonStar deco={deco} on={isFavorite} /> : isFavorite ? '★' : '☆'}
               </span>
             </button>
             {category.kind === 'posts' && (

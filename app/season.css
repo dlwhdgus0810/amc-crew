@@ -323,33 +323,6 @@ html[data-season='rain'] .car-card::after {
   background: linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0)) top left / 100% 3px no-repeat;
 }
 
-/* ══ 즐겨찾기 글리프 ══════════════════════════════════════════
-   기본 테마는 ☆/★인데, 시즌 테마에서는 카드 안의 모든 선이 그 계절 물건이라 별만
-   남으면 따로 논다. 벚꽃은 꽃, 장마는 물방울이다.
-
-   **category-card.tsx는 안 고친다** — 별을 글자 크기 0으로 줄이고 ::before로 계절
-   글리프를 얹는다. 그쪽을 고치면 테마를 아는 컴포넌트가 하나 더 생기는데, 이건
-   보이는 모양의 문제라 CSS가 알아서 될 일이다.
-
-   낭독기에는 영향이 없다 — 별은 이미 aria-hidden이고 이름은 버튼의 aria-label에,
-   눌린 상태는 aria-pressed에 따로 있다.
-
-   빈 모양과 채운 모양을 짝으로 둔다. 컴포넌트가 ☆/★를 갈아 끼우는 것과 같은 자리에서
-   .on이 붙으므로 즐겨찾기 여부가 지금처럼 구별된다.
-   ══════════════════════════════════════════════════════════ */
-html[data-season] .car-card .car-icon .star {
-  font-size: 0;
-  line-height: 1;
-}
-html[data-season] .car-card .car-icon .star::before {
-  font-size: 13px;
-  line-height: 1;
-}
-html[data-season='petal'] .car-card .car-icon .star::before { content: '✿'; }
-html[data-season='petal'] .car-card .car-icon.on .star::before { content: '❀'; }
-html[data-season='rain'] .car-card .car-icon .star::before { content: '◌'; }
-html[data-season='rain'] .car-card .car-icon.on .star::before { content: '◉'; }
-
 /* 움직임을 줄여 달라고 한 사람에게는 멈춘다. 물결은 모양이라 남기고 흔들림만 끈다.
    캔버스는 스스로 루프를 시작하지 않는다. */
 @media (prefers-reduced-motion: reduce) {
