@@ -71,4 +71,9 @@ export const SHOP_T = {
   preview: { ko: '미리보기', en: 'Preview', es: 'Vista previa' },
   previewOf: { ko: '{name} — 홈 화면', en: '{name} — home screen', es: '{name} — pantalla de inicio' },
   close: { ko: '닫기', en: 'Close', es: 'Cerrar' },
+  previewNote: {
+    ko: '홈 화면만 보여드려요. 눌러서 넘어가지는 않아요.',
+    en: 'The home screen only — taps don’t go anywhere.',
+    es: 'Solo la pantalla de inicio; los toques no llevan a ningún sitio.',
+  },
 } satisfies Record<string, Msg>;

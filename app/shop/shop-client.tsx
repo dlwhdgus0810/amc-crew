@@ -134,6 +134,8 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
             src={`/preview?t=${preview}`}
             title={t(SHOP_T.previewOf, { name: t(CARD_THEMES[preview].label) })}
           />
+          {/* 눌러도 안 움직이는 것이 고장이 아니라 그렇게 만든 것임을 알려 준다 */}
+          <span className="preview-note">{t(SHOP_T.previewNote)}</span>
         </div>
       )}
     </>

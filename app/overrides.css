@@ -3157,6 +3157,17 @@ body:has(.sky-scope.night) .tabbar a.active {
   border-radius: 18px;
   background: var(--bg);
   box-shadow: 0 18px 50px rgba(16, 16, 16, 0.35);
+  /*
+   * **손가락을 안 받는다 — 보는 것까지가 미리보기다.**
+   *
+   * 안에 든 것이 진짜 앱이라 탭바도 링크도 살아 있다. 그대로 두면 둘러보기나 캘린더로
+   * 넘어갈 수 있는데, 그 주소에는 미리보기 쿠키가 안 닿아서(경로가 /preview다) 테마가
+   * 풀린 화면이 뜬다 — 미리보기 창 안에서 미리보기가 끝나 있는 셈이다.
+   *
+   * 막는 것이 iframe 바깥이라 안쪽 코드로는 못 푼다. 꽃잎·빗물은 손가락과 무관하게
+   * 도므로 그림은 살아 있다.
+   */
+  pointer-events: none;
 }
 .shop-soon {
   font-size: 12px;
@@ -3165,4 +3176,9 @@ body:has(.sky-scope.night) .tabbar a.active {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 3px 9px;
+}
+.preview-note {
+  width: min(390px, 100%);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
 }
