@@ -60,6 +60,16 @@
         this.drops = [];
         this.spray = [];
         this.rings = [];
+        /*
+         * 카드를 다 지난 방울 — 배경(public/rain-field.js)이 매 프레임 가져가서 카드 아래
+         * 모서리에서 다시 떨어뜨린다. 한 방울이 들어오면 한 방울이 나가므로 화면 전체의
+         * 비 밀도가 그대로다.
+         *
+         * 배경이 안 가져가는 동안(카드가 화면 밖으로 나가 목록에서 빠졌을 때) 쌓이지
+         * 않게 열둘에서 끊는다. 목록은 반 초에 한 번 다시 만들므로 그 사이에 열둘을
+         * 넘길 일은 없다.
+         */
+        this.spill = [];
         this.level = 7;
         this.target = 7;
         this.t = 0;
@@ -151,7 +161,7 @@
        * 넘어오는 순간 y는 음수다: 줄기가 카드 위 선에 걸쳐 있고 위쪽은 배경이 그린다.
        */
       adopt(d) {
-        if (!this.drops || this.drops.length > 40) return;
+        if (!this.drops || this.drops.length > 40) return false;
         const fades = d.z < 0.74 && Math.random() < 0.8;
         /*
          * 넘겨준 쪽이 이번 프레임을 이미 돌았고 이쪽은 아직이면, 이 방울은 **이번
@@ -175,6 +185,19 @@
           wait,
           fadeAt: fades ? this.h * (0.3 + Math.random() * 0.45) : Infinity,
         });
+        return true;
+      }
+
+      /**
+       * 이 방울은 카드에서 할 일이 끝났다 — 배경에 돌려보낸다.
+       *
+       * 물에 닿아 튀었든 중간에 흐려져 사라졌든 똑같이 돌려보낸다. 흐려지는 것은
+       * 「멀리 있는 비」라는 뜻이지 없어졌다는 뜻이 아니라서, 여기서 빼면 카드 아래의
+       * 비가 사십 퍼센트 줄어든다.
+       */
+      spillOut(d) {
+        if (this.spill.length >= 12) return;
+        this.spill.push({ x: d.x, z: d.z, vy: d.vy, len: d.len, wd: d.wd });
       }
 
       loop(rt) {
@@ -205,8 +228,8 @@
           d.y += d.vy * dt;
           if (d.y > d.fadeAt) {
             d.life -= 0.035 * dt;
-            /* 물에 닿지 않고 사라지므로 물튀김도 파문도 없다 */
-            if (d.life <= 0) { this.drops.splice(i, 1); continue; }
+            /* 물에 닿지 않고 사라지므로 물튀김도 파문도 없다 — 그래도 아래로는 내려간다 */
+            if (d.life <= 0) { this.spillOut(d); this.drops.splice(i, 1); continue; }
           }
           /*
            * 방울의 **끝점**으로 잰다. 위쪽 끝으로 재면 줄기가 수면을 지나 카드 밑까지 보인다.
@@ -215,6 +238,7 @@
            */
           const sy = this.waveY(d.x);
           if (d.y + d.len < sy) continue;
+          this.spillOut(d);
           this.drops.splice(i, 1);
           /* 방울 하나가 목표 수위를 이만큼 올린다 */
           this.target = Math.min(h * 0.28, this.target + 2);

@@ -98,7 +98,7 @@
         for (const el of document.querySelectorAll('rain-canvas')) {
           const r = el.getBoundingClientRect();
           if (r.bottom < 0 || r.top > this.h || r.width === 0) continue;
-          this.cards.push({ el, left: r.left, right: r.right, top: r.top });
+          this.cards.push({ el, left: r.left, right: r.right, top: r.top, bottom: r.bottom });
         }
       }
 
@@ -140,6 +140,25 @@
       }
 
       step(dt) {
+        /*
+         * 카드를 다 지난 방울을 받아 **카드 아래 모서리에서** 다시 떨어뜨린다.
+         *
+         * 방울이 카드 위 선을 넘으면 여기서는 지운다. 카드가 그 방울을 이어받아 물까지
+         * 떨어뜨리고, 물에 닿거나 흐려지면 이리로 돌려준다. 한 방울이 들어가면 한
+         * 방울이 나오므로 화면 전체의 비 밀도는 그대로다.
+         *
+         * y를 카드 아래 모서리에 맞추면 줄기 전체가 아직 카드 뒤에 있다 — 거기서
+         * 미끄러져 나온다. 위 선을 다시 넘을 일은 없으니 그 카드가 다시 잡지 않는다.
+         */
+        for (const c of this.cards) {
+          const sp = c.el.spill;
+          if (!sp || !sp.length) continue;
+          for (const s of sp) {
+            this.drops.push({ x: c.left + s.x, y: c.bottom, z: s.z, vy: s.vy, len: s.len, wd: s.wd });
+          }
+          sp.length = 0;
+        }
+
         this.acc = (this.acc || 0) + this.rate * dt;
         while (this.acc >= 1) {
           this.acc -= 1;
@@ -175,25 +194,23 @@
            * (46,92,110), 카드 안 방울은 카드 글자색인 크림(246,244,238)이다. 카드가
            * 넘어온 색으로 받아서 제 색으로 물들인다.
            *
-           * **넘긴 뒤에도 이 방울은 지우지 않고 그냥 계속 떨어뜨린다.**
+           * 넘긴 뒤 이 방울은 **줄기가 위 선을 다 지나면 지운다.** 넘기는 순간 지우면
+           * 위 선에 걸쳐 있던 줄기가 통째로 사라져서(카드 캔버스는 제 영역 밖을 못
+           * 그린다) 길이 18px짜리 줄기가 토막으로 줄어 보인다. 지나는 동안은 둘이 정확히
+           * 겹쳐 있고, 이 캔버스는 카드 뒤라 선 아래쪽은 카드가 가린다 — 위는 여기가,
+           * 아래는 카드가 그려서 한 줄기로 이어진다.
            *
-           * 지우면 그 열의 비를 맨 윗줄 카드가 전부 먹어서 아랫줄에는 한 방울도 안
-           * 간다(실제로 첫 줄 세 장만 받고 나머지 일곱 장이 0이었다). 그렇다고 카드
-           * 아래 모서리로 순간이동시킬 필요도 없다 — 카드가 이 캔버스를 완전히 가리기
-           * 때문이다(카드 한복판에 굵은 줄기를 강제로 그려 봐도 하나도 안 보인다).
-           * 그냥 두면 카드 뒤를 지나는 동안 안 보이다가 아래 모서리에서 저절로 나온다.
-           *
-           * 순간이동은 **시간을 건너뛰는 것이 문제였다.** 위 선을 지나고 8~9프레임
-           * (0.15초) 만에 카드 밑에 다시 나타나는데, 정작 카드 안으로 넘어간 방울은
-           * 물에 닿기까지 41프레임(0.68초)이 걸린다. 같은 x 자리에서 카드 안에는 아직
-           * 떨어지는 중인 방울이 있는데 카드 밑에는 벌써 다음 방울이 나와 있었다.
-           *
-           * 그냥 떨어뜨리면 카드 높이만큼 실제로 걸린다. 다시 잡히지 않는 것은 넘어서는
-           * 순간만 잡기 때문이다 (cardAt) — 한 번 지난 선은 다시 지날 수 없다.
+           * 이 방울이 카드 아래로 계속 내려가지는 않는다. 카드가 물까지 떨어뜨린 다음
+           * 아래 모서리에서 돌려준다 (rain-canvas.js의 spillOut).
            */
+          if (d.hand != null) {
+            if (d.y - d.len >= d.hand) this.drops.splice(i, 1);
+            continue;
+          }
+
           const c = this.cardAt(d.x, d.y, py);
           if (c && typeof c.el.adopt === 'function') {
-            c.el.adopt({
+            const 받음 = c.el.adopt({
               x: d.x - c.left,
               y: d.y - c.top - d.len,
               z: d.z,
@@ -213,6 +230,8 @@
                */
               t: this.last,
             });
+            /* 카드가 마흔 개를 이미 들고 있으면 안 받는다 — 그때는 그냥 지나가게 둔다 */
+            if (받음) d.hand = c.top;
           }
         }
       }
