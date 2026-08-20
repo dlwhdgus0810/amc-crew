@@ -153,6 +153,15 @@
       adopt(d) {
         if (!this.drops || this.drops.length > 40) return;
         const fades = d.z < 0.74 && Math.random() < 0.8;
+        /*
+         * 넘겨준 쪽이 이번 프레임을 이미 돌았고 이쪽은 아직이면, 이 방울은 **이번
+         * 프레임에 한 번 쉰다.** 안 그러면 곧바로 이어지는 이쪽 step에서 한 번 더
+         * 움직여 원본보다 한 프레임 앞서 간다 (rain-field.js의 t 주석 참고).
+         *
+         * 두 캔버스가 도는 순서에 기대지 않는다. 같은 프레임이면 rAF가 주는 시각이
+         * 서로 같으므로, 큰 쪽이 「아직 안 돈 쪽」이다.
+         */
+        const wait = d.t != null && d.t > this.last;
         this.drops.push({
           x: d.x,
           y: d.y,
@@ -163,6 +172,7 @@
           wd: d.wd,
           /* 들어올 때 입고 있던 색 — 카드 색과 다르면 draw가 서서히 갈아입힌다 */
           from: d.tint && d.tint !== this.tint ? d.tint : null,
+          wait,
           fadeAt: fades ? this.h * (0.3 + Math.random() * 0.45) : Infinity,
         });
       }
@@ -187,6 +197,11 @@
 
         for (let i = this.drops.length - 1; i >= 0; i--) {
           const d = this.drops[i];
+          /* 넘어온 첫 프레임 — 배경이 이미 옮겨 준 몫이라 여기서 또 옮기면 앞서 간다 */
+          if (d.wait) {
+            d.wait = false;
+            continue;
+          }
           d.y += d.vy * dt;
           if (d.y > d.fadeAt) {
             d.life -= 0.035 * dt;
