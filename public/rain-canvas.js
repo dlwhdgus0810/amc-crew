@@ -229,7 +229,24 @@
               a: 0.7,
             });
           }
-          this.rings.push({ x: d.x, r: 1.5, a: 0.5, age: 0 });
+          /*
+           * 파문도 **이 방울의 spread를 따라간다.**
+           *
+           * 전에는 모든 파문이 똑같이 자라서, 거의 안 튄 방울에도 카드 폭의 40%짜리
+           * 고리가 붙었다. 물튀김은 방울마다 크기가 다른데 파문만 늘 같으니 둘이
+           * 따로 놀았고, 그게 「파문이 너무 크다」로 보이던 것이다.
+           *
+           * grow는 프레임당 반지름 증가분, w는 수면이 우묵해지는 폭이다. 우묵해지는
+           * 쪽을 보이는 고리보다 조금 넓게 둔다 — 물은 마루가 서는 자리보다 넓게 꺼진다.
+           */
+          this.rings.push({
+            x: d.x,
+            r: 1.5,
+            a: 0.5,
+            age: 0,
+            grow: 0.14 + spread * 0.18,
+            w: 9 + spread * 6,
+          });
         }
 
         for (let i = this.spray.length - 1; i >= 0; i--) {
@@ -250,8 +267,9 @@
 
         for (let i = this.rings.length - 1; i >= 0; i--) {
           const p = this.rings[i];
-          p.r += 0.5 * dt;
-          p.a -= 0.01 * dt;
+          p.r += p.grow * dt;
+          /* 0.01이면 50프레임(833ms) 산다 — 그동안 계속 자라서 끝이 너무 커졌다 */
+          p.a -= 0.0125 * dt;
           p.age += dt / 60;
           if (p.a <= 0) this.rings.splice(i, 1);
         }
@@ -272,7 +290,7 @@
           Math.sin(x * 0.021 - this.t * 1.1) * 2.5;
         /* 방울이 떨어진 자리만 우묵해졌다 되살아난다 — 멀어질수록, 시간이 지날수록 잦아든다 */
         for (const p of this.rings) {
-          const d = (x - p.x) / 20;
+          const d = (x - p.x) / p.w;
           if (d > 3 || d < -3) continue;
           y += Math.exp(-d * d) * 5.5 * Math.sin(p.age * 22) * Math.exp(-p.age * 4);
         }
