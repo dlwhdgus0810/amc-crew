@@ -70,8 +70,17 @@
          * 넘길 일은 없다.
          */
         this.spill = [];
-        this.level = 7;
-        this.target = 7;
+        /*
+         * 절반쯤 차 있는 채로 시작한다.
+         *
+         * 아래로 넘기는 양이 수위에 달려 있어서(spillOdds), 빈 채로 시작하면 맨 윗줄이
+         * 30%에 닿을 때까지 아랫줄이 마른 채로 있는다. 재 보니 둘째 줄 11.6초, 셋째 줄
+         * 34.6초, 넷째 줄은 끝내 안 찼다. 페이지를 열 때마다 그럴 수는 없다.
+         *
+         * 값은 fit에서 정한다 — 카드 높이를 알아야 한계를 안다.
+         */
+        this.level = null;
+        this.target = null;
         this.t = 0;
         this.vis = true;
         this.dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -103,8 +112,38 @@
         this.cv.width = Math.max(1, Math.round(this.w * this.dpr));
         this.cv.height = Math.max(1, Math.round(this.h * this.dpr));
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        /* 높이를 알기 전(레이아웃 전)에는 못 정한다 — 0으로 굳으면 물이 영영 안 찬다 */
+        if (this.level == null && this.h > 0) this.level = this.target = this.cap() * 0.5;
         this.readTint();
         this.sprite();
+      }
+
+      /**
+       * 물이 찰 수 있는 한계 — 카드 높이의 10%다. 「몇 % 찼나」는 늘 이걸 기준으로 한다.
+       *
+       * 28%였다. 그때는 물이 한계의 21%에서 놀아서 실제 수면이 12px이라 상관없었는데,
+       * 이제 수위가 넘기는 양을 정하느라 한계의 55~70%까지 올라온다. 28%를 그대로 두면
+       * 수면이 40px이 되어 **아래줄 글씨가 물에 잠긴다** — 카드 바닥에서 19~23px에 있는
+       * 그 줄의 대비가 3.39:1까지 떨어졌다 (AA 기준 4.5 미달).
+       *
+       * 8%면 가득 차도 15px이고 평소 수면은 9~12px이라, 물결이 가장 높이 설 때(수면
+       * 위로 3~4px 더 선다)도 글씨 밑선에서 3px쯤 남는다 — 지금 배포된 것과 같은 여유다.
+       * 「몇 % 찼나」는 한계 대비라서 넘기는 셈은 그대로 돈다.
+       */
+      cap() {
+        return this.h * 0.08;
+      }
+
+      /**
+       * 지금 물의 양으로 **아래 카드에 얼마나 흘려보낼지** — 0~1.
+       *
+       * 30%까지는 다 받아 두고, 90%부터는 들어온 만큼 다 넘긴다. 그 사이는 비례한다.
+       *
+       * 이게 스스로 균형을 잡는다: 비가 세지면 물이 차고, 물이 차면 더 많이 넘기고,
+       * 많이 넘기면 물이 덜 찬다. 그래서 어느 화면 크기에서도 수위가 이 띠 안에 든다.
+       */
+      spillOdds() {
+        return Math.min(1, Math.max(0, (this.level / this.cap() - 0.3) / 0.6));
       }
 
       /*
@@ -238,10 +277,21 @@
            */
           const sy = this.waveY(d.x);
           if (d.y + d.len < sy) continue;
-          this.spillOut(d);
           this.drops.splice(i, 1);
           /* 방울 하나가 목표 수위를 이만큼 올린다 */
-          this.target = Math.min(h * 0.28, this.target + 2);
+          this.target = Math.min(this.cap(), this.target + 2);
+          /*
+           * 물에 닿은 방울은 **찬 만큼만** 아래로 넘긴다. 넘어간 물은 카드에서 빠진다 —
+           * 안 빼면 아무리 넘겨도 수위가 안 내려가서 비례가 성립하지 않는다.
+           *
+           * 중간에 흐려진 방울은 이 판정을 안 거치고 늘 그대로 내려간다(위쪽 참고).
+           * 그것까지 비율에 걸면 넷째 줄이 굶는다 — 재 보니 찬 비율 10%에 비는 6%였다.
+           * 물에 닿지도 않은 비를 카드가 가둘 이유도 없다.
+           */
+          if (Math.random() < this.spillOdds()) {
+            this.spillOut(d);
+            this.target = Math.max(6, this.target - 2);
+          }
           const n = 1 + ((Math.random() * 2) | 0);
           /*
            * spread는 **이 한 번의 물튀김**이 벌어지는 폭이다 — 방울마다 달라서 어떤 것은
@@ -317,7 +367,17 @@
          * 수위는 방울이 닿는 순간 튀지 않는다 — target만 오르고 실제 수면이 그것을 천천히
          * 따라간다. 그냥 더하면 방울마다 팅 튀어 위아래로만 움직여 보인다.
          */
-        this.target = Math.max(6, this.target - (this.target * 0.006 + 0.02) * dt);
+        /*
+         * 새는 양. 예전에는 L*0.006 + 0.02였는데, 그러면 지금 오는 비로 수위가 한계의
+         * 21%에서 평형이라 30%에 **영영 못 닿는다** — 아래로 한 방울도 안 넘어간다.
+         * 이제 넘기는 것이 물이 빠지는 주된 길이고, 새는 것은 곁다리다.
+         *
+         * 계수는 한계 수위와 같이 움직인다 — 앞의 항이 수위에 비례하므로 한계를 낮추면
+         * 그만큼 키워야 같은 균형이 나온다. 지금 값으로 네 줄이 70·66·62·55%로 띠 안에
+         * 들어온다. 더 줄이면 줄마다 차이가 없어져서 「물의 양에 비례」가 안 보이고,
+         * 더 키우면 아랫줄이 띠 밖으로 떨어져 굶는다.
+         */
+        this.target = Math.max(6, this.target - (this.target * 0.0028 + 0.002) * dt);
         this.level += (this.target - this.level) * (1 - Math.pow(0.95, dt));
       }
 
