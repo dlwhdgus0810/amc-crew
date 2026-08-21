@@ -39,8 +39,16 @@ const ENTRIES: ChangelogEntry[] = [
         en: '“Spring · Cherry blossom” was preview-only; it’s 50 coins now. Pale pink, petals drifting at their own pace on each card, and the type switches to Gowun Dodum.',
       },
       {
+        ko: '「여름 · 장마」도 그동안 많이 달라졌어요. 배경에 내리던 비가 카드 안으로 그대로 이어져 들어오고, 카드마다 물이 차올랐다가 서서히 빠지면서 그 물이 아래 카드로 비가 되어 내려요. 물에 떨어질 때 튀는 물방울도 일렁이는 수면을 타고요. 전에 보고 그냥 넘기셨어도 「미리보기」로 한 번 더 보고 정하세요.',
+        en: '“Summer · Rainy season” has changed a lot too. Rain from the background carries on into the card it lands on, each card fills up and then slowly drains — and that water falls as rain onto the card below. The splashes ride the moving surface now. Even if you passed on it before, take another look at the preview.',
+      },
+      {
         ko: '가을과 겨울도 상점에 이름을 올려 뒀어요. 아직 만드는 중이라 미리보기는 없어요.',
         en: 'Autumn and winter are listed too — still being made, so no preview yet.',
+      },
+      {
+        ko: '어떤 테마가 나오면 좋을지 「건의함」에 남겨주세요. 계절이 아니어도 좋아요 — 좋아하는 색, 어울릴 것 같은 분위기, 뭐든 적어주시면 만들 때 참고할게요.',
+        en: 'Tell us what theme you’d like next in the Suggestions box. It doesn’t have to be a season — a colour you like, a mood that would suit us, anything helps.',
       },
       {
         ko: '장마 테마에서 폰으로 볼 때 카드에 물이 계속 차 있던 것도 고쳤어요. 폰은 카드가 한 줄이라 비를 한 장이 거의 다 받는데, 빠지는 속도가 그만큼 안 따라가고 있었어요.',
