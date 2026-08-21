@@ -31,6 +31,33 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-21T16:35',
+    notable: true,
+    title: { ko: '「겨울 · 눈」이 나왔어요', en: '“Winter · Snow” is here' },
+    items: [
+      {
+        ko: '겨울 테마를 50코인에 팔아요. 눈 쌓인 아침 같은 청회색인데, 카드 위 가장자리에 눈이 실제로 쌓여요 — 가장자리가 차면 카드 안으로 넘치고, 안쪽이 이어지면 덩어리가 떨어져 바닥에 앉고, 바닥까지 차면 카드 밑으로 쓸려 나가 아래 카드에 앉아요.',
+        en: '“Winter · Snow” is 50 coins. Slate blue like a snowed-in morning — and the snow actually piles up on the top edge of each card. When the edge fills it spills inside, the inside slides off in slabs, and when the floor fills it sweeps out the bottom onto the card below.',
+      },
+      {
+        ko: '즐겨찾기와 구독 표시도 결정이에요. 즐겨찾기는 여섯 갈래 별, 구독은 육각 판이고, 누르면 가운데가 하얗고 바깥이 파란 얼음이 돼요. 서체는 고운돋움이고요.',
+        en: 'The favourite and subscribe marks are ice crystals — a six-point star and a hexagonal plate; tapping them turns the crystal to ice, white in the middle and blue at the edge.',
+      },
+      {
+        ko: '「봄 · 벚꽃」도 손봤어요. 배경 꽃잎이 타원 하나에서 여섯 가지 모양으로 바뀌었고(잎맥과 밑동의 흰 빛까지 그려요), 떨어지면서 앞면과 옆면을 번갈아 보여줘요. 카드마다 꽃잎이 떨어지는 때와 자리도 다 달라졌고요 — 전에는 어느 카드든 같은 자리에서 같이 떨어졌어요.',
+        en: '“Spring · Cherry blossom” got work too. Background petals went from one oval to six shapes — with veins and the pale base drawn in — and they turn as they fall, showing face then edge. Each card now drops its petals at its own moment and its own spot; before, every card dropped them together from the same three places.',
+      },
+      {
+        ko: '앱 알림과 새 소식 알림은 켜 두면 각각 상점 코인 10씩 붙어요. 프로필 사진은 20이고요.',
+        en: 'App notifications and news alerts each carry 10 shop coins while they’re on; a profile photo carries 20.',
+      },
+      {
+        ko: '모임 카드에서 얼굴과 인원수가 가운데로 몰려 있던 것도 고쳤어요. 얼굴은 왼쪽, 인원수는 오른쪽 끝이에요.',
+        en: 'Also fixed: on a meetup card the faces and the headcount had drifted to the middle. Faces sit left, the count sits right.',
+      },
+    ],
+  },
+  {
     at: '2026-08-21T14:35',
     title: { ko: '알림을 켜 두면 코인이 붙어요', en: 'Keeping alerts on carries coins' },
     items: [

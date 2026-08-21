@@ -64,6 +64,7 @@ export function coinsEarned(s: CoinSource): number {
 export const THEME_PRICE: Partial<Record<CardTheme, number>> = {
   rainyseason: 50,
   cherryblossom: 50,
+  winter: 50,
 };
 
 /** 상점에 내놓은 테마 — 목록의 순서가 곧 화면 순서다 */
@@ -89,15 +90,6 @@ export const PLANNED: { key: string; label: Msg; note: Msg }[] = [
   {
     key: 'autumn',
     label: { ko: '가을 · 단풍', en: 'Autumn · Fall leaves', es: 'Otoño · Hojas' },
-    note: {
-      ko: '준비 중이에요.',
-      en: 'In the works.',
-      es: 'En preparación.',
-    },
-  },
-  {
-    key: 'winter',
-    label: { ko: '겨울 · 첫눈', en: 'Winter · First snow', es: 'Invierno · Primera nieve' },
     note: {
       ko: '준비 중이에요.',
       en: 'In the works.',
