@@ -105,9 +105,9 @@
          */
         this.dumpBase = 0.3 + Math.pow(Math.random(), 0.7) * 0.5;
         this.dumpAt = this.nextDumpAt();
-        /** 지금 쏟는 중이면 남은 방울 수 */
-        this.pour = 0;
-        this.pourTick = 0;
+        /** 지금 물이 빠지는 중인가 */
+        this.draining = false;
+        this.pourAcc = 0;
         /*
          * 4분의 1쯤 차 있는 채로 시작한다.
          *
@@ -181,22 +181,6 @@
        * 한 프레임에 다 뱉지 않고 두 프레임에 하나씩 내보낸다. 한꺼번에 뱉으면 같은
        * 높이에 줄기가 나란히 서서 비가 아니라 빗금 한 줄로 보인다.
        */
-      dump() {
-        /*
-         * 쏟는 양은 **받아 둔 물(target)** 로 센다. 보이는 수면(level)으로 세면 뒤처진
-         * 만큼 덜 내보내게 되고, 그 차이가 줄마다 쌓여 아래가 마른다.
-         *
-         * 쏟을 때를 정하는 것은 반대로 보이는 수면이다 — 눈에 찬 것으로 보일 때 빠져야
-         * 「찼다가 빠진다」로 읽힌다.
-         */
-        this.pour = Math.max(1, Math.round(this.target / RISE));
-        this.pourTotal = this.pour;
-        this.drainFrom = Math.max(1, this.level);
-        this.pourAcc = 0;
-        this.target = 0;
-        this.dumpAt = this.nextDumpAt();
-      }
-
       /** 제 성격 언저리에서 한 번 흔든다 — 똑같은 높이에서 기계처럼 쏟지 않게 */
       nextDumpAt() {
         return Math.min(0.82, Math.max(0.28, this.dumpBase + (Math.random() - 0.5) * 0.08));
@@ -453,45 +437,39 @@
          */
         this.target = Math.max(0, this.target - (this.target * 0.0001 + 0.0002) * dt);
         /*
-         * 빠지는 중에는 수면을 목표에 맞추지 않는다 — 목표는 이미 0으로 비웠고 새로
-         * 받는 비가 다시 올리고 있어서, 그걸 따라가면 빠지는 속도가 뒤엉킨다.
-         * 빠지는 동안의 수면은 아래 pour 쪽이 혼자 정한다.
+         * 물의 양은 target 하나다. 비가 오면 오르고 빠지면 내린다. 보이는 수면(level)은
+         * 그걸 부드럽게 따라간다 — 방울마다 팅 튀지 않게.
+         *
+         * 예전에는 빠지는 동안 target을 0으로 비워 두고 level만 따로 내렸다. 그러면
+         * 빠지는 동안 들어온 비가 target에 몰래 쌓여서, 다 빠진 순간 수면이 그 높이까지
+         * 한 번에 튀어 올랐다 — 재 보니 6초에 걸쳐 빠뜨려 놓고 1.3초 만에 도로 찼다.
          */
-        if (this.pour <= 0) this.level += (this.target - this.level) * (1 - Math.pow(0.95, dt));
+        this.level += (this.target - this.level) * (1 - Math.pow(0.95, dt));
 
-        /*
-         * 다 찼으면 쏟는다. 쏟는 동안은 다시 판정하지 않는다 — 수위는 목표를 천천히
-         * 따라가느라 아직 높아서, 안 막으면 매 프레임 다시 쏟는다.
-         */
-        if (this.pour > 0) {
+        if (this.draining) {
           /*
-           * **서서히 빠진다.** 그리고 빠진 만큼이 그대로 아래로 내리는 비가 된다.
+           * **서서히 빠진다.** 그리고 빠져나간 만큼이 그대로 아래로 내리는 비가 된다.
            *
-           * 남은 깊이에 비례해 빠뜨리므로 처음에는 콸콸, 끝에서는 졸졸이다. 바닥이
-           * 얕아졌을 때 멈추지 않도록 최소치를 둔다 — 비례만으로는 0에 영영 못 닿는다.
+           * 깊이에 비례해 빠뜨리므로 처음에는 콸콸, 끝에서는 졸졸이다. 방울도 프레임마다
+           * 정해 뱉지 않고 빠져나간 양에 맞춰 뱉어서 비가 같이 잦아든다.
            *
-           * 방울은 프레임마다 정해 뱉지 않고 **빠진 물의 양에 맞춰** 뱉는다. 그래서
-           * 물이 빨리 빠지는 처음에 비가 굵고 끝에서 잦아든다.
+           * 최소치가 들어오는 비보다 커야 한다. 비례만으로 두면 얕아졌을 때 빠지는 양이
+           * 들어오는 양과 같아져서 거기서 멈춘다 — 30px 언저리에서 영영 안 마른다.
            */
-          const before = this.level;
-          /* 0.03·0.6이었다. 1.2~1.7초 만에 비어서 「서서히」로 안 보였다 — 절반으로 낮춰 2.5~3.5초 */
-          this.level = Math.max(0, this.level - Math.max(0.3, this.level * 0.015) * dt);
-          this.pourAcc += this.pourTotal * ((before - this.level) / this.drainFrom);
-          while (this.pour > 0 && this.pourAcc >= 1) {
+          const out = Math.max(0.45, this.target * 0.0075) * dt;
+          this.target = Math.max(0, this.target - out);
+          this.pourAcc += out / RISE;
+          while (this.pourAcc >= 1) {
             this.pourAcc -= 1;
-            this.pour--;
             this.pourDrop();
           }
-          /* 다 빠졌는데 남은 것이 있으면 여기서 턴다 (대개 한두 방울) */
-          if (this.level <= 0) {
-            while (this.pour > 0) {
-              this.pour--;
-              this.pourDrop();
-            }
+          if (this.target <= 1) {
+            this.draining = false;
+            this.dumpAt = this.nextDumpAt();
           }
         } else if (this.h > 0 && this.level >= this.dumpAt * this.cap()) {
-          /* h가 0이면 한계도 0이라 「다 찼다」가 늘 참이 된다 — 레이아웃 전에는 안 쏟는다 */
-          this.dump();
+          /* h가 0이면 한계도 0이라 「다 찼다」가 늘 참이 된다 — 레이아웃 전에는 안 빠진다 */
+          this.draining = true;
         }
       }
 
