@@ -39,8 +39,8 @@ const ENTRIES: ChangelogEntry[] = [
         en: 'Each note you leave in the Suggestions box is worth 2 contribution points. Everything you’ve already written counts — you don’t need to write it again.',
       },
       {
-        ko: '「안 하기로」 정리된 건의는 안 세요. 그것 말고는 답이 달렸든 아직이든 다 세요.',
-        en: 'Ones that were turned down don’t count. Everything else does, answered or not.',
+        ko: '답이 달렸든 아직이든, 「안 하기로」 정리된 것까지 다 세요. 받아들여질 만한 것만 적게 되면 정작 듣고 싶은 불편이 안 올라오니까요.',
+        en: 'All of them count — answered or not, and including the ones we decided against. If only the safe bets counted, the things we most want to hear about wouldn’t get written down.',
       },
       {
         ko: '후기와 마찬가지로 몇 개 썼는지는 순위표에 안 적어요. 점수에만 들어가요.',

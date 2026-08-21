@@ -207,14 +207,18 @@ const CONTRIB = {
    */
   review: 3,
   /**
-   * 건의함에 남긴 글 — **물린 것(declined)은 안 센다.**
+   * 건의함에 남긴 글 — **안 하기로 정리된 것까지 다 센다.**
    *
    * 승인된 제안(7점)보다 낮게 둔 이유는 문턱이 다르기 때문이다. 카테고리 제안은
    * 통과해야 앱이 바뀌지만 건의는 적는 것만으로 값이 있다 — 뭐가 불편한지는 쓰는
    * 사람만 안다.
    *
-   * 물린 것을 빼는 것이 상한 노릇을 한다. 지금 열넷 중 셋이 물린 것이고, 제일 많이
-   * 쓴 사람이 다섯 건이라 10점이다 — 따로 상한을 걸 만한 크기가 아니다.
+   * 그래서 안 하기로 한 것도 뺄 이유가 없다. 「이건 이래서 안 해요」로 끝난 이야기도
+   * 그 사람이 한 번 들여다보고 적었다는 사실은 그대로다. 빼면 「받아들여질 만한
+   * 것만」 적게 되는데, 그러면 정작 듣고 싶은 불편이 안 올라온다.
+   *
+   * 상한은 없다. 지금 열넷 중 제일 많이 쓴 사람이 다섯 건이라 10점 — 걸 만한 크기가
+   * 아니다. 한 사람이 몰아 쓰기 시작하면 그때 모임당 상한(사진·댓글)처럼 걸면 된다.
    */
   ticket: 2,
   photo: 1,
@@ -292,7 +296,7 @@ async function contribQuery(limit: number): Promise<ContribSeed[]> {
       ), rq AS (
         SELECT user_id, count(*) AS n FROM category_requests WHERE status = 'approved' GROUP BY 1
       ), tk AS (
-        SELECT user_id, count(*) AS n FROM tickets WHERE status <> 'declined' GROUP BY 1
+        SELECT user_id, count(*) AS n FROM tickets GROUP BY 1
       ), ids AS (
         SELECT user_id FROM ph UNION SELECT user_id FROM cm
         UNION SELECT user_id FROM rv UNION SELECT user_id FROM rq
@@ -521,7 +525,7 @@ export async function boardScoresFor(userId: string): Promise<{ host: number; jo
       ), rq AS (
         SELECT count(*) AS n FROM category_requests WHERE status = 'approved' AND user_id = ${userId}
       ), tk AS (
-        SELECT count(*) AS n FROM tickets WHERE status <> 'declined' AND user_id = ${userId}
+        SELECT count(*) AS n FROM tickets WHERE user_id = ${userId}
       )
       SELECT (COALESCE((SELECT n FROM ph), 0) * ${CONTRIB.photo}
             + COALESCE((SELECT n FROM cm), 0) * ${CONTRIB.comment}
@@ -583,7 +587,7 @@ export async function allBoardScores(): Promise<Map<string, { host: number; join
         ), rq AS (
           SELECT user_id, count(*) AS n FROM category_requests WHERE status = 'approved' GROUP BY 1
         ), tk AS (
-          SELECT user_id, count(*) AS n FROM tickets WHERE status <> 'declined' GROUP BY 1
+          SELECT user_id, count(*) AS n FROM tickets GROUP BY 1
         ), ids AS (
           SELECT user_id FROM ph UNION SELECT user_id FROM cm
           UNION SELECT user_id FROM rv UNION SELECT user_id FROM rq
