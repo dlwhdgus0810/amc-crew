@@ -3023,6 +3023,17 @@ body:has(.sky-scope.night) .tabbar a.active {
 }
 
 
+/* ── 탭바 프로필이 계절 그림일 때 ────────────────────────────
+   .t-ava는 원래 이름 첫 자나 사진이 들어가는 자리라 동그란 판 위에 얹힌다. 계절 그림
+   (app/profile-icon.tsx)이 들어갈 때는 그 판을 없앤다 — 나머지 네 탭이 배경 없는 선
+   그림이라, 프로필만 판을 깔면 혼자 튀고 누른 탭에서는 판이 까매져 그림이 묻힌다. */
+.tabbar .t-ava.t-ava-icon,
+.tabbar a.active .t-ava.t-ava-icon {
+  background: none;
+  color: inherit;
+  border-radius: 0;
+}
+
 /* ── 시즌 테마 — 카드가 차례로 올라온다 ─────────────────────────
    열일곱 장이 한꺼번에 나타나면 화면이 한 번에 갈리는데, 60ms씩 밀면 위에서
    아래로 훑는 것처럼 읽힌다.

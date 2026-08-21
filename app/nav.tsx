@@ -215,7 +215,7 @@ export default function NavLinks() {
               * 나머지 넷(집·나침반·달력·사진틀)은 계절을 안 따른다. 탭을 그림으로 기억한
               * 사람이 계절마다 다시 찾게 되고, 열 시즌이면 마흔 개를 그려야 한다.
               */}
-            <span className="t-ava">
+            <span className={`t-ava${!avatar && deco ? ' t-ava-icon' : ''}`}>
               {avatar ? <img src={avatar} alt="" /> : deco ? <ProfileIcon season={deco} /> : name.slice(0, 1) || '·'}
             </span>
             <span>{t(T.profile)}</span>

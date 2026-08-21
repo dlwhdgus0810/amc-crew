@@ -188,11 +188,7 @@ html[data-season='snow'] .car {
 
 /* 프로필 아이콘은 그림이라 CSS로 바꿀 수 없다 — nav.tsx에서 갈라야 한다(README 참고).
    사진이 있을 때는 사진이 들어가므로 그 틀의 곡률만 계절을 따른다. */
-/* 겨울은 곡률로 육각을 낼 수 없어서 clip-path다 — 사진이 들어가도 육각으로 잘린다 */
-html[data-season='snow'] .tabbar-links .t-ava {
-  border-radius: 0;
-  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-}
+/* 프로필 자리의 틀 모양은 두지 않는다 — 그림만 계절을 따른다 (app/season.css의 같은 대목) */
 
 /* 카드 장식과 아이콘 버튼은 season.css의 같은 블록이 이미 멈춘다.
    배경 눈은 캔버스라 스스로 안 돈다 (public/snow-field.js). */
