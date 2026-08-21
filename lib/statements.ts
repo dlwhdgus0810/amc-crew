@@ -122,6 +122,29 @@ const SEASON_STATEMENTS: Record<string, Statement[]> = {
             bottom: {ko: '내년에 또 이 말을 합니다.', en: 'you’ll be saying this again next year.', es: 'volverás a decir esto el año que viene.'},
         },
     ],
+    winter: [
+        {
+            top: {ko: '눈 온다고 미루면,', en: 'Put it off because of the snow,', es: 'Si lo aplazas por la nieve,'},
+            bottom: {ko: '봄에나 만납니다.', en: 'and you’ll meet in spring.', es: 'os veréis en primavera.'},
+        },
+        {
+            top: {ko: '밖이 추울수록', en: 'The colder it is out there,', es: 'Cuanto más frío hace fuera,'},
+            bottom: {ko: '안이 따뜻합니다.', en: 'the warmer it is in here.', es: 'más calienta estar dentro.'},
+        },
+        {
+            top: {ko: '해가 일찍 집니다.', en: 'The sun goes down early.', es: 'Anochece pronto.'},
+            bottom: {ko: '그만큼 저녁이 길어요.', en: 'Which makes the evening long.', es: 'Lo que alarga la tarde.'},
+        },
+        {
+            top: {ko: '겨울엔 약속이 줄죠.', en: 'Plans thin out in winter.', es: 'En invierno los planes escasean.'},
+            bottom: {ko: '그래서 먼저 부르는 겁니다.', en: 'That’s exactly why you ask first.', es: 'Por eso escribes tú primero.'},
+        },
+        {
+            /* 장마의 「우산 하나면 됩니다」와 짝이다 — 계절만 바뀌고 하는 말은 같다 */
+            top: {ko: '두꺼운 옷 하나면 됩니다.', en: 'One warm coat is enough.', es: 'Con un buen abrigo basta.'},
+            bottom: {ko: '나머지는 여기서 정해요.', en: 'The rest gets decided here.', es: 'Lo demás se decide aquí.'},
+        },
+    ],
     rainyseason: [
         {
             top: {ko: '비 온다고 취소하지 않아요.', en: 'Rain isn’t a cancellation.', es: 'La lluvia no cancela nada.'},
