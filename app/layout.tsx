@@ -187,7 +187,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
    * 기본 테마인 사람은 priceOf가 null이라 여기서 바로 끝난다 — DB를 안 부른다.
    */
   const cardTheme =
-    previewing || priceOf(picked) == null || (viewer.user && (await themeAllowed(viewer.user.id, picked)))
+    previewing ||
+    priceOf(picked) == null ||
+    /* 관리자는 산 적이 없어도 쓴다 — 관리자 화면의 선택기가 열 가지를 다 걸어 보는 자리다 */
+    viewer.isAdmin ||
+    (viewer.user && (await themeAllowed(viewer.user.id, picked)))
       ? picked
       : 'default';
   return (
