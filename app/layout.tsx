@@ -130,6 +130,12 @@ import './button-13d.css';
 // 둘러보기 2열 바둑판 배열 + 배열 토글 (반드시 맨 마지막)
 import './cat-tile.css';
 
+/*
+ * 배경 꽃잎 — overrides.css의 옛 규칙과 **같은 선택자**라 반드시 그 뒤여야 한다.
+ * 특정도가 같으므로 순서가 이긴다.
+ */
+import './season-spring-petals.css';
+
 const META = {
   title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?', es: 'Kansas Korean — ¿quién se apunta?' },
   description: {

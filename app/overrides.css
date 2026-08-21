@@ -2975,23 +2975,9 @@ body:has(.sky-scope.night) .tabbar a.active {
 }
 
 /* ── 벚꽃 ────────────────────────────────────────────────────
-   9×7 타원. 한쪽으로 흐르며 천천히 내려앉습니다. */
-.season-petal > span {
-  width: 9px;
-  height: 7px;
-  border-radius: 60% 40% 55% 45%;
-  background: rgba(201, 100, 126, 0.4);
-  animation: kk-petal 30s linear infinite;
-}
-@keyframes kk-petal {
-  from {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-  to {
-    /* 화면 높이보다 넉넉히 아래로 — 기기 높이가 달라도 끊기지 않게 */
-    transform: translate3d(64px, 120vh, 0) rotate(220deg);
-  }
-}
+   꽃잎은 app/season-spring-petals.css가 그린다 — 모양 여섯을 마스크로 오리고 살결을
+   세 겹으로 나눈다. 곡률(border-radius)로는 그 모양이 안 나온다.
+   여기 있던 9×7 타원과 kk-petal 키프레임은 그 파일이 대신한다. */
 
 /* ── 장마 ────────────────────────────────────────────────────
    화면 전체의 비는 캔버스 하나가 그린다 (public/rain-field.js) — 여기 규칙이 없다.
@@ -3026,11 +3012,6 @@ body:has(.sky-scope.night) .tabbar a.active {
 .season-deco > span:nth-child(17) { left: 26%; }
 .season-deco > span:nth-child(18) { left: 66%; }
 
-.season-petal > span:nth-child(3n) { animation-duration: 26s; opacity: 0.8; }
-.season-petal > span:nth-child(3n + 1) { animation-duration: 34s; opacity: 0.9; }
-.season-petal > span:nth-child(4n) { width: 7px; height: 6px; }
-.season-petal > span:nth-child(2n) { animation-delay: -8s; }
-.season-petal > span:nth-child(5n) { animation-delay: -17s; }
 
 
 /* 움직임을 줄여 달라고 한 사람에게는 아예 안 보입니다.

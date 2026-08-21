@@ -1,0 +1,165 @@
+/* ============================================================
+   봄 「벚꽃」 — 배경에 떨어지는 꽃잎만.
+
+   app/season-deco.tsx가 그리는 .season-petal 안의 낱개 <span> 열여섯 개에 붙습니다.
+   카드 장식·버튼·탭바는 들어 있지 않습니다 — 그건 patch6의 app/season.css입니다.
+
+   app/layout.tsx에서 import 하거나, 이미 season.css가 있으면 그 안의
+   `.season-petal > span` 블록을 이 파일 내용으로 갈아 끼우세요.
+
+   14차 후보 여섯을 다 씁니다. 열여섯 장이 여섯 모양 · 세 살결로 섞이므로 같은 꽃잎이
+   두 번 지나가지 않습니다.
+   ============================================================ */
+
+:root {
+  /*
+   * 모양 여섯. 공통점은 밑동이 좁고 위가 넓게 둥글며 홈이 거의 없다는 것입니다 —
+   * 실제 벚꽃잎의 특징이고, 곡률(border-radius)로는 어느 것도 나오지 않습니다.
+   * viewBox를 모양마다 잘라 두었으므로 contain으로 깔면 상자를 꽉 채웁니다.
+   */
+  --pt-fan: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%272.2,4.4,19.6,19.2%27%3E%3Cpath%20d=%27M10.9,23.2C10.4,21.6,8.2,21,6,19.2C3,16.8,2.6,9.2,5.8,6.6C8.4,4.6,15.6,4.6,18.2,6.6C21.4,9.2,21.5,16.8,18.5,19.2C16.3,21,14.1,21.6,13.6,23.2Z%27/%3E%3C/svg%3E);
+  --pt-square: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%272.8,3.8,18,19.8%27%3E%3Cpath%20d=%27M11.3,23.2C10.8,21.6,8.4,21,6.4,19.4C3.6,17.2,3.1,9.4,6,7C8.6,4.9,15.4,4.6,18,7C20.1,8.8,20.8,11.8,19.6,13.8C20.8,15,20.2,17.2,18.6,18.4C17,19.6,14.2,21,13.4,23.2Z%27/%3E%3C/svg%3E);
+  --pt-curl: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%272.2,4.4,18.4,19.2%27%3E%3Cpath%20d=%27M10.9,23.2C10.4,21.6,8.2,21,6,19.2C3,16.8,2.6,9.2,5.8,6.6C8.2,4.8,14.6,4.6,17.6,6.4C20.4,8.1,20.6,12.2,17.5,13.8C19.7,14.6,19.5,17.2,17.7,18.6C16.2,19.8,14.2,21.4,13.7,23.2Z%27/%3E%3C/svg%3E);
+  --pt-wave: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%272.6,4.2,18.6,19.4%27%3E%3Cpath%20d=%27M10.9,23.2C10.4,21.8,8.4,21.2,6.2,19.4C3.6,17,3,9.8,5.4,7.2C6.4,6.2,7.8,6.4,8.6,7.2C9.6,5.8,11,5.6,12,6.4C13,5.6,14.4,5.8,15.4,7.2C16.2,6.4,17.6,6.2,18.6,7.2C21,9.8,20.4,17,17.8,19.4C15.6,21.2,13.6,21.8,13.1,23.2Z%27/%3E%3C/svg%3E);
+  --pt-fly: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%273,6.4,18.4,14.4%27%3E%3Cpath%20d=%27M3.4,17.6C4.6,14,8,10.4,12.4,8.4C16,6.8,19.6,6.6,21,8C21.8,8.8,21.2,10.2,19.6,11.8C17,14.4,13.2,17.2,9.4,18.8C6,20.2,3,20,3.4,17.6Z%27/%3E%3C/svg%3E);
+  --pt-egg: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%275,3.4,14,20%27%3E%3Cpath%20d=%27M12,23.2C10.6,22.4,8.4,21.4,7.2,19C5,15,5.2,8.2,8,5.2C9.7,3.4,14.3,3.4,16,5.2C18.8,8.2,19,15,16.8,19C15.6,21.4,13.4,22.4,12,23.2Z%27/%3E%3C/svg%3E);
+  /*
+   * 살결 세 겹 — 밑동에서 부챗살처럼 퍼지는 잎맥(conic), 밑동의 흰 빛(radial), 가장자리로
+   * 갈수록 진해지는 분홍. 색만 셋으로 나눠 둡니다. 마스크가 이 세 겹을 오려 냅니다.
+   */
+  --pt-veins: conic-gradient(from 160deg at 50% 98%,transparent 0 6deg,rgba(255,255,255,.4) 6.4deg 7deg,transparent 7.4deg 15deg,rgba(255,255,255,.34) 15.4deg 16deg,transparent 16.4deg 24deg,rgba(255,255,255,.4) 24.4deg 25deg,transparent 25.4deg 33deg,rgba(255,255,255,.34) 33.4deg 34deg,transparent 34.4deg 42deg,rgba(255,255,255,.4) 42.4deg 43deg,transparent 43.4deg);
+  --pt-base: radial-gradient(ellipse 44% 30% at 50% 104%,rgba(255,255,255,.95),rgba(255,255,255,0) 76%);
+  --pt-skin: var(--pt-veins),var(--pt-base),radial-gradient(ellipse 88% 96% at 50% 44%,#F7C0D2 0 34%,#E88BA8 80%,#D4718F 100%);
+  --pt-skin-2: var(--pt-veins),var(--pt-base),radial-gradient(ellipse 88% 96% at 50% 44%,#FDE2EA 0 34%,#F3AEC5 80%,#E58FAB 100%);
+  --pt-skin-3: var(--pt-veins),var(--pt-base),radial-gradient(ellipse 88% 96% at 50% 44%,#EFA6BE 0 34%,#D97292 80%,#C25A7B 100%);
+}
+
+/*
+ * 담는 그릇. 앱에 이미 .season-deco 규칙이 있으면(1차에서 넣은 것) 이 두 규칙은 그것과
+ * 같은 값이라 겹쳐도 무해합니다.
+ */
+.season-petal {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.season-petal > span {
+  position: absolute;
+  top: -4%;
+  display: block;
+}
+
+/*
+ * 기본은 부채꼴 + 가장 연한 살결입니다. 아래 규칙들이 자리마다 모양·색·크기·주기를
+ * 갈아 끼웁니다. 주기(2·3·4·5·6·7)를 서로 어긋나게 두었으므로 같은 조합이 나란히
+ * 붙지 않습니다.
+ */
+.season-petal > span {
+  width: 15px;
+  height: 15px;
+  border-radius: 0;
+  background: var(--pt-skin);
+  -webkit-mask: var(--pt-fan) center / contain no-repeat;
+  mask: var(--pt-fan) center / contain no-repeat;
+  /* 회전은 낙엽의 절반입니다. 꽃잎은 가벼워서 굴러가지 않고 뒤집히며 미끄러집니다. */
+  --spin: 0.5;
+  animation: kk-petal-air 15s linear infinite;
+}
+/* 모양 여섯을 돌려 씁니다 — 열여섯 장이면 부채꼴 6, 모난 둥근꼴 3, 잔물결 3, 한쪽이 말린 2,
+   날아가는 자세 1, 달걀꼴 1쯤 됩니다. 뒤에 오는 규칙이 앞을 덮으므로 순서가 중요합니다. */
+.season-petal > span:nth-child(3n + 2) {
+  -webkit-mask-image: var(--pt-square);
+  mask-image: var(--pt-square);
+}
+.season-petal > span:nth-child(4n + 3) {
+  -webkit-mask-image: var(--pt-wave);
+  mask-image: var(--pt-wave);
+}
+/* 한쪽이 말린 꽃잎은 말린 자리에 흰 빛이 서야 입체로 보입니다 — 살결 위에 한 겹 더 */
+.season-petal > span:nth-child(5n + 4) {
+  -webkit-mask-image: var(--pt-curl);
+  mask-image: var(--pt-curl);
+  background-image: radial-gradient(ellipse at 82% 46%,rgba(255,255,255,.9),transparent 34%),var(--pt-veins),var(--pt-base),radial-gradient(ellipse 88% 96% at 50% 44%,#F7C0D2 0 34%,#E88BA8 80%,#D4718F 100%);
+}
+/* 날아가는 자세는 옆으로 누운 모양이라 상자도 옆으로 길어야 합니다 */
+.season-petal > span:nth-child(7n + 5) {
+  width: 19px;
+  height: 15px;
+  -webkit-mask-image: var(--pt-fly);
+  mask-image: var(--pt-fly);
+  /* 모양 자체가 이미 「떨어지는 중」이라 회전을 줄입니다 */
+  --spin: 0.3;
+}
+/* 달걀꼴은 좁고 길어서 상자도 좁습니다 */
+.season-petal > span:nth-child(7n + 7) {
+  width: 11px;
+  height: 16px;
+  -webkit-mask-image: var(--pt-egg);
+  mask-image: var(--pt-egg);
+}
+/* 살결 셋. 모양과 주기가 달라서 색이 모양을 따라가지 않습니다 */
+.season-petal > span:nth-child(3n)     { background-image: var(--pt-skin-2); }
+.season-petal > span:nth-child(4n + 1) { background-image: var(--pt-skin-3); }
+/* 크기 — 열여섯 장이 다 같으면 한 겹처럼 보입니다. 작은 것이 멀리 있는 것입니다 */
+.season-petal > span:nth-child(2n)     { width: 13px; height: 13px; animation-duration: 17s; }
+.season-petal > span:nth-child(5n)     { width: 18px; height: 18px; animation-duration: 12.5s; }
+.season-petal > span:nth-child(6n)     { width: 12px; height: 12px; animation-duration: 19s; }
+/* 도는 방향과 시작 지점을 갈라 둡니다 — 같은 길로 두 번 내려오지 않습니다 */
+.season-petal > span:nth-child(2n)     { --spin: -0.45; animation-delay: -6s; }
+.season-petal > span:nth-child(5n)     { --spin: 0.6; animation-delay: -11s; }
+.season-petal > span:nth-child(3n)     { --w: -1; animation-delay: -3.5s; }
+.season-petal > span:nth-child(7n)     { animation-duration: 21s; animation-delay: -14s; }
+/* 앞 겹 두 장 — 카드 위를 지나갑니다. 초점이 안 맞고 옅어서 글자를 가려도 읽기를
+   방해하지 않습니다. 이 둘만 크게 두어 화면에 깊이가 생깁니다. */
+.season-petal > span:nth-child(4),
+.season-petal > span:nth-child(9) {
+  z-index: 3;
+  width: 25px;
+  height: 25px;
+  opacity: 0.6;
+  filter: blur(1.1px);
+  animation-duration: 9s;
+}
+/* 가로 자리. 열여섯 장을 폭 전체에 고르지 않게 펴 둡니다 — 등간격이면 줄 세운 것처럼
+   보입니다. season-deco.tsx가 이미 left를 주고 있으면 이 블록은 지우세요. */
+.season-petal > span:nth-child(1)  { left: 4%; }
+.season-petal > span:nth-child(2)  { left: 11%; }
+.season-petal > span:nth-child(3)  { left: 18%; }
+.season-petal > span:nth-child(4)  { left: 24%; }
+.season-petal > span:nth-child(5)  { left: 31%; }
+.season-petal > span:nth-child(6)  { left: 38%; }
+.season-petal > span:nth-child(7)  { left: 44%; }
+.season-petal > span:nth-child(8)  { left: 51%; }
+.season-petal > span:nth-child(9)  { left: 57%; }
+.season-petal > span:nth-child(10) { left: 64%; }
+.season-petal > span:nth-child(11) { left: 70%; }
+.season-petal > span:nth-child(12) { left: 76%; }
+.season-petal > span:nth-child(13) { left: 82%; }
+.season-petal > span:nth-child(14) { left: 87%; }
+.season-petal > span:nth-child(15) { left: 92%; }
+.season-petal > span:nth-child(16) { left: 96%; }
+
+/*
+ * 떨어지면서 세 축으로 돕니다. rotate3d의 두 번째·세 번째 축 때문에 꽃잎이 기울어 돌아
+ * 폭이 늘었다 줄어들고, 한 장이 앞면과 옆면을 번갈아 보여 줍니다 — 2D 회전은 원판이
+ * 도는 것처럼 보입니다.
+ *
+ * 가로 흔들림이 같은 키프레임 안에 있습니다. 겉을 한 겹 더 감싸면 흔들림 주기를 낙하와
+ * 어긋나게 둘 수 있지만, season-deco.tsx가 그리는 낱개 span에는 자식이 없습니다.
+ * y를 각 지점에서 직접 재서 등속을 유지합니다.
+ */
+@keyframes kk-petal-air {
+  0%   { transform: translate3d(calc(var(--w, 1) * -20px), 0, 0) rotate3d(1, .5, .25, 0deg); }
+  25%  { transform: translate3d(calc(var(--w, 1) * 18px), 30vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 180deg)); }
+  50%  { transform: translate3d(calc(var(--w, 1) * -16px), 60vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 360deg)); }
+  75%  { transform: translate3d(calc(var(--w, 1) * 20px), 90vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 540deg)); }
+  100% { transform: translate3d(calc(var(--w, 1) * -20px), 120vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 720deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-petal > span {
+    animation: none !important;
+  }
+}

@@ -47,11 +47,12 @@ const DECORATED = [
 ];
 
 /**
- * 꽃잎은 조금 적게, 비는 조금 많게 — 시안에서 그렇게 골랐다.
+ * 꽃잎은 열여섯이다 — app/season-spring-petals.css가 모양·색·크기를 그 수에 맞춰
+ * 갈라 두었다(부채꼴 6, 모난 둥근꼴 3, 잔물결 3, 말린 2, 날아가는 자세 1, 달걀꼴 1).
  *
  * 눈은 아홉이다. 결정 하나가 20~26px이라 꽃잎만큼 뿌리면 화면이 눈으로 덮인다.
  */
-const COUNT = { petal: 14, rain: 18, snow: 9 } as const;
+const COUNT = { petal: 16, rain: 18, snow: 9 } as const;
 
 export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | 'snow' | null }) {
   const path = usePathname();
