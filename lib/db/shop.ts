@@ -22,8 +22,14 @@ export interface Wallet {
   host: number;
   join: number;
   contrib: number;
-  /** 지금 프로필 사진이 있는지 — 있으면 코인 20이 붙어 있다 (lib/shop.ts의 COIN.avatar) */
+  /**
+   * 지금 켜 둔 것들 — 각각 코인 20이 붙어 있다 (lib/shop.ts의 COIN).
+   *
+   * 활동이 아니라 상태다. 끄면 그만큼 도로 빠지고, 잔액이 음수가 되면 산 테마도 잠긴다.
+   */
   avatar: boolean;
+  push: boolean;
+  news: boolean;
   /** 활동으로 번 코인 */
   earned: number;
   /** 여태 쓴 코인 */
@@ -41,20 +47,29 @@ export interface Wallet {
 
 /** 사진 데이터를 안 읽는다 — 데이터 URL이라 쉰 명치를 끌어오면 그것만 몇 MB다 */
 const hasAvatar = sql<boolean>`(${users.avatar} IS NOT NULL)`;
+/** 기기가 몇이든 하나라도 켜 뒀으면 켠 것이다 */
+const hasPush = sql<boolean>`EXISTS (SELECT 1 FROM push_subscriptions s WHERE s.user_id = ${users.id})`;
 
 export async function walletOf(userId: string): Promise<Wallet> {
   const db = await getDb();
   const [scores, rows, me] = await Promise.all([
     boardScoresFor(userId),
     db.select().from(themePurchases).where(eq(themePurchases.userId, userId)),
-    db.select({ avatar: hasAvatar }).from(users).where(eq(users.id, userId)),
+    db
+      .select({ avatar: hasAvatar, push: hasPush, news: users.newsAlerts })
+      .from(users)
+      .where(eq(users.id, userId)),
   ]);
   const avatar = me[0]?.avatar ?? false;
-  const earned = coinsEarned({ ...scores, avatar });
+  const push = me[0]?.push ?? false;
+  const news = me[0]?.news ?? false;
+  const earned = coinsEarned({ ...scores, avatar, push, news });
   const spent = rows.reduce((n, r) => n + r.coins, 0);
   return {
     ...scores,
     avatar,
+    push,
+    news,
     earned,
     spent,
     left: earned - spent,
@@ -125,7 +140,15 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
     allBoardScores(),
     db.select().from(themePurchases),
     db
-      .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn, avatar: hasAvatar })
+      .select({
+        id: users.id,
+        kakaoName: users.kakaoName,
+        nickname: users.nickname,
+        nameEn: users.nameEn,
+        avatar: hasAvatar,
+        push: hasPush,
+        news: users.newsAlerts,
+      })
       .from(users),
   ]);
 
@@ -140,13 +163,17 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
       const s = scores.get(p.id) ?? { host: 0, join: 0, contrib: 0 };
       const mine = boughtBy.get(p.id) ?? [];
       const avatar = p.avatar ?? false;
-      const earned = coinsEarned({ ...s, avatar });
+      const push = p.push ?? false;
+      const news = p.news ?? false;
+      const earned = coinsEarned({ ...s, avatar, push, news });
       const spent = mine.reduce((n, r) => n + r.coins, 0);
       return {
         id: p.id,
         name: nameOf(p, UNKNOWN_NAME, locale),
         ...s,
         avatar,
+        push,
+        news,
         earned,
         spent,
         left: earned - spent,

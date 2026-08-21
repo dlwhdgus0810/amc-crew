@@ -26,21 +26,33 @@ import { Msg } from './i18n';
  * 등급 알림이 무더기로 나간다. 순위표와 등급은 활동을 재는 자리로 두고, 사진은
  * 상점에서만 값을 갖게 한다.
  */
-export const COIN = { host: 1, contrib: 1, join: 3, avatar: 20 } as const;
+export const COIN = { host: 1, contrib: 1, join: 3, avatar: 20, push: 20, news: 20 } as const;
 
-/** 코인을 셀 재료 — avatar는 지금 프로필 사진이 있는지다 (얼마나 오래됐는지가 아니다) */
+/**
+ * 코인을 셀 재료.
+ *
+ * 뒤의 셋은 활동이 아니라 **지금 켜 둔 상태**다 — 프로필 사진이 있는지, 알림을 받는지,
+ * 새 소식을 받는지. 「한 번 했으니 준다」가 아니라 「켜 둔 동안 붙어 있다」라서, 끄면
+ * 그만큼 도로 빠진다. 지급 기록을 남기지 않고 매번 지금 상태에서 세는 것이 그 뜻이다.
+ */
 export interface CoinSource {
   host: number;
   join: number;
   contrib: number;
   avatar: boolean;
+  /** 이 기기든 저 기기든 알림을 하나라도 받도록 켜 뒀는지 */
+  push: boolean;
+  /** 새 소식을 카카오톡으로 받도록 켜 뒀는지 */
+  news: boolean;
 }
 
 export function coinsEarned(s: CoinSource): number {
   // 주최 점수만 .5 단위다 (호스트가 둘이면 나눠 갖는다) — 코인은 정수로 끊는다
   return (
     Math.floor(s.host * COIN.host + s.contrib * COIN.contrib + s.join * COIN.join) +
-    (s.avatar ? COIN.avatar : 0)
+    (s.avatar ? COIN.avatar : 0) +
+    (s.push ? COIN.push : 0) +
+    (s.news ? COIN.news : 0)
   );
 }
 
@@ -107,8 +119,21 @@ export const SHOP_T = {
   },
   /** 코인이 어디서 왔는지 — 안 적으면 숫자가 어디서 나온 건지 알 수 없다 */
   breakdown: { ko: '주최 {host} + 정성 {contrib} + 참여 {join}×3', en: 'Hosting {host} + contribution {contrib} + attendance {join}×3', es: 'Anfitrión {host} + aportes {contrib} + asistencia {join}×3' },
-  /** 사진이 있는 사람에게 붙는 줄 — 위 breakdown 뒤에 이어 붙는다 */
+  /** 켜 둔 것에 붙는 줄 — 위 breakdown 뒤에 이어 붙는다 */
   fromAvatar: { ko: '프로필 사진 +{n}', en: 'profile photo +{n}', es: 'foto de perfil +{n}' },
+  fromPush: { ko: '알림 +{n}', en: 'notifications +{n}', es: 'avisos +{n}' },
+  fromNews: { ko: '새 소식 알림 +{n}', en: 'news alerts +{n}', es: 'avisos de novedades +{n}' },
+  /** 아직 안 켠 것 — 프로필로 데려간다 */
+  offPush: {
+    ko: '알림을 켜면 {n}코인이 더 붙어요',
+    en: 'Turning notifications on adds {n} coins',
+    es: 'Activar los avisos suma {n} monedas',
+  },
+  offNews: {
+    ko: '새 소식 알림을 켜면 {n}코인이 더 붙어요',
+    en: 'Turning news alerts on adds {n} coins',
+    es: 'Activar los avisos de novedades suma {n} monedas',
+  },
   /**
    * 사진이 없는 사람에게 뜨는 권유. 코인이 걸려 있다는 것을 여기서 처음 알게 된다.
    *
@@ -130,6 +155,12 @@ export const SHOP_T = {
     ko: '사진을 내리면 그 {n}코인도 같이 빠져요.',
     en: 'Take the photo down later and those {n} go with it.',
     es: 'Si quitas la foto más adelante, esas {n} se van con ella.',
+  },
+  /** 알림·새 소식용 — 사진과 달리 「내리면」이 아니라 「끄면」이다 */
+  offAgain: {
+    ko: '나중에 끄면 그 {n}코인도 같이 빠져요.',
+    en: 'Turn it off later and those {n} go with it.',
+    es: 'Si lo desactivas más adelante, esas {n} se van con ello.',
   },
   avatarGo: { ko: '프로필로 가기 →', en: 'Go to my profile →', es: 'Ir a mi perfil →' },
   /** 잔액이 마이너스라 산 테마가 잠긴 상태 */

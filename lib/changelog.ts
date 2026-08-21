@@ -31,6 +31,28 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-21T14:35',
+    title: { ko: '알림을 켜 두면 코인이 붙어요', en: 'Keeping alerts on carries coins' },
+    items: [
+      {
+        ko: '앱 알림을 켜 두면 상점 코인 20, 새 소식 알림을 켜 두면 20이 더 붙어요. 프로필 사진(20)과 같은 방식이라, 셋을 다 켜 두면 60이에요.',
+        en: 'App notifications carry 20 shop coins and news alerts another 20 — same as the profile photo (20). All three is 60.',
+      },
+      {
+        ko: '「한 번 켰으니 준다」가 아니라 「켜 둔 동안 붙어 있다」예요. 끄면 그만큼 도로 빠져요.',
+        en: 'It isn’t a one-off reward for switching them on — the coins are attached to them being on. Turn them off and the coins go too.',
+      },
+      {
+        ko: '알림을 켜 달라는 건 모임 소식이 늦게 닿는 일이 제일 아쉬워서예요. 참가 마감이 지나고 나서 아는 것만큼 아쉬운 게 없더라고요.',
+        en: 'We’re asking because the worst thing is meetup news arriving late — finding out after sign-ups closed.',
+      },
+      {
+        ko: '프로필에서 켜고 끌 수 있어요. 지금 얼마가 붙어 있는지는 상점의 코인 내역에 적혀 있어요.',
+        en: 'Both live in your profile. What’s currently attached is spelled out in the coin breakdown in the shop.',
+      },
+    ],
+  },
+  {
     at: '2026-08-20T23:20',
     title: { ko: '건의도 정성 점수가 돼요', en: 'Suggestions count toward your contribution score' },
     items: [

@@ -105,6 +105,8 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
         <span className="coin-from">
           {t(SHOP_T.breakdown, { host: Math.floor(w.host), contrib: w.contrib, join: w.join })}
           {w.avatar && ` + ${t(SHOP_T.fromAvatar, { n: COIN.avatar })}`}
+          {w.push && ` + ${t(SHOP_T.fromPush, { n: COIN.push })}`}
+          {w.news && ` + ${t(SHOP_T.fromNews, { n: COIN.news })}`}
           {w.spent > 0 && ` · ${t(SHOP_T.spent, { n: w.spent })}`}
         </span>
       </div>
@@ -138,6 +140,25 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
             <span className="coin-nudge-go">{t(SHOP_T.avatarGo)}</span>
           </Link>
         ))}
+
+      {/*
+        * 알림·새 소식도 같은 자리에서 권한다. 사진과 달리 잠김 안내는 안 붙인다 —
+        * 잠겼다는 말은 한 번만 뜨면 되고, 위 칸이 이미 그 말을 하고 있다.
+        */}
+      {w.left >= 0 && !w.push && (
+        <Link href="/profile" className="card coin-nudge">
+          <strong>{t(SHOP_T.offPush, { n: COIN.push })}</strong>
+          <span className="hint">{t(SHOP_T.offAgain, { n: COIN.push })}</span>
+          <span className="coin-nudge-go">{t(SHOP_T.avatarGo)}</span>
+        </Link>
+      )}
+      {w.left >= 0 && !w.news && (
+        <Link href="/profile" className="card coin-nudge">
+          <strong>{t(SHOP_T.offNews, { n: COIN.news })}</strong>
+          <span className="hint">{t(SHOP_T.offAgain, { n: COIN.news })}</span>
+          <span className="coin-nudge-go">{t(SHOP_T.avatarGo)}</span>
+        </Link>
+      )}
 
       {msg && <div className={`msg ${msg.type === 'ok' ? 'ok' : 'err'}`}>{msg.text}</div>}
 

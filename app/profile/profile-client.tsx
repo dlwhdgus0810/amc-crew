@@ -165,6 +165,16 @@ const T = {
     en: 'Your pick shows on this device only — everyone else sees theirs.',
     es: 'Tu elección solo se ve en este dispositivo.',
   },
+  notifCoin: {
+    ko: '알림을 켜 두면 상점 코인 {n}이 붙어요. 끄면 그 {n}도 같이 빠져요.',
+    en: 'Keeping notifications on carries {n} shop coins. Turn them off and those {n} go too.',
+    es: 'Tener los avisos activados suma {n} monedas de la tienda; si los desactivas, se van.',
+  },
+  newsCoin: {
+    ko: '새 소식 알림을 켜 두면 상점 코인 {n}이 붙어요. 끄면 그 {n}도 같이 빠져요.',
+    en: 'Keeping news alerts on carries {n} shop coins. Turn them off and those {n} go too.',
+    es: 'Tener los avisos de novedades activados suma {n} monedas; si los desactivas, se van.',
+  },
   newsAlertsOn: { ko: '새 소식 알림 받는 중', en: 'Getting update alerts', es: 'Recibes avisos de novedades' },
   newsAlertsOff: { ko: '새 소식 알림 꺼짐', en: 'Update alerts off', es: 'Avisos de novedades desactivados' },
   newsAlertsEnable: { ko: '알림 켜기', en: 'Turn on', es: 'Activar' },
@@ -880,6 +890,8 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
         */}
       <h2>{t(T.notifTitle)}</h2>
       <PushToggle />
+      {/* 켜는 자리에 값을 적어 둔다 — 상점에만 있으면 정작 여기서는 이유가 안 보인다 */}
+      <p className="hint" style={{ margin: '8px 2px 0' }}>{t(T.notifCoin, { n: COIN.push })}</p>
 
       <h2>{t(T.privacyTitle)}</h2>
       <div className="card">
@@ -917,6 +929,7 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
             {newsAlerts ? t(T.newsAlertsDisable) : t(T.newsAlertsEnable)}
           </button>
         </div>
+        <p className="hint" style={{ margin: '12px 0 0' }}>{t(T.newsCoin, { n: COIN.news })}</p>
         <Link className="link-btn strong" href="/whats-new" style={{ marginTop: 14 }}>
           {t(T.newsGo)}
         </Link>
