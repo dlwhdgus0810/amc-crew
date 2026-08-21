@@ -43,8 +43,16 @@
 
         /* 배경 비의 색 — 카드 밖은 카드 글자색을 쓸 수 없으니 테마에서 물려받는다 */
         this.tint = getComputedStyle(this).color.match(/\d+/g)?.slice(0, 3).join(',') || '46,92,110';
-        /* 프레임당 방울 수. 화면이 카드보다 훨씬 넓으므로 카드 하나보다 많이 뿌린다 */
-        this.rate = +(this.getAttribute('rate') || 0.55);
+        /*
+         * 프레임당 방울 수 — **화면 폭에 비례한다.**
+         *
+         * 0.55로 고정이었다. 그 값은 1400px 화면에서 고른 것인데, 폰(390px)에서 그대로
+         * 두면 같은 수의 방울이 3.6배 좁은 데 떨어져서 빗발이 그만큼 굵어진다. 그리고
+         * 폰은 카드가 한 줄이라 그 굵어진 비를 카드 한 장이 거의 다 받는다.
+         *
+         * 비의 촘촘함(px당 방울 수)을 어느 화면에서나 같게 둔다.
+         */
+        this.per = +(this.getAttribute('rate') || 0) / 1400 || 1 / 2545;
         this.drops = [];
         this.dpr = Math.min(2, window.devicePixelRatio || 1);
         this.cards = [];
@@ -71,6 +79,8 @@
         this.cv.width = Math.max(1, Math.round(this.w * this.dpr));
         this.cv.height = Math.max(1, Math.round(this.h * this.dpr));
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        /* px당 방울 수는 고정, 프레임당 방울 수는 폭에 따라 — 1400px에서 0.55가 된다 */
+        this.rate = this.w * this.per;
         this.sprite();
       }
 

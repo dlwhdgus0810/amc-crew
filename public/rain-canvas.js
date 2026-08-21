@@ -109,6 +109,16 @@
         this.draining = false;
         this.pourAcc = 0;
         /*
+         * 프레임당 들어오는 물의 양(px)과 그걸 재는 통.
+         *
+         * 카드가 화면 폭에서 차지하는 비율에 따라 이 값이 크게 갈린다 — 데스크톱 3열은
+         * 0.30, 폰 1열은 1.16이다. 빠지는 양을 고정해 두면 폰에서는 들어오는 쪽이 커서
+         * 물이 영영 안 빠진다(재 보니 600초에 한 번도 안 비웠다). 그래서 빠질 때 이만큼을
+         * 얹어 준다 — 그러면 실제로 줄어드는 속도가 어느 화면에서나 같아진다.
+         */
+        this.inRate = 0;
+        this.inAcc = 0;
+        /*
          * 4분의 1쯤 차 있는 채로 시작한다.
          *
          * 완전히 빈 채로 시작하면 첫 번째로 쏟기까지 아랫줄이 그만큼 오래 마르다.
@@ -341,6 +351,7 @@
            * 않는다. 위의 값은 혹시 모를 폭주만 막는 울타리다.
            */
           this.target = Math.min(this.cap(), this.target + RISE);
+          this.inAcc += RISE;
           /*
            * 물에 닿은 방울은 여기서 **고인다.** 아래로는 안 내려간다 — 카드가 물을
            * 받아 두었다가 어느 만큼 차면 한 번에 쏟는다 (아래 dump 참고).
@@ -435,6 +446,10 @@
          * 0으로 안 두는 이유는 비가 그쳤을 때다(다른 화면으로 갔다 오면 그렇다).
          * 그때 물이 그대로 남아 있으면 돌아오자마자 쏟는다.
          */
+        /* 들어온 양의 이동평균 — 튀지 않게 천천히 따라간다 */
+        this.inRate += (this.inAcc / (dt || 1) - this.inRate) * 0.02;
+        this.inAcc = 0;
+
         this.target = Math.max(0, this.target - (this.target * 0.0001 + 0.0002) * dt);
         /*
          * 물의 양은 target 하나다. 비가 오면 오르고 빠지면 내린다. 보이는 수면(level)은
@@ -456,7 +471,14 @@
            * 최소치가 들어오는 비보다 커야 한다. 비례만으로 두면 얕아졌을 때 빠지는 양이
            * 들어오는 양과 같아져서 거기서 멈춘다 — 30px 언저리에서 영영 안 마른다.
            */
-          const out = Math.max(0.45, this.target * 0.0075) * dt;
+          /*
+           * **들어오는 만큼을 얹어서 뺀다.** 그래야 실제로 줄어드는 속도(out - 유입)가
+           * 화면 폭과 무관하게 같아진다 — 얹지 않으면 폰에서 유입이 더 커서 안 빠진다.
+           *
+           * 뒤의 항이 실제로 줄어드는 속도다. 깊이에 비례하다가 얕아지면 「빠지기 시작한
+           * 높이의 600분의 1」로 바뀐다 — 비례만으로는 0에 영영 못 닿는다.
+           */
+          const out = (this.inRate + Math.max(this.drainFrom / 600, this.target * 0.0075)) * dt;
           this.target = Math.max(0, this.target - out);
           this.pourAcc += out / RISE;
           while (this.pourAcc >= 1) {
@@ -470,6 +492,7 @@
         } else if (this.h > 0 && this.level >= this.dumpAt * this.cap()) {
           /* h가 0이면 한계도 0이라 「다 찼다」가 늘 참이 된다 — 레이아웃 전에는 안 빠진다 */
           this.draining = true;
+          this.drainFrom = Math.max(1, this.target);
         }
       }
 
