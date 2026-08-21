@@ -14,11 +14,12 @@
 
 import { usePathname } from 'next/navigation';
 
-/* <rain-field>는 커스텀 엘리먼트다 (public/rain-field.js) — React 19는 JSX 이름을 React 밑에서 찾는다 */
+/* <rain-field>·<snow-field>는 커스텀 엘리먼트다 — React 19는 JSX 이름을 React 밑에서 찾는다 */
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       'rain-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { rate?: string };
+      'snow-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { rate?: string };
     }
   }
 }
@@ -66,6 +67,9 @@ export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | 'snow' |
         */}
       {kind === 'rain' ? (
         <rain-field />
+      ) : kind === 'snow' ? (
+        /* 눈도 같은 이유로 캔버스 하나다 — 낱개 <span>은 카드에 넘겨줄 수가 없다 */
+        <snow-field />
       ) : (
         Array.from({ length: COUNT[kind] }, (_, i) => <span key={i} />)
       )}

@@ -243,7 +243,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
         {/* 카드 위에 쌓이는 눈 — 겨울일 때만 받는다 (public/snow-canvas.js) */}
         {SNOW_MODE === 'canvas' && themeDeco(cardTheme) === 'snow' && (
-          <script src="/snow-canvas.js" defer />
+          <>
+            <script src="/snow-canvas.js" defer />
+            {/* 화면 전체의 눈 — 카드를 만나면 위 캔버스에 넘긴다 */}
+            <script src="/snow-field.js" defer />
+          </>
         )}
       </head>
       <body>

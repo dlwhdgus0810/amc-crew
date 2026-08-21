@@ -130,74 +130,19 @@ html[data-season='snow'] .car-card .car-icon.on:not(:has(.star))::before {
   --sf-plate: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270,0,24,24%27%3E%3Cpath%20d=%27M12,2L20.66,7L20.66,17L12,22L3.34,17L3.34,7ZM12,7L16.33,9.5L16.33,14.5L12,17L7.67,14.5L7.67,9.5ZM12,7L12,2M16.33,9.5L20.66,7M16.33,14.5L20.66,17M12,17L12,22M7.67,14.5L3.34,17M7.67,9.5L3.34,7%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
   --sf-crystal: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270,0,24,24%27%3E%3Cpath%20d=%27M12,12L12,1.6M12,6L14.6,4.5M12,6L9.4,4.5M12,12L21.01,6.8M17.2,9L19.79,10.5M17.2,9L17.2,6M12,12L21.01,17.2M17.2,15L17.2,18M17.2,15L19.79,13.5M12,12L12,22.4M12,18L9.4,19.5M12,18L14.6,19.5M12,12L2.99,17.2M6.8,15L4.21,13.5M6.8,15L6.8,18M12,12L2.99,6.8M6.8,9L6.8,6M6.8,9L4.21,10.5%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.7%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
 }
-/* 기본은 작은 동그라미 눈이다 — 열여덟 중 결정이 되는 것은 아래 규칙이 집는 여섯뿐이다 */
-.season-snow > span {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #FFFFFF;
-  opacity: 0.9;
-  animation: kk-snow-air 17s linear infinite;
-}
-.season-snow > span:nth-child(3n + 1) {
-  width: 20px; height: 20px; border-radius: 0; opacity: 1;
-  -webkit-mask: var(--sf-dendrite) center / contain no-repeat;
-  mask: var(--sf-dendrite) center / contain no-repeat;
-}
-.season-snow > span:nth-child(5n + 3) {
-  width: 16px; height: 16px; border-radius: 0; opacity: 0.94;
-  -webkit-mask: var(--sf-plate) center / contain no-repeat;
-  mask: var(--sf-plate) center / contain no-repeat;
-}
-.season-snow > span:nth-child(7n + 5) {
-  width: 18px; height: 18px; border-radius: 0; opacity: 0.96;
-  -webkit-mask: var(--sf-crystal) center / contain no-repeat;
-  mask: var(--sf-crystal) center / contain no-repeat;
-}
-/* 작은 눈은 크기를 조금씩 달리 둔다 — 다 같으면 규칙적으로 보인다 */
-.season-snow > span:nth-child(4n)     { width: 5px; height: 5px; opacity: 0.8; }
-.season-snow > span:nth-child(6n)     { width: 9px; height: 9px; }
-/* 도는 방향·주기를 갈라 둔다. 낙엽(22~35s)보다 느리다 — 눈은 무겁게 곧게 내려온다 */
-.season-snow > span:nth-child(2n)     { --spin: -1; animation-duration: 21s; animation-delay: -7s; }
-.season-snow > span:nth-child(3n)     { --w: -1; animation-duration: 15s; }
-.season-snow > span:nth-child(5n)     { animation-duration: 24s; animation-delay: -13s; }
-.season-snow > span:nth-child(7n)     { animation-duration: 19s; animation-delay: -5s; }
-/* 앞 겹 두 장 — 카드 위를 지나간다. 낙엽·꽃잎과 같은 자리다 */
-.season-snow > span:nth-child(4),
-.season-snow > span:nth-child(9) {
-  z-index: 3;
-  width: 26px;
-  height: 26px;
-  border-radius: 0;
-  opacity: 0.68;
-  filter: blur(1.3px);
-  -webkit-mask: var(--sf-dendrite) center / contain no-repeat;
-  mask: var(--sf-dendrite) center / contain no-repeat;
-  animation-duration: 11s;
-}
-.season-snow > span:nth-child(1) { left: 7%; }
-.season-snow > span:nth-child(2) { left: 18%; }
-.season-snow > span:nth-child(3) { left: 29%; }
-.season-snow > span:nth-child(4) { left: 38%; }
-.season-snow > span:nth-child(5) { left: 49%; }
-.season-snow > span:nth-child(6) { left: 58%; }
-.season-snow > span:nth-child(7) { left: 69%; }
-.season-snow > span:nth-child(8) { left: 79%; }
-.season-snow > span:nth-child(9) { left: 91%; }
 /*
- * 눈은 뒤집히지 않는다. 낙엽의 rotate3d 720°는 마른 잎이 가벼워서였고, 눈은 한 바퀴도
- * 못 돌고(140°) 곧게 내려오는 편이 눈으로 보인다. 결정은 여섯 갈래 대칭이라 많이 돌면
- * 어차피 도는 것이 안 보이고 흔들리는 것처럼만 보인다.
+ * 배경 눈은 캔버스 하나가 화면 전체를 맡는다 (public/snow-field.js).
  *
- * 가로 흔들림은 낙엽과 같은 이유로 같은 키프레임 안에 있다 — season-deco.tsx가 그리는
- * 낱개 span에는 자식이 없어서 겉을 한 겹 더 감쌀 수 없다.
+ * 낱개 <span>으로 두면 눈송이가 어디쯤 있는지 코드가 몰라서, 카드를 만났을 때 그 눈을
+ * 카드에 쌓을 수가 없다 — 내리는 눈과 쌓이는 눈이 남남이던 이유가 그것이었다. 그래서
+ * 시안의 <span> 규칙(결정 세 종류·흔들림 키프레임)은 지웠다. 결정 그림(--sf-*)은
+ * 카드의 아이콘 버튼이 그대로 쓴다.
  */
-@keyframes kk-snow-air {
-  0%   { transform: translate3d(calc(var(--w, 1) * -14px), 0, 0) rotate(0deg); }
-  25%  { transform: translate3d(calc(var(--w, 1) * 13px), 30vh, 0) rotate(calc(var(--spin, 1) * 35deg)); }
-  50%  { transform: translate3d(calc(var(--w, 1) * -11px), 60vh, 0) rotate(calc(var(--spin, 1) * 70deg)); }
-  75%  { transform: translate3d(calc(var(--w, 1) * 14px), 90vh, 0) rotate(calc(var(--spin, 1) * 105deg)); }
-  100% { transform: translate3d(calc(var(--w, 1) * -14px), 120vh, 0) rotate(calc(var(--spin, 1) * 140deg)); }
+.season-snow snow-field {
+  position: absolute;
+  inset: 0;
+  display: block;
+  color: #FFFFFF;
 }
 
 /* ══ 카드 표면 ════════════════════════════════════════════════
@@ -249,9 +194,5 @@ html[data-season='snow'] .tabbar-links .t-ava {
   clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
 }
 
-/* .card-season i·em과 .car-icon은 season.css의 같은 블록이 이미 멈춘다 — 눈송이만 여기서 */
-@media (prefers-reduced-motion: reduce) {
-  .season-snow > span {
-    animation: none !important;
-  }
-}
+/* 카드 장식과 아이콘 버튼은 season.css의 같은 블록이 이미 멈춘다.
+   배경 눈은 캔버스라 스스로 안 돈다 (public/snow-field.js). */

@@ -39,7 +39,11 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
     this.flMax = +(this.getAttribute('floor') || 14);
     /* 캔버스가 카드 아래로 나가 있는 만큼 — 그 위가 카드 바닥이다 */
     this.skirt = +(this.getAttribute('skirt') || 70);
+    /* 눈송이 하나가 대신하는 양 — land 주석 참고 */
+    this.heft = +(this.getAttribute('heft') || 2.6);
     this.flakes = []; this.slabs = [];
+    /* 카드 밖으로 쓸려 나간 눈 — 배경이 매 프레임 가져간다 (public/snow-field.js) */
+    this.spill = [];
     this.vis = true;
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.ro = new ResizeObserver(() => this.fit()); this.ro.observe(this);
@@ -93,35 +97,38 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
     const x = ((i + 0.5) / this.hs.length) * this.w;
     return this.max * Math.max(0, Math.min(1, Math.min(x, this.w - x) / 14));
   }
+  /**
+   * 이 x 자리의 눈더미 표면 — 캔버스 안쪽 좌표다 (배경이 물어본다).
+   *
+   * 눈송이를 넘겨받지 않고 **표면에 닿았는지만 알려 주는** 이유는 겹쳐 보이기 때문이다.
+   * 넘겨받아 여기서도 그리면, 카드 위 90px 구간은 카드가 가리지 않으므로 같은 눈송이가
+   * 두 개로 보인다. 비는 카드 위 선 위쪽을 배경만 그려서 문제가 없었지만 눈은 그 위에
+   * 더미가 있어서 선이 더 높다.
+   */
+  surfaceY(x) {
+    if (!this.w || !this.hs) return null;
+    return this.ledge - this.hs[this.bin(x)];
+  }
+
+  /**
+   * 눈송이 하나가 여기 앉았다 — 배경이 부른다.
+   *
+   * heft는 **눈송이 하나가 대신하는 양**이다. 화면 전체에 뿌리면 그중 카드에 닿는 것은
+   * 넷에 하나꼴이라, 예전처럼 카드마다 따로 뿌리던 때와 같은 속도로 쌓으려면 그만큼
+   * 무겁게 쳐야 한다. 눈송이 수를 늘려서 맞추면 화면에 천 개가 떠다닌다(재 봤다).
+   */
+  land(x, r) {
+    const hs = this.hs;
+    if (!hs || !this.w) return;
+    const i = this.bin(x);
+    const unit = this.w / hs.length;
+    const m = (r * r * 1.6 * this.heft) / unit;
+    hs[i] += m;
+    if (i > 0) hs[i - 1] += m * 0.25;
+    if (i < hs.length - 1) hs[i + 1] += m * 0.25;
+  }
   step(dt) {
     const { w, h, hs } = this;
-    this.acc = (this.acc || 0) + this.rate * dt;
-    while (this.acc >= 1) {
-      this.acc--;
-      const r = 1 + Math.random() * 2.2;
-      this.flakes.push({
-        x: Math.random() * w, y: -4 - Math.random() * 12, r,
-        /* 큰 눈이 조금 빠르다. 차이를 크게 두면 크기가 아니라 거리로 읽힌다 */
-        vy: 0.55 + r * 0.22 + Math.random() * 0.3,
-        sw: 6 + Math.random() * 12, sp: 0.008 + Math.random() * 0.014, ph: Math.random() * 6.28,
-      });
-    }
-    for (let k = this.flakes.length - 1; k >= 0; k--) {
-      const f = this.flakes[k];
-      f.y += f.vy * dt;
-      f.ph += f.sp * dt;
-      const x = f.x + Math.sin(f.ph) * f.sw;
-      const i = this.bin(x);
-      if (f.y + f.r >= this.ledge - hs[i]) {
-        const unit = w / hs.length;
-        hs[i] += (f.r * f.r * 1.6) / unit;
-        if (i > 0) hs[i - 1] += (f.r * f.r * 0.4) / unit;
-        if (i < hs.length - 1) hs[i + 1] += (f.r * f.r * 0.4) / unit;
-        this.flakes.splice(k, 1);
-        continue;
-      }
-      if (f.y - f.r > h) this.flakes.splice(k, 1);
-    }
     const ins = this.ins;
     /* 가장자리 높이는 cap()에서 멈추고, **넘치는 만큼은 버리지 않고 카드 안으로 흘러
        들어간다**. 양 끝 눌러진 칸은 물리지 않는다 — 그러면 안쪽 눈이 네 군데 구석에만 쌓여
@@ -176,6 +183,23 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
           this.slabs.splice(k, 1);
           continue;
         }
+      }
+      /*
+       * 밖으로 쓸려 나간 덩어리는 **카드 아래에서 다시 눈이 된다.**
+       *
+       * 전에는 캔버스 끝에서 그냥 사라졌다. 그러면 카드 안에 쌓인 눈이 어디로 갔는지가
+       * 없어진다 — 카드 밑으로 내려가 아래 카드에 앉아야 「위에서 아래로 이어지는」
+       * 이야기가 된다. 배경이 받아서 아래로 데려간다 (public/snow-field.js).
+       */
+      if (s.out && this.ledge + s.y >= this.floorY) {
+        const n = Math.max(2, Math.min(9, Math.round(((s.b - s.a + 1) * s.th) / 9)));
+        for (let m = 0; m < n; m++) {
+          if (this.spill.length >= 24) break;
+          const t = (s.a + Math.random() * (s.b - s.a + 1)) / hs.length;
+          this.spill.push({ x: t * w, r: 1.2 + Math.random() * 2 });
+        }
+        this.slabs.splice(k, 1);
+        continue;
       }
       if (this.ledge + s.y > h + 40) this.slabs.splice(k, 1);
     }
