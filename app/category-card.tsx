@@ -27,6 +27,15 @@ declare module 'react' {
       'rain-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         rate?: string;
       };
+      /* public/snow-canvas.js — 속성으로 쌓이는 높이·속도를 바꿀 수 있다 (README 참고) */
+      'snow-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        max?: string;
+        inside?: string;
+        floor?: string;
+        ledge?: string;
+        skirt?: string;
+        rate?: string;
+      };
     }
   }
 }
@@ -151,6 +160,12 @@ export default function CategoryCard({
         * 밝은 카드에서는 짙은 청회색이 된다 (CSS의 currentColor와 같은 이야기다).
         */}
       <rain-canvas className="card-rain" rate="0.1" aria-hidden="true" />
+      {/*
+        * 겨울 — 카드 위에 쌓이는 눈. 캔버스가 그린다 (public/snow-canvas.js).
+        * 비와 같은 방식이다: 항상 그려 두고 겨울이 아니면 CSS가 display:none으로 가린다.
+        * 자리·크기(카드 위로 90px, 아래로 70px)는 app/season-winter.css가 잡는다.
+        */}
+      <snow-canvas aria-hidden="true" />
 
       <span className="card-season" aria-hidden="true">
         <i />

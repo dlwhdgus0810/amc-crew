@@ -1,0 +1,290 @@
+/*
+ * 겨울 「눈」 — 카드 위에 눈이 실제로 쌓입니다. public/rain-canvas.js와 같은 방식이고
+ * (카드마다 하나, 안 보이면 멈춤, dt로 프레임 보정, reduced-motion에서 정지) 다른 것은
+ * 고인 물이 **수위 하나**였던 반면 눈은 **가로 위치마다 높이가 다른 줄**이라는 점입니다.
+ * 그래서 CSS로는 흉내조차 안 됩니다 — season.css의 눈 봉우리는 곡률로 그린 여섯 개라
+ * 어디에 눈이 내렸는지와 아무 관계가 없습니다.
+ *
+ * 규칙 넷이 전부입니다.
+ *
+ *  앉음   눈송이가 표면에 닿으면 그 칸 높이가 r²×1.6 ÷ 6px만큼 늘고, 옆 두 칸에도
+ *         4분의 1씩 나눈다.
+ *  다짐   매 프레임 0.04% 줄어든다. 가장자리는 11px에서 멈추고(cap), 넘치는 만큼은
+ *         버리지 않고 카드 안쪽으로 흘러 들어간다. 안쪽은 0.02%씩 다져진다.
+ *  무너짐 옆 칸과 3px 이상 벌어지면 차이의 절반을 흘려 보낸다. 쌓인 눈은 실제로 이렇게
+ *         평평해진다. 이것이 없으면 눈송이가 몰린 자리에 기둥이 선다.
+ *  끝     양 끝 14px은 높이를 눌러 둔다 — 카드 곡률(13px) 위로 눈이 떠 보인다.
+ *
+ * 처음 높이를 9px로 깔아 둡니다. 화면을 열고 눈이 쌓일 때까지 20초를 기다리게 할 수는
+ * 없습니다.
+ *
+ * 붙이는 곳: app/category-card.tsx에서 겨울 테마일 때만 <snow-canvas> 하나.
+ * 자리 잡는 style은 app/season.css가 맡습니다(카드 위로 90px).
+ */
+if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', class extends HTMLElement {
+  connectedCallback() {
+    if (this._on) return;
+    this._on = true;
+    const root = this.attachShadow({ mode: 'open' });
+    this.cv = document.createElement('canvas');
+    Object.assign(this.cv.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', display: 'block' });
+    root.appendChild(this.cv);
+    this.ctx = this.cv.getContext('2d');
+    this.tint = this.getAttribute('tint') || '255,255,255';
+    this.snow = this.getAttribute('snow') || '251,253,254';
+    this.rate = +(this.getAttribute('rate') || 0.2);
+    this.ledge = +(this.getAttribute('ledge') || 90);
+    this.max = +(this.getAttribute('max') || 11);
+    this.inMax = +(this.getAttribute('inside') || 5);
+    this.flMax = +(this.getAttribute('floor') || 14);
+    /* 캔버스가 카드 아래로 나가 있는 만큼 — 그 위가 카드 바닥이다 */
+    this.skirt = +(this.getAttribute('skirt') || 70);
+    this.flakes = []; this.slabs = [];
+    this.vis = true;
+    this.dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.ro = new ResizeObserver(() => this.fit()); this.ro.observe(this);
+    this.io = new IntersectionObserver((e) => { this.vis = e[0].isIntersecting; }, { threshold: 0 });
+    this.io.observe(this);
+    this.fit();
+    this.still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (this.still) this.draw(); else this.loop();
+  }
+  disconnectedCallback() { cancelAnimationFrame(this.raf); this.ro && this.ro.disconnect(); this.io && this.io.disconnect(); }
+  fit() {
+    const r = this.getBoundingClientRect();
+    this.w = r.width; this.h = r.height;
+    this.cv.width = Math.max(1, Math.round(this.w * this.dpr));
+    this.cv.height = Math.max(1, Math.round(this.h * this.dpr));
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.floorY = this.h - this.skirt;
+    /* 칸 하나가 6px. 더 좁으면 봉우리가 톱니처럼 뾰족해지고, 넓으면 계단이 보인다 */
+    const n = Math.max(8, Math.round(this.w / 6));
+    if (!this.hs || this.hs.length !== n) {
+      this.hs = new Float32Array(n);
+      this.ins = new Float32Array(n);
+      this.fl = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        this.hs[i] = 9 + Math.sin(i * 0.7) * 2 + Math.random() * 2.5;
+        /* 바닥에도 조금 깔아 둔다 — 카드 안에 눈이 앉기까지 30초를 기다릴 수는 없다 */
+        this.fl[i] = 4 + Math.sin(i * 0.5) + Math.random() * 1.5;
+      }
+    }
+    if (this.still) this.draw();
+  }
+  loop(rt) {
+    this.raf = requestAnimationFrame((t) => this.loop(t));
+    /*
+     * 반 초에 한 번 크기를 다시 잰다.
+     *
+     * 붙을 때 한 번만 재면 카드가 아직 안 그려진 동안 폭이 0이라 칸이 여덟 개로 굳는다
+     * (344px 카드면 쉰넷이어야 한다). ResizeObserver가 있는데도 그랬다 — 재 보니 w가
+     * 0인 채로 남아 있었다. 배경 비도 같은 데서 걸렸다(public/rain-field.js).
+     */
+    if ((this.tick = (this.tick || 0) + 1) % 30 === 0 && this.w !== this.getBoundingClientRect().width) this.fit();
+    if (!this.vis || !this.w) return;
+    /* 60Hz 한 프레임을 1로 본 배수. 2.5로 자르는 것은 탭을 다른 곳에 뒀다 돌아올 때
+       눈이 한 번에 순간이동하지 않게 하려는 것이다 */
+    const dt = this.last ? Math.min(2.5, (rt - this.last) / 16.667) : 1;
+    this.last = rt;
+    this.step(dt); this.draw();
+  }
+  bin(x) { return Math.max(0, Math.min(this.hs.length - 1, Math.floor((x / this.w) * this.hs.length))); }
+  cap(i) {
+    const x = ((i + 0.5) / this.hs.length) * this.w;
+    return this.max * Math.max(0, Math.min(1, Math.min(x, this.w - x) / 14));
+  }
+  step(dt) {
+    const { w, h, hs } = this;
+    this.acc = (this.acc || 0) + this.rate * dt;
+    while (this.acc >= 1) {
+      this.acc--;
+      const r = 1 + Math.random() * 2.2;
+      this.flakes.push({
+        x: Math.random() * w, y: -4 - Math.random() * 12, r,
+        /* 큰 눈이 조금 빠르다. 차이를 크게 두면 크기가 아니라 거리로 읽힌다 */
+        vy: 0.55 + r * 0.22 + Math.random() * 0.3,
+        sw: 6 + Math.random() * 12, sp: 0.008 + Math.random() * 0.014, ph: Math.random() * 6.28,
+      });
+    }
+    for (let k = this.flakes.length - 1; k >= 0; k--) {
+      const f = this.flakes[k];
+      f.y += f.vy * dt;
+      f.ph += f.sp * dt;
+      const x = f.x + Math.sin(f.ph) * f.sw;
+      const i = this.bin(x);
+      if (f.y + f.r >= this.ledge - hs[i]) {
+        const unit = w / hs.length;
+        hs[i] += (f.r * f.r * 1.6) / unit;
+        if (i > 0) hs[i - 1] += (f.r * f.r * 0.4) / unit;
+        if (i < hs.length - 1) hs[i + 1] += (f.r * f.r * 0.4) / unit;
+        this.flakes.splice(k, 1);
+        continue;
+      }
+      if (f.y - f.r > h) this.flakes.splice(k, 1);
+    }
+    const ins = this.ins;
+    /* 가장자리 높이는 cap()에서 멈추고, **넘치는 만큼은 버리지 않고 카드 안으로 흘러
+       들어간다**. 양 끝 눌러진 칸은 물리지 않는다 — 그러면 안쪽 눈이 네 군데 구석에만 쌓여
+       띠가 아니라 조각이 된다. 눈은 쌓이다 못하면 안쪽으로 무너진다. */
+    for (let i = 0; i < hs.length; i++) {
+      hs[i] *= 1 - 0.0004 * dt;
+      const c = this.cap(i);
+      if (hs[i] > c) { if (c >= this.max - 0.01) ins[i] += hs[i] - c; hs[i] = c; }
+      /* 안쪽 눈도 다져진다 — 가장자리의 절반 속도다 */
+      ins[i] *= 1 - 0.0002 * dt;
+    }
+    for (let i = 0; i < hs.length - 1; i++) {
+      const d = hs[i] - hs[i + 1];
+      if (Math.abs(d) > 3) { const m = (d - Math.sign(d) * 3) * 0.5; hs[i] -= m; hs[i + 1] += m; }
+      /* 안쪽은 2px에서 무너진다 — 얹힌 것이 아니라 미끄러운 면에 앉은 것이다 */
+      const e = ins[i] - ins[i + 1];
+      if (Math.abs(e) > 1.5) { const m = (e - Math.sign(e) * 1.5) * 0.5; ins[i] -= m; ins[i + 1] += m; }
+    }
+    /*
+     * 떨어짐 — 안쪽 눈이 inMax(5px)를 넘은 칸이 다섯 칸(30px) 이상 이어지면 그 구간이
+     * 덩어리로 떨어진다. 한 칸씩 떨어뜨리면 눈이 흩어지는 것처럼 보이고 무게가 없다.
+     * 떨어진 자리는 0이 아니라 1px쯤 남는다 — 눈은 깨끗하게 떨어지지 않는다.
+     */
+    let run = 0;
+    for (let i = 0; i <= ins.length; i++) {
+      if (i < ins.length && ins[i] >= this.inMax) { run++; continue; }
+      if (run >= 5) {
+        const a = i - run, b = i - 1;
+        let sum = 0;
+        for (let k = a; k <= b; k++) { sum += ins[k]; ins[k] = 0.8 + Math.random() * 0.6; }
+        this.slabs.push({ a, b, th: sum / run, y: 0, vy: 0.35, rot: (Math.random() - 0.5) * 0.5 });
+      }
+      run = 0;
+    }
+    const fl = this.fl;
+    for (let k = this.slabs.length - 1; k >= 0; k--) {
+      const s = this.slabs[k];
+      s.vy += 0.055 * dt;
+      s.y += s.vy * dt;
+      /*
+       * 카드 안에서 떨어진 덩어리는 카드를 통과하지 않는다 — 바닥에 앉는다. 부피의 85%만
+       * 남기는 것은 부딞치며 흩어지는 몫이다. 카드 밖으로 쓸려 나가는 덩어리(out)만
+       * 바닥을 지나 아래로 내려간다.
+       */
+      if (!s.out) {
+        let surf = 0;
+        for (let i = s.a; i <= s.b; i++) if (fl[i] > surf) surf = fl[i];
+        if (this.ledge + s.y + s.th >= this.floorY - surf) {
+          for (let i = s.a; i <= s.b; i++) fl[i] += s.th * 0.85;
+          if (s.a > 0) fl[s.a - 1] += s.th * 0.4;
+          if (s.b < fl.length - 1) fl[s.b + 1] += s.th * 0.4;
+          this.slabs.splice(k, 1);
+          continue;
+        }
+      }
+      if (this.ledge + s.y > h + 40) this.slabs.splice(k, 1);
+    }
+    /* 바닥 눈도 다져지고 무너진다. 위보다 천천히 준다 — 바닥은 눈이 남는 자리다 */
+    for (let i = 0; i < fl.length; i++) {
+      fl[i] *= 1 - 0.00025 * dt;
+      const c = this.flMax * Math.min(1, this.cap(i) / this.max);
+      if (fl[i] > c) fl[i] = c;
+    }
+    for (let i = 0; i < fl.length - 1; i++) {
+      const d = fl[i] - fl[i + 1];
+      if (Math.abs(d) > 2) { const m = (d - Math.sign(d) * 2) * 0.5; fl[i] -= m; fl[i + 1] += m; }
+    }
+    /* 바닥이 14px로 다 차고 그 자리가 여섯 칸(36px) 넘게 이어지면 카드 밖으로 쓸려 나간다 */
+    let frun = 0;
+    for (let i = 0; i <= fl.length; i++) {
+      if (i < fl.length && fl[i] >= this.flMax - 0.4) { frun++; continue; }
+      if (frun >= 6) {
+        const a = i - frun, b = i - 1;
+        let sum = 0;
+        for (let k = a; k <= b; k++) { sum += fl[k]; fl[k] = 1 + Math.random() * 0.8; }
+        const th = sum / frun;
+        this.slabs.push({ a, b, th, y: this.floorY - this.ledge - th, vy: 0.3, rot: (Math.random() - 0.5) * 0.6, out: true });
+      }
+      frun = 0;
+    }
+  }
+  draw() {
+    const { ctx, w, h, hs } = this;
+    if (!ctx || !w) return;
+    ctx.clearRect(0, 0, w, h);
+    /* 위·아래 끝에서 흐려져야 캔버스 경계에서 눈이 튀어나오거나 툭 사라지지 않는다 */
+    for (const f of this.flakes) {
+      const x = f.x + Math.sin(f.ph) * f.sw;
+      const a = Math.min(1, f.y / 22) * Math.min(1, (h - f.y) / 40) * (0.55 + f.r * 0.15);
+      ctx.fillStyle = 'rgba(' + this.tint + ',' + Math.max(0, Math.min(1, a)).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(x, f.y, f.r, 0, 6.2832); ctx.fill();
+    }
+    /* 칸 가운데를 이차 곡선으로 이어야 계단이 안 보인다 */
+    const y = (i) => this.ledge - hs[i];
+    const cx = (i) => ((i + 0.5) / hs.length) * w;
+    ctx.beginPath();
+    ctx.moveTo(0, this.ledge + 3);
+    ctx.lineTo(0, y(0));
+    for (let i = 0; i < hs.length - 1; i++) {
+      ctx.quadraticCurveTo(cx(i), y(i), (cx(i) + cx(i + 1)) / 2, (y(i) + y(i + 1)) / 2);
+    }
+    ctx.lineTo(w, y(hs.length - 1));
+    ctx.lineTo(w, this.ledge + 3);
+    ctx.closePath();
+    ctx.fillStyle = 'rgb(' + this.snow + ')';
+    ctx.fill();
+    /* 카드 안으로 흘러 들어간 눈. 반투명이라 아래 글자가 죽지 않는다 */
+    const ins = this.ins;
+    const iy = (i) => this.ledge + ins[i];
+    ctx.beginPath();
+    ctx.moveTo(0, this.ledge);
+    ctx.lineTo(0, iy(0));
+    for (let i = 0; i < ins.length - 1; i++) {
+      ctx.quadraticCurveTo(cx(i), iy(i), (cx(i) + cx(i + 1)) / 2, (iy(i) + iy(i + 1)) / 2);
+    }
+    ctx.lineTo(w, iy(ins.length - 1));
+    ctx.lineTo(w, this.ledge);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(' + this.snow + ',.9)';
+    ctx.fill();
+    /* 안쪽 눈의 아래 끝 그늘 — 없으면 카드에 붙은 흰 종이처럼 보인다 */
+    ctx.strokeStyle = 'rgba(24,40,62,.16)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, iy(0) + 1);
+    for (let i = 0; i < ins.length - 1; i++) {
+      ctx.quadraticCurveTo(cx(i), iy(i) + 1, (cx(i) + cx(i + 1)) / 2, (iy(i) + iy(i + 1)) / 2 + 1);
+    }
+    ctx.stroke();
+    /* 떨어지는 덩어리 — 카드 앞을 지나 아래로 나간다 */
+    /* 카드 바닥에 쌓인 눈. 위쪽 눈과 달리 윗면이 밝다 — 빛이 위에서 온다 */
+    const fl = this.fl;
+    const fy = (i) => this.floorY - fl[i];
+    ctx.beginPath();
+    ctx.moveTo(0, this.floorY);
+    ctx.lineTo(0, fy(0));
+    for (let i = 0; i < fl.length - 1; i++) {
+      ctx.quadraticCurveTo(cx(i), fy(i), (cx(i) + cx(i + 1)) / 2, (fy(i) + fy(i + 1)) / 2);
+    }
+    ctx.lineTo(w, fy(fl.length - 1));
+    ctx.lineTo(w, this.floorY);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(' + this.snow + ',.92)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.7)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, fy(0) - 0.75);
+    for (let i = 0; i < fl.length - 1; i++) {
+      ctx.quadraticCurveTo(cx(i), fy(i) - 0.75, (cx(i) + cx(i + 1)) / 2, (fy(i) + fy(i + 1)) / 2 - 0.75);
+    }
+    ctx.stroke();
+    for (const s of this.slabs) {
+      const x0 = (s.a / ins.length) * w, x1 = ((s.b + 1) / ins.length) * w;
+      const a = Math.max(0, 1 - s.y / (h - this.ledge + 30));
+      ctx.save();
+      ctx.translate((x0 + x1) / 2, this.ledge + s.y + s.th / 2);
+      ctx.rotate(s.rot * Math.min(1, s.y / 60));
+      ctx.fillStyle = 'rgba(' + this.snow + ',' + (a * 0.92).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, (x1 - x0) / 2, Math.max(2.5, s.th / 2), 0, 0, 6.2832);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+});

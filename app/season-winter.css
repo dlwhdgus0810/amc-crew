@@ -1,0 +1,257 @@
+/* ============================================================
+   시즌 테마 「겨울 · 눈」.
+
+   app/season.css(벚꽃·장마)와 나란히 있는 파일입니다. 공통 규칙
+   (.card-season 숨김, .car-card 곡률·isolation, ::after 자리, 탭바 색,
+   prefers-reduced-motion)은 season.css에 이미 있어서 여기서는 빼고
+   **겨울만의 것**을 담습니다 — 같은 규칙을 두 파일에 두면 나중에 한쪽만
+   고치게 됩니다.
+
+   낱개 요소(i·em)는 app/category-card.tsx가 항상 그려 두고, 무엇이 되는지는
+   여기서 정합니다.
+
+   함께 가는 것: public/snow-canvas.js — 눈이 실제로 쌓이는 캔버스
+   (없어도 CSS 봉우리로 동작합니다)
+   ============================================================ */
+
+/* ══ 겨울 ═════════════════════════════════════════════════════
+   12a 「쌓인 눈」이다. 장식이 카드 **위** 가장자리에 얹힌다 — 단풍이 아래에 쌓였던 자리의
+   반대다. 눈은 밝은 것이라 아래에 두면 그림자로 읽히고, 위에 있어야 얹힌 것이 된다.
+
+   그래서 이 테마만 목록 간격이 4px 넓다(맨 아래 .cat-grid 규칙) — 위로 13px 나간 눈이
+   위 카드 그림자에 닿으면 눈이 아니라 얼룩으로 보인다.
+
+   카드 높이·글자 자리는 그대로다. 단풍과 같은 「얹힘」 방식이라 파내지도 채우지도 않는다. */
+html[data-season='snow'] .card-season {
+  /* 눈만 카드 위로 나간다 — 다른 세 테마의 장식은 z-index:-1로 글자 뒤에 있다 */
+  z-index: 3;
+}
+html[data-season='snow'] .card-season i:nth-child(n + 7) {
+  display: none;
+}
+/*
+ * 캔버스가 붙으면(public/snow-canvas.js) 아래 CSS 봉우리는 끈다 — 장마에서 [data-rain]으로
+ * 갈랐던 것과 같은 방식이다. 캔버스가 안 뜨는 기기에서는 CSS 봉우리가 그대로 남는다.
+ */
+html[data-season='snow'] snow-canvas {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -90px;
+  /* 아래로 70px — 카드 안에서 떨어진 눈 덩어리가 카드 밖으로 나가는 구간이다 */
+  bottom: -70px;
+  z-index: 3;
+  pointer-events: none;
+}
+html[data-season='snow'][data-snow='css'] snow-canvas {
+  display: none;
+}
+html[data-season='snow'][data-snow='canvas'] .card-season i,
+html[data-season='snow'][data-snow='canvas'] .card-season em {
+  display: none;
+}
+/* 가장자리를 덮는 이랑 하나. 낱개 i로는 폭 전체를 이을 수 없어서 em을 쓴다 — 장마에서
+   수면이던 그 요소다. 곡률 네 값을 다 다르게 둔다. 좌우가 같으면 반원 띠로 보인다. */
+html[data-season='snow'] .card-season em {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -9px;
+  height: 15px;
+  background: #FBFDFE;
+  border-radius: 52% 48% 40% 60% / 100% 100% 0 0;
+}
+/* 이랑 위에 봉우리 여섯. 폭·높이·자리가 다 다르다 — 같으면 톱니가 된다.
+   흔들리지 않는다. 쌓인 눈은 바람에 흔들리는 것이 아니다(꽃잎·낙엽과 다른 점이다). */
+html[data-season='snow'] .card-season i {
+  position: absolute;
+  top: -13px;
+  height: 16px;
+  background: #FBFDFE;
+  border-radius: 60% 40% 0 0 / 100% 100% 0 0;
+  animation: none;
+}
+html[data-season='snow'] .card-season i:nth-child(1) { left: 6%;   width: 62px; top: -12px; }
+html[data-season='snow'] .card-season i:nth-child(2) { left: 16%;  width: 76px; border-radius: 40% 60% 0 0 / 100% 100% 0 0; }
+html[data-season='snow'] .card-season i:nth-child(3) { left: 38%;  width: 44px; top: -11px; height: 13px; }
+html[data-season='snow'] .card-season i:nth-child(4) { left: 53%;  width: 58px; top: -14px; border-radius: 34% 66% 0 0 / 100% 100% 0 0; }
+html[data-season='snow'] .card-season i:nth-child(5) { left: auto; right: 11%; width: 52px; top: -11px; height: 13px; border-radius: 40% 60% 0 0 / 100% 100% 0 0; }
+html[data-season='snow'] .card-season i:nth-child(6) { left: auto; right: 3%;  width: 34px; top: -10px; height: 12px; }
+/*
+ * 아이콘 버튼 — 결정이다. 벚꽃(꽃)·단풍(잎)과 같은 방식이다: 안의 별·종을 지우고
+ * 모양만 두고, 누르면 색이 찬다. 다만 결정은 선으로 그린 것이라 「빈 모양/채운 모양」
+ * 짝이 안 된다 — 대신 투명도(0.5 / 1)와 결정 종류로 상태와 두 버튼을 가른다.
+ *
+ * 즐겨찾기는 여섯 갈래 별(--sf-crystal), 구독은 육각 판(--sf-plate)이다.
+ */
+html[data-season='snow'] .car-card .car-icon {
+  border: none;
+  border-radius: 0;
+  background: none;
+  position: relative;
+}
+html[data-season='snow'] .car-card .car-icon > * {
+  display: none;
+}
+html[data-season='snow'] .car-card .car-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background: currentColor;
+  -webkit-mask: var(--sf-crystal) center / 26px 26px no-repeat;
+  mask: var(--sf-crystal) center / 26px 26px no-repeat;
+}
+html[data-season='snow'] .car-card .car-icon:not(:has(.star))::before {
+  -webkit-mask-image: var(--sf-plate);
+  mask-image: var(--sf-plate);
+}
+/* 누르면 얼음이 된다 — 가운데가 하얗고 바깥으로 갈수록 파랗다 */
+html[data-season='snow'] .car-card .car-icon.on::before {
+  opacity: 1;
+  background: radial-gradient(circle at 42% 34%, #FFFFFF 0 30%, #CBDCEA 72%, #8FAEC8 100%);
+}
+html[data-season='snow'] .car-card .car-icon.on:not(:has(.star))::before {
+  background: radial-gradient(circle at 42% 34%, #FFFFFF 0 26%, #DCE7F0 60%, #A8BED4 100%);
+}
+
+/*
+ * 배경 눈(12차). 결정 세 종류 — 함박눈(--sf-dendrite, 가지가 다시 가지를 냄), 육각 판
+ * (--sf-plate), 여섯 갈래 별(--sf-crystal). 셋 다 면을 채우지 않고 선으로 그렸다 —
+ * 진짜 눈은 먹은 면이 아니라 가느다란 선이다.
+ *
+ * 그래서 작게 두면 안 된다. 15px 아래에서는 선이 뭉개져 회색 점이 되므로 결정은
+ * 15~26px으로 두고, 작은 눈은 결정을 씌우지 않고 그냥 동그라미로 남긴다.
+ */
+:root {
+  --sf-dendrite: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270,0,24,24%27%3E%3Cpath%20d=%27M12,12L12,1.6M12,7.8L14.94,6.1M12,7.8L9.06,6.1M12,4.8L14.08,3.6M12,4.8L9.92,3.6M12,2.8L13.3,2.05M12,2.8L10.7,2.05M12,12L21.01,6.8M15.64,9.9L18.58,11.6M15.64,9.9L15.64,6.5M18.24,8.4L20.31,9.6M18.24,8.4L18.24,6M19.97,7.4L21.27,8.15M19.97,7.4L19.97,5.9M12,12L21.01,17.2M15.64,14.1L15.64,17.5M15.64,14.1L18.58,12.4M18.24,15.6L18.24,18M18.24,15.6L20.31,14.4M19.97,16.6L19.97,18.1M19.97,16.6L21.27,15.85M12,12L12,22.4M12,16.2L9.06,17.9M12,16.2L14.94,17.9M12,19.2L9.92,20.4M12,19.2L14.08,20.4M12,21.2L10.7,21.95M12,21.2L13.3,21.95M12,12L2.99,17.2M8.36,14.1L5.42,12.4M8.36,14.1L8.36,17.5M5.76,15.6L3.69,14.4M5.76,15.6L5.76,18M4.03,16.6L2.73,15.85M4.03,16.6L4.03,18.1M12,12L2.99,6.8M8.36,9.9L8.36,6.5M8.36,9.9L5.42,11.6M5.76,8.4L5.76,6M5.76,8.4L3.69,9.6M4.03,7.4L4.03,5.9M4.03,7.4L2.73,8.15%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --sf-plate: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270,0,24,24%27%3E%3Cpath%20d=%27M12,2L20.66,7L20.66,17L12,22L3.34,17L3.34,7ZM12,7L16.33,9.5L16.33,14.5L12,17L7.67,14.5L7.67,9.5ZM12,7L12,2M16.33,9.5L20.66,7M16.33,14.5L20.66,17M12,17L12,22M7.67,14.5L3.34,17M7.67,9.5L3.34,7%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --sf-crystal: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270,0,24,24%27%3E%3Cpath%20d=%27M12,12L12,1.6M12,6L14.6,4.5M12,6L9.4,4.5M12,12L21.01,6.8M17.2,9L19.79,10.5M17.2,9L17.2,6M12,12L21.01,17.2M17.2,15L17.2,18M17.2,15L19.79,13.5M12,12L12,22.4M12,18L9.4,19.5M12,18L14.6,19.5M12,12L2.99,17.2M6.8,15L4.21,13.5M6.8,15L6.8,18M12,12L2.99,6.8M6.8,9L6.8,6M6.8,9L4.21,10.5%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.7%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+}
+/* 기본은 작은 동그라미 눈이다 — 열여덟 중 결정이 되는 것은 아래 규칙이 집는 여섯뿐이다 */
+.season-snow > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  opacity: 0.9;
+  animation: kk-snow-air 17s linear infinite;
+}
+.season-snow > span:nth-child(3n + 1) {
+  width: 20px; height: 20px; border-radius: 0; opacity: 1;
+  -webkit-mask: var(--sf-dendrite) center / contain no-repeat;
+  mask: var(--sf-dendrite) center / contain no-repeat;
+}
+.season-snow > span:nth-child(5n + 3) {
+  width: 16px; height: 16px; border-radius: 0; opacity: 0.94;
+  -webkit-mask: var(--sf-plate) center / contain no-repeat;
+  mask: var(--sf-plate) center / contain no-repeat;
+}
+.season-snow > span:nth-child(7n + 5) {
+  width: 18px; height: 18px; border-radius: 0; opacity: 0.96;
+  -webkit-mask: var(--sf-crystal) center / contain no-repeat;
+  mask: var(--sf-crystal) center / contain no-repeat;
+}
+/* 작은 눈은 크기를 조금씩 달리 둔다 — 다 같으면 규칙적으로 보인다 */
+.season-snow > span:nth-child(4n)     { width: 5px; height: 5px; opacity: 0.8; }
+.season-snow > span:nth-child(6n)     { width: 9px; height: 9px; }
+/* 도는 방향·주기를 갈라 둔다. 낙엽(22~35s)보다 느리다 — 눈은 무겁게 곧게 내려온다 */
+.season-snow > span:nth-child(2n)     { --spin: -1; animation-duration: 21s; animation-delay: -7s; }
+.season-snow > span:nth-child(3n)     { --w: -1; animation-duration: 15s; }
+.season-snow > span:nth-child(5n)     { animation-duration: 24s; animation-delay: -13s; }
+.season-snow > span:nth-child(7n)     { animation-duration: 19s; animation-delay: -5s; }
+/* 앞 겹 두 장 — 카드 위를 지나간다. 낙엽·꽃잎과 같은 자리다 */
+.season-snow > span:nth-child(4),
+.season-snow > span:nth-child(9) {
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  border-radius: 0;
+  opacity: 0.68;
+  filter: blur(1.3px);
+  -webkit-mask: var(--sf-dendrite) center / contain no-repeat;
+  mask: var(--sf-dendrite) center / contain no-repeat;
+  animation-duration: 11s;
+}
+.season-snow > span:nth-child(1) { left: 7%; }
+.season-snow > span:nth-child(2) { left: 18%; }
+.season-snow > span:nth-child(3) { left: 29%; }
+.season-snow > span:nth-child(4) { left: 38%; }
+.season-snow > span:nth-child(5) { left: 49%; }
+.season-snow > span:nth-child(6) { left: 58%; }
+.season-snow > span:nth-child(7) { left: 69%; }
+.season-snow > span:nth-child(8) { left: 79%; }
+.season-snow > span:nth-child(9) { left: 91%; }
+/*
+ * 눈은 뒤집히지 않는다. 낙엽의 rotate3d 720°는 마른 잎이 가벼워서였고, 눈은 한 바퀴도
+ * 못 돌고(140°) 곧게 내려오는 편이 눈으로 보인다. 결정은 여섯 갈래 대칭이라 많이 돌면
+ * 어차피 도는 것이 안 보이고 흔들리는 것처럼만 보인다.
+ *
+ * 가로 흔들림은 낙엽과 같은 이유로 같은 키프레임 안에 있다 — season-deco.tsx가 그리는
+ * 낱개 span에는 자식이 없어서 겉을 한 겹 더 감쌀 수 없다.
+ */
+@keyframes kk-snow-air {
+  0%   { transform: translate3d(calc(var(--w, 1) * -14px), 0, 0) rotate(0deg); }
+  25%  { transform: translate3d(calc(var(--w, 1) * 13px), 30vh, 0) rotate(calc(var(--spin, 1) * 35deg)); }
+  50%  { transform: translate3d(calc(var(--w, 1) * -11px), 60vh, 0) rotate(calc(var(--spin, 1) * 70deg)); }
+  75%  { transform: translate3d(calc(var(--w, 1) * 14px), 90vh, 0) rotate(calc(var(--spin, 1) * 105deg)); }
+  100% { transform: translate3d(calc(var(--w, 1) * -14px), 120vh, 0) rotate(calc(var(--spin, 1) * 140deg)); }
+}
+
+/* ══ 카드 표면 ════════════════════════════════════════════════
+   시안의 카드에는 단색 위에 얇은 결이 하나씩 얹혀 있다 — 벚꽃은 왼쪽 위 광택, 장마는
+   처마 선, 단풍은 접힌 귀퉁이와 잎맥.
+
+   **::after로 얹는 이유.** category-card.tsx가 `background: var(--cat-슬러그)`를
+   인라인으로 칠한다. 인라인은 스타일시트를 이기므로 여기서 background를 다시 쓰면
+   묻힌다(!important를 붙이면 되지만 그 방식은 나중에 뭘 덮었는지 알기 어려워진다).
+   덮어쓰는 대신 한 겹 위에 깐다.
+
+   카드에 isolation:isolate가 이미 있어서 z-index:-1이 카드 배경 위·글자 아래에 놓인다. */
+/* 겨울 — 위에서 들어오는 눈빛. 쌓인 눈이 위에 있으니 광택도 위에서 온다 */
+html[data-season='snow'] .car-card::after {
+  background: linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 42%);
+}
+/* 위로 나간 눈이 위 카드 그림자에 닿지 않게 목록 간격을 4px 넓힌다.
+   기본이 12px이 아니면 그 값에 4px을 더한 값으로 고치세요 — 다른 세 테마는 안 바뀝니다. */
+html[data-season='snow'] .cat-grid,
+html[data-season='snow'] .car {
+  gap: 16px;
+}
+/* 700px부터는 기본이 16px이라 거기서도 4px을 더한다 (globals.css의 격자 규칙과 짝) */
+@media (min-width: 700px) {
+  html[data-season='snow'] .cat-grid,
+  html[data-season='snow'] .car {
+    gap: 20px;
+  }
+}
+
+/* ══ 탭바 ═════════════════════════════════════════════════════
+   집·나침반·달력·사진 넷은 **그대로 둔다.** 계절마다 그 그림이 바뀌면 탭을 그림으로
+   기억한 사람이 매번 다시 찾아야 하고, 열 시즌이면 마흔 개를 그려야 한다.
+
+   계절을 따르는 것은 **프로필 아이콘 하나**다. 그건 SVG의 d 속성이라 CSS로 못 바꾸므로
+   nav.tsx에서 갈라야 한다(README 참고). 여기서는 색과, 사진이 들어갈 때의 틀 곡률만 맡는다.
+
+   선 굵기와 탭바 곡률은 1차에서 이미 --icon-stroke / --tabbar-r로 따라온다.
+   활성 탭 배경은 지금 그대로 둔다 — 계절마다 뒤 모양이 달라지면 탭을 누를 때마다 다른
+   것이 생겼다 사라져서 산만해진다. */
+/* 활성 탭 배경은 지금 그대로 둔다 — 계절마다 모양이 달라지면 탭을 누를 때마다 다른 것이
+   뒤에 생겼다 사라지서 산만해진다. 계절을 따를 것은 탭바에서 하나만 — 프로필이다. */
+
+/* 프로필 아이콘은 그림이라 CSS로 바꿀 수 없다 — nav.tsx에서 갈라야 한다(README 참고).
+   사진이 있을 때는 사진이 들어가므로 그 틀의 곡률만 계절을 따른다. */
+/* 겨울은 곡률로 육각을 낼 수 없어서 clip-path다 — 사진이 들어가도 육각으로 잘린다 */
+html[data-season='snow'] .tabbar-links .t-ava {
+  border-radius: 0;
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+}
+
+/* .card-season i·em과 .car-icon은 season.css의 같은 블록이 이미 멈춘다 — 눈송이만 여기서 */
+@media (prefers-reduced-motion: reduce) {
+  .season-snow > span {
+    animation: none !important;
+  }
+}

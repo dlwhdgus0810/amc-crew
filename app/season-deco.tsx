@@ -45,10 +45,14 @@ const DECORATED = [
   /^\/preview$/,
 ];
 
-/** 꽃잎은 조금 적게, 비는 조금 많게 — 시안에서 그렇게 골랐다 */
-const COUNT = { petal: 14, rain: 18 } as const;
+/**
+ * 꽃잎은 조금 적게, 비는 조금 많게 — 시안에서 그렇게 골랐다.
+ *
+ * 눈은 아홉이다. 결정 하나가 20~26px이라 꽃잎만큼 뿌리면 화면이 눈으로 덮인다.
+ */
+const COUNT = { petal: 14, rain: 18, snow: 9 } as const;
 
-export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | null }) {
+export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | 'snow' | null }) {
   const path = usePathname();
   if (!kind || !DECORATED.some((re) => re.test(path))) return null;
   return (

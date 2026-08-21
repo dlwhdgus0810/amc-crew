@@ -12,7 +12,8 @@
 
 /* 시즌 테마가 아니면 아무것도 그리지 않는다 */
 .card-season,
-.card-rain {
+.card-rain,
+snow-canvas {
   display: none;
 }
 html[data-season] .card-season {

@@ -79,6 +79,7 @@ const grotesk = Space_Grotesk({
  */
 // 시즌 테마 — 카드 모양과 카드 장식 (2차에서 overrides.css에 붙였던 부분을 대신한다)
 import './season.css';
+import './season-winter.css';
 
 /**
  * 장마 테마에서 카드 안의 물을 무엇으로 그릴지.
@@ -91,6 +92,15 @@ import './season.css';
  * 카드가 여러 장 보이는 화면에서 프레임이 모자라면 'css'로 내리면 된다.
  */
 const RAIN_MODE: 'canvas' | 'css' = 'canvas';
+
+/**
+ * 겨울의 눈도 같은 갈래다.
+ *
+ *  'canvas' — 눈이 **실제로 쌓인다.** 가장자리에 앉고, 차면 안쪽으로 넘치고, 덩어리가
+ *             떨어져 바닥에 쌓인다 (public/snow-canvas.js).
+ *  'css'    — 곡률로 그린 봉우리 여섯만. 가볍고 어디서나 같지만 늘 같은 모양이다.
+ */
+const SNOW_MODE: 'canvas' | 'css' = 'canvas';
 
 const dodum = Gowun_Dodum({
   subsets: ['latin'],
@@ -204,6 +214,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
        */
       data-season={themeDeco(cardTheme) ?? undefined}
       data-rain={RAIN_MODE}
+      data-snow={SNOW_MODE}
     >
       <head>
         {/*
@@ -229,6 +240,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {/* 화면 전체의 비 — 카드를 만나면 위 캔버스에 방울을 넘긴다 */}
             <script src="/rain-field.js" defer />
           </>
+        )}
+        {/* 카드 위에 쌓이는 눈 — 겨울일 때만 받는다 (public/snow-canvas.js) */}
+        {SNOW_MODE === 'canvas' && themeDeco(cardTheme) === 'snow' && (
+          <script src="/snow-canvas.js" defer />
         )}
       </head>
       <body>

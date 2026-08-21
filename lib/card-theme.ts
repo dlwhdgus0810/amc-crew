@@ -53,7 +53,8 @@ export type CardTheme =
   | 'blueeclipse'
   | 'goldentaupe'
   | 'cherryblossom'
-  | 'rainyseason';
+  | 'rainyseason'
+  | 'winter';
 
 /**
  * 시즌 테마만 갖는 값.
@@ -88,7 +89,7 @@ export interface SeasonTokens {
   /** app/layout.tsx가 심는 next/font 변수 이름 (--font-dodum / --font-batang) */
   font: 'dodum' | 'batang';
   /** 배경 장식 종류 — app/season-deco.tsx가 읽는다 */
-  deco: 'petal' | 'rain';
+  deco: 'petal' | 'rain' | 'snow';
 }
 
 export interface CardThemeDef {
@@ -252,6 +253,36 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       iconStroke: '1.2',
       font: 'batang',
       deco: 'rain',
+    },
+  },
+  winter: {
+    label: { ko: '겨울 · 눈', en: 'Winter · Snow', es: 'Invierno · Nieve' },
+    note: {
+      ko: '눈 쌓인 아침 같은 청회색 테마. 카드 위 가장자리에 눈이 얹히고 실제로 쌓여요.',
+      en: 'Slate blue like a snowed-in morning; snow settles on the top edge of each card and actually piles up.',
+      es: 'Azul pizarra de mañana nevada; la nieve se posa en el borde superior de cada tarjeta y se acumula.',
+    },
+    stops: ['#3D5878', '#6E88A6', '#9CB4C8', '#CFDCE6'],
+    tokens: {
+      bg: '#EEF2F6',
+      surface: '#FFFFFF',
+      surface2: '#E3EAF2',
+      border: '#D8E0E9',
+      borderSoft: '#E8EDF3',
+      text: '#1F2733',
+      textMid: '#5A6672',
+      textDim: '#7C8994',
+      accent: '#3D5878',
+      accentDark: '#2C4159',
+      accentSoft: '#E3EAF2',
+      r: '13px',
+      rSm: '9px',
+      cardR: '13px',
+      tabbarR: '16px',
+      iconStroke: '1.8',
+      /* 시안이 500이라 했는데 이 프로젝트의 시즌 서체는 둘뿐이다 — 획이 가는 쪽을 쓴다 */
+      font: 'dodum',
+      deco: 'snow',
     },
   },
 };
@@ -462,6 +493,6 @@ export function themeBarColor(theme: CardTheme): string {
 }
 
 /** 배경 장식 종류. 색만 바꾸는 테마는 null. */
-export function themeDeco(theme: CardTheme): 'petal' | 'rain' | null {
+export function themeDeco(theme: CardTheme): 'petal' | 'rain' | 'snow' | null {
   return CARD_THEMES[theme].tokens?.deco ?? null;
 }
