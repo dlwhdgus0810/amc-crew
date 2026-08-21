@@ -38,6 +38,94 @@
    */
   const SHALLOW = 0.07;
 
+  /*
+   * 기기를 기울이면 물도 기울어진다.
+   *
+   * 카드마다 센서를 듣지 않는다 — 열한 장이 같은 값을 보므로 여기 하나만 듣고 다 같이
+   * 읽는다. 센서가 없으면(데스크톱) 0에 머물러서 아무 일도 안 일어난다.
+   *
+   * iOS는 DeviceOrientationEvent.requestPermission()을 **사람이 누른 자리에서** 불러야
+   * 준다. 그래서 여기서는 켜 두기만 하고, 실제 요청은 프로필의 스위치가 한다
+   * (window.kkTilt.ask). 안드로이드와 데스크톱 사파리는 그냥 붙는다.
+   *
+   * 움직임을 줄여 달라고 한 사람에게는 아예 안 붙인다.
+   */
+  const TILT = { slope: 0, on: false };
+
+  function readTilt(e) {
+    /*
+     * gamma는 기기의 좌우 기울기(도)인데, **화면이 돌아가면 축도 같이 돈다.** 가로로
+     * 눕히면 좌우로 기우는 것이 beta다. 화면 각도로 되짚어 준다.
+     */
+    const a = (screen.orientation && screen.orientation.angle) || 0;
+    const beta = typeof e.beta === 'number' ? e.beta : 0;
+    const gamma = typeof e.gamma === 'number' ? e.gamma : 0;
+    const deg = a === 90 ? -beta : a === 270 || a === -90 ? beta : a === 180 ? -gamma : gamma;
+    /*
+     * 물은 늘 수평이므로 카드에서 본 기울기는 정확히 tan(각도)다. 눕힐수록 발산하니
+     * 잘라 둔다 — 어차피 그 위는 수위가 허락하는 만큼에서 다시 잘린다(waveY).
+     */
+    const want = Math.max(-1.5, Math.min(1.5, Math.tan((deg * Math.PI) / 180)));
+    /* 손떨림이 그대로 물결이 되지 않게 뒤따라간다 */
+    TILT.slope += (want - TILT.slope) * 0.12;
+  }
+
+  function listenTilt() {
+    if (TILT.on) return;
+    if (!tiltWanted()) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    TILT.on = true;
+    addEventListener('deviceorientation', readTilt);
+  }
+
+  /* 프로필 스위치가 부른다. iOS면 허락을 묻고, 아니면 바로 붙는다 */
+  window.kkTilt = {
+    ask() {
+      const D = window.DeviceOrientationEvent;
+      if (D && typeof D.requestPermission === 'function') {
+        return D.requestPermission().then((r) => {
+          if (r === 'granted') listenTilt();
+          return r === 'granted';
+        });
+      }
+      listenTilt();
+      return Promise.resolve(true);
+    },
+    off() {
+      if (!TILT.on) return;
+      TILT.on = false;
+      TILT.slope = 0;
+      removeEventListener('deviceorientation', readTilt);
+    },
+  };
+
+  /** 프로필 스위치가 끈 기기인가 — 기본은 켜짐 */
+  function tiltWanted() {
+    try {
+      return localStorage.getItem('kk-tilt') !== 'off';
+    } catch {
+      return true;
+    }
+  }
+
+  if (tiltWanted()) {
+    const D = window.DeviceOrientationEvent;
+    if (D && typeof D.requestPermission === 'function') {
+      /*
+       * iOS는 사람이 누른 자리에서만 허락을 묻는다. 그래서 **첫 터치**에 한 번 묻는다 —
+       * 프로필 스위치에서 이미 허락한 기기는 대화상자 없이 바로 붙고, 아직 안 물은
+       * 기기는 여기서 한 번 뜬다.
+       */
+      const once = () => {
+        removeEventListener('pointerdown', once);
+        window.kkTilt.ask();
+      };
+      addEventListener('pointerdown', once, { once: true });
+    } else {
+      listenTilt();
+    }
+  }
+
   customElements.define(
     'rain-canvas',
     class extends HTMLElement {
@@ -475,8 +563,18 @@
 
       /** x 자리의 수면 높이 */
       waveY(x) {
+        /*
+         * 기울기는 **수면을 통째로 기울인 평면**이다. 카드 한가운데를 축으로 돌리므로
+         * 한쪽이 오른 만큼 반대쪽이 내려가 물의 양은 그대로다.
+         *
+         * 기울기를 그대로 쓰면 물이 카드 밖으로 넘치거나 바닥을 뚫는다. 지금 수위에서
+         * 위아래로 남은 여유만큼만 기울인다 — 물이 얕으면 조금만, 그득하면 그만큼 크게.
+         */
+        const room = Math.min(this.level, this.h - this.level) / (this.w / 2 || 1);
+        const slope = Math.max(-room, Math.min(room, TILT.slope));
         let y =
           this.h - this.level +
+          (x - this.w / 2) * slope +
           Math.sin(x * 0.055 + this.t * 1.7) * 1.7 +
           Math.sin(x * 0.021 - this.t * 1.1) * 2.5;
         /* 방울이 떨어진 자리만 우묵해졌다 되살아난다 — 멀어질수록, 시간이 지날수록 잦아든다 */

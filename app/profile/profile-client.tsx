@@ -7,9 +7,12 @@ import { CATEGORIES, catDisplayName, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../i18n';
 import { PROFILE_UPDATED } from '../nav';
 import { useRefreshSession, useViewer } from '../session';
-import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
+import { LOCALES, LOCALE_NAMES, Locale, Msg } from '@/lib/i18n';
 import { formatZelle } from '@/lib/money';
 import { COIN } from '@/lib/shop';
+
+/** 기울이면 물도 기울기 — 이 기기에만 둔다 (public/rain-canvas.js가 읽는다) */
+const TILT_KEY = 'kk-tilt';
 import PushToggle from '../push-toggle';
 import {
   CARD_THEME_COOKIE,
@@ -160,6 +163,17 @@ const T = {
     es: 'Al quitar tu foto de perfil te faltan {n} monedas, así que tus temas están bloqueados. Vuelve a ponerla y se desbloquean al momento.',
   },
   themeBasic: { ko: '기본', en: 'Default', es: 'Predeterminado' },
+  tilt: { ko: '기울이면 물도 기울어요', en: 'Tilt the phone, tilt the water', es: 'Inclina el móvil, se inclina el agua' },
+  tiltHint: {
+    ko: '휴대폰을 기울이면 카드에 고인 물이 따라 기울어요. 이 기기에만 저장돼요.',
+    en: 'The water pooled in each card leans with your phone. Saved on this device only.',
+    es: 'El agua de cada tarjeta se inclina con el móvil. Solo en este dispositivo.',
+  },
+  tiltDenied: {
+    ko: '동작 센서 접근이 막혀 있어요. 설정 → Safari → 동작 및 방향 접근에서 켜주세요.',
+    en: 'Motion access is blocked. Turn it on in Settings → Safari → Motion & Orientation Access.',
+    es: 'El acceso al movimiento está bloqueado. Actívalo en Ajustes → Safari → Movimiento y orientación.',
+  },
   themeHint: {
     ko: '고른 테마는 이 기기에서만 보여요 — 다른 사람 화면은 그대로예요.',
     en: 'Your pick shows on this device only — everyone else sees theirs.',
@@ -250,6 +264,30 @@ export interface ProfileInitial {
 export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
   const router = useRouter();
   const [theme, setTheme] = useState<CardTheme>(initial.theme);
+
+  /*
+   * 기울이면 물도 기울기 — 이 기기에만 둔다 (테마와 같은 규칙).
+   *
+   * 기본은 켜짐이다. iOS는 허락을 받아야 실제로 움직이는데, 그 요청은 이 스위치를
+   * 누른 자리에서만 할 수 있다 (public/rain-canvas.js의 kkTilt.ask).
+   */
+  const [tilt, setTilt] = useState(true);
+  const [tiltNote, setTiltNote] = useState<Msg | null>(null);
+  useEffect(() => {
+    setTilt(localStorage.getItem(TILT_KEY) !== 'off');
+  }, []);
+
+  function toggleTilt(on: boolean) {
+    setTilt(on);
+    setTiltNote(null);
+    localStorage.setItem(TILT_KEY, on ? 'on' : 'off');
+    const api = (window as Window & { kkTilt?: { ask(): Promise<boolean>; off(): void } }).kkTilt;
+    if (!api) return;
+    if (!on) return api.off();
+    void api.ask().then((ok) => {
+      if (!ok) setTiltNote(T.tiltDenied);
+    });
+  }
 
   /** 관리자 화면과 같은 방식 — 쿠키를 쓰고 서버 렌더를 다시 부른다 */
   function pickTheme(next: CardTheme) {
@@ -870,6 +908,23 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
               </label>
             ))}
             <p className="hint" style={{ margin: '10px 2px 0' }}>{t(T.themeHint)}</p>
+            {/*
+              * 물이 있는 테마를 쓰는 동안에만 뜬다.
+              *
+              * 스위치가 있어야 하는 이유는 iOS 때문이다 — 동작 센서는 **사람이 누른
+              * 자리에서** 허락을 물어야 준다(DeviceOrientationEvent.requestPermission).
+              * 안드로이드·데스크톱은 물을 것도 없지만, 끄고 싶은 사람도 있으니 스위치는
+              * 같이 둔다. 이 기기에만 저장한다 — 테마와 같다.
+              */}
+            {theme === 'rainyseason' && (
+              <label className="field-row" style={{ gap: 10, marginTop: 12 }}>
+                <input type="checkbox" checked={tilt} onChange={(e) => toggleTilt(e.target.checked)} />
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                  <span>{t(T.tilt)}</span>
+                  <span className="hint">{t(tiltNote ?? T.tiltHint)}</span>
+                </span>
+              </label>
+            )}
           </>
         )}
       </div>
