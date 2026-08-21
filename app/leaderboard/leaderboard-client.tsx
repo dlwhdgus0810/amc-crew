@@ -63,9 +63,9 @@ const T = {
     es: 'Todavía nadie ha dejado nada.',
   },
   contribNote: {
-    ko: '승인된 카테고리 제안 7점, 후기 3점, 사진·댓글 1점씩이에요. 사진과 댓글은 한 모임에서 5점·3점까지만 세요 — 한 번에 몰아 올리는 것보다 여러 모임에 남기는 쪽이 높아지게요. 후기는 이름 없이 올라가는 글이라 몇 개 썼는지는 적지 않아요.',
-    en: 'An approved category proposal is 7, a review 3, a photo or comment 1 each. Photos and comments count up to 5 and 3 per meetup — spreading across meetups beats dumping into one. Reviews go up without a name, so we don’t list how many you wrote.',
-    es: 'Una propuesta de categoría aprobada vale 7, una reseña 3, y cada foto o comentario 1. Las fotos y comentarios cuentan hasta 5 y 3 por quedada. Las reseñas se publican sin nombre, así que no indicamos cuántas escribiste.',
+    ko: '승인된 카테고리 제안 7점, 후기 3점, 건의 2점, 사진·댓글 1점씩이에요. 사진과 댓글은 한 모임에서 5점·3점까지만 세요 — 한 번에 몰아 올리는 것보다 여러 모임에 남기는 쪽이 높아지게요. 후기와 건의는 몇 개인지 적지 않아요.',
+    en: 'An approved category proposal is 7, a review 3, a suggestion 2, a photo or comment 1 each. Photos and comments count up to 5 and 3 per meetup — spreading across meetups beats dumping into one. We don’t list how many reviews or suggestions you wrote.',
+    es: 'Una propuesta de categoría aprobada vale 7, una reseña 3, una sugerencia 2, y cada foto o comentario 1. Las fotos y comentarios cuentan hasta 5 y 3 por quedada. No indicamos cuántas reseñas ni sugerencias escribiste.',
   },
   /* 「몇 번 모였나」가 순위고, 연인원은 옆에 곁들인다 */
   catCount: { ko: '{n}번', en: '{n} meetups', es: '{n} quedadas' },

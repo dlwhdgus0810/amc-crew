@@ -31,6 +31,28 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-20T23:20',
+    title: { ko: '건의도 정성 점수가 돼요', en: 'Suggestions count toward your contribution score' },
+    items: [
+      {
+        ko: '건의함에 남긴 글이 하나에 2점씩 정성 점수로 들어가요. 지금까지 쓴 것도 그대로 세요 — 새로 쓸 필요 없어요.',
+        en: 'Each note you leave in the Suggestions box is worth 2 contribution points. Everything you’ve already written counts — you don’t need to write it again.',
+      },
+      {
+        ko: '「안 하기로」 정리된 건의는 안 세요. 그것 말고는 답이 달렸든 아직이든 다 세요.',
+        en: 'Ones that were turned down don’t count. Everything else does, answered or not.',
+      },
+      {
+        ko: '후기와 마찬가지로 몇 개 썼는지는 순위표에 안 적어요. 점수에만 들어가요.',
+        en: 'Like reviews, we don’t list how many you wrote — it only shows up in the score.',
+      },
+      {
+        ko: '정성 점수는 상점 코인에도 그대로 들어가서, 코인도 같이 올라요.',
+        en: 'Contribution points feed shop coins, so your coins go up too.',
+      },
+    ],
+  },
+  {
     at: '2026-08-20T23:05',
     title: { ko: '「봄 · 벚꽃」도 살 수 있어요', en: '“Spring · Cherry blossom” is on sale now' },
     items: [

@@ -206,6 +206,17 @@ const CONTRIB = {
    * 낮지」에 답할 것이 없어진다. 그 값을 치를 만한 자리가 아니라고 봤다.
    */
   review: 3,
+  /**
+   * 건의함에 남긴 글 — **물린 것(declined)은 안 센다.**
+   *
+   * 승인된 제안(7점)보다 낮게 둔 이유는 문턱이 다르기 때문이다. 카테고리 제안은
+   * 통과해야 앱이 바뀌지만 건의는 적는 것만으로 값이 있다 — 뭐가 불편한지는 쓰는
+   * 사람만 안다.
+   *
+   * 물린 것을 빼는 것이 상한 노릇을 한다. 지금 열넷 중 셋이 물린 것이고, 제일 많이
+   * 쓴 사람이 다섯 건이라 10점이다 — 따로 상한을 걸 만한 크기가 아니다.
+   */
+  ticket: 2,
   photo: 1,
   comment: 1,
   /** 사진·댓글은 **한 모임에서** 이만큼까지만 점수가 된다 */
@@ -280,24 +291,29 @@ async function contribQuery(limit: number): Promise<ContribSeed[]> {
         WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1
       ), rq AS (
         SELECT user_id, count(*) AS n FROM category_requests WHERE status = 'approved' GROUP BY 1
+      ), tk AS (
+        SELECT user_id, count(*) AS n FROM tickets WHERE status <> 'declined' GROUP BY 1
       ), ids AS (
         SELECT user_id FROM ph UNION SELECT user_id FROM cm
         UNION SELECT user_id FROM rv UNION SELECT user_id FROM rq
+        UNION SELECT user_id FROM tk
       )
       SELECT i.user_id,
         COALESCE(ph.n, 0)::int AS photos,
         COALESCE(cm.n, 0)::int AS comments,
         COALESCE(rq.n, 0)::int AS proposals,
-        -- 후기는 점수에만 더한다. reviews 칸을 안 뽑는 것이 곧 「안 내보낸다」다
+        -- 후기와 건의는 점수에만 더한다. 칸을 안 뽑는 것이 곧 「안 내보낸다」다
         (COALESCE(ph.n, 0) * ${CONTRIB.photo}
          + COALESCE(cm.n, 0) * ${CONTRIB.comment}
          + COALESCE(rv.n, 0) * ${CONTRIB.review}
-         + COALESCE(rq.n, 0) * ${CONTRIB.proposal})::int AS score
+         + COALESCE(rq.n, 0) * ${CONTRIB.proposal}
+         + COALESCE(tk.n, 0) * ${CONTRIB.ticket})::int AS score
       FROM ids i
       LEFT JOIN ph ON ph.user_id = i.user_id
       LEFT JOIN cm ON cm.user_id = i.user_id
       LEFT JOIN rv ON rv.user_id = i.user_id
       LEFT JOIN rq ON rq.user_id = i.user_id
+      LEFT JOIN tk ON tk.user_id = i.user_id
       -- 동률일 때 순서가 흔들리면 새로고침마다 자리가 바뀐다 — id로 고정한다
       ORDER BY score DESC, i.user_id ASC
     `)
@@ -479,6 +495,11 @@ export async function boardScoresFor(userId: string): Promise<{ host: number; jo
   /*
    * 기여 점수는 순위표와 같은 셈법이어야 한다 — 화면에 「사진 12 · 댓글 4」로 적히는
    * 그 값에서 코인이 나오므로, 여기서 따로 세면 두 숫자가 어긋난다.
+   *
+   * **같은 셈이 이 파일에 세 벌 있다**: 순위표(contribQuery), 전체 한 번에
+   * (allBoardScores), 그리고 한 사람만 보는 여기. 항목을 더할 때 세 곳을 다 고쳐야
+   * 한다 — 건의 2점을 넣을 때 여기를 빠뜨려서 순위표는 올랐는데 상점 코인은 그대로인
+   * 채로 한참 갔다.
    */
   const contribRows = resultRows(
     await db.execute(sql`
@@ -499,11 +520,14 @@ export async function boardScoresFor(userId: string): Promise<{ host: number; jo
         WHERE deleted_at IS NULL AND user_id = ${userId} AND post_id IN (SELECT id FROM ok)
       ), rq AS (
         SELECT count(*) AS n FROM category_requests WHERE status = 'approved' AND user_id = ${userId}
+      ), tk AS (
+        SELECT count(*) AS n FROM tickets WHERE status <> 'declined' AND user_id = ${userId}
       )
       SELECT (COALESCE((SELECT n FROM ph), 0) * ${CONTRIB.photo}
             + COALESCE((SELECT n FROM cm), 0) * ${CONTRIB.comment}
             + COALESCE((SELECT n FROM rv), 0) * ${CONTRIB.review}
-            + COALESCE((SELECT n FROM rq), 0) * ${CONTRIB.proposal})::int AS score
+            + COALESCE((SELECT n FROM rq), 0) * ${CONTRIB.proposal}
+            + COALESCE((SELECT n FROM tk), 0) * ${CONTRIB.ticket})::int AS score
     `)
   );
 
@@ -558,20 +582,25 @@ export async function allBoardScores(): Promise<Map<string, { host: number; join
           WHERE deleted_at IS NULL AND post_id IN (SELECT id FROM ok) GROUP BY 1
         ), rq AS (
           SELECT user_id, count(*) AS n FROM category_requests WHERE status = 'approved' GROUP BY 1
+        ), tk AS (
+          SELECT user_id, count(*) AS n FROM tickets WHERE status <> 'declined' GROUP BY 1
         ), ids AS (
           SELECT user_id FROM ph UNION SELECT user_id FROM cm
           UNION SELECT user_id FROM rv UNION SELECT user_id FROM rq
+          UNION SELECT user_id FROM tk
         )
         SELECT i.user_id,
           (COALESCE(ph.n, 0) * ${CONTRIB.photo}
            + COALESCE(cm.n, 0) * ${CONTRIB.comment}
            + COALESCE(rv.n, 0) * ${CONTRIB.review}
-           + COALESCE(rq.n, 0) * ${CONTRIB.proposal})::int AS score
+           + COALESCE(rq.n, 0) * ${CONTRIB.proposal}
+           + COALESCE(tk.n, 0) * ${CONTRIB.ticket})::int AS score
         FROM ids i
         LEFT JOIN ph ON ph.user_id = i.user_id
         LEFT JOIN cm ON cm.user_id = i.user_id
         LEFT JOIN rv ON rv.user_id = i.user_id
         LEFT JOIN rq ON rq.user_id = i.user_id
+        LEFT JOIN tk ON tk.user_id = i.user_id
       `
       )
       .then(resultRows),
