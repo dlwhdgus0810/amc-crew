@@ -26,7 +26,7 @@ import { Msg } from './i18n';
  * 등급 알림이 무더기로 나간다. 순위표와 등급은 활동을 재는 자리로 두고, 사진은
  * 상점에서만 값을 갖게 한다.
  */
-export const COIN = { host: 1, contrib: 1, join: 3, avatar: 20, push: 20, news: 20 } as const;
+export const COIN = { host: 1, contrib: 1, join: 3, avatar: 20, push: 10, news: 10 } as const;
 
 /**
  * 코인을 셀 재료.

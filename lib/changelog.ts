@@ -35,8 +35,8 @@ const ENTRIES: ChangelogEntry[] = [
     title: { ko: '알림을 켜 두면 코인이 붙어요', en: 'Keeping alerts on carries coins' },
     items: [
       {
-        ko: '앱 알림을 켜 두면 상점 코인 20, 새 소식 알림을 켜 두면 20이 더 붙어요. 프로필 사진(20)과 같은 방식이라, 셋을 다 켜 두면 60이에요.',
-        en: 'App notifications carry 20 shop coins and news alerts another 20 — same as the profile photo (20). All three is 60.',
+        ko: '앱 알림을 켜 두면 상점 코인 10, 새 소식 알림을 켜 두면 10이 더 붙어요. 프로필 사진(20)과 같은 방식이라, 셋을 다 켜 두면 40이에요.',
+        en: 'App notifications carry 10 shop coins and news alerts another 10 — same idea as the profile photo (20). All three is 40.',
       },
       {
         ko: '「한 번 켰으니 준다」가 아니라 「켜 둔 동안 붙어 있다」예요. 끄면 그만큼 도로 빠져요.',
