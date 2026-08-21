@@ -18,13 +18,15 @@
   if (window.customElements && customElements.get('rain-canvas')) return;
 
   /*
-   * 방울 하나가 수위를 올리는 높이(px).
+   * 방울 하나가 수위를 올리는 높이(px). **차오르는 속도가 곧 이 값이다.**
    *
-   * 물이 카드 높이의 80%까지 차야 하므로 2였을 때보다 크게 잡는다 — 2로 두면 208px짜리
-   * 카드의 80%를 채우는 데 여든세 방울, 15초가 걸린다. 5면 서른세 방울에 6초다.
-   * 쏟는 방울 수도 이 값으로 나눠 세므로 들어온 만큼 그대로 나간다.
+   * 5였다. 208px짜리 카드가 2~4초에 차서 너무 빨랐다 — 물이 차오르는 것을 보는 맛이
+   * 없었다. 2.5면 그 두 배인 4~8초가 걸린다.
+   *
+   * 쏟는 방울 수도 이 값으로 나눠 세므로, 낮추면 한 번에 쏟는 방울이 그만큼 많아진다.
+   * 들어온 만큼 그대로 나가는 것은 어느 값에서나 같다.
    */
-  const RISE = 5;
+  const RISE = 2.5;
 
   /*
    * 잠긴 글씨 위를 덮는 물의 농도.
@@ -449,7 +451,7 @@
          * 0으로 안 두는 이유는 비가 그쳤을 때다(다른 화면으로 갔다 오면 그렇다).
          * 그때 물이 그대로 남아 있으면 돌아오자마자 쏟는다.
          */
-        this.target = Math.max(0, this.target - (this.target * 0.0002 + 0.0003) * dt);
+        this.target = Math.max(0, this.target - (this.target * 0.0001 + 0.0002) * dt);
         /*
          * 빠지는 중에는 수면을 목표에 맞추지 않는다 — 목표는 이미 0으로 비웠고 새로
          * 받는 비가 다시 올리고 있어서, 그걸 따라가면 빠지는 속도가 뒤엉킨다.
@@ -472,7 +474,8 @@
            * 물이 빨리 빠지는 처음에 비가 굵고 끝에서 잦아든다.
            */
           const before = this.level;
-          this.level = Math.max(0, this.level - Math.max(0.6, this.level * 0.03) * dt);
+          /* 0.03·0.6이었다. 1.2~1.7초 만에 비어서 「서서히」로 안 보였다 — 절반으로 낮춰 2.5~3.5초 */
+          this.level = Math.max(0, this.level - Math.max(0.3, this.level * 0.015) * dt);
           this.pourAcc += this.pourTotal * ((before - this.level) / this.drainFrom);
           while (this.pour > 0 && this.pourAcc >= 1) {
             this.pourAcc -= 1;
