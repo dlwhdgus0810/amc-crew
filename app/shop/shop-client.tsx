@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useT } from '../i18n';
 import { CARD_THEMES, PREVIEW_COOKIE, PREVIEW_MAX_AGE, type CardTheme } from '@/lib/card-theme';
-import { COIN, SHOP_T, SHOP_THEMES, SOON_THEMES, THEME_PRICE } from '@/lib/shop';
+import { COIN, PLANNED, SHOP_T, SHOP_THEMES, SOON_THEMES, THEME_PRICE } from '@/lib/shop';
 import type { Wallet } from '@/lib/db/shop';
 
 /**
@@ -180,6 +180,23 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
             </li>
           );
         })}
+        {/*
+          * 아직 만들지도 않은 것 — 이름만 세운다.
+          *
+          * 위 줄들과 달리 미리보기도 견본 색도 없다. 보여 줄 것이 없는데 버튼만 있으면
+          * 눌러 보고 아무 일도 안 일어난다.
+          */}
+        {PLANNED.map((p) => (
+          <li key={p.key} className="card shop-item">
+            <span className="shop-body">
+              <strong>{t(p.label)}</strong>
+              <span className="hint">{t(p.note)}</span>
+            </span>
+            <span className="shop-buy">
+              <span className="shop-soon">{t(SHOP_T.soon)}</span>
+            </span>
+          </li>
+        ))}
       </ul>
 
       {/*

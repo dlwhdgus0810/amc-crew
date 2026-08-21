@@ -47,11 +47,11 @@ export function coinsEarned(s: CoinSource): number {
 /**
  * 지금 상점에 걸린 것. 값이 다르면 여기서 갈라 두면 된다.
  *
- * 봄·벚꽃은 아직 안 올렸다 — 코드는 그대로 있어서 한 줄 더하면 바로 걸린다.
  * 상점에 없는 테마는 살 수도, 프로필에서 고를 수도 없다.
  */
 export const THEME_PRICE: Partial<Record<CardTheme, number>> = {
   rainyseason: 50,
+  cherryblossom: 50,
 };
 
 /** 상점에 내놓은 테마 — 목록의 순서가 곧 화면 순서다 */
@@ -64,7 +64,35 @@ export const SHOP_THEMES = Object.keys(THEME_PRICE) as CardTheme[];
  * 옮기면 되고, 그러면 자동으로 살 수 있는 줄이 된다 — 살 수 있는지 없는지는 값이
  * 있느냐로만 갈린다 (priceOf).
  */
-export const SOON_THEMES: CardTheme[] = ['cherryblossom'];
+export const SOON_THEMES: CardTheme[] = [];
+
+/**
+ * 아직 **만들지도 않은** 것 — 이름만 세워 둔다.
+ *
+ * SOON_THEMES와 나눠 두는 이유는 미리보기 때문이다. 저건 코드가 다 있어서 눌러 볼 수
+ * 있지만 이건 보여 줄 것이 없다. 그래서 CardTheme이 아니라 여기서 이름만 든다 —
+ * 만들고 나면 lib/card-theme.ts에 넣고 이 줄을 지우면 된다.
+ */
+export const PLANNED: { key: string; label: Msg; note: Msg }[] = [
+  {
+    key: 'autumn',
+    label: { ko: '가을 · 단풍', en: 'Autumn · Fall leaves', es: 'Otoño · Hojas' },
+    note: {
+      ko: '준비 중이에요.',
+      en: 'In the works.',
+      es: 'En preparación.',
+    },
+  },
+  {
+    key: 'winter',
+    label: { ko: '겨울 · 첫눈', en: 'Winter · First snow', es: 'Invierno · Primera nieve' },
+    note: {
+      ko: '준비 중이에요.',
+      en: 'In the works.',
+      es: 'En preparación.',
+    },
+  },
+];
 
 export function priceOf(theme: string): number | null {
   return THEME_PRICE[theme as CardTheme] ?? null;

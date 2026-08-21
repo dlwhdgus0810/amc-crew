@@ -31,6 +31,24 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-20T23:05',
+    title: { ko: '「봄 · 벚꽃」도 살 수 있어요', en: '“Spring · Cherry blossom” is on sale now' },
+    items: [
+      {
+        ko: '미리보기만 열려 있던 「봄 · 벚꽃」을 이제 50코인에 살 수 있어요. 연분홍 바탕에 꽃잎이 카드마다 다른 박자로 내려앉고, 서체도 고운돋움으로 바뀌어요.',
+        en: '“Spring · Cherry blossom” was preview-only; it’s 50 coins now. Pale pink, petals drifting at their own pace on each card, and the type switches to Gowun Dodum.',
+      },
+      {
+        ko: '가을과 겨울도 상점에 이름을 올려 뒀어요. 아직 만드는 중이라 미리보기는 없어요.',
+        en: 'Autumn and winter are listed too — still being made, so no preview yet.',
+      },
+      {
+        ko: '장마 테마에서 폰으로 볼 때 카드에 물이 계속 차 있던 것도 고쳤어요. 폰은 카드가 한 줄이라 비를 한 장이 거의 다 받는데, 빠지는 속도가 그만큼 안 따라가고 있었어요.',
+        en: 'Also fixed: in the rainy-season theme on a phone, the water in each card never drained. Phones show one card per row, so a single card caught nearly all the rain and the draining couldn’t keep up.',
+      },
+    ],
+  },
+  {
     at: '2026-08-19T17:30',
     title: { ko: '프로필 사진에 20코인이 붙어요', en: 'A profile photo is worth 20 coins' },
     items: [
