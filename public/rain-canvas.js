@@ -17,6 +17,25 @@
 (function () {
   if (window.customElements && customElements.get('rain-canvas')) return;
 
+  /*
+   * 방울 하나가 수위를 올리는 높이(px).
+   *
+   * 물이 카드 높이의 80%까지 차야 하므로 2였을 때보다 크게 잡는다 — 2로 두면 208px짜리
+   * 카드의 80%를 채우는 데 여든세 방울, 15초가 걸린다. 5면 서른세 방울에 6초다.
+   * 쏟는 방울 수도 이 값으로 나눠 세므로 들어온 만큼 그대로 나간다.
+   */
+  const RISE = 5;
+
+  /*
+   * 잠긴 글씨 위를 덮는 물의 농도.
+   *
+   * 물이 카드 끝까지 차므로 제목·부제목·날짜 줄이 다 잠긴다. 재 보니 가장 밝은 카드에서
+   * 크림색 글씨가 AA 기준(4.5:1)을 지키는 한계 농도가 0.087이다. 0.07이면 4.7:1쯤이라
+   * 여유가 조금 남는다. 대신 바닥 16px만 0.32로 진하게 칠해 물의 무게를 남긴다 —
+   * 거기는 어떤 글씨도 없다(아래줄 글씨가 바닥에서 19px부터다).
+   */
+  const SHALLOW = 0.07;
+
   customElements.define(
     'rain-canvas',
     class extends HTMLElement {
@@ -82,7 +101,7 @@
          * 차오르는 것을 볼 새가 없다 — 이러면 가운데가 68%쯤이고 열 장 중 서넛은
          * 85%를 넘겨 거의 그득해질 때까지 받아 둔다.
          */
-        this.dumpBase = 0.3 + Math.pow(Math.random(), 0.7) * 0.62;
+        this.dumpBase = 0.3 + Math.pow(Math.random(), 0.7) * 0.5;
         this.dumpAt = this.nextDumpAt();
         /** 지금 쏟는 중이면 남은 방울 수 */
         this.pour = 0;
@@ -130,7 +149,7 @@
         this.cv.height = Math.max(1, Math.round(this.h * this.dpr));
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
         /* 높이를 알기 전(레이아웃 전)에는 못 정한다 — 0으로 굳으면 물이 영영 안 찬다 */
-        if (this.level == null && this.h > 0) this.level = this.target = this.cap() * 0.25;
+        if (this.level == null && this.h > 0) this.level = this.target = this.cap() * 0.1;
         this.readTint();
         this.sprite();
       }
@@ -143,15 +162,11 @@
        * 수면이 40px이 되어 **아래줄 글씨가 물에 잠긴다** — 카드 바닥에서 19~23px에 있는
        * 그 줄의 대비가 3.39:1까지 떨어졌다 (AA 기준 4.5 미달).
        *
-       * 20%면 가장 많이 찼을 때(한계의 92%)에 수면이 38px이다. 아래줄 글씨가 카드
-       * 바닥에서 19~41px에 있으니 그 줄이 물에 잠기는데, 물을 수면 쪽부터 옅게 칠해서
-       * (draw 참고) 잠겨도 읽힌다.
-       *
-       * 8%였다. 글씨 밑에서 멈추게 한 값인데, 그러면 208px짜리 카드에서 물이 15px까지만
-       * 차서 아래쪽 얇은 띠로만 보인다 — 「물이 찬다」가 눈에 안 들어왔다.
+       * 카드 높이 그대로다. 「몇 % 찼나」는 곧 카드의 몇 %가 물에 잠겼나다 — 제목도
+       * 부제목도 잠긴다. 물을 아주 옅게 칠해서(draw 참고) 잠겨도 다 읽힌다.
        */
       cap() {
-        return this.h * 0.2;
+        return this.h;
       }
 
       /**
@@ -169,17 +184,20 @@
          * 쏟는 양은 **받아 둔 물(target)** 로 센다. 보이는 수면(level)으로 세면 뒤처진
          * 만큼 덜 내보내게 되고, 그 차이가 줄마다 쌓여 아래가 마른다.
          *
-         * 쏟을 때를 정하는 것은 반대로 보이는 수면이다 — 눈에 찬 것으로 보일 때 쏟아야
-         * 「찼다가 쏟는다」로 읽힌다.
+         * 쏟을 때를 정하는 것은 반대로 보이는 수면이다 — 눈에 찬 것으로 보일 때 빠져야
+         * 「찼다가 빠진다」로 읽힌다.
          */
-        this.pour = Math.max(1, Math.round(this.target / 2));
+        this.pour = Math.max(1, Math.round(this.target / RISE));
+        this.pourTotal = this.pour;
+        this.drainFrom = Math.max(1, this.level);
+        this.pourAcc = 0;
         this.target = 0;
         this.dumpAt = this.nextDumpAt();
       }
 
       /** 제 성격 언저리에서 한 번 흔든다 — 똑같은 높이에서 기계처럼 쏟지 않게 */
       nextDumpAt() {
-        return Math.min(0.92, Math.max(0.3, this.dumpBase + (Math.random() - 0.5) * 0.1));
+        return Math.min(0.82, Math.max(0.28, this.dumpBase + (Math.random() - 0.5) * 0.08));
       }
 
       /** 쏟아지는 방울 하나 — 카드 아래 어디서 떨어질지는 그때 정한다 */
@@ -336,7 +354,7 @@
            * 말랐다. 어차피 쏟는 지점이 한계의 90%까지라 목표가 그 위로 오래 머물지
            * 않는다. 위의 값은 혹시 모를 폭주만 막는 울타리다.
            */
-          this.target = Math.min(this.cap() * 1.5, this.target + 2);
+          this.target = Math.min(this.cap(), this.target + RISE);
           /*
            * 물에 닿은 방울은 여기서 **고인다.** 아래로는 안 내려간다 — 카드가 물을
            * 받아 두었다가 어느 만큼 차면 한 번에 쏟는다 (아래 dump 참고).
@@ -431,30 +449,43 @@
          * 0으로 안 두는 이유는 비가 그쳤을 때다(다른 화면으로 갔다 오면 그렇다).
          * 그때 물이 그대로 남아 있으면 돌아오자마자 쏟는다.
          */
-        this.target = Math.max(0, this.target - (this.target * 0.0004 + 0.0005) * dt);
-        this.level += (this.target - this.level) * (1 - Math.pow(0.95, dt));
+        this.target = Math.max(0, this.target - (this.target * 0.0002 + 0.0003) * dt);
+        /*
+         * 빠지는 중에는 수면을 목표에 맞추지 않는다 — 목표는 이미 0으로 비웠고 새로
+         * 받는 비가 다시 올리고 있어서, 그걸 따라가면 빠지는 속도가 뒤엉킨다.
+         * 빠지는 동안의 수면은 아래 pour 쪽이 혼자 정한다.
+         */
+        if (this.pour <= 0) this.level += (this.target - this.level) * (1 - Math.pow(0.95, dt));
 
         /*
          * 다 찼으면 쏟는다. 쏟는 동안은 다시 판정하지 않는다 — 수위는 목표를 천천히
          * 따라가느라 아직 높아서, 안 막으면 매 프레임 다시 쏟는다.
          */
         if (this.pour > 0) {
-          this.pourTick += dt;
-          while (this.pour > 0 && this.pourTick >= 2) {
-            this.pourTick -= 2;
+          /*
+           * **서서히 빠진다.** 그리고 빠진 만큼이 그대로 아래로 내리는 비가 된다.
+           *
+           * 남은 깊이에 비례해 빠뜨리므로 처음에는 콸콸, 끝에서는 졸졸이다. 바닥이
+           * 얕아졌을 때 멈추지 않도록 최소치를 둔다 — 비례만으로는 0에 영영 못 닿는다.
+           *
+           * 방울은 프레임마다 정해 뱉지 않고 **빠진 물의 양에 맞춰** 뱉는다. 그래서
+           * 물이 빨리 빠지는 처음에 비가 굵고 끝에서 잦아든다.
+           */
+          const before = this.level;
+          this.level = Math.max(0, this.level - Math.max(0.6, this.level * 0.03) * dt);
+          this.pourAcc += this.pourTotal * ((before - this.level) / this.drainFrom);
+          while (this.pour > 0 && this.pourAcc >= 1) {
+            this.pourAcc -= 1;
             this.pour--;
             this.pourDrop();
           }
-          /*
-           * 쏟는 동안은 수면도 **빠르게 빠진다.** 목표만 0으로 돌리면 안 된다 — 보이는
-           * 수면은 목표를 5%씩 따라가는데 그 사이에 새 비가 목표를 도로 올려서, 수면이
-           * 끝내 안 내려간다. 재 보니 쏟은 뒤에도 수면이 12px에 머물다가 그대로 천장까지
-           * 차올랐고 다시는 안 쏟았다.
-           *
-           * 물을 쏟는 중이니 눈에도 빠져야 맞다. 열두 프레임쯤이면 거의 비고, 그 뒤에는
-           * 새로 받은 만큼부터 다시 차오른다.
-           */
-          this.level *= Math.pow(0.72, dt);
+          /* 다 빠졌는데 남은 것이 있으면 여기서 턴다 (대개 한두 방울) */
+          if (this.level <= 0) {
+            while (this.pour > 0) {
+              this.pour--;
+              this.pourDrop();
+            }
+          }
         } else if (this.h > 0 && this.level >= this.dumpAt * this.cap()) {
           /* h가 0이면 한계도 0이라 「다 찼다」가 늘 참이 된다 — 레이아웃 전에는 안 쏟는다 */
           this.dump();
@@ -519,13 +550,33 @@
          * 앉는 자리는 0.06 언저리라 읽는 데 지장이 없고, 바닥은 예전(0.24)보다 오히려
          * 진해서 물이 깊어 보인다.
          */
-        const surf = h - Math.max(1, this.level);
+        const span = Math.max(1, this.level);
+        const surf = h - span;
         const water = ctx.createLinearGradient(0, surf, 0, h);
         water.addColorStop(0, 'rgba(' + tint + ',0)');
-        water.addColorStop(0.55, 'rgba(' + tint + ',0.06)');
-        water.addColorStop(1, 'rgba(' + tint + ',0.34)');
+        /* 수면에서 8px 안쪽부터 제 농도 — 가장자리만 부드럽게 사라진다 */
+        if (span > 20) water.addColorStop(Math.min(0.4, 8 / span), 'rgba(' + tint + ',' + SHALLOW + ')');
+        /* 바닥 18px만 진하다 — 아래줄 글씨가 바닥에서 19px부터라 거기까지는 비어 있다 */
+        if (span > 26) water.addColorStop((span - 18) / span, 'rgba(' + tint + ',' + SHALLOW + ')');
+        water.addColorStop(1, 'rgba(' + tint + ',0.32)');
         ctx.fillStyle = water;
         ctx.fill();
+
+        /*
+         * **수면에 선을 긋는다.**
+         *
+         * 물 자체는 0.07까지 옅게 눌러 놨다 — 그보다 진하면 잠긴 글씨가 AA 기준 밑으로
+         * 떨어진다. 그런데 그 농도로는 물이 어디까지 찼는지가 눈에 안 들어온다. 선 하나면
+         * 수위가 또렷해진다. 1.5px짜리 가로선이라 글씨를 가리는 넓이가 없다.
+         */
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(0, this.waveY(0));
+        for (let x = 4; x <= w; x += 4) ctx.lineTo(x, this.waveY(x));
+        ctx.strokeStyle = 'rgba(' + tint + ',0.38)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
 
         ctx.lineWidth = 1;
         for (const p of this.rings) {
