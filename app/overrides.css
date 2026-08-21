@@ -3023,6 +3023,20 @@ body:has(.sky-scope.night) .tabbar a.active {
 }
 
 
+/* ── 참여자 줄: 얼굴은 왼쪽, 인원수는 오른쪽 끝 ─────────────
+   이 줄은 <button>이고, globals.css의 button이 justify-content: center를 준다.
+   원래는 사이에 이름 줄(.people-names, flex: 1)이 있어서 그 값이 드러나지 않았는데,
+   이름을 얼굴로 바꾸면서(b58ac50) 그 칸이 없어졌다. 남은 둘이 가운데로 몰린 것이 그때부터다.
+
+   인원수에 auto 여백을 줘서 예전의 flex: 1 칸이 하던 일을 대신하게 한다 — 자식이
+   몇이든 얼굴은 왼쪽, 인원수는 오른쪽 끝이다. */
+.people-row {
+  justify-content: flex-start;
+}
+.people-row .people-count {
+  margin-left: auto;
+}
+
 /* ── 탭바 프로필이 계절 그림일 때 ────────────────────────────
    .t-ava는 원래 이름 첫 자나 사진이 들어가는 자리라 동그란 판 위에 얹힌다. 계절 그림
    (app/profile-icon.tsx)이 들어갈 때는 그 판을 없앤다 — 나머지 네 탭이 배경 없는 선
