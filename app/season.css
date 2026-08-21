@@ -398,6 +398,22 @@ html[data-season='petal'] .car-card .car-icon.on .star::before { content: '❀';
 html[data-season='rain'] .car-card .car-icon .star::before { content: '◌'; }
 html[data-season='rain'] .car-card .car-icon.on .star::before { content: '◉'; }
 
+/*
+ * 탭바 프로필 틀 — **사진이 있을 때만** 여기가 맡는다.
+ *
+ * 사진이 없으면 계절 그림이 들어간다(app/profile-icon.tsx). 그건 SVG의 d 속성이라
+ * CSS로 못 바꾸므로 app/nav.tsx에서 갈랐다. 나머지 넷(집·나침반·달력·사진틀)은 계절을
+ * 안 따른다 — 탭을 그림으로 기억한 사람이 계절마다 다시 찾게 된다.
+ *
+ * 겨울은 곡률로 육각이 안 나와서 clip-path다 (app/season-winter.css).
+ */
+html[data-season='petal'] .tabbar-links .t-ava {
+  border-radius: 999px 7px 999px 7px;
+}
+html[data-season='rain'] .tabbar-links .t-ava {
+  border-radius: 999px 999px 999px 3px;
+}
+
 /* 움직임을 줄여 달라고 한 사람에게는 멈춘다. 물결은 모양이라 남기고 흔들림만 끈다.
    캔버스는 스스로 루프를 시작하지 않는다. */
 @media (prefers-reduced-motion: reduce) {

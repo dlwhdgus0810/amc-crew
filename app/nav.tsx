@@ -12,6 +12,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useRefreshSession, useViewer } from './session';
 import { useT } from './i18n';
+import { useCardTheme } from './card-theme-context';
+import { themeDeco } from '@/lib/card-theme';
+import { ProfileIcon } from './profile-icon';
 
 /** 프로필이 바뀌었음을 탭바에 알리는 신호 */
 export const PROFILE_UPDATED = 'kk-profile-updated';
@@ -87,6 +90,8 @@ function useSession() {
   const loggedIn = Boolean(viewer.user);
   const name = viewer.user?.name ?? '';
   const avatar = viewer.avatar;
+  /* 시즌 테마면 프로필 자리의 그림이 계절을 따른다 — 사진이 없을 때만 */
+  const deco = themeDeco(useCardTheme());
   /*
    * 안 읽은 수는 서버가 읽어 둔 값에서 시작해, 탭을 옮길 때마다 다시 센다.
    * 레이아웃은 클라이언트 내비게이션에서 다시 그려지지 않아서 배지가 멈춰 있게 된다.
@@ -138,7 +143,7 @@ function useSession() {
     done?.catch(() => {});
   }, [unread, loggedIn]);
 
-  return { isAdmin, loggedIn, name, avatar, unread, pathname };
+  return { isAdmin, loggedIn, name, avatar, deco, unread, pathname };
 }
 
 /**
@@ -169,7 +174,7 @@ function useKeepNew(): boolean {
 
 /** 떠 있는 하단 탭바 — 좁은 폰에서도 줄바꿈되지 않고, 콘텐츠 위에 얹힌다 */
 export default function NavLinks() {
-  const { loggedIn, name, avatar, unread, pathname } = useSession();
+  const { loggedIn, name, avatar, deco, unread, pathname } = useSession();
   const showKeepNew = useKeepNew();
   const t = useT();
 
@@ -203,8 +208,15 @@ export default function NavLinks() {
         </Link>
         {loggedIn ? (
           <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>
+            {/*
+              * 사진이 없을 때만 계절 아이콘이다 — 있으면 사진이 들어가고 틀 곡률만
+              * 계절을 따른다 (app/season.css·season-winter.css).
+              *
+              * 나머지 넷(집·나침반·달력·사진틀)은 계절을 안 따른다. 탭을 그림으로 기억한
+              * 사람이 계절마다 다시 찾게 되고, 열 시즌이면 마흔 개를 그려야 한다.
+              */}
             <span className="t-ava">
-              {avatar ? <img src={avatar} alt="" /> : name.slice(0, 1) || '·'}
+              {avatar ? <img src={avatar} alt="" /> : deco ? <ProfileIcon season={deco} /> : name.slice(0, 1) || '·'}
             </span>
             <span>{t(T.profile)}</span>
             {/*
