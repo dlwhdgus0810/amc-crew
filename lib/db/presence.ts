@@ -15,19 +15,14 @@ import { addDays, instantAt, localStamp } from '../dates';
  *  - presence_sessions: 신호가 이어지는 구간. 회원별 접속 시간·횟수를 보려고 남긴다.
  */
 
-/**
- * 마지막 신호가 이 시간 안이면 접속 중으로 본다 (신호 주기 3분 + 여유 2분).
- *
- * 주기를 60초에서 3분으로 늘리면서 같이 늘렸다 — 3분으로 두면 다음 신호 직전마다
- * 모두가 잠깐 오프라인으로 깜빡인다.
- */
-export const ONLINE_WINDOW_MINUTES = 5;
+/** 마지막 신호가 이 시간 안이면 접속 중으로 본다 (신호 주기 60초 + 여유) */
+export const ONLINE_WINDOW_MINUTES = 3;
 
 /**
  * 신호가 이만큼 끊기면 "나갔다 다시 들어온 것"으로 보고 접속 구간을 새로 시작한다.
- * 접속 중 판정(5분)보다 넉넉해야 화면에서 사라졌다 돌아온 사람이 한 구간으로 이어진다.
+ * 접속 중 판정(3분)보다 넉넉해야 화면에서 사라졌다 돌아온 사람이 한 구간으로 이어진다.
  */
-const SESSION_GAP_MINUTES = 8;
+const SESSION_GAP_MINUTES = 5;
 
 /**
  * 신호 한 번을 접속 구간으로 치는 최소 길이.
