@@ -3,7 +3,7 @@ import { getDb } from './index';
 import { themePurchases, users } from './schema';
 import { unstable_cache } from 'next/cache';
 import { allBoardScores, boardScoresFor } from './hosting';
-import { coinsEarned, priceOf } from '../shop';
+import { APOLOGY_BEFORE, coinsEarned, priceOf } from '../shop';
 import { nameOf, UNKNOWN_NAME } from '../store';
 import type { Locale } from '../i18n';
 
@@ -30,6 +30,8 @@ export interface Wallet {
   avatar: boolean;
   push: boolean;
   news: boolean;
+  /** 장애를 겪은 회원인지 — lib/shop.ts의 APOLOGY_BEFORE 참고 */
+  apology: boolean;
   /** 활동으로 번 코인 */
   earned: number;
   /** 여태 쓴 코인 */
@@ -49,6 +51,8 @@ export interface Wallet {
 const hasAvatar = sql<boolean>`(${users.avatar} IS NOT NULL)`;
 /** 기기가 몇이든 하나라도 켜 뒀으면 켠 것이다 */
 const hasPush = sql<boolean>`EXISTS (SELECT 1 FROM push_subscriptions s WHERE s.user_id = ${users.id})`;
+/** 장애가 나기 전에 들어온 회원 — 그때 있던 사람에게만 보상이 붙는다 */
+const wasHere = sql<boolean>`(${users.createdAt} < ${APOLOGY_BEFORE})`;
 
 export async function walletOf(userId: string): Promise<Wallet> {
   const db = await getDb();
@@ -56,20 +60,22 @@ export async function walletOf(userId: string): Promise<Wallet> {
     boardScoresFor(userId),
     db.select().from(themePurchases).where(eq(themePurchases.userId, userId)),
     db
-      .select({ avatar: hasAvatar, push: hasPush, news: users.newsAlerts })
+      .select({ avatar: hasAvatar, push: hasPush, news: users.newsAlerts, apology: wasHere })
       .from(users)
       .where(eq(users.id, userId)),
   ]);
   const avatar = me[0]?.avatar ?? false;
   const push = me[0]?.push ?? false;
   const news = me[0]?.news ?? false;
-  const earned = coinsEarned({ ...scores, avatar, push, news });
+  const apology = me[0]?.apology ?? false;
+  const earned = coinsEarned({ ...scores, avatar, push, news, apology });
   const spent = rows.reduce((n, r) => n + r.coins, 0);
   return {
     ...scores,
     avatar,
     push,
     news,
+    apology,
     earned,
     spent,
     left: earned - spent,
@@ -148,6 +154,7 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
         avatar: hasAvatar,
         push: hasPush,
         news: users.newsAlerts,
+        apology: wasHere,
       })
       .from(users),
   ]);
@@ -165,7 +172,8 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
       const avatar = p.avatar ?? false;
       const push = p.push ?? false;
       const news = p.news ?? false;
-      const earned = coinsEarned({ ...s, avatar, push, news });
+      const apology = p.apology ?? false;
+      const earned = coinsEarned({ ...s, avatar, push, news, apology });
       const spent = mine.reduce((n, r) => n + r.coins, 0);
       return {
         id: p.id,
@@ -174,6 +182,7 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
         avatar,
         push,
         news,
+        apology,
         earned,
         spent,
         left: earned - spent,

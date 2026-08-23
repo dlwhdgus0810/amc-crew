@@ -26,7 +26,22 @@ import { Msg } from './i18n';
  * 등급 알림이 무더기로 나간다. 순위표와 등급은 활동을 재는 자리로 두고, 사진은
  * 상점에서만 값을 갖게 한다.
  */
-export const COIN = { host: 1, contrib: 1, join: 3, avatar: 20, push: 10, news: 10 } as const;
+export const COIN = { host: 1, contrib: 1, join: 3, avatar: 20, push: 10, news: 10, apology: 30 } as const;
+
+/**
+ * 장애 보상을 받는 사람 — **이 시각보다 먼저 들어온 회원.**
+ *
+ * 8월 22일 오후부터 다음 날까지 데이터베이스가 사용량 한도를 넘겨 모든 요청을 거절했고,
+ * 그동안 앱이 아예 안 열렸다. 그때 있던 사람에게만 준다 — 나중에 들어올 사람은 겪지
+ * 않은 일이다.
+ *
+ * 날짜를 코드에 박아 두는 것은 일부러다. 이 값이 있는 한 「그때 있던 사람」이 시간이
+ * 지나도 안 바뀐다. 지급 기록 테이블을 따로 두지 않은 이유는 한 번뿐인 일이어서다.
+ *
+ * **한 번 넣으면 빼지 말 것.** 빼면 이걸로 테마를 산 사람의 잔액이 음수가 되고, 산
+ * 테마가 잠긴다 (lib/db/shop.ts의 themeAllowed).
+ */
+export const APOLOGY_BEFORE = new Date('2026-08-22T00:00:00-05:00');
 
 /**
  * 코인을 셀 재료.
@@ -44,6 +59,8 @@ export interface CoinSource {
   push: boolean;
   /** 새 소식을 카카오톡으로 받도록 켜 뒀는지 */
   news: boolean;
+  /** 장애를 겪은 회원인지 — APOLOGY_BEFORE 참고 */
+  apology: boolean;
 }
 
 export function coinsEarned(s: CoinSource): number {
@@ -52,7 +69,8 @@ export function coinsEarned(s: CoinSource): number {
     Math.floor(s.host * COIN.host + s.contrib * COIN.contrib + s.join * COIN.join) +
     (s.avatar ? COIN.avatar : 0) +
     (s.push ? COIN.push : 0) +
-    (s.news ? COIN.news : 0)
+    (s.news ? COIN.news : 0) +
+    (s.apology ? COIN.apology : 0)
   );
 }
 
@@ -115,6 +133,7 @@ export const SHOP_T = {
   fromAvatar: { ko: '프로필 사진 +{n}', en: 'profile photo +{n}', es: 'foto de perfil +{n}' },
   fromPush: { ko: '알림 +{n}', en: 'notifications +{n}', es: 'avisos +{n}' },
   fromNews: { ko: '새 소식 알림 +{n}', en: 'news alerts +{n}', es: 'avisos de novedades +{n}' },
+  fromApology: { ko: '장애 보상 +{n}', en: 'outage make-good +{n}', es: 'compensación por la caída +{n}' },
   /** 아직 안 켠 것 — 프로필로 데려간다 */
   offPush: {
     ko: '알림을 켜면 {n}코인이 더 붙어요',

@@ -31,6 +31,29 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-23T01:30',
+    notable: true,
+    title: { ko: '어제 오후부터 앱이 안 열렸어요', en: 'The app was down from yesterday afternoon' },
+    items: [
+      {
+        ko: '어제 오후부터 오늘 새벽까지 앱을 열면 「Application error」만 떴어요. 하루 가까이 그랬습니다. 불편 드려서 죄송해요.',
+        en: 'From yesterday afternoon until early this morning, opening the app only gave you “Application error” — close to a full day. Sorry about that.',
+      },
+      {
+        ko: '앱이 아니라 데이터베이스 쪽이었어요. 쓸 수 있는 사용량을 다 써서 모든 요청이 거절됐고, 어느 화면이든 데이터를 한 번은 읽어야 그려지다 보니 그때부터 아무것도 안 열렸어요.',
+        en: 'It wasn’t the app — it was the database. It had used up its allowance and started refusing every request, and since every screen has to read something to draw itself, nothing opened.',
+      },
+      {
+        ko: '지금은 용량을 올려서 풀렸어요. 그동안 쓰신 글·사진·모임은 하나도 안 없어졌어요 — 읽고 쓰는 길이 막혔던 것뿐이라 저장된 것은 그대로예요.',
+        en: 'It’s fixed now — the database was upgraded. Nothing you’d written was lost; the door was shut, but everything behind it stayed put.',
+      },
+      {
+        ko: '기다려주신 값으로 그때 계셨던 모든 분께 상점 코인 30을 드려요. 켜고 끄는 것과 상관없이 그냥 얹혀 있어요 — 상점의 코인 내역에서 「장애 보상 +30」으로 보여요.',
+        en: 'Everyone who was here gets 30 shop coins for the wait. It isn’t tied to any setting — it just sits there, listed as “outage make-good +30” in the shop.',
+      },
+    ],
+  },
+  {
     at: '2026-08-21T16:35',
     notable: true,
     title: { ko: '「겨울 · 눈」이 나왔어요', en: '“Winter · Snow” is here' },
