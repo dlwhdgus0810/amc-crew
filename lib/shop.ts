@@ -128,6 +128,13 @@ export const SOON_THEMES: CardTheme[] = [];
  */
 export const PLANNED: { key: string; label: Msg; note: Msg }[] = [
   {
+    /*
+     * 가을은 **코드가 이미 다 있다** (lib/card-theme.ts의 autumn). 그런데도 여기 남겨
+     * 두는 것은 아직 관리자만 걸어 보는 중이라서다 — 회원에게는 준비 중으로 보인다.
+     *
+     * 열 때는 두 줄이다: THEME_PRICE에 값을 넣고 이 항목을 지운다. 미리보기만 먼저
+     * 열려면 SOON_THEMES에 넣으면 된다(그쪽은 눌러 볼 수 있고 살 수만 없다).
+     */
     key: 'autumn',
     label: { ko: '가을 · 단풍', en: 'Autumn · Fall leaves', es: 'Otoño · Hojas' },
     note: {

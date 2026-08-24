@@ -54,7 +54,8 @@ export type CardTheme =
   | 'goldentaupe'
   | 'cherryblossom'
   | 'rainyseason'
-  | 'winter';
+  | 'winter'
+  | 'autumn';
 
 /**
  * 시즌 테마만 갖는 값.
@@ -89,7 +90,7 @@ export interface SeasonTokens {
   /** app/layout.tsx가 심는 next/font 변수 이름 (--font-dodum / --font-batang) */
   font: 'dodum' | 'batang';
   /** 배경 장식 종류 — app/season-deco.tsx가 읽는다 */
-  deco: 'petal' | 'rain' | 'snow';
+  deco: 'petal' | 'rain' | 'snow' | 'leaf';
 }
 
 export interface CardThemeDef {
@@ -285,6 +286,42 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       deco: 'snow',
     },
   },
+  autumn: {
+    label: { ko: '가을 · 단풍', en: 'Autumn · Fall leaves', es: 'Otoño · Hojas' },
+    note: {
+      ko: '저녁 숲 같은 짙은 초록 테마. 제목만 금색이고, 낙엽 그림이 화면 앞으로 떨어져요.',
+      en: 'Deep evening-forest green; only the titles are gold, and drawn leaves fall in front of the cards.',
+      es: 'Verde bosque al atardecer; solo los títulos son dorados y caen hojas dibujadas por delante.',
+    },
+    /*
+     * 시안(19d)은 어두운 초록 **하나**다. 그런데 카드가 열일곱 장이라 한 색으로 고정하면
+     * 카테고리를 색으로 구별할 수 없다 — 색이 곧 이름표인 화면이다. 그래서 계단을 저녁
+     * 숲 쪽으로 옮겼다: 짙은 침엽수 → 이끼 → 올리브 → 금색. 앞의 둘이 시안의 색이다.
+     * 마지막 금색 카드는 밝아서 글자가 자동으로 어두워진다 (아래 textOn).
+     */
+    stops: ['#2A3320', '#3F4E2E', '#6E6B22', '#C9A227'],
+    tokens: {
+      bg: '#F6F1E7',
+      surface: '#FFFBF3',
+      surface2: '#EFE7D6',
+      border: '#E2DAC6',
+      borderSoft: '#F1EADC',
+      text: '#242A1C',
+      textMid: '#5F6653',
+      textDim: '#8A9079',
+      accent: '#3F4E2E',
+      accentDark: '#2A3320',
+      accentSoft: '#E8EBDC',
+      r: '18px',
+      rSm: '14px',
+      /* 네 귀퉁이가 같다 — 벚꽃·장마와 달리 잎 모양 곡률을 안 쓴다 */
+      cardR: '18px',
+      tabbarR: '16px',
+      iconStroke: '1.6',
+      font: 'batang',
+      deco: 'leaf',
+    },
+  },
 };
 
 export function toCardTheme(v: string | undefined): CardTheme {
@@ -438,8 +475,16 @@ export function cardColors(theme: CardTheme): { slug: string; color: string; fg:
  * 트리를 통째로 건드려야 한다. 변수로 두면 레이아웃 한 곳에서 정하고 쓰는 쪽은 그대로다.
  */
 export function cardThemeCss(theme: CardTheme): string {
+  /*
+   * --lit은 「이 카드 글씨가 크림인가」다 (1이면 크림, 0이면 어두운 글씨).
+   *
+   * 색이 아니라 0/1인 이유는 무슨 색을 쓸지는 테마가 정하기 때문이다. 단풍은 어두운
+   * 카드의 제목만 금색으로 올리는데(app/season-autumn.css), 금색 카드에까지 금색을
+   * 얹으면 제목이 바탕에 묻힌다 — 열일곱 장 중 넷이 그렇다. CSS는 변수 「값」을 보고
+   * 갈라질 수 없으므로, 갈라질 거리를 여기서 숫자로 넘긴다.
+   */
   const vars = cardColors(theme)
-    .map((c) => `--cat-${c.slug}:${c.color};--cat-${c.slug}-fg:${c.fg}`)
+    .map((c) => `--cat-${c.slug}:${c.color};--cat-${c.slug}-fg:${c.fg};--cat-${c.slug}-lit:${c.fg === TEXT_CREAM ? 1 : 0}`)
     .join(';');
   const t = CARD_THEMES[theme].tokens;
   /*
@@ -493,6 +538,6 @@ export function themeBarColor(theme: CardTheme): string {
 }
 
 /** 배경 장식 종류. 색만 바꾸는 테마는 null. */
-export function themeDeco(theme: CardTheme): 'petal' | 'rain' | 'snow' | null {
+export function themeDeco(theme: CardTheme): 'petal' | 'rain' | 'snow' | 'leaf' | null {
   return CARD_THEMES[theme].tokens?.deco ?? null;
 }

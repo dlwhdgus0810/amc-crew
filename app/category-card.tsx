@@ -113,6 +113,12 @@ export default function CategoryCard({
       style={{
         background: `var(--cat-${category.slug}, ${category.color})`,
         color: `var(--cat-${category.slug}-fg, ${category.fg})`,
+        /*
+         * 이 카드 글씨가 크림인지(1) 어두운지(0). CSS는 카드가 어느 카테고리인지 모르므로
+         * (선택자에 슬러그가 없다) 슬러그가 붙은 변수를 여기서 이름 없는 변수로 옮겨 준다.
+         * 단풍이 제목을 금색으로 올릴지 말지를 이걸로 가린다 (app/season-autumn.css).
+         */
+        ['--card-lit' as string]: `var(--cat-${category.slug}-lit, 1)`,
         ...style,
       }}
       data-slug={category.slug}

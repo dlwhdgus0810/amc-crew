@@ -51,10 +51,13 @@ const DECORATED = [
  * 갈라 두었다(부채꼴 6, 모난 둥근꼴 3, 잔물결 3, 말린 2, 날아가는 자세 1, 달걀꼴 1).
  *
  * 눈은 아홉이다. 결정 하나가 20~26px이라 꽃잎만큼 뿌리면 화면이 눈으로 덮인다.
+ *
+ * 낙엽은 열여섯이다. 도안 여덟 종을 두 번씩 쓴다 — 여덟이면 같은 잎이 화면에 하나씩
+ * 뿐이라 무엇이 떨어지는지 보이기 전에 지나가고, 서른둘이면 낙엽이 아니라 폭우다.
  */
-const COUNT = { petal: 16, rain: 18, snow: 9 } as const;
+const COUNT = { petal: 16, rain: 18, snow: 9, leaf: 16 } as const;
 
-export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | 'snow' | null }) {
+export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | 'snow' | 'leaf' | null }) {
   const path = usePathname();
   if (!kind || !DECORATED.some((re) => re.test(path))) return null;
   return (
