@@ -31,6 +31,37 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-24T15:20',
+    notable: true,
+    title: { ko: '「가을 · 단풍」이 나왔어요', en: '“Autumn · Fall leaves” is here' },
+    items: [
+      {
+        ko: '가을 테마를 50달란트에 팔아요. 해 질 무렵 숲 같은 짙은 초록인데, 제목만 금색이에요. 서체는 고운바탕이고요.',
+        en: '“Autumn · Fall leaves” is 50 talents. Deep evening-forest green with the titles in gold, set in Gowun Batang.',
+      },
+      {
+        ko: '낙엽이 카드 뒤로 떨어져요. 단풍·은행을 비롯해 여덟 가지 잎이 돌면서 옆으로 밀리며 내려오는데, 잎마다 떨어지는 속도와 도는 속도가 달라요.',
+        en: 'Leaves fall behind the cards — eight kinds, maple and ginkgo among them, tumbling and drifting sideways, each at its own speed.',
+      },
+      {
+        ko: '즐겨찾기와 구독 표시도 잎이에요. 즐겨찾기는 점선 원이었다가 누르면 붉은 단풍이 되고, 구독은 노란 은행잎이 돼요.',
+        en: 'The favourite and subscribe marks are leaves too: a dashed circle turns into a red maple, and subscribe turns into a yellow ginkgo.',
+      },
+      {
+        ko: '환영글과 카테고리 부제도 가을 것으로 바뀌어요. 「단풍은 기다려 주지 않아요」 같은 말들이에요.',
+        en: 'The greeting and the category lines turn autumn, too — things like “the colors won’t wait for you.”',
+      },
+      {
+        ko: '그리고 산 테마에는 디자인 건의를 넣을 수 있어요. 상점에서 가진 테마 줄에 「디자인 건의」가 열려요 — 고쳤으면 하는 것을 적으면 건의함으로 들어가고, 답도 건의함에서 받아요. 산 사람만 적을 수 있어요.',
+        en: 'And you can now suggest changes to a theme you own: “Suggest a change” opens on your themes in the shop, goes to the suggestion box, and the reply comes back there.',
+      },
+      {
+        ko: '프로필의 「카드 테마」는 제목을 눌러 접어 둘 수 있어요. 접어 두면 다음에 열 때도 접힌 채예요.',
+        en: 'You can fold the “Card theme” block on your profile by tapping its title — it stays folded next time.',
+      },
+    ],
+  },
+  {
     at: '2026-08-24T10:50',
     notable: true,
     title: { ko: '테마 상점이 프로필로 옮겨갔어요', en: 'The theme shop moved to your profile' },

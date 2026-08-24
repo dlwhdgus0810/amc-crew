@@ -103,13 +103,12 @@ export function coinsEarned(s: CoinSource): number {
  */
 /*
  * **적은 순서가 상점에 서는 순서다** (SHOP_THEMES가 Object.keys를 그대로 쓴다).
- * 봄·여름·겨울 차례다 — 가을은 아직 안 팔아서 여기 없고, 상점 맨 아래 「준비 중」
- * 줄에 선다(PLANNED). 열 때는 rainyseason과 winter 사이에 끼워 넣으면 계절 차례가
- * 그대로 맞는다.
+ * 봄·여름·가을·겨울 차례다. 계절 차례가 곧 상점 차례다.
  */
 export const THEME_PRICE: Partial<Record<CardTheme, number>> = {
   cherryblossom: 50,
   rainyseason: 50,
+  autumn: 50,
   winter: 50,
 };
 
@@ -131,25 +130,10 @@ export const SOON_THEMES: CardTheme[] = [];
  * SOON_THEMES와 나눠 두는 이유는 미리보기 때문이다. 저건 코드가 다 있어서 눌러 볼 수
  * 있지만 이건 보여 줄 것이 없다. 그래서 CardTheme이 아니라 여기서 이름만 든다 —
  * 만들고 나면 lib/card-theme.ts에 넣고 이 줄을 지우면 된다.
+ *
+ * 지금은 비어 있다. 가을이 여기 있었는데 열면서 THEME_PRICE로 옮겼다.
  */
-export const PLANNED: { key: string; label: Msg; note: Msg }[] = [
-  {
-    /*
-     * 가을은 **코드가 이미 다 있다** (lib/card-theme.ts의 autumn). 그런데도 여기 남겨
-     * 두는 것은 아직 관리자만 걸어 보는 중이라서다 — 회원에게는 준비 중으로 보인다.
-     *
-     * 열 때는 두 줄이다: THEME_PRICE에 값을 넣고 이 항목을 지운다. 미리보기만 먼저
-     * 열려면 SOON_THEMES에 넣으면 된다(그쪽은 눌러 볼 수 있고 살 수만 없다).
-     */
-    key: 'autumn',
-    label: { ko: '가을 · 단풍', en: 'Autumn · Fall leaves', es: 'Otoño · Hojas' },
-    note: {
-      ko: '준비 중이에요.',
-      en: 'In the works.',
-      es: 'En preparación.',
-    },
-  },
-];
+export const PLANNED: { key: string; label: Msg; note: Msg }[] = [];
 
 export function priceOf(theme: string): number | null {
   return THEME_PRICE[theme as CardTheme] ?? null;
