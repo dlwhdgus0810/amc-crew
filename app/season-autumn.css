@@ -121,11 +121,26 @@ html[data-season='leaf'] .car-card .card-season {
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  animation: kk-leaf-fall 32s linear infinite;
+  /*
+   * **셋을 따로 돌린다.** 떨어지는 것(translate) · 제자리 도는 것(rotate) · 앞뒤로
+   * 나부끼는 것(transform)이 각각 다른 주기라서 서로 안 맞물린다. 하나로 묶으면
+   * 도는 속도가 낙하 속도에 매인다 — 32초에 걸쳐 한 바퀴는 도는 것으로 안 보인다.
+   *
+   * translate·rotate를 transform과 따로 쓸 수 있어야 한다 (Safari 14.1 / Chrome 104).
+   * 못 읽는 기기에서는 낙하와 회전이 빠지고 나부낌만 남는다 — 멈춘 잎이 되지만
+   * 깨지지는 않는다.
+   */
+  --fall: 32s;
+  --spin: 5.2s;
+  --flip: 3.4s;
+  animation:
+    kk-leaf-fall var(--fall) linear infinite,
+    kk-leaf-spin var(--spin) linear infinite,
+    kk-leaf-flip var(--flip) ease-in-out infinite;
 }
 /*
  * 도안 여덟 종을 두 번씩 돌려 쓴다. 8n으로 나누므로 1~8과 9~16이 같은 순서인데,
- * 아래 주기·지연이 3n·2n·5n으로 갈라져서 같은 잎 둘이 나란히 떨어지지는 않는다.
+ * 아래 주기가 3n·2n·5n으로 갈라져서 같은 잎 둘이 나란히 떨어지지는 않는다.
  *
  * 크기는 19~26px이다. 그림 파일은 94px이라 3배 화면에서도 남는다.
  */
@@ -137,17 +152,46 @@ html[data-season='leaf'] .season-leaf > span:nth-child(8n + 5) { background-imag
 html[data-season='leaf'] .season-leaf > span:nth-child(8n + 6) { background-image: url(/leaves/leaf-19.png); width: 23px; height: 23px; }
 html[data-season='leaf'] .season-leaf > span:nth-child(8n + 7) { background-image: url(/leaves/leaf-04.png); width: 20px; height: 20px; }
 html[data-season='leaf'] .season-leaf > span:nth-child(8n + 8) { background-image: url(/leaves/leaf-18.png); width: 22px; height: 22px; }
-/* 주기와 시작 시각을 서로소로 갈라 둔다 — 값이 규칙적이면 줄 맞춰 내려오는 것이 보인다 */
-.season-leaf > span:nth-child(3n)     { animation-duration: 38s; }
-.season-leaf > span:nth-child(3n + 1) { animation-duration: 42s; }
+/* 세 주기를 낱개마다 어긋나게 둔다 — 값이 규칙적이면 열여섯 장이 한 덩어리로 움직인다 */
+.season-leaf > span:nth-child(3n)     { --fall: 38s; --spin: 6.4s; --flip: 4.1s; }
+.season-leaf > span:nth-child(3n + 1) { --fall: 42s; --spin: 4.3s; --flip: 2.8s; }
+.season-leaf > span:nth-child(4n)     { --spin: 7.1s; }
+.season-leaf > span:nth-child(5n + 2) { --flip: 5.3s; }
+/* 시작 시각도 흩는다. 음수라 화면을 열자마자 이미 내려오는 중이다 */
 .season-leaf > span:nth-child(2n)     { animation-delay: -9s; }
 .season-leaf > span:nth-child(5n)     { animation-delay: -21s; }
 .season-leaf > span:nth-child(7n)     { animation-delay: -27s; }
 /*
- * 낙엽은 무거워서 곧게 안 떨어진다 — 옆으로 밀리면서 여러 바퀴 돈다. 꽃잎이 앞뒤를
- * 번갈아 보이며 나부끼는 것(kk-petal-air)과 대비되는 자리다.
+ * 낙하 — 세로는 일정하게, 가로는 좌우로.
+ *
+ * 세로 값을 30vh씩 고르게 두고 linear로 돌리므로 내려오는 속도는 변하지 않고, 가로만
+ * 26 → -18 → 22 → -30px으로 오간다. 전에는 화면 전체를 내려오는 동안 38px 밀리는 것이
+ * 전부여서 기울기 1.3도짜리 거의 직선이었다 — 낙엽이 아니라 빗줄기의 궤적이다.
  */
 @keyframes kk-leaf-fall {
-  from { transform: translate3d(0, 0, 0) rotate(0deg); }
-  to   { transform: translate3d(-38px, 120vh, 0) rotate(340deg); }
+  0%   { translate: 0 0; }
+  25%  { translate: 26px 30vh; }
+  50%  { translate: -18px 60vh; }
+  75%  { translate: 22px 90vh; }
+  100% { translate: -30px 120vh; }
+}
+/*
+ * 제자리 돌기 — 5초 남짓에 한 바퀴다.
+ *
+ * 전에는 낙하 애니메이션 안에 섞여 있어서 32초에 340도, 초당 8~10도였다. 그 속도로는
+ * 도는 것이 안 보인다 — 재 보니 한 바퀴에 34초였다.
+ */
+@keyframes kk-leaf-spin {
+  to { rotate: 360deg; }
+}
+/*
+ * 앞뒤로 나부끼기 — 잎이 면을 보였다 모로 섰다 한다.
+ *
+ * ±62도까지만 돌린다. 90도를 넘기면 잎이 완전히 모로 서서 한 번씩 사라지는데, 꽃잎처럼
+ * 얇은 것은 그게 자연스럽지만(kk-petal-air) 낙엽은 크기가 있어서 깜빡이는 것으로 보인다.
+ * 62도면 폭이 절반으로 줄었다 돌아온다.
+ */
+@keyframes kk-leaf-flip {
+  0%, 100% { transform: rotate3d(1, 0.5, 0, -62deg); }
+  50%      { transform: rotate3d(1, 0.5, 0, 62deg); }
 }
