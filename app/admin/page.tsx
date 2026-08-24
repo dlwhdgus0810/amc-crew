@@ -164,10 +164,10 @@ const T = {
   placeFailed: { ko: '붙이다 멈췄어요: {why}', en: 'Stopped: {why}' },
   themeTitle: { ko: '카드 색 테마', en: 'Card color theme' },
   shopLink: { ko: '테마 상점 열기 →', en: 'Open the theme shop →' },
-  walletTitle: { ko: '코인과 산 테마', en: 'Coins and purchases' },
+  walletTitle: { ko: '달란트와 산 테마', en: 'Talents and purchases' },
   walletHint: {
-    ko: '누가 무엇을 샀고 코인이 얼마 남았는지. 값을 정할 때 「지금 값이면 몇 명이나 살 수 있나」를 보는 자리예요.',
-    en: 'Who bought what, and how many coins they have left. Use it to see how many people can afford the current price.',
+    ko: '누가 무엇을 샀고 달란트가 얼마 남았는지. 값을 정할 때 「지금 값이면 몇 명이나 살 수 있나」를 보는 자리예요.',
+    en: 'Who bought what, and how many talents they have left. Use it to see how many people can afford the current price.',
   },
   walletSum: { ko: '{n}명 · 산 사람 {buyers}명 · 지금 값으로 살 수 있는 사람 {can}명', en: '{n} members · {buyers} have bought · {can} can afford one now' },
   walletCols: { ko: '주최 · 정성 · 참여', en: 'host · care · turnout' },

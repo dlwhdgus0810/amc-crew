@@ -8,7 +8,7 @@ import { nameOf, UNKNOWN_NAME } from '../store';
 import type { Locale } from '../i18n';
 
 /**
- * 테마 상점 — 코인 셈과 사기.
+ * 테마 상점 — 달란트 셈과 사기.
  *
  * **잔액이라는 칸은 없다.** 활동에서 번 값을 매번 계산하고 산 값을 뺀다. 잔액을 들고
  * 있으면 모임이 지워지거나 점수 규칙이 바뀔 때(실제로 정성 점수를 10·5에서 7·3으로
@@ -23,7 +23,7 @@ export interface Wallet {
   join: number;
   contrib: number;
   /**
-   * 지금 켜 둔 것들 — 각각 코인 20이 붙어 있다 (lib/shop.ts의 COIN).
+   * 지금 켜 둔 것들 — 각각 달란트 20이 붙어 있다 (lib/shop.ts의 COIN).
    *
    * 활동이 아니라 상태다. 끄면 그만큼 도로 빠지고, 잔액이 음수가 되면 산 테마도 잠긴다.
    */
@@ -34,12 +34,12 @@ export interface Wallet {
   apology: boolean;
   /** 손님이 전원 후기를 쓴 모임의 손님 수 — 한 명당 COIN.reviewedAll이 붙는다 */
   reviewed: number;
-  /** 활동으로 번 코인 */
+  /** 활동으로 번 달란트 */
   earned: number;
-  /** 여태 쓴 코인 */
+  /** 여태 쓴 달란트 */
   spent: number;
   /**
-   * 지금 쓸 수 있는 코인. **마이너스로 내려갈 수 있다.**
+   * 지금 쓸 수 있는 달란트. **마이너스로 내려갈 수 있다.**
    *
    * 사진 20으로 테마를 산 다음 사진을 내리면 번 값만 20 줄고 산 값은 그대로라 여기가
    * 음수가 된다. 0으로 자르지 않는 것이 요점이다 — 자르면 「사고 나서 내리기」가
@@ -91,7 +91,7 @@ export async function walletOf(userId: string): Promise<Wallet> {
  * 이 사람이 지금 이 테마를 쓸 수 있나 — **레이아웃이 화면마다 묻는다.**
  *
  * 고른 테마는 쿠키에 있어서(lib/card-theme.ts) 서버가 확인하지 않으면 산 적 없는
- * 테마도 손으로 넣어 쓸 수 있고, 사진을 내려 코인이 마이너스가 된 뒤에도 계속 쓰게
+ * 테마도 손으로 넣어 쓸 수 있고, 사진을 내려 달란트가 마이너스가 된 뒤에도 계속 쓰게
  * 된다 — 그러면 잠근다는 말이 아무것도 안 잠근다.
  *
  * 값이 붙은 테마일 때만 부른다. 기본 테마인 사람은 여기까지 오지 않는다.
@@ -141,7 +141,7 @@ export interface WalletRow extends Wallet {
  * walletOf를 사람마다 부르면 쉰 명에 이백 번 넘게 물어보게 된다. 여기서는 사람 수와
  * 무관하게 다섯 번이다 (점수 셋 + 산 기록 + 이름).
  *
- * **한 번도 활동이 없는 사람도 넣는다.** 코인 0으로 명단에 있어야 「이 사람은 왜 없지」가
+ * **한 번도 활동이 없는 사람도 넣는다.** 달란트 0으로 명단에 있어야 「이 사람은 왜 없지」가
  * 안 생긴다 — 관리자 화면은 전체를 보는 자리다.
  */
 export async function allWallets(locale: Locale): Promise<WalletRow[]> {
@@ -196,6 +196,6 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
         owned: mine.map((r) => r.theme),
       };
     })
-    /* 산 사람을 먼저, 그다음 코인 많은 순 — 관리자가 보러 오는 이유가 그 둘이다 */
+    /* 산 사람을 먼저, 그다음 달란트 많은 순 — 관리자가 보러 오는 이유가 그 둘이다 */
     .sort((a, b) => b.owned.length - a.owned.length || b.left - a.left || a.name.localeCompare(b.name));
 }

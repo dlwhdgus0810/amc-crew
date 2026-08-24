@@ -9,11 +9,11 @@ import { Msg } from './i18n';
  */
 
 /**
- * 코인 = 주최 + 정성 + 참여×3 + 프로필 사진 20.
+ * 달란트 = 주최 + 정성 + 참여×3 + 프로필 사진 20.
  *
  * 참여에만 3을 곱하는 이유는 눈금이 달라서다. 주최는 「연 모임의 참가 인원 합」이라
  * 한 번에 열댓 점씩 오르고 정성도 사진·댓글로 쌓이는데, 참여는 한 번 나가야 1이다.
- * 그대로 더하면 나가기만 하는 사람은 코인이 거의 안 모인다 — 이 앱이 제일 바라는
+ * 그대로 더하면 나가기만 하는 사람은 달란트가 거의 안 모인다 — 이 앱이 제일 바라는
  * 행동이 그건데도.
  *
  * **프로필 사진 20은 「올린 상」이 아니라 「달고 있는 동안 붙는 값」이다.** 지급 기록을
@@ -21,7 +21,7 @@ import { Msg } from './i18n';
  * 올렸다 바로 내려서 점수만 챙기는 길이 아예 안 생긴다. 이 앱의 다른 점수가 전부
  * 그렇게 되어 있다 (lib/db/shop.ts 첫머리의 「잔액이라는 칸은 없다」).
  *
- * 정성 점수가 아니라 **코인에만** 얹는다. 정성 등급 문턱이 10·20·35·60인데 재 본
+ * 정성 점수가 아니라 **달란트에만** 얹는다. 정성 등급 문턱이 10·20·35·60인데 재 본
  * 최고가 26점이라, 여기에 20을 더하면 사진 올린 사람이 두 칸을 한 번에 건너뛰고
  * 등급 알림이 무더기로 나간다. 순위표와 등급은 활동을 재는 자리로 두고, 사진은
  * 상점에서만 값을 갖게 한다.
@@ -36,7 +36,7 @@ export const COIN = {
    * 한 명이라도 안 쓰면 0이다. 「많이 받으면 조금씩」이 아니라 「다 받으면」이라야 호스트가
    * 마지막 한 사람에게 한 번 더 물어볼 이유가 생긴다.
    *
-   * 재 보니 끝난 모임 서른한 개 중 전원이 쓴 것은 하나다(손님 여섯 → 30코인). 드물게
+   * 재 보니 끝난 모임 서른한 개 중 전원이 쓴 것은 하나다(손님 여섯 → 30달란트). 드물게
    * 터지는 값이라 크게 잡아도 될 것 같았지만, 열이면 한 번에 60이라 테마 하나를 넘는다.
    */
   reviewedAll: 5,
@@ -62,7 +62,7 @@ export const COIN = {
 export const APOLOGY_BEFORE = new Date('2026-08-22T00:00:00-05:00');
 
 /**
- * 코인을 셀 재료.
+ * 달란트를 셀 재료.
  *
  * 뒤의 셋은 활동이 아니라 **지금 켜 둔 상태**다 — 프로필 사진이 있는지, 알림을 받는지,
  * 새 소식을 받는지. 「한 번 했으니 준다」가 아니라 「켜 둔 동안 붙어 있다」라서, 끄면
@@ -84,7 +84,7 @@ export interface CoinSource {
 }
 
 export function coinsEarned(s: CoinSource): number {
-  // 주최 점수만 .5 단위다 (호스트가 둘이면 나눠 갖는다) — 코인은 정수로 끊는다
+  // 주최 점수만 .5 단위다 (호스트가 둘이면 나눠 갖는다) — 달란트는 정수로 끊는다
   return (
     Math.floor(
       s.host * COIN.host + s.contrib * COIN.contrib + s.join * COIN.join + s.reviewed * COIN.reviewedAll
@@ -145,11 +145,11 @@ export function priceOf(theme: string): number | null {
 export const SHOP_T = {
   title: { ko: '테마 상점', en: 'Theme shop', es: 'Tienda de temas' },
   intro: {
-    ko: '모임을 열고, 나가고, 남긴 만큼 코인이 쌓여요. 프로필 사진을 올려 두면 거기에 20이 더 붙고요. 쌓인 코인으로 테마를 삽니다.',
-    en: 'Hosting, showing up and leaving things behind all earn coins — and a profile photo adds 20 on top. Spend them on themes.',
-    es: 'Organizar, aparecer y dejar huella dan monedas, y una foto de perfil suma 20 más. Gástalas en temas.',
+    ko: '모임을 열고, 나가고, 남긴 만큼 달란트가 쌓여요. 프로필 사진을 올려 두면 거기에 20이 더 붙고요. 쌓인 달란트로 테마를 삽니다.',
+    en: 'Hosting, showing up and leaving things behind all earn talents — and a profile photo adds 20 on top. Spend them on themes.',
+    es: 'Organizar, aparecer y dejar huella dan talentos, y una foto de perfil suma 20 más. Gástalos en temas.',
   },
-  /** 코인이 어디서 왔는지 — 안 적으면 숫자가 어디서 나온 건지 알 수 없다 */
+  /** 달란트가 어디서 왔는지 — 안 적으면 숫자가 어디서 나온 건지 알 수 없다 */
   breakdown: { ko: '주최 {host} + 정성 {contrib} + 참여 {join}×3', en: 'Hosting {host} + contribution {contrib} + attendance {join}×3', es: 'Anfitrión {host} + aportes {contrib} + asistencia {join}×3' },
   /** 켜 둔 것에 붙는 줄 — 위 breakdown 뒤에 이어 붙는다 */
   fromAvatar: { ko: '프로필 사진 +{n}', en: 'profile photo +{n}', es: 'foto de perfil +{n}' },
@@ -159,57 +159,57 @@ export const SHOP_T = {
   fromReviewed: { ko: '후기 만석 +{n}', en: 'every guest reviewed +{n}', es: 'todos reseñaron +{n}' },
   /** 아직 안 켠 것 — 프로필로 데려간다 */
   offPush: {
-    ko: '알림을 켜면 {n}코인이 더 붙어요',
-    en: 'Turning notifications on adds {n} coins',
-    es: 'Activar los avisos suma {n} monedas',
+    ko: '알림을 켜면 {n}달란트가 더 붙어요',
+    en: 'Turning notifications on adds {n} talents',
+    es: 'Activar los avisos suma {n} talentos',
   },
   offNews: {
-    ko: '새 소식 알림을 켜면 {n}코인이 더 붙어요',
-    en: 'Turning news alerts on adds {n} coins',
-    es: 'Activar los avisos de novedades suma {n} monedas',
+    ko: '새 소식 알림을 켜면 {n}달란트가 더 붙어요',
+    en: 'Turning news alerts on adds {n} talents',
+    es: 'Activar los avisos de novedades suma {n} talentos',
   },
   /**
-   * 사진이 없는 사람에게 뜨는 권유. 코인이 걸려 있다는 것을 여기서 처음 알게 된다.
+   * 사진이 없는 사람에게 뜨는 권유. 달란트가 걸려 있다는 것을 여기서 처음 알게 된다.
    *
    * 힌트 글씨가 아니라 누를 수 있는 칸으로 둔다 — 읽고 나서 어디로 가야 하는지가
    * 같이 있어야 실제로 올리러 간다.
    */
   avatarNudge: {
-    ko: '프로필에 사진을 올리면 {n}코인이 바로 더 붙어요',
-    en: 'A photo on your profile adds {n} coins right away',
-    es: 'Una foto en tu perfil suma {n} monedas al momento',
+    ko: '프로필에 사진을 올리면 {n}달란트가 바로 더 붙어요',
+    en: 'A photo on your profile adds {n} talents right away',
+    es: 'Una foto en tu perfil suma {n} talentos al momento',
   },
   avatarNudgeMore: {
-    ko: '{price}코인짜리 테마까지 {n}만 남아요. 사진을 내리면 그 {avatar}코인도 같이 빠져요.',
-    en: 'That leaves {n} to go for a {price}-coin theme. Take the photo down and those {avatar} go with it.',
-    es: 'Así te faltarían {n} para un tema de {price}. Si quitas la foto, esas {avatar} se van con ella.',
+    ko: '{price}달란트짜리 테마까지 {n}만 남아요. 사진을 내리면 그 {avatar}달란트도 같이 빠져요.',
+    en: 'That leaves {n} to go for a {price}-talent theme. Take the photo down and those {avatar} go with it.',
+    es: 'Así te faltarían {n} para un tema de {price}. Si quitas la foto, esos {avatar} se van con ella.',
   },
   /** 사진 없이도 이미 살 수 있는 사람 — 거리를 적으면 「0만 남아요」가 된다 */
   avatarNudgeEnough: {
-    ko: '사진을 내리면 그 {n}코인도 같이 빠져요.',
+    ko: '사진을 내리면 그 {n}달란트도 같이 빠져요.',
     en: 'Take the photo down later and those {n} go with it.',
-    es: 'Si quitas la foto más adelante, esas {n} se van con ella.',
+    es: 'Si quitas la foto más adelante, esos {n} se van con ella.',
   },
   /** 알림·새 소식용 — 사진과 달리 「내리면」이 아니라 「끄면」이다 */
   offAgain: {
-    ko: '나중에 끄면 그 {n}코인도 같이 빠져요.',
+    ko: '나중에 끄면 그 {n}달란트도 같이 빠져요.',
     en: 'Turn it off later and those {n} go with it.',
-    es: 'Si lo desactivas más adelante, esas {n} se van con ello.',
+    es: 'Si lo desactivas más adelante, esos {n} se van con ello.',
   },
   avatarGo: { ko: '프로필로 가기 →', en: 'Go to my profile →', es: 'Ir a mi perfil →' },
   /** 잔액이 마이너스라 산 테마가 잠긴 상태 */
   lockedTitle: { ko: '테마가 잠겨 있어요', en: 'Your themes are locked', es: 'Tus temas están bloqueados' },
   lockedBody: {
-    ko: '프로필 사진을 내려서 코인이 {n} 모자라요. 사진을 다시 올리면 바로 풀려요.',
+    ko: '프로필 사진을 내려서 달란트가 {n} 모자라요. 사진을 다시 올리면 바로 풀려요.',
     en: 'Taking your profile photo down left you {n} short. Put it back and they unlock right away.',
     es: 'Al quitar tu foto de perfil te faltan {n}. Vuelve a ponerla y se desbloquean al momento.',
   },
-  balance: { ko: '가진 코인', en: 'Your coins', es: 'Tus monedas' },
-  spent: { ko: '쓴 코인 {n}', en: '{n} spent', es: '{n} gastadas' },
-  price: { ko: '{n} 코인', en: '{n} coins', es: '{n} monedas' },
+  balance: { ko: '가진 달란트', en: 'Your talents', es: 'Tus talentos' },
+  spent: { ko: '쓴 달란트 {n}', en: '{n} spent', es: '{n} gastados' },
+  price: { ko: '{n} 달란트', en: '{n} talents', es: '{n} talentos' },
   buy: { ko: '사기', en: 'Buy', es: 'Comprar' },
   owned: { ko: '가지고 있어요', en: 'Owned', es: 'La tienes' },
-  short: { ko: '{n} 코인 모자라요', en: '{n} more to go', es: 'Te faltan {n}' },
+  short: { ko: '{n} 달란트 모자라요', en: '{n} more to go', es: 'Te faltan {n}' },
   buying: { ko: '사는 중…', en: 'Buying…', es: 'Comprando…' },
   bought: { ko: '샀어요. 관리자 화면에서 골라 쓸 수 있어요.', en: 'Bought — pick it on the admin screen.', es: 'Comprada: elígela en la pantalla de administración.' },
   failed: { ko: '사지 못했어요.', en: 'Couldn’t buy that.', es: 'No se pudo comprar.' },

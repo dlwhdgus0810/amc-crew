@@ -47,14 +47,14 @@ const T = {
     es: 'Se recorta cuadrada y se guarda a 256px. Si la quitas, se usa tu inicial.',
   },
   photoCoinOff: {
-    ko: '사진을 올리면 상점 코인 {n}이 붙어요.',
-    en: 'A photo adds {n} shop coins.',
-    es: 'Una foto suma {n} monedas de la tienda.',
+    ko: '사진을 올리면 상점 달란트 {n}이 붙어요.',
+    en: 'A photo adds {n} shop talents.',
+    es: 'Una foto suma {n} talentos de la tienda.',
   },
   photoCoinOn: {
-    ko: '이 사진으로 상점 코인 {n}이 붙어 있어요. 지우면 그 {n}도 같이 빠져요.',
-    en: 'This photo is carrying {n} shop coins. Remove it and those {n} go too.',
-    es: 'Esta foto lleva {n} monedas de la tienda. Si la quitas, esas {n} se van también.',
+    ko: '이 사진으로 상점 달란트 {n}이 붙어 있어요. 지우면 그 {n}도 같이 빠져요.',
+    en: 'This photo is carrying {n} shop talents. Remove it and those {n} go too.',
+    es: 'Esta foto lleva {n} talentos de la tienda. Si la quitas, esos {n} se van también.',
   },
   photoSaved: { ko: '프로필 사진을 저장했어요.', en: 'Profile photo saved.', es: 'Foto de perfil guardada.' },
   photoRemoved: { ko: '프로필 사진을 지웠어요.', en: 'Profile photo removed.', es: 'Foto de perfil quitada.' },
@@ -157,9 +157,9 @@ const T = {
     es: 'Aún no tienes temas. Consíguelos en la tienda, arriba en esta pantalla.',
   },
   themeLocked: {
-    ko: '프로필 사진을 내려서 코인이 {n} 모자라요. 산 테마는 그동안 잠겨 있어요 — 사진을 다시 올리면 바로 풀려요.',
-    en: 'Taking your profile photo down left you {n} coins short, so your themes are locked for now. Put it back and they unlock right away.',
-    es: 'Al quitar tu foto de perfil te faltan {n} monedas, así que tus temas están bloqueados. Vuelve a ponerla y se desbloquean al momento.',
+    ko: '프로필 사진을 내려서 달란트가 {n} 모자라요. 산 테마는 그동안 잠겨 있어요 — 사진을 다시 올리면 바로 풀려요.',
+    en: 'Taking your profile photo down left you {n} talents short, so your themes are locked for now. Put it back and they unlock right away.',
+    es: 'Al quitar tu foto de perfil te faltan {n} talentos, así que tus temas están bloqueados. Vuelve a ponerla y se desbloquean al momento.',
   },
   themeBasic: { ko: '기본', en: 'Default', es: 'Predeterminado' },
   themeHint: {
@@ -168,14 +168,14 @@ const T = {
     es: 'Tu elección solo se ve en este dispositivo.',
   },
   notifCoin: {
-    ko: '알림을 켜 두면 상점 코인 {n}이 붙어요. 끄면 그 {n}도 같이 빠져요.',
-    en: 'Keeping notifications on carries {n} shop coins. Turn them off and those {n} go too.',
-    es: 'Tener los avisos activados suma {n} monedas de la tienda; si los desactivas, se van.',
+    ko: '알림을 켜 두면 상점 달란트 {n}이 붙어요. 끄면 그 {n}도 같이 빠져요.',
+    en: 'Keeping notifications on carries {n} shop talents. Turn them off and those {n} go too.',
+    es: 'Tener los avisos activados suma {n} talentos de la tienda; si los desactivas, se van.',
   },
   newsCoin: {
-    ko: '새 소식 알림을 켜 두면 상점 코인 {n}이 붙어요. 끄면 그 {n}도 같이 빠져요.',
-    en: 'Keeping news alerts on carries {n} shop coins. Turn them off and those {n} go too.',
-    es: 'Tener los avisos de novedades activados suma {n} monedas; si los desactivas, se van.',
+    ko: '새 소식 알림을 켜 두면 상점 달란트 {n}이 붙어요. 끄면 그 {n}도 같이 빠져요.',
+    en: 'Keeping news alerts on carries {n} shop talents. Turn them off and those {n} go too.',
+    es: 'Tener los avisos de novedades activados suma {n} talentos; si los desactivas, se van.',
   },
   newsAlertsOn: { ko: '새 소식 알림 받는 중', en: 'Getting update alerts', es: 'Recibes avisos de novedades' },
   newsAlertsOff: { ko: '새 소식 알림 꺼짐', en: 'Update alerts off', es: 'Avisos de novedades desactivados' },
@@ -249,9 +249,9 @@ export interface ProfileInitial {
   /** 상점에서 산 테마 (lib/db/shop.ts) — 고를 수 있는 것이 이것뿐이다 */
   owned: string[];
   /**
-   * 코인이 모자란 만큼 (0이면 정상).
+   * 달란트가 모자란 만큼 (0이면 정상).
    *
-   * 프로필 사진에 붙은 20코인으로 테마를 산 다음 사진을 내리면 잔액이 음수가 된다.
+   * 프로필 사진에 붙은 20달란트로 테마를 산 다음 사진을 내리면 잔액이 음수가 된다.
    * 그동안은 산 테마도 못 고른다 — 그러지 않으면 「사고 나서 내리기」가 공짜가 된다.
    */
   themeShort: number;
@@ -571,7 +571,7 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
             </span>
             <span className="hint">{t(T.photoHint)}</span>
             {/*
-              * 사진에 코인이 걸려 있다는 것을 아는 자리가 상점뿐이면, 정작 사진을 올리는
+              * 사진에 달란트가 걸려 있다는 것을 아는 자리가 상점뿐이면, 정작 사진을 올리는
               * 이 화면에서는 아무 이유도 안 보인다. 지우는 버튼 바로 옆에 「내리면 같이
               * 빠진다」까지 적어 두는 것도 그래서다 — 지운 뒤에 알면 늦다.
               */}

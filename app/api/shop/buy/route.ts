@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 /**
  * 테마 사기.
  *
- * 코인은 자기 활동에서 나온 값을 자기가 쓰는 것이라 로그인만 보면 된다. 무엇을 살 수
+ * 달란트는 자기 활동에서 나온 값을 자기가 쓰는 것이라 로그인만 보면 된다. 무엇을 살 수
  * 있는지(THEME_PRICE)와 잔액이 되는지는 lib/db/shop.ts가 판정한다.
  */
 export async function POST(req: NextRequest) {

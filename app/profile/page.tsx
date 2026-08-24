@@ -48,7 +48,7 @@ async function ProfileData() {
         unread,
         hidden,
         owned: wallet.owned,
-        /* 사진을 내려 코인이 마이너스면 산 테마도 못 고른다 (lib/db/shop.ts의 themeAllowed) */
+        /* 사진을 내려 달란트가 마이너스면 산 테마도 못 고른다 (lib/db/shop.ts의 themeAllowed) */
         themeShort: wallet.left < 0 ? -wallet.left : 0,
         theme: toCardTheme(jar.get(CARD_THEME_COOKIE)?.value),
       }}

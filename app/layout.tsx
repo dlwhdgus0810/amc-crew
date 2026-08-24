@@ -197,7 +197,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const picked = toCardTheme(previewing ?? jar.get(CARD_THEME_COOKIE)?.value);
   /*
    * 값이 붙은 테마는 **여기서 자격을 확인한다.** 고른 테마는 쿠키라서, 확인하지 않으면
-   * 산 적 없는 테마를 손으로 넣어 쓸 수 있고 프로필 사진을 내려 코인이 마이너스가 된
+   * 산 적 없는 테마를 손으로 넣어 쓸 수 있고 프로필 사진을 내려 달란트가 마이너스가 된
    * 뒤에도 계속 쓰게 된다 (lib/db/shop.ts의 themeAllowed).
    *
    * 기본 테마인 사람은 priceOf가 null이라 여기서 바로 끝난다 — DB를 안 부른다.

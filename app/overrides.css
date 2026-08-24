@@ -3194,8 +3194,8 @@ body:has(.sky-scope.night) .tabbar a.active {
   font-size: 12px;
 }
 
-/* ── 관리자: 코인과 산 테마 ───────────────────────────────────
-   쉰 명이 넘는 줄이라 한 줄에 다 담되, 눈이 먼저 가야 할 것(이름·산 테마·남은 코인)만
+/* ── 관리자: 달란트와 산 테마 ───────────────────────────────────
+   쉰 명이 넘는 줄이라 한 줄에 다 담되, 눈이 먼저 가야 할 것(이름·산 테마·남은 달란트)만
    또렷하게 두고 셈의 재료는 흐리게 깐다. */
 .wallet-list { list-style: none; margin: 0; padding: 0; }
 .wallet-list li {
@@ -3212,5 +3212,5 @@ body:has(.sky-scope.night) .tabbar a.active {
 }
 .wallet-parts { font-size: 11.5px; font-weight: 400; color: var(--text-dim); font-family: var(--mono); }
 .wallet-coins { flex: none; font-family: var(--mono); font-size: 14px; }
-/* 쓴 코인은 남은 값 옆에 작게 — 「원래 얼마였나」가 궁금할 때만 필요하다 */
+/* 쓴 달란트는 남은 값 옆에 작게 — 「원래 얼마였나」가 궁금할 때만 필요하다 */
 .wallet-coins em { font-style: normal; font-size: 11px; color: var(--text-dim); margin-left: 5px; }

@@ -185,9 +185,9 @@ export const E = {
   },
   settleNotFound: { ko: '정산을 찾을 수 없어요.', en: 'No settle-up found.', es: 'No hay ninguna cuenta que dividir.' },
   shopShort: {
-    ko: '코인이 모자라요.',
-    en: 'Not enough coins.',
-    es: 'No tienes monedas suficientes.',
+    ko: '달란트가 모자라요.',
+    en: 'Not enough talents.',
+    es: 'No tienes talentos suficientes.',
   },
   shopOwned: {
     ko: '이미 가지고 있는 테마예요.',
