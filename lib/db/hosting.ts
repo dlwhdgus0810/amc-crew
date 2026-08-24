@@ -92,6 +92,70 @@ function points() {
 `;
 }
 
+/**
+ * 손님이 **전원** 후기를 쓴 모임의 손님 수 — 호스트가 받을 몫.
+ *
+ * 값을 매기지 않고 사람 수만 센다. 한 명당 몇 코인인지는 lib/shop.ts가 정한다 —
+ * 여기는 「무엇을 세는가」만 알고, 얼마인지는 상점의 규칙이다.
+ *
+ * 호스트가 둘이면 나눠 갖는다. 안 나누면 공동 호스트를 세우는 것만으로 값이 두 배가
+ * 되어서, 실제로 같이 여는 것과 이름만 얹는 것을 가릴 수 없다 (주최 점수와 같은 규칙).
+ *
+ * 손님 수 하한은 두지 않았다. 손님 하나짜리 모임을 여러 개 여는 쪽이 이득이 되지
+ * 않겠느냐는 걱정은 있었는데, 한 명이면 5코인이라 모임을 열고 후기를 받는 수고에
+ * 비하면 남는 게 없다. 하한을 두면 오히려 진짜 둘이 만난 모임이 억울해진다.
+ *
+ * 「끝난 모임」과 「익명 아닌 카테고리」는 주최 점수와 같은 잣대를 쓴다 — 여기서 따로
+ * 정하면 두 숫자가 언젠가 어긋난다.
+ */
+function reviewedShares() {
+  return sql`
+  WITH done AS (
+    SELECT p.id, p.author_id, p.co_host_id,
+      CASE WHEN p.co_host_id IS NULL THEN 1 ELSE 2 END AS hosts
+    FROM posts p
+    WHERE p.visibility = 'public' AND p.deleted_at IS NULL AND ${notAnonymous()} AND ${endedSql()}
+  ), guests AS (
+    SELECT d.id, count(*)::numeric AS n
+    FROM done d JOIN post_participants pp ON pp.post_id = d.id
+    WHERE pp.user_id <> d.author_id AND (d.co_host_id IS NULL OR pp.user_id <> d.co_host_id)
+    GROUP BY 1
+  ), wrote AS (
+    SELECT d.id, count(*)::numeric AS n
+    FROM done d JOIN post_reviews rv ON rv.post_id = d.id AND rv.deleted_at IS NULL
+    WHERE rv.user_id <> d.author_id AND (d.co_host_id IS NULL OR rv.user_id <> d.co_host_id)
+    GROUP BY 1
+  ), full_house AS (
+    SELECT d.author_id, d.co_host_id, d.hosts, g.n AS guests
+    FROM done d JOIN guests g ON g.id = d.id JOIN wrote w ON w.id = d.id
+    WHERE g.n > 0 AND w.n >= g.n
+  ), shares AS (
+    SELECT author_id AS user_id, guests / hosts AS n FROM full_house
+    UNION ALL
+    SELECT co_host_id AS user_id, guests / hosts AS n FROM full_house WHERE co_host_id IS NOT NULL
+  )
+  SELECT user_id, SUM(n)::float8 AS people
+  FROM shares
+  GROUP BY user_id
+`;
+}
+
+/** 한 사람의 몫 — 없으면 0 */
+export async function reviewedSharesFor(userId: string): Promise<number> {
+  const db = await getDb();
+  const rows = resultRows(
+    await db.execute(sql`SELECT people FROM (${reviewedShares()}) s WHERE user_id = ${userId}`)
+  );
+  return Number(rows[0]?.people ?? 0);
+}
+
+/** 회원 전부의 몫 — 관리자 화면이 한 번에 그린다 */
+export async function allReviewedShares(): Promise<Map<string, number>> {
+  const db = await getDb();
+  const rows = resultRows(await db.execute(sql`SELECT user_id, people FROM (${reviewedShares()}) s`));
+  return new Map(rows.map((r) => [String(r.user_id), Number(r.people)]));
+}
+
 /** 주어진 사람들의 주최 점수 (한 번도 안 열었으면 빠진다 — 호출부에서 ?? 0) */
 export async function hostCountsFor(userIds: string[]): Promise<Map<string, number>> {
   const admins = new Set(adminIds());

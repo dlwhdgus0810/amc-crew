@@ -2,7 +2,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { themePurchases, users } from './schema';
 import { unstable_cache } from 'next/cache';
-import { allBoardScores, boardScoresFor } from './hosting';
+import { allBoardScores, allReviewedShares, boardScoresFor, reviewedSharesFor } from './hosting';
 import { APOLOGY_BEFORE, coinsEarned, priceOf } from '../shop';
 import { nameOf, UNKNOWN_NAME } from '../store';
 import type { Locale } from '../i18n';
@@ -32,6 +32,8 @@ export interface Wallet {
   news: boolean;
   /** 장애를 겪은 회원인지 — lib/shop.ts의 APOLOGY_BEFORE 참고 */
   apology: boolean;
+  /** 손님이 전원 후기를 쓴 모임의 손님 수 — 한 명당 COIN.reviewedAll이 붙는다 */
+  reviewed: number;
   /** 활동으로 번 코인 */
   earned: number;
   /** 여태 쓴 코인 */
@@ -56,8 +58,9 @@ const wasHere = sql<boolean>`(${users.createdAt} < ${APOLOGY_BEFORE})`;
 
 export async function walletOf(userId: string): Promise<Wallet> {
   const db = await getDb();
-  const [scores, rows, me] = await Promise.all([
+  const [scores, reviewed, rows, me] = await Promise.all([
     boardScoresFor(userId),
+    reviewedSharesFor(userId),
     db.select().from(themePurchases).where(eq(themePurchases.userId, userId)),
     db
       .select({ avatar: hasAvatar, push: hasPush, news: users.newsAlerts, apology: wasHere })
@@ -68,10 +71,11 @@ export async function walletOf(userId: string): Promise<Wallet> {
   const push = me[0]?.push ?? false;
   const news = me[0]?.news ?? false;
   const apology = me[0]?.apology ?? false;
-  const earned = coinsEarned({ ...scores, avatar, push, news, apology });
+  const earned = coinsEarned({ ...scores, reviewed, avatar, push, news, apology });
   const spent = rows.reduce((n, r) => n + r.coins, 0);
   return {
     ...scores,
+    reviewed,
     avatar,
     push,
     news,
@@ -142,8 +146,9 @@ export interface WalletRow extends Wallet {
  */
 export async function allWallets(locale: Locale): Promise<WalletRow[]> {
   const db = await getDb();
-  const [scores, buys, people] = await Promise.all([
+  const [scores, reviewedAll, buys, people] = await Promise.all([
     allBoardScores(),
+    allReviewedShares(),
     db.select().from(themePurchases),
     db
       .select({
@@ -173,12 +178,14 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
       const push = p.push ?? false;
       const news = p.news ?? false;
       const apology = p.apology ?? false;
-      const earned = coinsEarned({ ...s, avatar, push, news, apology });
+      const reviewed = reviewedAll.get(p.id) ?? 0;
+      const earned = coinsEarned({ ...s, reviewed, avatar, push, news, apology });
       const spent = mine.reduce((n, r) => n + r.coins, 0);
       return {
         id: p.id,
         name: nameOf(p, UNKNOWN_NAME, locale),
         ...s,
+        reviewed,
         avatar,
         push,
         news,

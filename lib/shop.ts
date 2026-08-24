@@ -26,7 +26,25 @@ import { Msg } from './i18n';
  * 등급 알림이 무더기로 나간다. 순위표와 등급은 활동을 재는 자리로 두고, 사진은
  * 상점에서만 값을 갖게 한다.
  */
-export const COIN = { host: 1, contrib: 1, join: 3, avatar: 20, push: 10, news: 10, apology: 30 } as const;
+export const COIN = {
+  host: 1,
+  contrib: 1,
+  join: 3,
+  /**
+   * 손님이 **전원** 후기를 쓴 모임에서, 손님 한 명당 호스트가 받는 값.
+   *
+   * 한 명이라도 안 쓰면 0이다. 「많이 받으면 조금씩」이 아니라 「다 받으면」이라야 호스트가
+   * 마지막 한 사람에게 한 번 더 물어볼 이유가 생긴다.
+   *
+   * 재 보니 끝난 모임 서른한 개 중 전원이 쓴 것은 하나다(손님 여섯 → 30코인). 드물게
+   * 터지는 값이라 크게 잡아도 될 것 같았지만, 열이면 한 번에 60이라 테마 하나를 넘는다.
+   */
+  reviewedAll: 5,
+  avatar: 20,
+  push: 10,
+  news: 10,
+  apology: 30,
+} as const;
 
 /**
  * 장애 보상을 받는 사람 — **이 시각보다 먼저 들어온 회원.**
@@ -54,6 +72,8 @@ export interface CoinSource {
   host: number;
   join: number;
   contrib: number;
+  /** 손님이 전원 후기를 쓴 모임의 손님 수 (호스트가 둘이면 나눈 몫) */
+  reviewed: number;
   avatar: boolean;
   /** 이 기기든 저 기기든 알림을 하나라도 받도록 켜 뒀는지 */
   push: boolean;
@@ -66,7 +86,9 @@ export interface CoinSource {
 export function coinsEarned(s: CoinSource): number {
   // 주최 점수만 .5 단위다 (호스트가 둘이면 나눠 갖는다) — 코인은 정수로 끊는다
   return (
-    Math.floor(s.host * COIN.host + s.contrib * COIN.contrib + s.join * COIN.join) +
+    Math.floor(
+      s.host * COIN.host + s.contrib * COIN.contrib + s.join * COIN.join + s.reviewed * COIN.reviewedAll
+    ) +
     (s.avatar ? COIN.avatar : 0) +
     (s.push ? COIN.push : 0) +
     (s.news ? COIN.news : 0) +
@@ -134,6 +156,7 @@ export const SHOP_T = {
   fromPush: { ko: '알림 +{n}', en: 'notifications +{n}', es: 'avisos +{n}' },
   fromNews: { ko: '새 소식 알림 +{n}', en: 'news alerts +{n}', es: 'avisos de novedades +{n}' },
   fromApology: { ko: '장애 보상 +{n}', en: 'outage make-good +{n}', es: 'compensación por la caída +{n}' },
+  fromReviewed: { ko: '후기 만석 +{n}', en: 'every guest reviewed +{n}', es: 'todos reseñaron +{n}' },
   /** 아직 안 켠 것 — 프로필로 데려간다 */
   offPush: {
     ko: '알림을 켜면 {n}코인이 더 붙어요',

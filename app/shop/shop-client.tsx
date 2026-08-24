@@ -107,6 +107,8 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
           {w.avatar && ` + ${t(SHOP_T.fromAvatar, { n: COIN.avatar })}`}
           {w.push && ` + ${t(SHOP_T.fromPush, { n: COIN.push })}`}
           {w.news && ` + ${t(SHOP_T.fromNews, { n: COIN.news })}`}
+          {w.reviewed > 0 &&
+            ` + ${t(SHOP_T.fromReviewed, { n: Math.floor(w.reviewed * COIN.reviewedAll) })}`}
           {w.apology && ` + ${t(SHOP_T.fromApology, { n: COIN.apology })}`}
           {w.spent > 0 && ` · ${t(SHOP_T.spent, { n: w.spent })}`}
         </span>
