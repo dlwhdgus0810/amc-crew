@@ -61,6 +61,19 @@ html[data-season='leaf'] .car-card .car-idx {
   color: color-mix(in oklab, #E8B44C calc(var(--card-lit, 1) * 100%), currentColor);
 }
 
+/* ══ 둘러보기 2열 타일 · 캘린더 · 모아보기 ════════════════════
+   같은 카드인데 폭이 절반이다. 곡률을 18px 그대로 두면 작은 타일에서 귀퉁이가
+   과하게 둥글고, 명암도 같은 세기로 얹으면 좁은 면에서 더 짙게 읽힌다.
+   그래서 곡률은 14px, 어두운 쪽은 0.30에서 0.26으로 내린다. */
+html[data-season='leaf'] .cat-grid.tile .car-card {
+  border-radius: 14px;
+}
+html[data-season='leaf'] .cat-grid.tile .car-card::after {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 50%),
+    linear-gradient(150deg, rgba(20, 26, 15, 0) 42%, rgba(20, 26, 15, 0.26) 100%);
+}
+
 /* 잎 곡률을 안 쓰므로 카드 위 버튼도 원이다. 눌린 것은 금색으로 찬다 */
 html[data-season='leaf'] .car-card .car-icon {
   border-radius: 999px;
