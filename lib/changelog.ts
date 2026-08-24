@@ -31,6 +31,40 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-24T10:50',
+    notable: true,
+    title: { ko: '테마 상점이 프로필로 옮겨갔어요', en: 'The theme shop moved to your profile' },
+    items: [
+      {
+        ko: '테마 상점으로 가는 버튼을 리더보드에서 프로필로 옮겼어요. 프로필 위쪽, 알림 왼쪽이에요. 산 테마를 고르는 자리가 프로필이라 사러 가는 입구도 거기가 맞겠더라고요.',
+        en: 'The way into the theme shop moved off the leaderboard and onto your profile — top of the page, left of the bell. The theme you bought is picked on your profile, so that’s where the door belongs too.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-24T10:40',
+    notable: true,
+    title: { ko: '코인이 달란트가 됐어요', en: '“Coins” are now “talents”' },
+    items: [
+      {
+        ko: '상점에서 쓰는 말이 「코인」에서 「달란트」로 바뀌었어요. 이름만 바뀐 거예요 — 세는 방식도, 테마 값도, 지금까지 쌓인 것도 그대로예요. 지난 새 소식 글에는 「코인」이라고 적혀 있는데, 그때 쓰던 말이라 그냥 뒀어요.',
+        en: 'The shop’s currency is called “talents” now instead of “coins.” Only the word changed — how it’s counted, what themes cost, and everything you’ve already piled up all stay as they were. Older posts here still say “coins”; that’s what it was called then, so we left them alone.',
+      },
+      {
+        ko: '손님이 전원 후기를 쓴 모임은 호스트에게 손님 한 명당 5달란트가 붙어요. 여섯이 모여 호스트 빼고 다섯이 다 썼으면 25예요. 한 명이라도 안 썼으면 안 붙고요.',
+        en: 'When every guest at a meetup has written a review, the host gets 5 talents per guest. Six people, five guests, all five wrote: 25. One missing and it doesn’t count.',
+      },
+      {
+        ko: '「다 썼을 때만」으로 한 이유는, 그래야 남은 한 사람이 의미가 있어서예요. 다녀온 모임에 후기가 비어 있으면 한 줄 남겨주세요 — 호스트한테도 값이 돼요.',
+        en: 'It’s all or nothing so that the one missing review actually matters. If you’ve been to a meetup and haven’t written yours, leave a line — it’s worth something to your host, too.',
+      },
+      {
+        ko: '호스트가 둘인 모임은 나눠 가져요. 정성 점수는 안 오르고 상점 달란트에만 붙어요 — 상점의 달란트 내역에 「후기 만석 +n」으로 보여요.',
+        en: 'Two hosts split it. It doesn’t move your care score — it only adds talents, and it shows up in the shop’s breakdown as “every guest reviewed.”',
+      },
+    ],
+  },
+  {
     at: '2026-08-23T01:30',
     notable: true,
     title: { ko: '어제 오후부터 앱이 안 열렸어요', en: 'The app was down from yesterday afternoon' },

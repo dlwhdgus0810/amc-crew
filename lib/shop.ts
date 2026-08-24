@@ -211,7 +211,10 @@ export const SHOP_T = {
   owned: { ko: '가지고 있어요', en: 'Owned', es: 'La tienes' },
   short: { ko: '{n} 달란트 모자라요', en: '{n} more to go', es: 'Te faltan {n}' },
   buying: { ko: '사는 중…', en: 'Buying…', es: 'Comprando…' },
-  bought: { ko: '샀어요. 관리자 화면에서 골라 쓸 수 있어요.', en: 'Bought — pick it on the admin screen.', es: 'Comprada: elígela en la pantalla de administración.' },
+  /* 산 테마를 고르는 자리는 프로필의 「카드 테마」다 — 상점이 처음 생겼을 때는
+     관리자 화면뿐이라 그렇게 적혀 있었는데, 프로필에 선택기가 생기고도 그대로 남아
+     있었다. 산 사람을 못 여는 화면으로 보내면 산 것이 어디 갔는지 알 수 없다 */
+  bought: { ko: '샀어요. 프로필의 「카드 테마」에서 골라 쓸 수 있어요.', en: 'Bought — pick it under “Card theme” in your profile.', es: 'Comprada: elígela en «Tema de tarjetas», en tu perfil.' },
   failed: { ko: '사지 못했어요.', en: 'Couldn’t buy that.', es: 'No se pudo comprar.' },
   soon: { ko: '추가 예정', en: 'Coming soon', es: 'Próximamente' },
   preview: { ko: '미리보기', en: 'Preview', es: 'Vista previa' },
