@@ -103,16 +103,83 @@ html[data-season='leaf'] .cat-grid.tile .car-card::after {
     linear-gradient(150deg, rgba(20, 26, 15, 0) 42%, rgba(20, 26, 15, 0.26) 100%);
 }
 
-/* 잎 곡률을 안 쓰므로 카드 위 버튼도 원이다. 눌린 것은 금색으로 찬다 */
+/* ══ 카드 위 버튼 ═════════════════════════════════════════════
+   꺼짐 — 즐겨찾기는 점선 원, 구독은 실선 원에 종.
+   켜짐 — 테두리가 사라지고 잎이 원 자리를 채운다. 즐겨찾기는 단풍, 구독은 은행이다.
+
+   **색이 아니라 모양으로 가른다.** 둘 다 잎인데 하나는 갈래가 다섯이고 하나는 부채라,
+   색이 묻히는 카드에서도 어느 쪽이 눌렸는지 보인다.
+
+   즐겨찾기와 구독을 가르는 것은 :has(.star)다 — 별을 품은 쪽이 즐겨찾기다
+   (app/category-card.tsx). 마크업이 바뀌면 여기가 먼저 조용히 어긋난다.
+
+   보이는 원은 30px인데 눌리는 데는 ::after로 44px이다. 34px 그대로 두면 잎이 원을
+   꽉 채워서 테두리와 붙는다. */
 html[data-season='leaf'] .car-card .car-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
-  border: 1px solid rgba(240, 212, 140, 0.5);
+  border: 1px solid rgba(240, 212, 140, 0.42);
   background: none;
+  color: rgba(240, 212, 140, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.14s ease-out, border-color 0.14s linear;
 }
+/* 눌리는 자리를 44px로 넓힌다 — 그림은 그대로 30px이다 */
+html[data-season='leaf'] .car-card .car-icon::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+/* 즐겨찾기만 점선이다. 구독의 종과 짝이 되면 빈 원 둘이 같은 버튼으로 보인다 */
+html[data-season='leaf'] .car-card .car-icon:has(.star) {
+  border-style: dashed;
+}
+/* 별 글자는 안 쓴다 — 켜지면 잎이 들어올 자리다. 이름은 aria-label이 말한다 */
+html[data-season='leaf'] .car-card .car-icon:has(.star) > * {
+  display: none;
+}
+/* 켜짐 — 테두리를 지우고 잎으로 채운다 */
 html[data-season='leaf'] .car-card .car-icon.on {
   border-color: transparent;
-  background: #E8B44C;
-  color: #2A3320;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+html[data-season='leaf'] .car-card .car-icon.on > * {
+  display: none;
+}
+html[data-season='leaf'] .car-card .car-icon.on:has(.star) {
+  background-image: var(--lf-fav);
+}
+html[data-season='leaf'] .car-card .car-icon.on:not(:has(.star)) {
+  background-image: var(--lf-sub);
+  /* 부채가 단풍보다 면이 넓어서 같은 크기로 두면 더 커 보인다 */
+  background-size: 88%;
+}
+/* 누르는 순간 잎이 한 번 기운다 */
+html[data-season='leaf'] .car-card .car-icon:active {
+  transform: rotate(-8deg);
+}
+
+/*
+ * 카드 위 버튼에 들어가는 잎 둘 — 배경에 떨어지는 잎과 **따로 그린다.**
+ *
+ * 떨어지는 잎은 크림 바탕 하나만 등지는데, 버튼은 카드 위에 있어서 열일곱 장의 색을
+ * 다 등진다. 계단이 짙은 초록에서 금색까지 가므로 한 색으로는 어느 한쪽에서 묻힌다 —
+ * 도안이 준 노란 잎을 금색 카드(#C9A227)에 얹어 보니 거의 안 보였다.
+ *
+ * 그래서 채움을 밝게 올리고 **짙은 테두리를 1.4로 두른다.** 세 카드(제일 어두운 것,
+ * 가운데, 금색)에 얹어 견줘 보고 고른 값이다. 1.8은 어두운 카드에서 잎이 아니라
+ * 검은 얼룩이 된다.
+ */
+:root {
+  --lf-fav: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%2022V16.4M12%2016.4%206.6%2016.1%209.6%2013.4%202.6%2011.4%208.1%209.9%205.4%205.3%2010%207.4%2012%202.4l2%205%204.6-2.1-2.7%204.6%205.5%201.5-7%202%203%202.7z%27%20fill=%27%23D24B22%27%20stroke=%27%234A1608%27%20stroke-width=%271.4%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --lf-sub: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%2021.8v-7M12%2014.8c-7.2%200-10-5-6.2-9.4%202%201.2%203.8%202.2%205.2%203.4l1%201.2%201-1.2c1.4-1.2%203.2-2.2%205.2-3.4%203.8%204.4%201%209.4-6.2%209.4z%27%20fill=%27%23F0C64E%27%20stroke=%27%234A3408%27%20stroke-width=%271.4%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
 }
 
 /* ══ 탭바 ═════════════════════════════════════════════════════
