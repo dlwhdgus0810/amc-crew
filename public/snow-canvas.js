@@ -23,7 +23,32 @@
  */
 if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', class extends HTMLElement {
   connectedCallback() {
-    if (this._on) return;
+    /*
+     * 다시 붙을 때는 처음부터 만들지 않고 **루프와 관찰자를 되살린다.**
+     *
+     * disconnectedCallback이 rAF를 끊고 ResizeObserver·IntersectionObserver를 떼 놓는데,
+     * 그냥 돌아가면 그 셋 다 안 돌아온다. 그러면 이 카드는 영영 멈춘 채로 남는다 —
+     * 폭을 다시 재는 것도 ResizeObserver와 루프 안에 있어서 this.w가 0으로 굳고,
+     * 칸이 여덟 개(최소값)에 머문다.
+     *
+     * 실제로 그랬다. React가 화면을 흘려보내며(streaming) 카드를 제자리에 꽂을 때
+     * 노드를 옮기는데, 옮기는 동안 disconnect → connect가 일어난다. 상점 미리보기에서
+     * 눈이 하나도 안 쌓이던 것이 이것이었다 — 재 보니 카드 폭은 354인데 this.w는 0,
+     * 칸은 여덟이었다. 같은 화면의 <rain-canvas>는 354로 제대로 잡혀 있었다.
+     * public/rain-canvas.js는 카드를 끌어 순서를 바꿀 때 같은 일을 겪고 이미 이렇게
+     * 되살리고 있었는데, 이 파일이 나중에 나오면서 그 대목만 빠졌다.
+     *
+     * last를 지우는 것은 dt 때문이다 — 떨어져 있던 시간이 그대로 dt가 되면 돌아오는
+     * 첫 프레임에 눈이 뛴다 (2.5로 잘리긴 하지만 그것도 눈에 띈다).
+     */
+    if (this._on) {
+      this.last = 0;
+      if (this.ro) this.ro.observe(this);
+      if (this.io) this.io.observe(this);
+      this.fit();
+      if (this.still) this.draw(); else this.loop();
+      return;
+    }
     this._on = true;
     const root = this.attachShadow({ mode: 'open' });
     this.cv = document.createElement('canvas');

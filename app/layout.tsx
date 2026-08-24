@@ -21,6 +21,7 @@ import { I18nProvider } from './i18n';
 import { SessionProvider } from './session';
 import { getViewer } from '@/lib/session';
 import SeasonDeco from './season-deco';
+import SeasonScripts from './season-scripts';
 import { CardThemeProvider } from './card-theme-context';
 import { themeAllowed } from '@/lib/db/shop';
 import { priceOf } from '@/lib/shop';
@@ -259,6 +260,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {/* 배경 장식 — 장식을 깔 화면은 season-deco.tsx가 경로로 골랐다 */}
         <SeasonDeco kind={themeDeco(cardTheme)} />
+        {/*
+          * 위 <head>의 <script>는 **문서를 새로 열 때만** 실행된다. 테마를 고르면
+          * router.refresh()로 화면만 갈아끼우는데, 그때 새로 내려온 <script>는 head에
+          * 꽂히기만 하고 실행되지 않는다 — 색은 바로 바뀌는데 비·눈만 안 오던 이유다.
+          * 이 컴포넌트가 그 자리에서 직접 붙인다 (app/season-scripts.tsx).
+          */}
+        <SeasonScripts
+          kind={
+            themeDeco(cardTheme) === 'rain' && RAIN_MODE === 'canvas'
+              ? 'rain'
+              : themeDeco(cardTheme) === 'snow' && SNOW_MODE === 'canvas'
+                ? 'snow'
+                : null
+          }
+        />
         <I18nProvider locale={locale}>
           <CardThemeProvider value={cardTheme}>
           <SessionProvider value={viewer}>
