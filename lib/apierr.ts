@@ -189,6 +189,11 @@ export const E = {
     en: 'Not enough talents.',
     es: 'No tienes talentos suficientes.',
   },
+  themeNotOwned: {
+    ko: '이 테마를 아직 안 사셨어요.',
+    en: 'You don’t own that theme yet.',
+    es: 'Todavía no tienes ese tema.',
+  },
   shopOwned: {
     ko: '이미 가지고 있는 테마예요.',
     en: 'You already own that theme.',

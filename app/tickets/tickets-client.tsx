@@ -9,7 +9,8 @@ import type { Msg } from '@/lib/i18n';
 interface Ticket {
   id: string;
   number: number;
-  kind: 'feature' | 'improve' | 'bug' | 'other' | 'cheer';
+  /* theme은 상점에서만 들어온다 — 아래 KINDS(고르는 칸)에는 없다 */
+  kind: 'feature' | 'improve' | 'bug' | 'other' | 'cheer' | 'theme';
   title: string;
   body: string | null;
   status: 'open' | 'planned' | 'done' | 'declined';

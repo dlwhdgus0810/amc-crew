@@ -215,6 +215,37 @@ export const SHOP_T = {
   spent: { ko: '쓴 달란트 {n}', en: '{n} spent', es: '{n} gastados' },
   price: { ko: '{n} 달란트', en: '{n} talents', es: '{n} talentos' },
   buy: { ko: '사기', en: 'Buy', es: 'Comprar' },
+  /*
+   * 산 테마에만 열리는 칸 — 「이건 이렇게 하면 좋겠다」를 그 자리에서 적는다.
+   *
+   * 건의함(/tickets)이 이미 있는데 여기 따로 두는 이유는 **자리** 때문이다. 테마를
+   * 보다가 아쉬운 곳이 눈에 띄는 것이지, 아쉬운 곳이 떠올라서 건의함을 여는 것이
+   * 아니다. 적은 것은 결국 건의함으로 간다 — 답도 거기서 받는다.
+   */
+  suggest: { ko: '디자인 건의', en: 'Suggest a change', es: 'Sugerir un cambio' },
+  suggestIntro: {
+    ko: '이 테마에서 고쳤으면 하는 것을 적어주세요. 건의함으로 들어가고, 답도 거기서 볼 수 있어요.',
+    en: 'Tell us what you’d change about this theme. It goes to the suggestion box, and the reply comes back there.',
+    es: 'Cuéntanos qué cambiarías de este tema. Va al buzón de sugerencias y allí verás la respuesta.',
+  },
+  suggestTitlePh: {
+    ko: '한 줄로 — 예: 낙엽이 글씨를 가려요',
+    en: 'One line — e.g. the leaves cover the text',
+    es: 'Una línea: p. ej. las hojas tapan el texto',
+  },
+  suggestBodyPh: {
+    ko: '더 적을 것이 있으면 (없어도 돼요)',
+    en: 'Anything more? (optional)',
+    es: '¿Algo más? (opcional)',
+  },
+  suggestSend: { ko: '보내기', en: 'Send', es: 'Enviar' },
+  suggestSending: { ko: '보내는 중…', en: 'Sending…', es: 'Enviando…' },
+  suggestClose: { ko: '접기', en: 'Close', es: 'Cerrar' },
+  suggestDone: {
+    ko: '건의 #{n}으로 접수됐어요. 건의함에서 진행 상황을 볼 수 있어요.',
+    en: 'Filed as ticket #{n} — track it in the suggestion box.',
+    es: 'Registrada como n.º {n}: síguela en el buzón de sugerencias.',
+  },
   owned: { ko: '가지고 있어요', en: 'Owned', es: 'La tienes' },
   short: { ko: '{n} 달란트 모자라요', en: '{n} more to go', es: 'Te faltan {n}' },
   buying: { ko: '사는 중…', en: 'Buying…', es: 'Comprando…' },

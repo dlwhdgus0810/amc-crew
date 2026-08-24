@@ -35,7 +35,7 @@ interface Ticket {
   id: string;
   number: number;
   userName: string;
-  kind: 'feature' | 'improve' | 'bug' | 'other' | 'cheer';
+  kind: 'feature' | 'improve' | 'bug' | 'other' | 'cheer' | 'theme';
   title: string;
   body: string | null;
   status: 'open' | 'planned' | 'done' | 'declined';
@@ -48,6 +48,8 @@ const TICKET_KIND_LABEL: Record<Ticket['kind'], Msg> = {
   bug: { ko: '오류', en: 'Broken' },
   other: { ko: '기타', en: 'Other' },
   cheer: { ko: '쪽지', en: 'Note' },
+  /* 제목 앞에 어느 테마인지 붙어 온다 — 「가을 · 단풍」처럼 */
+  theme: { ko: '테마 디자인', en: 'Theme design' },
 };
 
 const TICKET_STATUS_LABEL: Record<Ticket['status'], Msg> = {

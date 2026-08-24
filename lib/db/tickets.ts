@@ -7,10 +7,15 @@ import { notifyAdmins } from './admin-notify';
 import { sendPush } from '../push';
 import { Msg, pick, toLocale } from '../i18n';
 
-export type TicketKind = 'feature' | 'improve' | 'bug' | 'other' | 'cheer';
+export type TicketKind = 'feature' | 'improve' | 'bug' | 'other' | 'cheer' | 'theme';
 export type TicketStatus = 'open' | 'planned' | 'done' | 'declined';
 
-export const TICKET_KINDS: TicketKind[] = ['feature', 'improve', 'bug', 'other', 'cheer'];
+/*
+ * theme은 **건의함 화면에 안 나온다.** 상점에서 그 테마를 산 사람에게만 보이는 칸으로
+ * 들어오고(app/shop/shop-client.tsx), 산 사람인지는 서버가 다시 본다
+ * (app/api/tickets/route.ts). 여기 목록은 「들어와도 되는 값」이라 함께 둔다.
+ */
+export const TICKET_KINDS: TicketKind[] = ['feature', 'improve', 'bug', 'other', 'cheer', 'theme'];
 export const TICKET_STATUSES: TicketStatus[] = ['open', 'planned', 'done', 'declined'];
 
 /** 알림 문구 (수신자 언어로 렌더된다) */

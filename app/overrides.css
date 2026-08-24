@@ -3214,3 +3214,35 @@ body:has(.sky-scope.night) .tabbar a.active {
 .wallet-coins { flex: none; font-family: var(--mono); font-size: 14px; }
 /* 쓴 달란트는 남은 값 옆에 작게 — 「원래 얼마였나」가 궁금할 때만 필요하다 */
 .wallet-coins em { font-style: normal; font-size: 11px; color: var(--text-dim); margin-left: 5px; }
+
+
+/* ── 상점: 산 테마에 여는 디자인 건의 칸 ─────────────────────
+   .shop-item은 flex-wrap 가로줄이다. flex-basis를 100%로 두면 이 칸이 통째로
+   다음 줄로 내려가면서 폭을 다 쓴다 — 값·버튼과 같은 줄에 두면 입력칸이 손톱만 해진다. */
+.shop-ask {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+.shop-ask input,
+.shop-ask textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 15px; /* 16px 아래면 아이폰이 칸을 누를 때 화면을 확대한다 — 15는 이 앱의 다른 칸과 같은 값 */
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm, 10px);
+  padding: 10px 12px;
+}
+.shop-ask textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+.shop-ask button {
+  align-self: flex-start;
+}

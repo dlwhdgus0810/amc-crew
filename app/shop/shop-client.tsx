@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useT } from '../i18n';
+import { useViewer } from '../session';
 import { CARD_THEMES, PREVIEW_COOKIE, PREVIEW_MAX_AGE, type CardTheme } from '@/lib/card-theme';
 import { COIN, PLANNED, SHOP_T, SHOP_THEMES, SOON_THEMES, THEME_PRICE } from '@/lib/shop';
 import type { Wallet } from '@/lib/db/shop';
@@ -25,11 +26,57 @@ const PREVIEW_H = 1080;
 
 export default function ShopClient({ wallet }: { wallet: Wallet }) {
   const t = useT();
+  /*
+   * 관리자는 안 산 테마에도 건의를 넣을 수 있다 — 서버도 같이 그렇게 본다
+   * (app/api/tickets/route.ts). 테마를 손보는 사람이 정작 못 적으면 곤란하고,
+   * 관리자 화면의 선택기가 이미 안 산 테마도 걸어 보는 자리다.
+   */
+  const { isAdmin } = useViewer();
   const [w, setW] = useState(wallet);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   /** 지금 미리보고 있는 테마 — null이면 창이 닫혀 있다 */
   const [preview, setPreview] = useState<CardTheme | null>(null);
+  /** 디자인 건의 칸이 열려 있는 테마 — 한 번에 하나만 연다 */
+  const [asking, setAsking] = useState<CardTheme | null>(null);
+  const [askTitle, setAskTitle] = useState('');
+  const [askBody, setAskBody] = useState('');
+  const [askBusy, setAskBusy] = useState(false);
+
+  function openAsk(theme: CardTheme) {
+    setAsking(theme);
+    setAskTitle('');
+    setAskBody('');
+    setMsg(null);
+  }
+
+  /*
+   * 건의는 **건의함으로 보낸다** (/api/tickets, kind: 'theme').
+   *
+   * 이 화면에 따로 담아 두지 않는다. 답을 주고 상태를 바꾸는 자리가 건의함이라,
+   * 여기에 또 쌓으면 같은 글이 두 군데 있고 답은 한 군데에만 달린다.
+   *
+   * 산 사람인지는 서버가 다시 본다 — 아래 버튼이 가진 테마에만 뜨지만 그건 화면일 뿐이다.
+   */
+  async function sendAsk(theme: CardTheme) {
+    setAskBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'theme', theme, title: askTitle.trim(), body: askBody.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(SHOP_T.failed));
+      setMsg({ type: 'ok', text: t(SHOP_T.suggestDone, { n: String(data.number) }) });
+      setAsking(null);
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(SHOP_T.failed) });
+    } finally {
+      setAskBusy(false);
+    }
+  }
 
   /*
    * 미리보기는 진짜 홈 화면을 iframe으로 띄운다 (app/preview/page.tsx).
@@ -190,7 +237,13 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
                 {price == null ? (
                   <span className="shop-soon">{t(SHOP_T.soon)}</span>
                 ) : owned ? (
-                  <span className="shop-owned">{t(SHOP_T.owned)}</span>
+                  <>
+                    <span className="shop-owned">{t(SHOP_T.owned)}</span>
+                    {/* 산 사람에게만 열리는 칸 — 서버도 같은 것을 다시 본다 */}
+                    <button className="link-btn" onClick={() => (asking === key ? setAsking(null) : openAsk(key))}>
+                      {asking === key ? t(SHOP_T.suggestClose) : t(SHOP_T.suggest)}
+                    </button>
+                  </>
                 ) : (
                   <>
                     <span className="shop-price">{t(SHOP_T.price, { n: price })}</span>
@@ -198,9 +251,35 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
                       {busy === key ? t(SHOP_T.buying) : t(SHOP_T.buy)}
                     </button>
                     {short > 0 && <span className="hint">{t(SHOP_T.short, { n: short })}</span>}
+                    {isAdmin && (
+                      <button className="link-btn" onClick={() => (asking === key ? setAsking(null) : openAsk(key))}>
+                        {asking === key ? t(SHOP_T.suggestClose) : t(SHOP_T.suggest)}
+                      </button>
+                    )}
                   </>
                 )}
               </span>
+              {asking === key && (
+                <span className="shop-ask">
+                  <span className="hint">{t(SHOP_T.suggestIntro)}</span>
+                  <input
+                    value={askTitle}
+                    onChange={(e) => setAskTitle(e.target.value)}
+                    placeholder={t(SHOP_T.suggestTitlePh)}
+                    maxLength={80}
+                  />
+                  <textarea
+                    value={askBody}
+                    onChange={(e) => setAskBody(e.target.value)}
+                    placeholder={t(SHOP_T.suggestBodyPh)}
+                    rows={3}
+                    maxLength={2000}
+                  />
+                  <button disabled={askBusy || askTitle.trim().length === 0} onClick={() => void sendAsk(key)}>
+                    {askBusy ? t(SHOP_T.suggestSending) : t(SHOP_T.suggestSend)}
+                  </button>
+                </span>
+              )}
             </li>
           );
         })}
