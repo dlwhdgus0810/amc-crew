@@ -174,22 +174,25 @@ html[data-season='leaf'] .car-card .card-season {
   background-position: center;
   background-size: contain;
   /*
-   * **셋을 따로 돌린다.** 떨어지는 것(translate) · 제자리 도는 것(rotate) · 앞뒤로
-   * 나부끼는 것(transform)이 각각 다른 주기라서 서로 안 맞물린다. 하나로 묶으면
-   * 도는 속도가 낙하 속도에 매인다 — 32초에 걸쳐 한 바퀴는 도는 것으로 안 보인다.
+   * **애니메이션은 하나다. transform 하나만 움직인다.**
    *
-   * translate·rotate를 transform과 따로 쓸 수 있어야 한다 (Safari 14.1 / Chrome 104).
-   * 못 읽는 기기에서는 낙하와 회전이 빠지고 나부낌만 남는다 — 멈춘 잎이 되지만
-   * 깨지지는 않는다.
+   * 떨어지기·돌기·뒤집기를 translate / rotate / transform 세 갈래로 나눠 뒀었다.
+   * 주기를 따로 줄 수 있어서 움직임은 그쪽이 나은데, 폰에서 화면을 넘기는 동안
+   * 낙엽이 멈췄다.
+   *
+   * 사파리가 합성기(compositor)에 올려 주는 것은 transform·opacity·filter 셋뿐이다.
+   * translate·rotate는 따로 쓸 수 있는 새 속성이라 아직 그 셋에 안 든다. 합성기에
+   * 못 올라간 애니메이션은 메인 스레드에서 도는데, iOS는 손가락으로 밀어 굴러가는
+   * 동안 메인 스레드 일을 미뤄 둔다 — 그래서 스크롤하는 내내 잎이 서 있었다.
+   *
+   * 그래서 셋을 transform 하나에 다시 합쳤다. 주기를 따로 줄 수 없게 된 대신,
+   * 낙하 한 번 안에 도는 바퀴 수(7)와 뒤집는 횟수(5)를 넣어 같은 속도를 낸다 —
+   * 32초짜리는 4.6초에 한 바퀴, 42초짜리는 6초에 한 바퀴다.
    */
   --fall: 32s;
-  --spin: 5.2s;
-  --flip: 3.4s;
-  animation:
-    kk-leaf-fall var(--fall) linear infinite,
-    kk-leaf-spin var(--spin) linear infinite,
-    kk-leaf-flip var(--flip) ease-in-out infinite;
+  animation: kk-leaf-fall var(--fall) linear infinite;
 }
+
 /*
  * 도안 여덟 종을 두 번씩 돌려 쓴다. 8n으로 나누므로 1~8과 9~16이 같은 순서인데,
  * 아래 주기가 3n·2n·5n으로 갈라져서 같은 잎 둘이 나란히 떨어지지는 않는다.
@@ -204,46 +207,51 @@ html[data-season='leaf'] .season-leaf > span:nth-child(8n + 5) { background-imag
 html[data-season='leaf'] .season-leaf > span:nth-child(8n + 6) { background-image: var(--lf-sharp); width: 23px; height: 23px; }
 html[data-season='leaf'] .season-leaf > span:nth-child(8n + 7) { background-image: var(--lf-toothed); width: 22px; height: 22px; }
 html[data-season='leaf'] .season-leaf > span:nth-child(8n + 8) { background-image: var(--lf-small); width: 19px; height: 19px; }
-/* 세 주기를 낱개마다 어긋나게 둔다 — 값이 규칙적이면 열여섯 장이 한 덩어리로 움직인다 */
-.season-leaf > span:nth-child(3n)     { --fall: 38s; --spin: 6.4s; --flip: 4.1s; }
-.season-leaf > span:nth-child(3n + 1) { --fall: 42s; --spin: 4.3s; --flip: 2.8s; }
-.season-leaf > span:nth-child(4n)     { --spin: 7.1s; }
-.season-leaf > span:nth-child(5n + 2) { --flip: 5.3s; }
+/* 낙하 주기를 낱개마다 어긋나게 둔다 — 값이 규칙적이면 열여섯 장이 한 덩어리로 움직인다 */
+.season-leaf > span:nth-child(3n)     { --fall: 38s; }
+.season-leaf > span:nth-child(3n + 1) { --fall: 42s; }
 /* 시작 시각도 흩는다. 음수라 화면을 열자마자 이미 내려오는 중이다 */
 .season-leaf > span:nth-child(2n)     { animation-delay: -9s; }
 .season-leaf > span:nth-child(5n)     { animation-delay: -21s; }
 .season-leaf > span:nth-child(7n)     { animation-delay: -27s; }
 /*
- * 낙하 — 세로는 일정하게, 가로는 좌우로.
+ * 낙하 · 돌기 · 뒤집기를 한 벌에 담는다.
  *
- * 세로 값을 30vh씩 고르게 두고 linear로 돌리므로 내려오는 속도는 변하지 않고, 가로만
- * 26 → -18 → 22 → -30px으로 오간다. 전에는 화면 전체를 내려오는 동안 38px 밀리는 것이
- * 전부여서 기울기 1.3도짜리 거의 직선이었다 — 낙엽이 아니라 빗줄기의 궤적이다.
+ *   세로   0 → 120vh를 고르게. linear라 내려오는 속도가 변하지 않는다.
+ *   가로   ±26px로 두 번 반, 사인 곡선을 따라 오간다.
+ *   돌기   내려오는 동안 일곱 바퀴.
+ *   뒤집기 rotate3d로 ±62도, 다섯 번. 90도를 넘기면 잎이 모로 서서 한 번씩
+ *          사라지는데, 꽃잎처럼 얇은 것은 그게 자연스럽지만 낙엽은 깜빡이는 것으로
+ *          보인다.
+ *
+ * 키프레임이 스물다섯인 이유는 사인 곡선을 꺾은선으로 흉내 내기 때문이다. 뒤집기가
+ * 제일 잦아서(다섯 번) 거기에 맞췄다 — 한 번에 다섯 점이면 꺾인 것이 안 보인다.
+ * 손으로 적은 것이 아니라 만들어 넣은 값이다.
  */
 @keyframes kk-leaf-fall {
-  0%   { translate: 0 0; }
-  25%  { translate: 26px 30vh; }
-  50%  { translate: -18px 60vh; }
-  75%  { translate: 22px 90vh; }
-  100% { translate: -30px 120vh; }
-}
-/*
- * 제자리 돌기 — 5초 남짓에 한 바퀴다.
- *
- * 전에는 낙하 애니메이션 안에 섞여 있어서 32초에 340도, 초당 8~10도였다. 그 속도로는
- * 도는 것이 안 보인다 — 재 보니 한 바퀴에 34초였다.
- */
-@keyframes kk-leaf-spin {
-  to { rotate: 360deg; }
-}
-/*
- * 앞뒤로 나부끼기 — 잎이 면을 보였다 모로 섰다 한다.
- *
- * ±62도까지만 돌린다. 90도를 넘기면 잎이 완전히 모로 서서 한 번씩 사라지는데, 꽃잎처럼
- * 얇은 것은 그게 자연스럽지만(kk-petal-air) 낙엽은 크기가 있어서 깜빡이는 것으로 보인다.
- * 62도면 폭이 절반으로 줄었다 돌아온다.
- */
-@keyframes kk-leaf-flip {
-  0%, 100% { transform: rotate3d(1, 0.5, 0, -62deg); }
-  50%      { transform: rotate3d(1, 0.5, 0, 62deg); }
+  0% { transform: translate3d(0.0px, 0.0vh, 0) rotate(0.0deg) rotate3d(1, 0.5, 0, 0.0deg); }
+  4.17% { transform: translate3d(15.8px, 5.0vh, 0) rotate(105.0deg) rotate3d(1, 0.5, 0, 59.9deg); }
+  8.33% { transform: translate3d(25.1px, 10.0vh, 0) rotate(210.0deg) rotate3d(1, 0.5, 0, 31.0deg); }
+  12.5% { transform: translate3d(24.0px, 15.0vh, 0) rotate(315.0deg) rotate3d(1, 0.5, 0, -43.8deg); }
+  16.67% { transform: translate3d(13.0px, 20.0vh, 0) rotate(420.0deg) rotate3d(1, 0.5, 0, -53.7deg); }
+  20.83% { transform: translate3d(-3.4px, 25.0vh, 0) rotate(525.0deg) rotate3d(1, 0.5, 0, 16.0deg); }
+  25% { transform: translate3d(-18.4px, 30.0vh, 0) rotate(630.0deg) rotate3d(1, 0.5, 0, 62.0deg); }
+  29.17% { transform: translate3d(-25.8px, 35.0vh, 0) rotate(735.0deg) rotate3d(1, 0.5, 0, 16.0deg); }
+  33.33% { transform: translate3d(-22.5px, 40.0vh, 0) rotate(840.0deg) rotate3d(1, 0.5, 0, -53.7deg); }
+  37.5% { transform: translate3d(-9.9px, 45.0vh, 0) rotate(945.0deg) rotate3d(1, 0.5, 0, -43.8deg); }
+  41.67% { transform: translate3d(6.7px, 50.0vh, 0) rotate(1050.0deg) rotate3d(1, 0.5, 0, 31.0deg); }
+  45.83% { transform: translate3d(20.6px, 55.0vh, 0) rotate(1155.0deg) rotate3d(1, 0.5, 0, 59.9deg); }
+  50% { transform: translate3d(26.0px, 60.0vh, 0) rotate(1260.0deg) rotate3d(1, 0.5, 0, 0.0deg); }
+  54.17% { transform: translate3d(20.6px, 65.0vh, 0) rotate(1365.0deg) rotate3d(1, 0.5, 0, -59.9deg); }
+  58.33% { transform: translate3d(6.7px, 70.0vh, 0) rotate(1470.0deg) rotate3d(1, 0.5, 0, -31.0deg); }
+  62.5% { transform: translate3d(-9.9px, 75.0vh, 0) rotate(1575.0deg) rotate3d(1, 0.5, 0, 43.8deg); }
+  66.67% { transform: translate3d(-22.5px, 80.0vh, 0) rotate(1680.0deg) rotate3d(1, 0.5, 0, 53.7deg); }
+  70.83% { transform: translate3d(-25.8px, 85.0vh, 0) rotate(1785.0deg) rotate3d(1, 0.5, 0, -16.0deg); }
+  75% { transform: translate3d(-18.4px, 90.0vh, 0) rotate(1890.0deg) rotate3d(1, 0.5, 0, -62.0deg); }
+  79.17% { transform: translate3d(-3.4px, 95.0vh, 0) rotate(1995.0deg) rotate3d(1, 0.5, 0, -16.0deg); }
+  83.33% { transform: translate3d(13.0px, 100.0vh, 0) rotate(2100.0deg) rotate3d(1, 0.5, 0, 53.7deg); }
+  87.5% { transform: translate3d(24.0px, 105.0vh, 0) rotate(2205.0deg) rotate3d(1, 0.5, 0, 43.8deg); }
+  91.67% { transform: translate3d(25.1px, 110.0vh, 0) rotate(2310.0deg) rotate3d(1, 0.5, 0, -31.0deg); }
+  95.83% { transform: translate3d(15.8px, 115.0vh, 0) rotate(2415.0deg) rotate3d(1, 0.5, 0, -59.9deg); }
+  100% { transform: translate3d(0.0px, 120.0vh, 0) rotate(2520.0deg) rotate3d(1, 0.5, 0, -0.0deg); }
 }
