@@ -19,8 +19,20 @@
     'snow-field',
     class extends HTMLElement {
       connectedCallback() {
+        /*
+         * 다시 붙을 때는 처음부터 만들지 않고 **크기부터 다시 잰다.**
+         *
+         * fit이 innerWidth·innerHeight를 읽는데 그 둘은 떨어져 있는 동안에도 바뀐다
+         * (창 크기, 화면 돌리기, 주소창 접힘). resize는 붙어 있는 동안만 듣고 있으므로
+         * 떨어져 있을 때 온 것은 못 듣는다 — 그대로 돌아가면 낡은 크기로 그린다.
+         * 재는 값이 화면 크기와 프레임당 눈송이 수(rate)다.
+         *
+         * loop의 첫 줄이 `if (!this.w || !this.h) return`이라 크기가 0으로 남으면
+         * 루프가 도는 채로 아무 일도 안 한다 — 되살아난 것처럼 보이는데 눈은 안 온다.
+         */
         if (this._on) {
           this.last = 0;
+          this.fit();
           this.measure();
           if (!matchMedia('(prefers-reduced-motion: reduce)').matches) this.loop();
           return;
