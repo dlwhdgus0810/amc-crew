@@ -115,35 +115,11 @@ html[data-season='leaf'] .car-card .car-icon.on {
   color: #2A3320;
 }
 
-/* ══ 머리줄 띠 · 탭바 ═════════════════════════════════════════
-   **다른 세 시즌 테마는 화면 껍데기를 안 건드린다.** 단풍만 건드리는 이유는 카드가
-   짙어져서다 — 벚꽃·장마·겨울은 카드가 바탕보다 조금 진한 정도인데, 여기는 거의
-   검은 초록이라 크림 바탕 위에 카드만 뚝 떨어져 있으면 종이에 붙인 스티커가 된다.
-   머리줄이 같은 초록이면 카드가 그 아래에서 이어져 나온 것으로 읽힌다.
-
-   좌우 여백을 뚫는 이유는 띠여야 하기 때문이다. .container가 18px(넓은 화면 28·40px)
-   물려 두는데 그 안에 그리면 띠가 아니라 가운데 놓인 판이 된다. 화면 끝까지 닿게 하고
-   아래 두 귀퉁이만 둥글린다.
-
-   위로도 --page-top만큼 되물려 상단 바에 붙인다. 사이가 뜨면 띠가 아니라 판이다. */
-html[data-season='leaf'] .page-head {
-  margin-top: calc(-1 * var(--page-top));
-  margin-left: -18px;
-  margin-right: -18px;
-  padding: calc(var(--page-top) + 12px) 18px 16px;
-  background: linear-gradient(150deg, #3F4E2E, #2A3320);
-  color: #EFE3C4;
-  border-radius: 0 0 18px 18px;
-}
-html[data-season='leaf'] .page-head h1 {
-  color: #F0D48C;
-}
-@media (min-width: 700px) {
-  html[data-season='leaf'] .page-head { margin-left: -28px; margin-right: -28px; padding-left: 28px; padding-right: 28px; }
-}
-@media (min-width: 1100px) {
-  html[data-season='leaf'] .page-head { margin-left: -40px; margin-right: -40px; padding-left: 40px; padding-right: 40px; }
-}
+/* ══ 탭바 ═════════════════════════════════════════════════════
+   도안은 상세 헤더에 짙은 초록 띠도 두는데, 그건 안 넣는다. .page-head는 프로필·
+   리더보드·둘러보기가 같이 쓰는 줄이고 지금은 배경 없는 제목 줄이다 — 거기에 띠를
+   깔면 세 화면의 머리 모양이 한꺼번에 바뀐다. 나머지 세 시즌 테마는 화면 껍데기를
+   건드리지 않으니 단풍만 다른 화면이 된다. */
 
 /*
  * 탭바는 **크림 그라데이션만** 가져온다.
