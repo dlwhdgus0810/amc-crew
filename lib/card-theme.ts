@@ -110,6 +110,13 @@ export interface CardThemeDef {
   tokens?: SeasonTokens;
 }
 
+/*
+ * **적은 순서가 곧 화면 순서다.** 관리자 화면의 선택기(app/admin/page.tsx)가
+ * Object.keys를 그대로 쓰고, 프로필의 선택기도 이 순서로 줄을 세운다.
+ *
+ * 색 테마 여덟이 먼저, 시즌 테마 넷이 뒤다. 시즌은 봄·여름·가을·겨울 차례로 둔다 —
+ * 만든 차례(벚꽃·장마·겨울·가을)로 두면 겨울과 가을이 뒤바뀌어 있다.
+ */
 export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
   default: {
     label: { ko: '기본', en: 'Default', es: 'Predeterminado' },
@@ -256,36 +263,6 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       deco: 'rain',
     },
   },
-  winter: {
-    label: { ko: '겨울 · 눈', en: 'Winter · Snow', es: 'Invierno · Nieve' },
-    note: {
-      ko: '눈 쌓인 아침 같은 청회색 테마. 카드 위 가장자리에 눈이 얹히고 실제로 쌓여요.',
-      en: 'Slate blue like a snowed-in morning; snow settles on the top edge of each card and actually piles up.',
-      es: 'Azul pizarra de mañana nevada; la nieve se posa en el borde superior de cada tarjeta y se acumula.',
-    },
-    stops: ['#3D5878', '#6E88A6', '#9CB4C8', '#CFDCE6'],
-    tokens: {
-      bg: '#EEF2F6',
-      surface: '#FFFFFF',
-      surface2: '#E3EAF2',
-      border: '#D8E0E9',
-      borderSoft: '#E8EDF3',
-      text: '#1F2733',
-      textMid: '#5A6672',
-      textDim: '#7C8994',
-      accent: '#3D5878',
-      accentDark: '#2C4159',
-      accentSoft: '#E3EAF2',
-      r: '13px',
-      rSm: '9px',
-      cardR: '13px',
-      tabbarR: '16px',
-      iconStroke: '1.8',
-      /* 시안이 500이라 했는데 이 프로젝트의 시즌 서체는 둘뿐이다 — 획이 가는 쪽을 쓴다 */
-      font: 'dodum',
-      deco: 'snow',
-    },
-  },
   autumn: {
     label: { ko: '가을 · 단풍', en: 'Autumn · Fall leaves', es: 'Otoño · Hojas' },
     note: {
@@ -320,6 +297,36 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       iconStroke: '1.6',
       font: 'batang',
       deco: 'leaf',
+    },
+  },
+  winter: {
+    label: { ko: '겨울 · 눈', en: 'Winter · Snow', es: 'Invierno · Nieve' },
+    note: {
+      ko: '눈 쌓인 아침 같은 청회색 테마. 카드 위 가장자리에 눈이 얹히고 실제로 쌓여요.',
+      en: 'Slate blue like a snowed-in morning; snow settles on the top edge of each card and actually piles up.',
+      es: 'Azul pizarra de mañana nevada; la nieve se posa en el borde superior de cada tarjeta y se acumula.',
+    },
+    stops: ['#3D5878', '#6E88A6', '#9CB4C8', '#CFDCE6'],
+    tokens: {
+      bg: '#EEF2F6',
+      surface: '#FFFFFF',
+      surface2: '#E3EAF2',
+      border: '#D8E0E9',
+      borderSoft: '#E8EDF3',
+      text: '#1F2733',
+      textMid: '#5A6672',
+      textDim: '#7C8994',
+      accent: '#3D5878',
+      accentDark: '#2C4159',
+      accentSoft: '#E3EAF2',
+      r: '13px',
+      rSm: '9px',
+      cardR: '13px',
+      tabbarR: '16px',
+      iconStroke: '1.8',
+      /* 시안이 500이라 했는데 이 프로젝트의 시즌 서체는 둘뿐이다 — 획이 가는 쪽을 쓴다 */
+      font: 'dodum',
+      deco: 'snow',
     },
   },
 };

@@ -101,9 +101,15 @@ export function coinsEarned(s: CoinSource): number {
  *
  * 상점에 없는 테마는 살 수도, 프로필에서 고를 수도 없다.
  */
+/*
+ * **적은 순서가 상점에 서는 순서다** (SHOP_THEMES가 Object.keys를 그대로 쓴다).
+ * 봄·여름·겨울 차례다 — 가을은 아직 안 팔아서 여기 없고, 상점 맨 아래 「준비 중」
+ * 줄에 선다(PLANNED). 열 때는 rainyseason과 winter 사이에 끼워 넣으면 계절 차례가
+ * 그대로 맞는다.
+ */
 export const THEME_PRICE: Partial<Record<CardTheme, number>> = {
-  rainyseason: 50,
   cherryblossom: 50,
+  rainyseason: 50,
   winter: 50,
 };
 

@@ -23,6 +23,9 @@ import {
 /** 저장할 사진 한 변의 길이 (px) */
 const AVATAR_PX = 256;
 
+/** 「카드 테마」를 접어 뒀는지 (기기에만 남는다) */
+const THEME_FOLD_KEY = 'kk-theme-fold';
+
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
   title: { ko: '프로필', en: 'Profile', es: 'Perfil' },
@@ -278,6 +281,31 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
   const refresh = useRefreshSession();
   const [user, setUser] = useState<{ id: string; name: string } | null>(viewer.user);
   const isAdmin = viewer.isAdmin;
+  /*
+   * 「카드 테마」 묶음을 접어 둘 수 있다.
+   *
+   * 프로필은 아래로 긴 화면인데 테마는 한 번 고르면 한동안 안 건드린다. 접은 것을
+   * 기기에 남기는 이유는, 안 남기면 열 때마다 다시 펴져 있어서 접는 뜻이 없어서다.
+   * 서버에 안 둔다 — 이 화면에서 고르는 테마 자체가 기기마다 다르다(쿠키).
+   */
+  const [themeOpen, setThemeOpen] = useState(true);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(THEME_FOLD_KEY) === 'closed') setThemeOpen(false);
+    } catch {
+      // 저장소를 못 읽으면 펴 둔다 — 접힌 채로 못 여는 것보다 낫다
+    }
+  }, []);
+  function toggleTheme() {
+    setThemeOpen((v) => {
+      try {
+        localStorage.setItem(THEME_FOLD_KEY, v ? 'closed' : 'open');
+      } catch {
+        // 못 적으면 이번 화면에서만 접힌다
+      }
+      return !v;
+    });
+  }
   const [nickname, setNickname] = useState<string | null>(viewer.nickname);
   const [nameEn, setNameEn] = useState<string | null>(viewer.nameEn);
   const [nameEnInput, setNameEnInput] = useState('');
@@ -862,7 +890,15 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
         * (lib/card-theme.ts의 CARD_THEME_COOKIE). 서버에 저장하지 않으므로 이 기기에서만
         * 바뀐다.
         */}
-      <h2>{t(T.themeTitle)}</h2>
+      <h2>
+        <button className="collapse-h1" aria-expanded={themeOpen} onClick={toggleTheme}>
+          {t(T.themeTitle)}
+          <span className="collapse-caret" aria-hidden>
+            {themeOpen ? '⌃' : '⌄'}
+          </span>
+        </button>
+      </h2>
+      {themeOpen && (
       <div className="card">
         {initial.owned.length === 0 ? (
           <p className="hint" style={{ margin: 0 }}>{t(T.themeNone)}</p>
@@ -871,7 +907,13 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
           <p className="hint" style={{ margin: 0 }}>{t(T.themeLocked, { n: initial.themeShort })}</p>
         ) : (
           <>
-            {[...initial.owned, 'default'].reverse().map((key) => (
+            {/*
+              * 기본이 맨 위, 그 아래는 **봄·여름·가을·겨울** 차례다.
+              *
+              * initial.owned는 DB가 준 순서라 산 차례로 온다 — 사람마다 줄이 달라진다.
+              * CARD_THEMES에 적힌 순서로 걸러 세우면 누구에게나 같은 차례가 된다.
+              */}
+            {['default', ...(Object.keys(CARD_THEMES) as CardTheme[]).filter((k) => initial.owned.includes(k))].map((key) => (
               <label key={key} className="theme-pick">
                 <input
                   type="radio"
@@ -898,6 +940,7 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
           </>
         )}
       </div>
+      )}
 
       {/*
         * 알림함으로 가는 줄은 제목 옆 버튼으로 올라갔다 (이 파일 위쪽).
