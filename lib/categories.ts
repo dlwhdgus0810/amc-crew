@@ -26,7 +26,7 @@ export interface Category {
    * 키를 lib/card-theme.ts에서 가져오지 않고 여기 적어 둔 이유는 순환 참조다 —
    * 그쪽이 이 파일의 CATEGORIES를 읽는다.
    */
-  seasonal?: Partial<Record<'cherryblossom' | 'rainyseason' | 'winter', Msg>>;
+  seasonal?: Partial<Record<'cherryblossom' | 'rainyseason' | 'winter' | 'autumn', Msg>>;
   /** 설정하면 모임 만들기에 선택 입력이 하나 생긴다 (예: 영화/드라마, 메뉴) */
   titleLabel?: Msg;
   /** titleLabel 입력에 TMDB 자동완성을 붙인다 (영화/드라마 전용) */
@@ -177,6 +177,7 @@ export const CATEGORIES: Category[] = [
       cherryblossom: { ko: '벚꽃 아래에서 뛰면 더 뜁니다', en: 'Running under the blossoms, you go further.', es: 'Bajo los cerezos se corre más.' },
       rainyseason: { ko: '비 와도 공은 굴러갑니다', en: 'The ball still rolls in the rain.', es: 'Con lluvia la pelota sigue rodando.' },
       winter: { ko: '입김 나는 날이 제일 개운합니다', en: 'The days you can see your breath are the best ones.', es: 'Los días en que se ve el aliento son los mejores.' },
+      autumn: { ko: '뛰기 좋은 날은 길지 않아요', en: 'The good weather for this doesn’t last long.', es: 'El buen tiempo para esto no dura.' },
     },
   },
   {
@@ -194,6 +195,7 @@ export const CATEGORIES: Category[] = [
     seasonal: {
       rainyseason: { ko: '빗소리만 한 배경음이 없어요', en: 'No better background than rain on the window.', es: 'No hay mejor fondo que la lluvia.' },
       winter: { ko: '해가 짧아진 만큼 읽을 시간은 깁니다', en: 'The shorter the day, the longer the reading.', es: 'Cuanto más corto el día, más larga la lectura.' },
+      autumn: { ko: '가을엔 읽는다는 말, 괜히 있는 게 아니에요', en: 'They call it reading season for a reason.', es: 'Por algo lo llaman la estación de leer.' },
     },
     // 무엇을 읽는지가 곧 「갈지 말지」라서 제목 자리에 책을 받는다 (무비나잇의 영화와 같은 자리)
     titleLabel: { ko: '책', en: 'Book', es: 'Libro' },
@@ -235,6 +237,7 @@ export const CATEGORIES: Category[] = [
       cherryblossom: { ko: '창가 자리부터 차요', en: 'The window seats go first.', es: 'Los sitios junto a la ventana vuelan.' },
       rainyseason: { ko: '비 오는 날 카페는 반칙이죠', en: 'A café on a rainy day is almost cheating.', es: 'Un café en día de lluvia es hacer trampa.' },
       winter: { ko: '따뜻한 거 한 잔이면 충분해요', en: 'One warm cup is the whole plan.', es: 'Con una taza caliente basta.' },
+      autumn: { ko: '창가 자리가 제일 좋은 계절이에요', en: 'Window seats earn their keep this month.', es: 'Es el mes de los asientos junto a la ventana.' },
     },
     locationLabel: { ko: '카페', en: 'Café', es: 'Cafetería' },
     locationHint: { ko: '예: 스타벅스 135th & Nall', en: 'e.g. Starbucks 135th & Nall', es: 'p. ej. Starbucks 135th & Nall' },
@@ -295,6 +298,7 @@ export const CATEGORIES: Category[] = [
       cherryblossom: { ko: '지금 안 가면 꽃이 다 집니다', en: 'Go now or the blossoms are gone.', es: 'O vas ahora o se acaban las flores.' },
       rainyseason: { ko: '어차피 실내가 반이에요', en: 'Half of it is indoors anyway.', es: 'La mitad del plan es bajo techo igualmente.' },
       winter: { ko: '눈 오면 그것도 구경거리예요', en: 'If it snows, that’s the sightseeing.', es: 'Si nieva, eso ya es el paisaje.' },
+      autumn: { ko: '단풍은 기다려 주지 않아요', en: 'The colors won’t wait for you.', es: 'Los colores no te van a esperar.' },
     },
   },
   {
@@ -308,6 +312,7 @@ export const CATEGORIES: Category[] = [
     description: { ko: '봐줄 사람 있으면 한 개 더', en: 'One more rep with a spotter.', es: 'Una repetición más si alguien te cuida.' },
     seasonal: {
       winter: { ko: '밖이 추울수록 여기가 붐빕니다', en: 'The colder it gets outside, the busier it is in here.', es: 'Cuanto más frío fuera, más lleno esto.' },
+      autumn: { ko: '반팔로 버틸 날이 얼마 안 남았어요', en: 'Not many short-sleeve days left.', es: 'Quedan pocos días de manga corta.' },
     },
     locationLabel: { ko: '헬스장', en: 'Gym', es: 'Gimnasio' },
     locationHint: { ko: '예: Lifetime Overland Park', en: 'e.g. Lifetime, Overland Park', es: 'p. ej. Lifetime, Overland Park' },
@@ -325,6 +330,7 @@ export const CATEGORIES: Category[] = [
       cherryblossom: { ko: '바람이 순해지는 계절이에요', en: 'The wind turns gentle this time of year.', es: 'El viento se vuelve suave en esta época.' },
       rainyseason: { ko: '코트 마르면 바로 나갑니다', en: 'The moment the court dries, we go.', es: 'En cuanto se seque la pista, salimos.' },
       winter: { ko: '손 시린 건 십 분이면 풀려요', en: 'Cold hands sort themselves out in ten minutes.', es: 'Las manos frías se arreglan en diez minutos.' },
+      autumn: { ko: '바람만 좀 읽으면 됩니다', en: 'Just read the wind and you’re fine.', es: 'Basta con leer el viento.' },
     },
     locationHint: { ko: '예: Harmon Park 테니스 코트', en: 'e.g. Harmon Park tennis courts', es: 'p. ej. canchas de tenis de Harmon Park' },
     proposedBy: 'sarah 예지 park',
@@ -342,6 +348,7 @@ export const CATEGORIES: Category[] = [
       cherryblossom: { ko: '밤에 아직 쌀쌀하니 겉옷 챙기세요', en: 'Nights are still cool — bring a layer.', es: 'Por la noche refresca: trae abrigo.' },
       rainyseason: { ko: '타프 아래가 제일 아늑합니다', en: 'Under the tarp is the coziest place there is.', es: 'Bajo la lona se está de maravilla.' },
       winter: { ko: '장작만 넉넉하면 겨울이 제철입니다', en: 'With enough firewood, winter is the season for it.', es: 'Con leña de sobra, el invierno es la temporada.' },
+      autumn: { ko: '모기 없는 밤이 드디어 왔어요', en: 'The mosquito-free nights are finally here.', es: 'Por fin llegan las noches sin mosquitos.' },
     },
     // 캠핑장은 자리를 잡아 두고 만나므로, 사이트 번호가 곧 「어디로 오면 되는지」다
     titleLabel: { ko: '사이트 번호 (선택)', en: 'Site number (optional)', es: 'Número de parcela (opcional)' },
@@ -361,6 +368,7 @@ export const CATEGORIES: Category[] = [
     seasonal: {
       rainyseason: { ko: '밖에 비 올 때 보는 게 제맛', en: 'Best watched while it pours outside.', es: 'Se disfruta más mientras diluvia fuera.' },
       winter: { ko: '해가 일찍 지니 영화 보기 좋아요', en: 'The sun sets early — good for a film.', es: 'Anochece pronto: buena hora para una peli.' },
+      autumn: { ko: '이불 덮고 보기 시작하는 계절이에요', en: 'Blanket-over-the-knees season starts now.', es: 'Empieza la temporada de manta sobre las piernas.' },
     },
     titleLabel: { ko: '영화/드라마', en: 'Movie/Show', es: 'Película o serie' },
     titleSearch: 'tmdb',
@@ -389,6 +397,7 @@ export const CATEGORIES: Category[] = [
     seasonal: {
       rainyseason: { ko: '비 오는 날엔 오븐을 켜야죠', en: 'Rainy days are for turning the oven on.', es: 'Los días de lluvia se enciende el horno.' },
       winter: { ko: '오븐 옆이 제일 따뜻한 계절이에요', en: 'This is the season when next to the oven is the best seat.', es: 'La época en que el mejor sitio es junto al horno.' },
+      autumn: { ko: '오븐 켜기 미안하지 않은 날씨예요', en: 'Finally cool enough to turn the oven on.', es: 'Ya refresca lo justo para encender el horno.' },
     },
     titleLabel: { ko: '만들 것', en: 'What we’re baking', es: 'Qué horneamos' },
     locationLabel: { ko: '장소', en: 'Place', es: 'Lugar' },
@@ -461,6 +470,7 @@ export const CATEGORIES: Category[] = [
       cherryblossom: { ko: '꽃길 따라 한 바퀴', en: 'One loop along the blossoms.', es: 'Una vuelta entre los cerezos.' },
       rainyseason: { ko: '비 맞고 뛰면 그것도 좋습니다', en: 'Running in the rain has its own thing.', es: 'Correr bajo la lluvia también tiene lo suyo.' },
       winter: { ko: '찬 공기가 오히려 잘 달려집니다', en: 'Cold air runs better than you’d think.', es: 'Con aire frío se corre mejor de lo que parece.' },
+      autumn: { ko: '일 년 중 제일 뛰기 좋은 몇 주예요', en: 'The best few weeks of the year to run.', es: 'Las mejores semanas del año para correr.' },
     },
     locationHint: { ko: '예: Indian Creek Trail', en: 'e.g. Indian Creek Trail', es: 'p. ej. Indian Creek Trail' },
     proposedBy: '지유',
@@ -478,6 +488,7 @@ export const CATEGORIES: Category[] = [
       cherryblossom: { ko: '밖에서 치기 딱 좋은 날씨', en: 'Perfect weather to play outside.', es: 'El tiempo ideal para jugar fuera.' },
       rainyseason: { ko: '실내 코트로 옮기면 그만이에요', en: 'We just move to an indoor court.', es: 'Nos pasamos a pista cubierta y ya.' },
       winter: { ko: '겨울엔 실내가 기본이죠', en: 'In winter it’s indoors by default.', es: 'En invierno, bajo techo por defecto.' },
+      autumn: { ko: '땀이 금방 식어서 좋아요', en: 'The sweat dries fast — that’s the point.', es: 'El sudor se seca rápido, y eso se agradece.' },
     },
   },
   /*
@@ -515,6 +526,7 @@ export const CATEGORIES: Category[] = [
       cherryblossom: { ko: '공기가 맑아 별이 잘 보여요', en: 'The air is clear — good night for stars.', es: 'El aire está limpio: buena noche de estrellas.' },
       rainyseason: { ko: '구름 걷히는 날 바로 잡아요', en: 'We go the first night the clouds break.', es: 'Salimos la primera noche que se abra el cielo.' },
       winter: { ko: '겨울 하늘이 일 년 중 제일 맑아요', en: 'Winter skies are the clearest of the year.', es: 'El cielo de invierno es el más limpio del año.' },
+      autumn: { ko: '공기가 맑아지는 철이에요', en: 'The air starts to clear this time of year.', es: 'El aire empieza a despejarse por estas fechas.' },
     },
   },
   {
@@ -528,6 +540,7 @@ export const CATEGORIES: Category[] = [
     description: { ko: '듀오 구합니다', en: 'Looking for a duo.', es: 'Busco dúo.' },
     seasonal: {
       winter: { ko: '추운 날엔 방에서 만나도 됩니다', en: 'On a cold day, meeting in a room counts.', es: 'Un día de frío, quedar en una sala también vale.' },
+      autumn: { ko: '밖이 선선해도 방은 방이죠', en: 'Cool outside, but a room is still a room.', es: 'Fresco fuera, pero la sala sigue siendo la sala.' },
     },
     titleLabel: { ko: '게임', en: 'Game', es: 'Juego' },
     titleOptions: [
@@ -574,6 +587,7 @@ export const CATEGORIES: Category[] = [
     description: { ko: '혼밥도 좋지만 오늘은 말고', en: 'Solo dining, but not tonight.', es: 'Comer solo está bien, pero hoy no.' },
     seasonal: {
       winter: { ko: '따뜻한 국물 있는 데로 가요', en: 'Somewhere with a hot broth.', es: 'A algún sitio con caldo caliente.' },
+      autumn: { ko: '제철이라는 말이 제일 많이 붙는 계절이에요', en: 'Everything is “in season” right now.', es: 'Ahora todo está «de temporada».' },
     },
     titleLabel: { ko: '메뉴', en: 'Menu', es: 'Menú' },
     locationLabel: { ko: '식당', en: 'Restaurant', es: 'Restaurante' },

@@ -122,6 +122,30 @@ const SEASON_STATEMENTS: Record<string, Statement[]> = {
             bottom: {ko: '내년에 또 이 말을 합니다.', en: 'you’ll be saying this again next year.', es: 'volverás a decir esto el año que viene.'},
         },
     ],
+    autumn: [
+        {
+            /* 벚꽃의 「꽃은 오래 안 갑니다」와 짝이다 — 아래 줄은 일부러 같은 말이다.
+               봄에 지는 것과 가을에 지는 것이 같은 이유로 급하다 */
+            top: {ko: '단풍은 기다려 주지 않습니다.', en: 'The colors won’t wait.', es: 'Los colores no esperan.'},
+            bottom: {ko: '이번 주말에 보러 가요.', en: 'Let’s go see them this weekend.', es: 'Vamos a verlos este finde.'},
+        },
+        {
+            top: {ko: '낮이 짧아지고 있어요.', en: 'The days are getting shorter.', es: 'Los días se acortan.'},
+            bottom: {ko: '약속은 미리 잡는 게 좋겠죠.', en: 'Worth making plans early.', es: 'Mejor quedar con tiempo.'},
+        },
+        {
+            top: {ko: '선선할 때 안 나가면', en: 'If you don’t go out while it’s cool,', es: 'Si no sales ahora que refresca,'},
+            bottom: {ko: '곧 추워서 못 나갑니다.', en: 'soon it’ll be too cold to.', es: 'pronto hará demasiado frío.'},
+        },
+        {
+            top: {ko: '밖이 제일 예쁠 때입니다.', en: 'Everything out there is at its best.', es: 'Ahí fuera todo está en su mejor momento.'},
+            bottom: {ko: '사진은 같이 찍어야 남아요.', en: 'Photos last when someone else is in them.', es: 'Las fotos duran si sale alguien más.'},
+        },
+        {
+            top: {ko: '가을은 짧습니다.', en: 'Autumn is short.', es: 'El otoño es corto.'},
+            bottom: {ko: '핑계 댈 시간도 짧아요.', en: 'So is the time for excuses.', es: 'El tiempo para excusas, también.'},
+        },
+    ],
     winter: [
         {
             top: {ko: '눈 온다고 미루면,', en: 'Put it off because of the snow,', es: 'Si lo aplazas por la nieve,'},

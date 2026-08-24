@@ -228,14 +228,10 @@ html[data-season='leaf'] .car-card .card-season {
    낱개 <span> 열여섯이다 (app/season-deco.tsx). 비·눈처럼 캔버스로 안 가는 이유는
    넘겨줄 데가 없어서다 — 낙엽은 카드에 쌓이지 않고 그냥 지나간다.
 
-   **카드 앞을 지난다.** .season-deco는 z-index:0이라 카드에 완전히 가리는데(장마에서
-   재 봤다), 낙엽은 그림 도안이라 뒤로 숨기면 크림색 여백에서만 잠깐 보이고 만다.
-   대신 투명도를 낮춰 글자를 덮지 않게 한다. 흐림(blur)은 안 쓴다 — 도안은 흐리면
-   잎으로 안 읽히고 얼룩이 된다. */
-.season-leaf {
-  z-index: 3;
-  opacity: 0.72;
-}
+   **카드 뒤로 지난다.** 벚꽃·장마·겨울과 같다 — .season-deco가 z-index:0이라 카드에
+   완전히 가리고(장마에서 재 봤다), 카드 사이 크림색 여백에서만 보인다. 한동안 앞으로
+   띄워 뒀었는데, 앞에 있으면 글자 위를 지날 때마다 읽는 것을 방해한다. 뒤에 두면
+   투명도를 낮출 이유도 없어져서 색이 제 값으로 나온다. */
 .season-leaf > span {
   background-repeat: no-repeat;
   background-position: center;
@@ -264,16 +260,17 @@ html[data-season='leaf'] .car-card .card-season {
  * 도안 여덟 종을 두 번씩 돌려 쓴다. 8n으로 나누므로 1~8과 9~16이 같은 순서인데,
  * 아래 주기가 3n·2n·5n으로 갈라져서 같은 잎 둘이 나란히 떨어지지는 않는다.
  *
- * 크기는 19~26px이다. 벡터라 어느 화면에서든 또렷하다.
+ * 크기는 23~30px이다. 벡터라 어느 화면에서든 또렷하다. 카드 뒤로 지나가게 되면서
+ * 보이는 자리가 카드 사이 여백뿐이라, 앞서보다 4px씩 키웠다.
  */
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 1) { background-image: var(--lf-maple); width: 26px; height: 26px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 2) { background-image: var(--lf-ginkgo); width: 22px; height: 22px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 3) { background-image: var(--lf-broad); width: 24px; height: 24px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 4) { background-image: var(--lf-narrow); width: 20px; height: 20px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 5) { background-image: var(--lf-round); width: 21px; height: 21px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 6) { background-image: var(--lf-sharp); width: 23px; height: 23px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 7) { background-image: var(--lf-toothed); width: 22px; height: 22px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 8) { background-image: var(--lf-small); width: 19px; height: 19px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 1) { background-image: var(--lf-maple); width: 30px; height: 30px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 2) { background-image: var(--lf-ginkgo); width: 26px; height: 26px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 3) { background-image: var(--lf-broad); width: 28px; height: 28px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 4) { background-image: var(--lf-narrow); width: 24px; height: 24px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 5) { background-image: var(--lf-round); width: 25px; height: 25px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 6) { background-image: var(--lf-sharp); width: 27px; height: 27px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 7) { background-image: var(--lf-toothed); width: 26px; height: 26px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 8) { background-image: var(--lf-small); width: 23px; height: 23px; }
 /* 낙하 주기를 낱개마다 어긋나게 둔다 — 값이 규칙적이면 열여섯 장이 한 덩어리로 움직인다 */
 .season-leaf > span:nth-child(3n)     { --fall: 38s; }
 .season-leaf > span:nth-child(3n + 1) { --fall: 42s; }
