@@ -5,15 +5,15 @@
    (.card-season 숨김, .car-card 곡률·isolation, kk-petal-sway, prefers-reduced-motion)은
    season.css에 이미 있어서 여기서는 빼고 **가을만의 것**을 담습니다.
 
-   낱개 요소(i·em)는 app/category-card.tsx가 항상 그려 두고(i 열여섯 + em 하나),
-   무엇이 되는지는 여기서 정합니다.
+   **다른 세 계절과 다른 점 하나.** 벚꽃·장마·겨울은 카드에도 장식이 있는데
+   (app/category-card.tsx가 그려 두는 낱개 i·em) 단풍은 그것을 전부 끕니다 —
+   낙엽은 카드 앞을 지나가기만 합니다.
 
    함께 가는 것: public/leaves/*.png — 도안에서 잘라낸 낙엽 여덟 장.
    ============================================================ */
 
 /* ══ 카드 ═════════════════════════════════════════════════════
-   벚꽃은 가장자리를 파내고, 장마는 안을 채우고, 겨울은 위에 얹는다. 단풍은 **아래에
-   쌓인다** — 파내지도 채우지도 않으니 카드 높이와 글자 자리에 아무 영향이 없다.
+   카드는 짙은 초록 한 장이다. 파내지도, 채우지도, 얹지도 않는다.
 
    카드 곡률은 네 귀퉁이가 같은 18px이다(lib/card-theme.ts의 cardR). 시안에서 쓰던
    잎 모양 곡률(64px 3px …)은 안 쓴다 — 낙엽을 그림으로 그리게 되면서 카드까지 잎
@@ -86,36 +86,24 @@ html[data-season='leaf'] .car-card .car-icon.on {
   color: #2A3320;
 }
 
-/* ══ 카드 아래 쌓인 낙엽 ══════════════════════════════════════
-   em은 안 쓴다 — 장마의 수면, 겨울의 이랑이던 요소인데 낙엽은 낱장이라 이을 것이 없다.
-   열여섯 중 일곱만 쓴다. 낙엽은 꽃잎보다 크고 진해서 열여섯이면 카드 아래가 덮인다. */
-html[data-season='leaf'] .card-season em,
-html[data-season='leaf'] .card-season i:nth-child(n + 8) {
+/* ══ 카드에는 아무것도 안 얹는다 ══════════════════════════════
+   벚꽃은 가장자리에 꽃잎을 물리고, 장마는 안에 물을 채우고, 겨울은 위에 눈을 쌓는다.
+   **단풍만 카드에 아무것도 안 둔다.**
+
+   낙엽은 카드 앞을 지나갈 뿐이다(아래 .season-leaf). 지나가는 것과 앉아 있는 것이
+   같은 그림이면 어느 쪽이 움직이는 것인지 알 수 없고, 카드 아랫변을 따라 잎이 줄지어
+   앉으면 그것대로 또 하나의 띠가 되어 카드 색 계단을 가린다.
+
+   그래서 낱개(i·em)를 전부 끈다. category-card.tsx는 테마를 모르고 늘 그려 두므로
+   (i 열여섯 + em 하나) 여기서 꺼야 한다.
+
+   **.car-card을 한 겹 더 적는 이유.** season.css의 `html[data-season] .card-season`이
+   display:block인데 그것과 무게가 똑같아서(둘 다 0,2,1) 순서로 갈린다. 그런데 이 파일을
+   layout.tsx에서 나중에 import해도 실제로 실린 순서는 반대였다 — 재 보니 이 규칙이
+   먼저였고 그래서 block이 이겼다. 클래스 하나를 더 얹어 무게로 이긴다. */
+html[data-season='leaf'] .car-card .card-season {
   display: none;
 }
-html[data-season='leaf'] .card-season i {
-  position: absolute;
-  bottom: -5px;
-  transform-origin: 50% 100%;
-  background: none;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  animation: kk-petal-sway var(--pd, 3.4s) ease-in-out var(--pt, 0s) infinite;
-}
-/*
- * 자리를 %로 둔다. 시안은 16px·34px·52px처럼 px였는데, 그러면 둘러보기 2열 타일에서
- * 일곱 장이 왼쪽 3분의 1에 몰린다 — 타일이 홈 카드의 절반 폭이다.
- *
- * 간격을 고르지 않게 둔다. 낙엽은 개수가 적어서 등간격이 바로 눈에 띈다.
- */
-html[data-season='leaf'] .card-season i:nth-child(1) { left: 5%;  width: 19px; height: 19px; --sw: 5deg; --pd: 3.4s; --pt: -0.6s; background-image: url(/leaves/leaf-02.png); }
-html[data-season='leaf'] .card-season i:nth-child(2) { left: 17%; width: 15px; height: 15px; --sw: 7deg; --pd: 2.9s; --pt: -1.9s; background-image: url(/leaves/leaf-12.png); bottom: -3px; }
-html[data-season='leaf'] .card-season i:nth-child(3) { left: 28%; width: 17px; height: 17px; --sw: 4deg; --pd: 4.1s; --pt: -2.3s; background-image: url(/leaves/leaf-09.png); }
-html[data-season='leaf'] .card-season i:nth-child(4) { left: 41%; width: 16px; height: 16px; --sw: 6deg; --pd: 3.6s; --pt: -0.9s; background-image: url(/leaves/leaf-18.png); bottom: -4px; }
-html[data-season='leaf'] .card-season i:nth-child(5) { left: 54%; width: 18px; height: 18px; --sw: 5deg; --pd: 3.1s; --pt: -2.8s; background-image: url(/leaves/leaf-19.png); }
-html[data-season='leaf'] .card-season i:nth-child(6) { left: 68%; width: 20px; height: 20px; --sw: 4deg; --pd: 4.4s; --pt: -1.3s; background-image: url(/leaves/leaf-24.png); bottom: -6px; }
-html[data-season='leaf'] .card-season i:nth-child(7) { left: 82%; width: 17px; height: 17px; --sw: 6deg; --pd: 3.3s; --pt: -3.4s; background-image: url(/leaves/leaf-05.png); }
 
 /* ══ 배경 낙엽 ════════════════════════════════════════════════
    낱개 <span> 열여섯이다 (app/season-deco.tsx). 비·눈처럼 캔버스로 안 가는 이유는
