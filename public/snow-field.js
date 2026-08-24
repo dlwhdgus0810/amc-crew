@@ -51,7 +51,17 @@
         root.appendChild(this.cv);
         this.ctx = this.cv.getContext('2d');
 
-        this.tint = this.getAttribute('tint') || '255,255,255';
+        /*
+         * 배경 눈의 색 — **CSS의 color를 따른다** (public/rain-field.js와 같은 방식).
+         *
+         * 전에는 여기서 '255,255,255'로 박아 두고 attribute만 봤다. 그래서
+         * season-winter.css의 `.season-snow snow-field { color: … }`는 아무 일도 하지
+         * 않는 규칙이었다 — 색을 고쳐도 화면이 안 바뀌는 자리다.
+         *
+         * 흰색이면 안 되는 이유는 겨울 바탕이 #EEF2F6이라서다. 흰 눈을 그 위에 그리면
+         * 대비가 1.09:1이라 사실상 안 보인다. 색은 CSS가 정한다.
+         */
+        this.tint = getComputedStyle(this).color.match(/\d+/g)?.slice(0, 3).join(',') || '110,136,166';
         /* px당 눈송이 수. 화면이 넓어지면 그만큼 더 뿌린다 — 폰에서 빗발이 굵어지던 것과 같은 이유 */
         this.per = +(this.getAttribute('rate') || 0) / 1400 || 0.35 / 1400;
         this.flakes = [];
