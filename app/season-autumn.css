@@ -9,8 +9,37 @@
    (app/category-card.tsx가 그려 두는 낱개 i·em) 단풍은 그것을 전부 끕니다 —
    낙엽은 카드 앞을 지나가기만 합니다.
 
-   함께 가는 것: public/leaves/*.png — 도안에서 잘라낸 낙엽 여덟 장.
+   낙엽 그림은 이 파일 안에 있습니다(--lf-*) — 따로 받아 올 파일이 없습니다.
    ============================================================ */
+
+/*
+ * 낙엽 여덟 종 — **그림 파일이 아니라 선으로 그린다.**
+ *
+ * 받은 도안은 PNG인데 도안 그림에서 오려낸 것이라 가장자리에 흰 테가 남아 있었다.
+ * 재 보니 반투명 가장자리 픽셀의 99%가 거의 흰색이다(평균 rgb(252,244,229)). 화면에서
+ * 19~26px로 쓰니 그 테가 잎 폭에서 차지하는 몫이 커서, 크림 바탕 위에서는 잎마다 흰
+ * 윤곽선이 둘린 것처럼 보였다.
+ *
+ * 그려서 넣으면 테가 없고, 색을 여기서 정할 수 있고, 132KB가 4KB가 된다.
+ * 겨울의 결정 그림(--sf-*)과 같은 방식이다.
+ *
+ * 24×24 안에 잎자루와 잎맥까지 한 path에 담는다 — 닫지 않은 조각은 선으로만 그려진다.
+ *
+ * **종류를 억지로 늘리지 않았다.** 20px에서는 참나무 결각이든 담쟁이 갈래든 다 뭉개져
+ * 얼룩이 된다(그려서 재 봤다 — 참나무는 구름, 담쟁이는 나무로 보였다). 그 크기에서
+ * 알아볼 수 있는 것은 단풍과 은행 둘뿐이라 그 둘만 모양을 갖추고, 나머지 여섯은
+ * 폭·끝 모양·색만 다른 보통 잎이다.
+ */
+:root {
+  --lf-maple: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%2022V16.4M12%2016.4%206.6%2016.1%209.6%2013.4%202.6%2011.4%208.1%209.9%205.4%205.3%2010%207.4%2012%202.4l2%205%204.6-2.1-2.7%204.6%205.5%201.5-7%202%203%202.7z%27%20fill=%27%23C2451F%27%20stroke=%27%238E2F14%27%20stroke-width=%271%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --lf-ginkgo: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%2021.8v-7M12%2014.8c-7.2%200-10-5-6.2-9.4%202%201.2%203.8%202.2%205.2%203.4l1%201.2%201-1.2c1.4-1.2%203.2-2.2%205.2-3.4%203.8%204.4%201%209.4-6.2%209.4z%27%20fill=%27%23D9A21B%27%20stroke=%27%23A87A10%27%20stroke-width=%271%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --lf-broad: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%203.4c5.4%203.4%207.2%209.6%203.8%2013.8-1.8%202.2-5.8%202.2-7.6%200C4.8%2013%206.6%206.8%2012%203.4zM12%204.6v16.8%27%20fill=%27%23B4531F%27%20stroke=%27%237E3714%27%20stroke-width=%271%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --lf-narrow: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%202.4c3.4%204.8%204.4%2011.2%201.4%2016.2L12%2021.4l-1.4-2.8c-3-5-2-11.4%201.4-16.2zM12%204v16%27%20fill=%27%23D98C2B%27%20stroke=%27%23A2631A%27%20stroke-width=%271%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --lf-round: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%204c4.8%201.6%207%206%205.6%209.8-1.2%203.2-4.4%204.6-5.6%204.6s-4.4-1.4-5.6-4.6C5%2010%207.2%205.6%2012%204zM12%205.2v16.4%27%20fill=%27%238E7A1C%27%20stroke=%27%235F5112%27%20stroke-width=%271%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --lf-sharp: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%202.2c4.6%205%206%2010.6%203.4%2014.6-1%201.6-2.6%202.4-3.4%204-.8-1.6-2.4-2.4-3.4-4C6%2012.8%207.4%207.2%2012%202.2zM12%204v17.6%27%20fill=%27%23A83E1C%27%20stroke=%27%23742914%27%20stroke-width=%271%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --lf-toothed: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%203c5%203%207%208.6%204.4%2013-1%201.6-1.8%201.4-2.6%202.6-.6%201-1.2%201.6-1.8%202.8-.6-1.2-1.2-1.8-1.8-2.8-.8-1.2-1.6-1-2.6-2.6C5%2011.6%207%206%2012%203zM12%204.4v17%27%20fill=%27%236E6B22%27%20stroke=%27%23494715%27%20stroke-width=%271%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+  --lf-small: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%205c4%201.4%205.8%205%204.6%208.2-1%202.6-3.6%203.8-4.6%203.8s-3.6-1.2-4.6-3.8C6.2%2010%208%206.4%2012%205zM12%206v15.6%27%20fill=%27%23C9A227%27%20stroke=%27%2396761A%27%20stroke-width=%271%27%20stroke-linejoin=%27round%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E);
+}
 
 /* ══ 카드 ═════════════════════════════════════════════════════
    카드는 짙은 초록 한 장이다. 파내지도, 채우지도, 얹지도 않는다.
@@ -86,6 +115,53 @@ html[data-season='leaf'] .car-card .car-icon.on {
   color: #2A3320;
 }
 
+/* ══ 머리줄 띠 · 탭바 ═════════════════════════════════════════
+   **다른 세 시즌 테마는 화면 껍데기를 안 건드린다.** 단풍만 건드리는 이유는 카드가
+   짙어져서다 — 벚꽃·장마·겨울은 카드가 바탕보다 조금 진한 정도인데, 여기는 거의
+   검은 초록이라 크림 바탕 위에 카드만 뚝 떨어져 있으면 종이에 붙인 스티커가 된다.
+   머리줄이 같은 초록이면 카드가 그 아래에서 이어져 나온 것으로 읽힌다.
+
+   좌우 여백을 뚫는 이유는 띠여야 하기 때문이다. .container가 18px(넓은 화면 28·40px)
+   물려 두는데 그 안에 그리면 띠가 아니라 가운데 놓인 판이 된다. 화면 끝까지 닿게 하고
+   아래 두 귀퉁이만 둥글린다.
+
+   위로도 --page-top만큼 되물려 상단 바에 붙인다. 사이가 뜨면 띠가 아니라 판이다. */
+html[data-season='leaf'] .page-head {
+  margin-top: calc(-1 * var(--page-top));
+  margin-left: -18px;
+  margin-right: -18px;
+  padding: calc(var(--page-top) + 12px) 18px 16px;
+  background: linear-gradient(150deg, #3F4E2E, #2A3320);
+  color: #EFE3C4;
+  border-radius: 0 0 18px 18px;
+}
+html[data-season='leaf'] .page-head h1 {
+  color: #F0D48C;
+}
+@media (min-width: 700px) {
+  html[data-season='leaf'] .page-head { margin-left: -28px; margin-right: -28px; padding-left: 28px; padding-right: 28px; }
+}
+@media (min-width: 1100px) {
+  html[data-season='leaf'] .page-head { margin-left: -40px; margin-right: -40px; padding-left: 40px; padding-right: 40px; }
+}
+
+/*
+ * 탭바는 **크림 그라데이션만** 가져온다.
+ *
+ * 도안은 `border-radius: 16px 16px 0 0`도 같이 주는데, 그건 화면 아래에 붙어 있는
+ * 탭바 이야기다. 이 앱의 탭바는 네 귀퉁이가 다 둥근 채로 떠 있는 캡슐이라
+ * (globals.css의 nav.tabbar, 22px) 아래만 각지게 만들면 떠 있는 것이 잘린 것으로 보인다.
+ *
+ * 반투명(0.86)이 불투명으로 바뀐다 — 도안이 정한 색이 그렇다. 밑이 비치던 것은 없어진다.
+ */
+html[data-season='leaf'] nav.tabbar {
+  background: linear-gradient(#FFFBF3, #F3EADA);
+}
+/* 눌린 탭은 숲색으로. 기본은 --text(#242A1C)라 거의 검정이다 */
+html[data-season='leaf'] .tabbar a.active {
+  color: #3F4E2E;
+}
+
 /* ══ 카드에는 아무것도 안 얹는다 ══════════════════════════════
    벚꽃은 가장자리에 꽃잎을 물리고, 장마는 안에 물을 채우고, 겨울은 위에 눈을 쌓는다.
    **단풍만 카드에 아무것도 안 둔다.**
@@ -142,16 +218,16 @@ html[data-season='leaf'] .car-card .card-season {
  * 도안 여덟 종을 두 번씩 돌려 쓴다. 8n으로 나누므로 1~8과 9~16이 같은 순서인데,
  * 아래 주기가 3n·2n·5n으로 갈라져서 같은 잎 둘이 나란히 떨어지지는 않는다.
  *
- * 크기는 19~26px이다. 그림 파일은 94px이라 3배 화면에서도 남는다.
+ * 크기는 19~26px이다. 벡터라 어느 화면에서든 또렷하다.
  */
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 1) { background-image: url(/leaves/leaf-02.png); width: 24px; height: 24px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 2) { background-image: url(/leaves/leaf-09.png); width: 20px; height: 20px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 3) { background-image: url(/leaves/leaf-05.png); width: 21px; height: 21px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 4) { background-image: url(/leaves/leaf-24.png); width: 26px; height: 26px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 5) { background-image: url(/leaves/leaf-12.png); width: 19px; height: 19px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 6) { background-image: url(/leaves/leaf-19.png); width: 23px; height: 23px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 7) { background-image: url(/leaves/leaf-04.png); width: 20px; height: 20px; }
-html[data-season='leaf'] .season-leaf > span:nth-child(8n + 8) { background-image: url(/leaves/leaf-18.png); width: 22px; height: 22px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 1) { background-image: var(--lf-maple); width: 26px; height: 26px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 2) { background-image: var(--lf-ginkgo); width: 22px; height: 22px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 3) { background-image: var(--lf-broad); width: 24px; height: 24px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 4) { background-image: var(--lf-narrow); width: 20px; height: 20px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 5) { background-image: var(--lf-round); width: 21px; height: 21px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 6) { background-image: var(--lf-sharp); width: 23px; height: 23px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 7) { background-image: var(--lf-toothed); width: 22px; height: 22px; }
+html[data-season='leaf'] .season-leaf > span:nth-child(8n + 8) { background-image: var(--lf-small); width: 19px; height: 19px; }
 /* 세 주기를 낱개마다 어긋나게 둔다 — 값이 규칙적이면 열여섯 장이 한 덩어리로 움직인다 */
 .season-leaf > span:nth-child(3n)     { --fall: 38s; --spin: 6.4s; --flip: 4.1s; }
 .season-leaf > span:nth-child(3n + 1) { --fall: 42s; --spin: 4.3s; --flip: 2.8s; }
