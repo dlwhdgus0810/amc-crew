@@ -108,6 +108,13 @@ h1 + .admin-sec {
 .page-head h1 {
   margin-bottom: 0;
 }
+/* 제목 반대쪽에 버튼이 둘일 때 — .page-head가 space-between이라 묶어야 붙어 선다 */
+.head-btns {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .head-btn {
   flex: none;
   display: inline-flex;

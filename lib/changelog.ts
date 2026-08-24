@@ -204,8 +204,8 @@ const ENTRIES: ChangelogEntry[] = [
     title: { ko: '테마 상점이 생겼어요', en: 'There’s a theme shop now' },
     items: [
       {
-        ko: '리더보드 오른쪽 위 「테마 상점」으로 들어가요. 그동안 모임을 열고, 나가고, 사진과 댓글을 남긴 만큼 코인이 쌓여 있어요 — 따로 모을 것 없이 이미 쌓인 거예요.',
-        en: 'Open it from “Theme shop”, top right of the leaderboard. Coins are already there — everything you’ve hosted, shown up for, and left behind has been adding up.',
+        ko: '프로필 맨 위의 「테마 상점」으로 들어가요. 그동안 모임을 열고, 나가고, 사진과 댓글을 남긴 만큼 코인이 쌓여 있어요 — 따로 모을 것 없이 이미 쌓인 거예요.',
+        en: 'Open it from “Theme shop” at the top of your profile. Coins are already there — everything you’ve hosted, shown up for, and left behind has been adding up.',
       },
       {
         ko: '코인은 주최 점수 + 정성 점수 + 참여 횟수×3이에요. 참여에만 3을 곱하는 건 눈금이 달라서예요 — 모임 한 번 여는 것과 한 번 나가는 것은 점수가 붙는 속도가 아주 달라요.',

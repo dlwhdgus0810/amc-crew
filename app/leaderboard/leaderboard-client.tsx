@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CONTRIB_TIERS, formatPoints, HOST_TIERS, JOIN_TIERS, ranksOf, tierOf } from '@/lib/hosting';
 import { catDisplayName, getCategory } from '@/lib/categories';
@@ -53,7 +52,6 @@ const T = {
   tabJoiners: { ko: '참여', en: 'Joined', es: 'Apuntadas' },
   tabCats: { ko: '카테고리', en: 'Categories', es: 'Categorías' },
   tabContrib: { ko: '정성', en: 'Contributed', es: 'Aportes' },
-  shop: { ko: '테마 상점', en: 'Theme shop', es: 'Tienda' },
   /* 점수만 보면 「왜 내가 저 사람보다 낮지」가 남는다 — 무엇으로 쌓였는지 같이 적는다 */
   contribParts: { ko: '사진 {p} · 댓글 {c}', en: '{p} photos · {c} comments', es: '{p} fotos · {c} comentarios' },
   contribProposal: { ko: ' · 제안 {n}', en: ' · {n} proposals', es: ' · {n} propuestas' },
@@ -98,26 +96,6 @@ const T = {
 
 /** 종합 주최 랭킹 — 둘러보기에서 들어온다 */
 /** 상점 — 동전. 카테고리 아이콘과 같은 24 격자·굵기 1.8이다 (app/cat-icon.tsx) */
-function CoinIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      style={{ marginRight: 5, verticalAlign: -2 }}
-    >
-      <circle cx="12" cy="12" r="8.4" />
-      <path d="M14.4 9.2a3 3 0 0 0-2.4-1.1c-1.5 0-2.6.9-2.6 2s1 1.7 2.6 1.9 2.6.8 2.6 1.9-1.1 2-2.6 2a3 3 0 0 1-2.4-1.1" />
-      <path d="M12 6.2v11.6" />
-    </svg>
-  );
-}
 
 export default function LeaderboardClient({ initial }: { initial: LeaderboardInitial | null }) {
   const [board, setBoard] = useState<LeaderboardInitial>(
@@ -140,16 +118,9 @@ export default function LeaderboardClient({ initial }: { initial: LeaderboardIni
 
   return (
     <>
-      {/*
-        * 제목 오른쪽에 상점 버튼 — 둘러보기 화면의 리더보드 버튼과 같은 자리·같은 모양이다.
-        * 코인이 이 화면의 점수에서 나오므로 여기가 상점으로 가는 자리로 맞다.
-        */}
+      {/* 상점으로 가는 버튼은 프로필로 옮겼다 — 산 테마를 고르는 자리가 거기다 */}
       <div className="page-head">
         <h1>{t(T.title)}</h1>
-        <Link href="/shop" className="leaderboard-link">
-          <CoinIcon />
-          {t(T.shop)}
-        </Link>
       </div>
       <p className="subtitle">{t(T.subtitle)}</p>
       <p className="hint" style={{ marginTop: -6, marginBottom: 4 }}>{t(T.afterOnly)}</p>

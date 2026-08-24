@@ -11,6 +11,7 @@ import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
 import { formatZelle } from '@/lib/money';
 import { COIN } from '@/lib/shop';
 import PushToggle from '../push-toggle';
+import CoinIcon from '../coin-icon';
 import {
   CARD_THEME_COOKIE,
   CARD_THEME_MAX_AGE,
@@ -148,11 +149,12 @@ const T = {
   privacyOff: { ko: '지난 비공개 모임 숨김', en: 'Past private meetups hidden', es: 'Privadas pasadas ocultas' },
   privacyShow: { ko: '보이기', en: 'Show', es: 'Mostrar' },
   privacyHide: { ko: '숨기기', en: 'Hide', es: 'Ocultar' },
+  shop: { ko: '테마 상점', en: 'Theme shop', es: 'Tienda' },
   themeTitle: { ko: '카드 테마', en: 'Card theme', es: 'Tema de tarjetas' },
   themeNone: {
-    ko: '아직 산 테마가 없어요. 리더보드 오른쪽 위 「테마 상점」에서 살 수 있어요.',
-    en: 'No themes yet — get one from the shop, top right of the leaderboard.',
-    es: 'Aún no tienes temas. Consíguelos en la tienda, arriba a la derecha de la clasificación.',
+    ko: '아직 산 테마가 없어요. 이 화면 맨 위의 「테마 상점」에서 살 수 있어요.',
+    en: 'No themes yet — get one from the shop, at the top of this screen.',
+    es: 'Aún no tienes temas. Consíguelos en la tienda, arriba en esta pantalla.',
   },
   themeLocked: {
     ko: '프로필 사진을 내려서 코인이 {n} 모자라요. 산 테마는 그동안 잠겨 있어요 — 사진을 다시 올리면 바로 풀려요.',
@@ -521,10 +523,23 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
         */}
       <div className="page-head">
         <h1>{t(T.title)}</h1>
-        <Link href="/notifications" className="head-btn" aria-label={t(T.notifTitle)}>
-          🔔 {t(T.notifTitle)}
-          {initial.unread > 0 && <span className="head-btn-count">{initial.unread}</span>}
-        </Link>
+        {/*
+          * 상점과 알림 — 둘을 한 덩이로 묶어 제목 반대쪽에 세운다. .page-head는
+          * space-between이라 그냥 나란히 두면 셋이 화면 폭에 흩어진다.
+          *
+          * 상점이 왼쪽이다. 리더보드에 있던 것을 옮겨 왔다 — 산 테마를 고르는 자리가
+          * 이 화면이라, 사러 가는 입구도 여기가 맞다.
+          */}
+        <span className="head-btns">
+          <Link href="/shop" className="head-btn">
+            <CoinIcon />
+            {t(T.shop)}
+          </Link>
+          <Link href="/notifications" className="head-btn" aria-label={t(T.notifTitle)}>
+            🔔 {t(T.notifTitle)}
+            {initial.unread > 0 && <span className="head-btn-count">{initial.unread}</span>}
+          </Link>
+        </span>
       </div>
       <p className="subtitle">{t(T.subtitle)}</p>
 
