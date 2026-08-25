@@ -33,6 +33,33 @@ const ENTRIES: ChangelogEntry[] = [
   {
     at: '2026-08-25T14:20',
     notable: true,
+    title: { ko: '계절 테마에 상태줄이 생겼어요', en: 'Season themes have a status line now' },
+    items: [
+      {
+        ko: '첫 줄 아래에 지금 계절의 상태줄이 붙어요. 봄은 개화, 여름은 비와 습도, 가을은 단풍, 겨울은 기온이에요. 옆의 가는 선은 그 값만큼 차서, 숫자를 안 읽어도 어느 쯤인지 보여요.',
+        en: 'Under the greeting there’s now a status line for the season — bloom in spring, rain and humidity in summer, foliage in autumn, temperature in winter. The thin line beside it fills to match, so you can read it without reading the number.',
+      },
+      {
+        ko: '여름과 겨울은 지금 캔자스 날씨예요. 기온·체감·강수 확률·습도를 받아 옵니다.',
+        en: 'Summer and winter show the actual weather here: temperature, what it feels like, chance of rain, humidity.',
+      },
+      {
+        ko: '가을은 단풍이 제일 짙은 날(10월 25일)까지 며칠 남았는지를 세요. 「단풍 D-61」처럼요. 지나고 나면 D+로 세다가 내년 것을 셉니다.',
+        en: 'Autumn counts down to peak foliage on 25 October — “FOLIAGE D-61”. Once it passes it counts up for a month, then starts on next year.',
+      },
+      {
+        ko: '봄은 올해 이 동네에 봄이 언제 오는지를 받아서 그때까지 몇 퍼센트인지 세요. 개화일에 100%가 되고 다음 날 0%로 되감아요.',
+        en: 'Spring looks up when spring actually arrives here this year and counts the percentage toward it — 100% on the day, back to 0% the next.',
+      },
+      {
+        ko: '장식이라 날씨가 안 와도 홈은 그대로 떠요. 값이 늦으면 잠깐 기본 숫자가 보였다 바뀝니다.',
+        en: 'It’s decoration, so the home screen never waits on it. If the numbers are slow you’ll see placeholder ones for a moment.',
+      },
+    ],
+  },
+  {
+    at: '2026-08-25T14:10',
+    notable: true,
     title: { ko: '겨울 눈이 진짜 눈송이가 됐어요', en: 'Winter’s snow is real snowflakes now' },
     items: [
       {
@@ -54,33 +81,6 @@ const ENTRIES: ChangelogEntry[] = [
       {
         ko: '카드 안으로 넘어온 눈은 안쪽으로 갈수록 옅어지고, 떨어지는 눈덩이도 찢어진 모양이에요.',
         en: 'Snow that blew inside a card thins out as it goes, and the chunks that break off are torn sheets rather than ovals.',
-      },
-    ],
-  },
-  {
-    at: '2026-08-25T14:10',
-    notable: true,
-    title: { ko: '홈에 계절이 한 줄 더 생겼어요', en: 'The home screen shows the season now' },
-    items: [
-      {
-        ko: '첫 줄 아래에 지금 계절의 상태줄이 붙어요. 봄은 개화, 여름은 비와 습도, 가을은 단풍, 겨울은 기온이에요. 옆의 가는 선은 그 값만큼 차서, 숫자를 안 읽어도 어느 쯤인지 보여요.',
-        en: 'Under the greeting there’s now a status line for the season — bloom in spring, rain and humidity in summer, foliage in autumn, temperature in winter. The thin line beside it fills to match, so you can read it without reading the number.',
-      },
-      {
-        ko: '여름과 겨울은 지금 캔자스 날씨예요. 기온·체감·강수 확률·습도를 받아 옵니다.',
-        en: 'Summer and winter show the actual weather here: temperature, what it feels like, chance of rain, humidity.',
-      },
-      {
-        ko: '가을은 단풍이 제일 짙은 날(10월 25일)까지 며칠 남았는지를 세요. 「단풍 D-61」처럼요. 지나고 나면 D+로 세다가 내년 것을 셉니다.',
-        en: 'Autumn counts down to peak foliage on 25 October — “FOLIAGE D-61”. Once it passes it counts up for a month, then starts on next year.',
-      },
-      {
-        ko: '봄은 올해 이 동네에 봄이 언제 오는지를 받아서 그때까지 몇 퍼센트인지 세요. 개화일에 100%가 되고 다음 날 0%로 되감아요.',
-        en: 'Spring looks up when spring actually arrives here this year and counts the percentage toward it — 100% on the day, back to 0% the next.',
-      },
-      {
-        ko: '장식이라 날씨가 안 와도 홈은 그대로 떠요. 값이 늦으면 잠깐 기본 숫자가 보였다 바뀝니다.',
-        en: 'It’s decoration, so the home screen never waits on it. If the numbers are slow you’ll see placeholder ones for a moment.',
       },
     ],
   },
