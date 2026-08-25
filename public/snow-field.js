@@ -78,8 +78,8 @@
    * 화면 px으로 다시 잡되 도안이 준 **비율**은 지킨다 — b와 d는 획이 두 가지다.
    */
   function sprite(ops, px, fill, edge, dpr) {
-    const fw = Math.max(1.0, px * 0.042);  // 속(흰 선) 굵기, 화면 px
-    const ew = Math.max(1.15, px * 0.055); // 테두리가 그 바깥으로 더 나가는 만큼
+    const fw = Math.max(0.85, px * 0.038); // 속(흰 선) 굵기, 화면 px
+    const ew = Math.max(1.0, px * 0.048);  // 테두리가 그 바깥으로 더 나가는 만큼
     const pad = (fw * 1.05 + ew) / 2 + 0.5;
 
     const cv = document.createElement('canvas');
@@ -173,7 +173,7 @@
            * 눈에 안 띈다.
            */
           this.sheets = [];
-          for (const px of [22, 30, 40]) {
+          for (const px of [16, 22, 30]) {
             this.sheets.push(SNOWFLAKES.map((ops) => sprite(ops, px, fill, edge, Math.min(2, window.devicePixelRatio || 1))));
           }
         }
@@ -209,10 +209,10 @@
          * 결정은 수를 줄인다.
          *
          * 지금 값은 지름 2~6px짜리 동그라미에 맞춰 고른 것이라, 그대로 두면 폰 화면에
-         * 18~36px짜리 결정이 일흔 개 넘게 뜬다 (재 봤다). 눈이 아니라 스티커를 뿌린 것이
-         * 된다. 결정 하나가 눈에 차지하는 자리가 스무 배쯤 되니 수를 그만큼 줄인다.
+         * 14~27px짜리 결정이 일흔 개 넘게 뜬다 (재 봤다). 눈이 아니라 스티커를 뿌린 것이
+         * 된다. 결정 하나가 눈에 차지하는 자리가 열 배쯤 되니 수를 그만큼 줄인다.
          */
-        this.rate = this.w * this.per * (this.crystal ? 0.3 : 1);
+        this.rate = this.w * this.per * (this.crystal ? 0.38 : 1);
       }
 
       /** 지금 화면에 보이는 카드들의 자리 — 스크롤·크기 변화 때만 다시 잰다 */
@@ -322,13 +322,13 @@
         return {
           kind: (Math.random() * SNOWFLAKES.length) | 0,
           /*
-           * 18px 아래로는 안 내려간다.
+           * 14~27px.
            *
-           * 도안이 촘촘하다 — 가지가 세 단이고(a) 고사리는 잔가지가 더 많다(e).
-           * 13px에서 띄워 보니 선끼리 붙어 꽃 모양 얼룩이 됐다. 도안대로 보이려면
-           * 이만큼은 있어야 한다.
+           * 도안이 촘촘해서(가지 세 단, 고사리의 잔가지) 작게 두면 선끼리 붙는다 —
+           * 13px에서는 꽃 모양 얼룩이 됐다. 14px이 도안이 도안으로 보이는 아래끝이고,
+           * 거기 맞춰 선도 가늘게 잡았다.
            */
-          px: 18 + ((r - 1) / 2.2) * 14 + Math.random() * 4,
+          px: 14 + ((r - 1) / 2.2) * 10 + Math.random() * 3,
           rot: Math.random() * 6.28,
           rv: (Math.random() - 0.5) * 0.02,
         };
@@ -348,7 +348,7 @@
             continue;
           }
           /* 미리 그려 둔 것 중 가까운 크기를 골라 돌려서 얹는다 */
-          const sheet = this.sheets[f.px < 26 ? 0 : f.px < 35 ? 1 : 2];
+          const sheet = this.sheets[f.px < 19 ? 0 : f.px < 26 ? 1 : 2];
           const img = sheet[f.kind];
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, a));
