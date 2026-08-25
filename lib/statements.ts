@@ -220,8 +220,8 @@ export function statementOfDay(today: string, theme?: string): Statement {
  * **여름과 겨울은 실제 날씨다** (lib/weather.ts의 Open-Meteo). 아래 숫자는 날씨를 못
  * 받아 왔을 때 쓰는 값이다 — 값이 없다고 줄이 사라지면 그게 더 이상하다.
  *
- * 봄(개화)과 가을(단풍)은 고정값이다. 퍼센트를 주는 데가 없어서 적산온도로 세거나
- * 주마다 여기를 손으로 고쳐야 한다. 주 단위로 움직이는 값이라 그래도 된다.
+ * 봄은 개화일을, 가을은 절정일을 기준으로 센다. 아래 값은 봄의 개화일을 못 받아 왔을
+ * 때 쓴다.
  */
 export interface SeasonStat {
     label: Msg;
@@ -250,6 +250,28 @@ const SEASON_STATS: Record<'petal' | 'rain' | 'leaf' | 'snow', SeasonStat> = {
         fill: '100%',
     },
 };
+
+/**
+ * 개화까지 얼마나 왔나 — 0%에서 시작해 개화일에 100%, 다음 날 다시 0%.
+ *
+ * **한 바퀴가 한 해다.** 개화일을 지나면 다음 개화일까지를 새로 센다. 「예정일까지의
+ * 거리」를 그냥 퍼센트로 바꾸면 개화일부터 12월까지 아홉 달이 100%로 굳는다 — 8월에
+ * 「개화 100%」는 고장으로 읽힌다. 지나는 순간 되감으면 한 해가 끊기지 않는다.
+ *
+ * 개화일은 USA-NPN이 준다 (lib/spring.ts). 그 해의 값 하나뿐이라 앞뒤 해의 기준점은
+ * 같은 날짜를 그 해에 놓아 쓴다 — 해마다 며칠씩 다르지만 눈금 한 칸이 받을 차이가 아니고,
+ * 내년 값은 아직 있지도 않다.
+ */
+function bloomPct(today: string, bloomDoy: number): number {
+    const [y, m, d] = today.split('-').map(Number);
+    const now = Date.UTC(y!, m! - 1, d!);
+    /* 연중 n일째를 그 해의 날짜로 */
+    const at = (year: number) => Date.UTC(year, 0, 1) + (bloomDoy - 1) * DAY_MS;
+    const thisYear = at(y!);
+    const [from, to] = now <= thisYear ? [at(y! - 1), thisYear] : [thisYear, at(y! + 1)];
+    const pct = ((now - from) / (to - from)) * 100;
+    return Math.max(0, Math.min(100, Math.round(pct)));
+}
 
 /**
  * 단풍이 제일 짙은 날 — 캔자스는 10월 하순이다.
@@ -299,16 +321,25 @@ function leafDday(today: string): SeasonStat {
  *   여름·겨울  날씨 (w). 못 받아 왔으면 위 고정값 그대로다 — 상태줄은 장식이라
  *              값이 없다고 줄이 사라지면 그게 더 이상하다.
  *   가을       날짜만으로 센다 (leafDday). 부를 데가 없다.
- *   봄         아직 고정값이다.
+ *   봄         개화일을 USA-NPN에서 받아(lib/spring.ts) 거기까지 몇 %인지 센다.
  */
 export function seasonStat(
     kind: 'petal' | 'rain' | 'leaf' | 'snow' | null,
     today: string,
-    w?: Weather | null
+    live?: {weather?: Weather | null; bloomDoy?: number | null}
 ): SeasonStat | null {
     const base = kind ? SEASON_STATS[kind] : null;
     if (!base) return null;
     if (kind === 'leaf') return leafDday(today);
+    if (kind === 'petal') {
+        if (live?.bloomDoy == null) return base;
+        const pct = bloomPct(today, live.bloomDoy);
+        return {
+            label: {ko: `개화 ${pct}%`, en: `BLOOM ${pct}%`, es: `FLORACIÓN ${pct}%`},
+            fill: `${pct}%`,
+        };
+    }
+    const w = live?.weather;
     if (!w) return base;
     /* 소수점은 안 보인다 — 10px 글씨에 「-8.3°」는 읽는 값이 아니라 얼룩이다 */
     const n = (v: number) => Math.round(v);

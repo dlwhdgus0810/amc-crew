@@ -17,6 +17,7 @@ import { CATEGORIES, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { cookies } from 'next/headers';
 import { seasonStat, statementOfDay, type SeasonStat } from '@/lib/statements';
 import { currentWeather } from '@/lib/weather';
+import { springBloomDay } from '@/lib/spring';
 import { CARD_THEME_COOKIE, PREVIEW_COOKIE, themeDeco, toCardTheme } from '@/lib/card-theme';
 import { todayLocal } from '@/lib/dates';
 import { pick, type Locale } from '@/lib/i18n';
@@ -150,10 +151,16 @@ function SeasonStatus({ stat, locale }: { stat: SeasonStat | null; locale: Local
 }
 
 /**
- * 여름·겨울은 실제 날씨로 그린다. 나머지 계절은 부르지도 않는다 — 개화와 단풍은
- * 날씨로 알 수 있는 값이 아니다.
+ * 계절마다 필요한 것만 부른다.
+ *
+ *   여름·겨울  지금 날씨 (Open-Meteo)
+ *   봄         올해 개화일 (USA-NPN)
+ *   가을       아무것도 — 절정일이 날짜 하나라 셈만 하면 된다
  */
 async function LiveSeasonStatus({ deco, day, locale }: { deco: 'petal' | 'rain' | 'snow' | 'leaf' | null; day: string; locale: Locale }) {
-  const w = deco === 'rain' || deco === 'snow' ? await currentWeather() : null;
-  return <SeasonStatus stat={seasonStat(deco, day, w)} locale={locale} />;
+  const [weather, bloomDoy] = await Promise.all([
+    deco === 'rain' || deco === 'snow' ? currentWeather() : null,
+    deco === 'petal' ? springBloomDay() : null,
+  ]);
+  return <SeasonStatus stat={seasonStat(deco, day, { weather, bloomDoy })} locale={locale} />;
 }

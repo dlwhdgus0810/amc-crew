@@ -227,11 +227,11 @@ const T = {
   },
   ticketsGo: { ko: '건의함 열기 →', en: 'Open the suggestion box →', es: 'Abrir el buzón →' },
   logout: { ko: '로그아웃', en: 'Log out', es: 'Cerrar sesión' },
-  /* Open-Meteo는 CC BY 4.0이라 출처를 밝혀야 한다 (lib/weather.ts) */
+  /* 둘 다 출처를 밝혀야 한다 (lib/weather.ts, lib/spring.ts) */
   weatherFrom: {
-    ko: '홈 첫 줄의 기온·강수는 Open-Meteo에서 받아요.',
-    en: 'The temperature and rain on the home screen come from Open-Meteo.',
-    es: 'La temperatura y la lluvia de la pantalla de inicio vienen de Open-Meteo.',
+    ko: '홈 첫 줄의 기온·강수는 Open-Meteo, 개화 시기는 USA-NPN에서 받아요.',
+    en: 'On the home screen, the temperature and rain come from Open-Meteo and the bloom timing from USA-NPN.',
+    es: 'En la pantalla de inicio, la temperatura y la lluvia vienen de Open-Meteo y la floración de USA-NPN.',
   },
 };
 
@@ -1050,6 +1050,10 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
         {t(T.weatherFrom)}{' '}
         <a href="https://open-meteo.com/" target="_blank" rel="noreferrer noopener">
           open-meteo.com
+        </a>
+        {' · '}
+        <a href="https://www.usanpn.org/" target="_blank" rel="noreferrer noopener">
+          usanpn.org
         </a>
       </p>
     </>

@@ -4,8 +4,9 @@
  * **Open-Meteo를 쓴다.** 키도 가입도 없고, 기온·체감·강수확률·습도 넷이 한 번에 온다.
  * 대신 출처를 밝혀야 한다 (CC BY 4.0) — 프로필 맨 아래에 한 줄 적어 두었다.
  *
- * 봄(개화)과 가을(단풍)은 안 부른다. 퍼센트를 주는 데가 없어서 lib/statements.ts에
- * 적어 둔 고정값을 그대로 쓴다.
+ * 봄은 여기가 아니라 lib/spring.ts가 받아 온다 (USA-NPN). 가을은 날짜 하나라 안 부른다.
+ *
+ * 자리(좌표)는 둘이 같이 쓴다 — 아래 SITE_LAT·SITE_LON을 spring.ts가 가져다 쓴다.
  */
 
 /**
@@ -14,8 +15,8 @@
  * 모임이 열리는 자리와 다르면 .env에서 고치면 된다. 상태줄에 쓰는 값이라 도시 하나면
  * 충분하다 — 회원마다 자리를 물어보는 것은 이 한 줄이 받을 값이 아니다.
  */
-const LAT = process.env.WEATHER_LAT ?? '38.98';
-const LON = process.env.WEATHER_LON ?? '-94.67';
+export const SITE_LAT = process.env.WEATHER_LAT ?? '38.98';
+export const SITE_LON = process.env.WEATHER_LON ?? '-94.67';
 
 /** 30분에 한 번만 받아 온다. 상태줄의 값은 분 단위로 움직이지 않는다 */
 const REVALIDATE = 1800;
@@ -35,7 +36,7 @@ export interface Weather {
 
 const URL =
   'https://api.open-meteo.com/v1/forecast' +
-  `?latitude=${LAT}&longitude=${LON}` +
+  `?latitude=${SITE_LAT}&longitude=${SITE_LON}` +
   '&current=temperature_2m,apparent_temperature,precipitation_probability,relative_humidity_2m' +
   '&timezone=auto';
 
