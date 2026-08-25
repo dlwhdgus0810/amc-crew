@@ -332,11 +332,28 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
     trace(iy, false, topEnd);
     trace(top, true, topEnd);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(' + this.snow + ',.9)';
+    /*
+     * **안쪽으로 갈수록 옅어진다.**
+     *
+     * 전에는 0.9로 고르게 채우고 아래에 2px짜리 진한 선을 그었다. 두께가 일정한 흰 띠에
+     * 또렷한 아랫변이라, 눈이 아니라 카드 안쪽에 붙인 흰 종이로 보였다(그 선을 넣은
+     * 이유도 원래 그것이었는데, 선을 그으면 오히려 종이의 가장자리가 된다).
+     *
+     * 넘어 들어온 눈은 카드 턱에 제일 두껍고 안으로 갈수록 얇게 흩어진다. 세로로
+     * 옅어지게 두면 아랫변이 저절로 사라져서 자를 대고 그은 자리가 없어진다.
+     *
+     * 기준을 topEnd가 아니라 ledge로 잡는다 — topEnd는 귀퉁이(곡률만큼 내려간 자리)라
+     * 거기에 맞추면 가운데에서 그러데이션이 13px 내려앉는다.
+     */
+    const gi = ctx.createLinearGradient(0, this.ledge, 0, this.ledge + this.inMax * 1.3);
+    gi.addColorStop(0, 'rgba(' + this.snow + ',.95)');
+    gi.addColorStop(0.42, 'rgba(' + this.snow + ',.72)');
+    gi.addColorStop(1, 'rgba(' + this.snow + ',0)');
+    ctx.fillStyle = gi;
     ctx.fill();
-    /* 안쪽 눈의 아래 끝 그늘 — 없으면 카드에 붙은 흰 종이처럼 보인다 */
-    ctx.strokeStyle = 'rgba(24,40,62,.16)';
-    ctx.lineWidth = 2;
+    /* 그늘은 아주 옅게만 — 있는지 모를 만큼이라야 깊이만 생기고 선이 안 보인다 */
+    ctx.strokeStyle = 'rgba(24,40,62,.07)';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(0, iy(0) + 1);
     trace((i) => iy(i) + 1, false);
