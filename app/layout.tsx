@@ -98,11 +98,12 @@ const RAIN_MODE: 'canvas' | 'css' = 'canvas';
 /**
  * 겨울의 눈도 같은 갈래다.
  *
- *  'canvas' — 눈이 **실제로 쌓인다.** 가장자리에 앉고, 차면 안쪽으로 넘치고, 덩어리가
- *             떨어져 바닥에 쌓인다 (public/snow-canvas.js).
+ *  'crystal' — 눈이 **실제로 쌓인다.** 가장자리에 앉고, 차면 안쪽으로 넘치고, 덩어리가
+ *             떨어져 바닥에 쌓인다 (public/snow-canvas.js). 내리는 눈송이는 결정 모양이다
+ *             (public/snow-field.js).
  *  'css'    — 곡률로 그린 봉우리 여섯만. 가볍고 어디서나 같지만 늘 같은 모양이다.
  */
-const SNOW_MODE: 'canvas' | 'css' = 'canvas';
+const SNOW_MODE: 'crystal' | 'css' = 'crystal';
 
 const dodum = Gowun_Dodum({
   subsets: ['latin'],
@@ -222,12 +223,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
        */
       data-season={themeDeco(cardTheme) ?? undefined}
       data-rain={RAIN_MODE}
-      /*
-       * 겨울 v2는 떨어지는 눈을 결정으로 그린다 (public/snow-field.js).
-       * 테마 이름을 CSS·캔버스에 넘기는 고리가 이것뿐이라 여기서 갈라 둔다 —
-       * data-season은 둘 다 'snow'여야 겨울 CSS가 그대로 먹는다.
-       */
-      data-snow={cardTheme === 'winter2' ? 'crystal' : SNOW_MODE}
+      data-snow={SNOW_MODE}
     >
       <head>
         {/*

@@ -55,7 +55,6 @@ export type CardTheme =
   | 'cherryblossom'
   | 'rainyseason'
   | 'winter'
-  | 'winter2'
   | 'autumn';
 
 /**
@@ -303,50 +302,9 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
   winter: {
     label: { ko: '겨울 · 눈', en: 'Winter · Snow', es: 'Invierno · Nieve' },
     note: {
-      ko: '눈 쌓인 아침 같은 청회색 테마. 카드 위 가장자리에 눈이 얹히고 실제로 쌓여요.',
-      en: 'Slate blue like a snowed-in morning; snow settles on the top edge of each card and actually piles up.',
-      es: 'Azul pizarra de mañana nevada; la nieve se posa en el borde superior de cada tarjeta y se acumula.',
-    },
-    stops: ['#3D5878', '#6E88A6', '#9CB4C8', '#CFDCE6'],
-    tokens: {
-      bg: '#EEF2F6',
-      surface: '#FFFFFF',
-      surface2: '#E3EAF2',
-      border: '#D8E0E9',
-      borderSoft: '#E8EDF3',
-      text: '#1F2733',
-      textMid: '#5A6672',
-      textDim: '#7C8994',
-      accent: '#3D5878',
-      accentDark: '#2C4159',
-      accentSoft: '#E3EAF2',
-      r: '13px',
-      rSm: '9px',
-      cardR: '13px',
-      tabbarR: '16px',
-      iconStroke: '1.8',
-      /* 시안이 500이라 했는데 이 프로젝트의 시즌 서체는 둘뿐이다 — 획이 가는 쪽을 쓴다 */
-      font: 'dodum',
-      deco: 'snow',
-    },
-  },
-  /*
-   * 겨울의 시험판. **바탕도 색도 겨울과 똑같고 떨어지는 눈만 다르다.**
-   *
-   * 겨울 바탕(#EEF2F6) 위에 흰 동그라미를 그리니 대비가 1.12:1이라 눈이 오는지
-   * 안 오는지 알 수가 없었다. 눈을 회색으로 내리면 보이기는 하는데 눈이 아니라
-   * 얼룩으로 읽힌다 — 한 번 해 보고 되돌렸다.
-   *
-   * 그래서 **속은 희게 두고 테두리만 회청색으로 두른다.** 흰 것은 그대로 눈인데
-   * 실루엣이 보인다. 그러려면 동그라미로는 안 되고 모양이 있어야 해서 결정을 그린다
-   * (public/snow-field.js의 crystal).
-   */
-  winter2: {
-    label: { ko: '겨울 · 눈 v2', en: 'Winter · Snow v2', es: 'Invierno · Nieve v2' },
-    note: {
-      ko: '겨울 테마인데 떨어지는 눈이 동그라미가 아니라 결정이에요. 아직 시험 중이라 관리자만 걸 수 있어요.',
-      en: 'Winter, but the falling snow is drawn as crystals instead of dots. Still a trial — admins only.',
-      es: 'Invierno, pero la nieve cae dibujada como cristales. Todavía en pruebas: solo para administración.',
+      ko: '눈 쌓인 아침 같은 청회색 테마. 눈송이가 결정 모양으로 내리고, 카드 위 가장자리에 실제로 쌓여요.',
+      en: 'Slate blue like a snowed-in morning; the flakes fall as drawn crystals and actually pile up on each card’s top edge.',
+      es: 'Azul pizarra de mañana nevada; los copos caen dibujados como cristales y se acumulan en el borde superior de cada tarjeta.',
     },
     stops: ['#3D5878', '#6E88A6', '#9CB4C8', '#CFDCE6'],
     tokens: {
@@ -374,6 +332,14 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
 };
 
 export function toCardTheme(v: string | undefined): CardTheme {
+  /*
+   * 겨울 v2를 걸어 두었던 쿠키를 겨울로 받아 준다.
+   *
+   * v2는 결정 눈을 시험하던 관리자 전용 테마였고, 그대로 겨울이 됐다. 이름이 없어졌다고
+   * 기본 테마로 튕기면 걸어 두었던 사람은 「테마가 풀렸다」로 읽는다. 한 줄로 끝나는
+   * 일이라 남겨 둔다 — 걸었던 사람이 다시 고르면 이 줄은 그때 지워도 된다.
+   */
+  if (v === 'winter2') return 'winter';
   return v != null && v in CARD_THEMES ? (v as CardTheme) : 'default';
 }
 

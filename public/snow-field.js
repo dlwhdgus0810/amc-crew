@@ -16,10 +16,10 @@
   if (window.customElements && customElements.get('snow-field')) return;
 
   /*
-   * 결정으로 그릴 때 눈송이 수를 이만큼으로 줄인다.
+   * 눈송이 수를 rate의 이만큼으로 줄인다.
    *
-   * 지금 값은 지름 2~6px 동그라미에 맞춰 고른 것이라, 그대로 두면 폰 화면에 결정이
-   * 일흔 개 넘게 뜬다 (재 봤다). 눈이 아니라 스티커를 뿌린 것이 된다.
+   * rate는 지름 2~6px 동그라미를 그리던 시절에 고른 값이라, 그대로 두면 폰 화면에
+   * 결정이 일흔 개 넘게 뜬다 (재 봤다). 눈이 아니라 스티커를 뿌린 것이 된다.
    */
   const CRYSTAL_RATE = 0.38;
   /*
@@ -176,26 +176,20 @@
 
         this.tint = this.getAttribute('tint') || '255,255,255';
         /*
-         * 결정으로 그릴지 동그라미로 그릴지 — <html data-snow>가 정한다 (app/layout.tsx).
-         * 겨울 v2에서만 'crystal'이다.
-         *
          * 색 둘을 CSS에서 받는다: 속은 color, 테두리는 --flake-edge. 테두리가 있어야
          * 겨울 바탕에서 실루엣이 보인다 (app/season-winter.css에 잰 값이 적혀 있다).
          */
-        this.crystal = document.documentElement.dataset.snow === 'crystal';
-        if (this.crystal) {
-          const cs = getComputedStyle(this);
-          const fill = cs.color || '#FFFFFF';
-          const edge = cs.getPropertyValue('--flake-edge').trim() || 'rgba(94,118,144,0.85)';
-          /*
-           * 크기 셋만 미리 그려 두고 그 사이는 늘려 쓴다. 결정마다 픽셀을 따로 잡으면
-           * 종류 다섯 × 크기 열몇 개가 되는데, 눈은 돌면서 떨어져서 조금 늘어난 것은
-           * 눈에 안 띈다.
-           */
-          this.sheets = [];
-          for (const px of [16, 22, 30]) {
-            this.sheets.push(SNOWFLAKES.map((ops) => sprite(ops, px, fill, edge, Math.min(2, window.devicePixelRatio || 1))));
-          }
+        const cs = getComputedStyle(this);
+        const fill = cs.color || '#FFFFFF';
+        const edge = cs.getPropertyValue('--flake-edge').trim() || 'rgba(94,118,144,0.85)';
+        /*
+         * 크기 셋만 미리 그려 두고 그 사이는 늘려 쓴다. 결정마다 픽셀을 따로 잡으면
+         * 종류 다섯 × 크기 열몇 개가 되는데, 눈은 돌면서 떨어져서 조금 늘어난 것은
+         * 눈에 안 띈다.
+         */
+        this.sheets = [];
+        for (const px of [16, 22, 30]) {
+          this.sheets.push(SNOWFLAKES.map((ops) => sprite(ops, px, fill, edge, Math.min(2, window.devicePixelRatio || 1))));
         }
         /* px당 눈송이 수. 화면이 넓어지면 그만큼 더 뿌린다 — 폰에서 빗발이 굵어지던 것과 같은 이유 */
         this.per = +(this.getAttribute('rate') || 0) / 1400 || 0.35 / 1400;
@@ -225,7 +219,7 @@
         this.cv.width = Math.max(1, Math.round(this.w * this.dpr));
         this.cv.height = Math.max(1, Math.round(this.h * this.dpr));
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-        this.rate = this.w * this.per * (this.crystal ? CRYSTAL_RATE : 1);
+        this.rate = this.w * this.per * CRYSTAL_RATE;
       }
 
       /** 지금 화면에 보이는 카드들의 자리 — 스크롤·크기 변화 때만 다시 잰다 */
@@ -273,7 +267,7 @@
               x: c.left + s.x, y: c.bottom, r: s.r,
               vy: 0.55 + s.r * 0.22 + Math.random() * 0.3,
               sw: 6 + Math.random() * 12, sp: 0.008 + Math.random() * 0.014, ph: Math.random() * 6.28,
-              ...(this.crystal ? this.dress(s.r) : null),
+              ...this.dress(s.r),
             });
           }
           sp.length = 0;
@@ -288,7 +282,7 @@
             x: Math.random() * this.w, y: -6, r,
             vy: 0.55 + r * 0.22 + Math.random() * 0.3,
             sw: 6 + Math.random() * 12, sp: 0.008 + Math.random() * 0.014, ph: Math.random() * 6.28,
-            ...(this.crystal ? this.dress(r) : null),
+            ...this.dress(r),
           });
         }
 
@@ -345,10 +339,8 @@
                * 된다 — 그 자리는 카드가 가리고 있던 경계라, 뒤에서 내려오던 눈이
                * 이어서 나오는 것으로 보인다.
                */
-              if (f.kind != null) {
-                f.sink = 0;
-                f.sinkAt = c.bottom;
-              }
+              f.sink = 0;
+              f.sinkAt = c.bottom;
             }
           }
           if (f.sink != null) {
@@ -388,13 +380,6 @@
         for (const f of this.flakes) {
           const x = f.x + Math.sin(f.ph) * f.sw;
           const a = Math.min(1, (h - f.y) / 40) * (0.55 + f.r * 0.15);
-          if (f.kind == null) {
-            ctx.fillStyle = 'rgba(' + this.tint + ',' + Math.max(0, Math.min(1, a)).toFixed(3) + ')';
-            ctx.beginPath();
-            ctx.arc(x, f.y, f.r, 0, 6.2832);
-            ctx.fill();
-            continue;
-          }
           /* 눈더미에 잠기는 중이면 옅어지고 조금 작아진다 (step의 sink) */
           const sunk = f.sink || 0;
           if (sunk > 0.98) continue;
