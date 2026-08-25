@@ -208,3 +208,48 @@ export function statementOfDay(today: string, theme?: string): Statement {
     const i = (((dayNumber(today) - dayNumber(ANCHOR)) % n) + n) % n;
     return list[i]!;
 }
+
+/**
+ * 머리 제목 아래 한 줄 — 계절마다 재는 것이 다르다.
+ *
+ * 봄은 개화율, 여름은 강수, 가을은 단풍, 겨울은 기온이다. 눈금선은 값만큼 차서
+ * (fill) 숫자를 안 읽어도 어느 쯤인지 보인다. 겨울만 퍼센트가 아니라 온도라
+ * 채울 값이 없고, 대신 체감을 sub로 옆에 붙인다.
+ *
+ * **지금은 고정값이다.** 도안이 준 숫자를 그대로 둔다 — 장식이라 aria-hidden이고,
+ * 실제 일정은 아래 카드에 다 있다. 살아 있는 값으로 바꾸려면 겨울 기온·체감과 여름
+ * 강수·습도는 Open-Meteo 한 번으로 넷이 다 나오고(키 없이 CORS 됨, 출처 표기 필요),
+ * 봄 개화와 가을 단풍은 주는 데가 없어서 적산온도로 세거나 주마다 여기를 고쳐야 한다.
+ */
+export interface SeasonStat {
+    label: Msg;
+    /** 겨울의 「체감 -14°」 — 있으면 라벨 옆에 한 단계 진하게 붙는다 */
+    sub?: Msg;
+    /** 눈금선이 차는 정도. 겨울은 온도라 채우지 않는다 */
+    fill: string;
+}
+
+const SEASON_STATS: Record<'petal' | 'rain' | 'leaf' | 'snow', SeasonStat> = {
+    petal: {
+        label: {ko: '개화 90%', en: 'BLOOM 90%', es: 'FLORACIÓN 90%'},
+        fill: '90%',
+    },
+    rain: {
+        label: {ko: '강수 80% 습도 88%', en: 'RAIN 80% HUMIDITY 88%', es: 'LLUVIA 80% HUMEDAD 88%'},
+        fill: '80%',
+    },
+    leaf: {
+        label: {ko: '단풍 60%', en: 'FOLIAGE 60%', es: 'FOLLAJE 60%'},
+        fill: '60%',
+    },
+    snow: {
+        label: {ko: '-8°', en: '-8°', es: '-8°'},
+        sub: {ko: '체감 -14°', en: 'FEELS -14°', es: 'SENSACIÓN -14°'},
+        fill: '100%',
+    },
+};
+
+/** 시즌 테마가 아니면 없다 — 그때는 이 줄을 아예 안 그린다 */
+export function seasonStat(kind: 'petal' | 'rain' | 'leaf' | 'snow' | null): SeasonStat | null {
+    return kind ? SEASON_STATS[kind] : null;
+}

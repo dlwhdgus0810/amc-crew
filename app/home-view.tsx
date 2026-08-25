@@ -15,8 +15,8 @@ import { signupCounts } from '@/lib/db/signups';
 import { hiddenSlugs } from '@/lib/db/hidden';
 import { CATEGORIES, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { cookies } from 'next/headers';
-import { statementOfDay } from '@/lib/statements';
-import { CARD_THEME_COOKIE, PREVIEW_COOKIE, toCardTheme } from '@/lib/card-theme';
+import { seasonStat, statementOfDay } from '@/lib/statements';
+import { CARD_THEME_COOKIE, PREVIEW_COOKIE, themeDeco, toCardTheme } from '@/lib/card-theme';
 import { todayLocal } from '@/lib/dates';
 import { pick } from '@/lib/i18n';
 import HomeClient from './home-client';
@@ -86,10 +86,10 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
    * 봄인데 첫 줄만 평소 문구가 나온다.
    */
   const jar = await cookies();
-  const today = statementOfDay(
-    todayLocal(),
-    toCardTheme(jar.get(PREVIEW_COOKIE)?.value ?? jar.get(CARD_THEME_COOKIE)?.value)
-  );
+  const theme = toCardTheme(jar.get(PREVIEW_COOKIE)?.value ?? jar.get(CARD_THEME_COOKIE)?.value);
+  const today = statementOfDay(todayLocal(), theme);
+  /* 계절이 아니면 null이라 아래 줄이 아예 안 그려진다 */
+  const stat = seasonStat(themeDeco(theme));
   return (
     <>
       <div className="statement">
@@ -97,6 +97,22 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
         <br />
         <span className="dim2">{pick(locale, today.bottom)}</span>
       </div>
+      {/*
+        * 계절 상태줄 — 첫 줄 아래 한 줄. 봄은 개화, 여름은 강수, 가을은 단풍,
+        * 겨울은 기온이다 (lib/statements.ts의 SEASON_STATS).
+        *
+        * aria-hidden인 것은 장식이기 때문이다. 실제 일정은 아래 카드에 다 있고,
+        * 이 줄의 숫자는 지금 고정값이다 — 낭독기가 읽어 줄 값이 아니다.
+        */}
+      {stat && (
+        <div className="season-status" aria-hidden>
+          <b>
+            {pick(locale, stat.label)}
+            {stat.sub && <em> {pick(locale, stat.sub)}</em>}
+          </b>
+          <i style={{ '--fill': stat.fill } as React.CSSProperties} />
+        </div>
+      )}
       {/*
         * 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다.
         * 관리자가 내려 둔 것은 여기서도 뺀다 — 카드에는 없는데 이 줄에만 남으면

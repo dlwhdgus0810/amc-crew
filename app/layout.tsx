@@ -80,6 +80,7 @@ const grotesk = Space_Grotesk({
  */
 // 시즌 테마 — 카드 모양과 카드 장식 (2차에서 overrides.css에 붙였던 부분을 대신한다)
 import './season.css';
+import './season-status.css';
 import './season-winter.css';
 import './season-autumn.css';
 

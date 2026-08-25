@@ -1,0 +1,54 @@
+/* ============================================================================
+ * 시즌 상태줄 — 2차 2a~2e의 머리 한 줄을 네 계절에 (27차)
+ *
+ * 2a에 "개화 90%", 2d에 "-8° 체감 -14°"가 낱말 표시 아래 한 줄로 있었습니다.
+ * 그 한 줄을 네 계절 전부에 둡니다. 계절마다 재는 것이 다릅니다 —
+ * 봄은 개화율, 여름은 강수, 가을은 단풍, 겨울은 기온입니다.
+ *
+ * 눈금선은 값이 있는 계절에서 **값만큼 찹니다**(--fill). 90%면 선의 90%가 진하고
+ * 나머지는 사라집니다. 겨울은 퍼센트가 아니라 온도라서 채우지 않고 그냥 사라집니다.
+ *
+ * 선의 굵기와 모서리는 계절 토큰을 따릅니다 — 봄 2px 둥근 끝, 겨울 1px 각진 끝.
+ *
+ * 마크업: page-head 안, 제목 아래에 한 줄이 늘어납니다(아래 README 참고).
+ * import 순서: season.css → season-status.css
+ * ========================================================================= */
+
+.season-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 7px;
+}
+.season-status b {
+  flex: none;
+  font: 400 10px/1 'IBM Plex Mono', monospace;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+/* 눈금선. --fill 까지는 진하고 그 뒤로 사라진다 — 값이 곧 선의 길이다. */
+.season-status i {
+  flex: 1;
+  min-width: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    var(--accent) 0,
+    var(--accent) var(--fill, 100%),
+    color-mix(in srgb, var(--accent) 0%, transparent) 100%);
+}
+/* ── 계절마다 ─────────────────────────────────────────────────────────── */
+html[data-season='petal'] .season-status i { height: 2px; border-radius: 999px; }
+html[data-season='rain']  .season-status i { height: 2px; border-radius: 1px; }
+html[data-season='leaf']  .season-status i { height: 2px; border-radius: 999px; }
+/* 겨울은 온도 — 채울 값이 없다. 1px 각진 선이 오른쪽으로 사라진다. */
+html[data-season='snow']  .season-status i {
+  height: 1px;
+  border-radius: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 55%, transparent), transparent);
+}
+/* 겨울만 체감을 옆에 붙인다 — 실제 기온보다 체감이 결정에 쓰인다 */
+html[data-season='snow'] .season-status b em {
+  font-style: normal;
+  color: var(--text-mid);
+}
