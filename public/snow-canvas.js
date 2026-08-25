@@ -88,6 +88,32 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
     this.floorY = this.h - this.skirt;
     /* 칸 하나가 6px. 더 좁으면 봉우리가 톱니처럼 뾰족해지고, 넓으면 계단이 보인다 */
     const n = Math.max(8, Math.round(this.w / 6));
+    /*
+     * **카드 모서리를 따라 앉는다.**
+     *
+     * 눈더미 바닥이 한 줄로 곧게 그어져 있었다. 카드는 네 귀퉁이가 둥근데(--card-r,
+     * 겨울은 13px) 눈은 그 위를 1자로 가로지르니, 귀퉁이 쪽에서는 카드가 없는 허공에
+     * 눈이 얹혀 붕 떠 보였다.
+     *
+     * 칸마다 「그 x에서 카드 윗면이 얼마나 내려가 있는가」를 구해 둔다. 반지름 R짜리
+     * 둥근 모서리는 가장자리에서 d만큼 들어온 자리에서 R - √(R² - (R-d)²)만큼 내려가
+     * 있다. 가장자리(d=0)에서 R, R만큼 들어오면 0이다.
+     *
+     * 위 눈더미와 바닥 눈이 이 값을 함께 쓴다 — 아래 귀퉁이도 같은 곡률이다.
+     */
+    const rr = parseFloat(getComputedStyle(this.parentElement || this).borderTopLeftRadius) || 0;
+    /*
+     * 양 끝(x=0, x=w)은 칸 가운데가 아니라 진짜 귀퉁이다 — 거기서는 R만큼 내려가 있다.
+     * 칸 가운데로만 그리면 첫 칸이 3px 자리라 4.7px밖에 안 내려가서, 제일 바깥 8px이
+     * 그대로 허공에 남는다.
+     */
+    this.dipEdge = rr;
+    this.dip = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = ((i + 0.5) / n) * this.w;
+      const d = Math.min(x, this.w - x);
+      this.dip[i] = d < rr ? rr - Math.sqrt(Math.max(0, rr * rr - (rr - d) * (rr - d))) : 0;
+    }
     if (!this.hs || this.hs.length !== n) {
       this.hs = new Float32Array(n);
       this.ins = new Float32Array(n);
@@ -132,7 +158,9 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
    */
   surfaceY(x) {
     if (!this.w || !this.hs) return null;
-    return this.ledge - this.hs[this.bin(x)];
+    const i = this.bin(x);
+    /* 귀퉁이에서는 카드 윗면이 내려가 있으므로 눈더미 표면도 그만큼 내려간다 */
+    return this.ledge + (this.dip ? this.dip[i] : 0) - this.hs[i];
   }
 
   /**
@@ -264,30 +292,45 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
       ctx.beginPath(); ctx.arc(x, f.y, f.r, 0, 6.2832); ctx.fill();
     }
     /* 칸 가운데를 이차 곡선으로 이어야 계단이 안 보인다 */
-    const y = (i) => this.ledge - hs[i];
+    const dip = this.dip;
+    /* 그 칸에서 카드 윗면이 있는 자리 — 귀퉁이에서는 곡률만큼 내려가 있다 (fit의 dip) */
+    const top = (i) => this.ledge + (dip ? dip[i] : 0);
+    const y = (i) => top(i) - hs[i];
     const cx = (i) => ((i + 0.5) / hs.length) * w;
+    /* 칸을 훑어 곡선을 잇는다. back이면 오른쪽에서 왼쪽으로 되짚는다 */
+    const trace = (fn, back, endY) => {
+      const N = hs.length;
+      if (!back) {
+        for (let i = 0; i < N - 1; i++) {
+          ctx.quadraticCurveTo(cx(i), fn(i), (cx(i) + cx(i + 1)) / 2, (fn(i) + fn(i + 1)) / 2);
+        }
+        ctx.lineTo(w, endY != null ? endY : fn(N - 1));
+      } else {
+        for (let i = N - 1; i > 0; i--) {
+          ctx.quadraticCurveTo(cx(i), fn(i), (cx(i) + cx(i - 1)) / 2, (fn(i) + fn(i - 1)) / 2);
+        }
+        ctx.lineTo(0, endY != null ? endY : fn(0));
+      }
+    };
+    /* 귀퉁이에서 카드 윗면·바닥면이 있는 자리 */
+    const edge = this.dipEdge || 0;
+    const topEnd = this.ledge + edge;
+    const botEnd = this.floorY - edge;
     ctx.beginPath();
-    ctx.moveTo(0, this.ledge + 3);
-    ctx.lineTo(0, y(0));
-    for (let i = 0; i < hs.length - 1; i++) {
-      ctx.quadraticCurveTo(cx(i), y(i), (cx(i) + cx(i + 1)) / 2, (y(i) + y(i + 1)) / 2);
-    }
-    ctx.lineTo(w, y(hs.length - 1));
-    ctx.lineTo(w, this.ledge + 3);
+    ctx.moveTo(0, topEnd);
+    trace(y, false, topEnd);
+    /* 바닥선은 카드 윗면을 따라 되짚어 온다 — 곧게 그으면 귀퉁이에서 눈이 허공에 뜬다 */
+    trace((i) => top(i) + 3, true, topEnd);
     ctx.closePath();
     ctx.fillStyle = 'rgb(' + this.snow + ')';
     ctx.fill();
     /* 카드 안으로 흘러 들어간 눈. 반투명이라 아래 글자가 죽지 않는다 */
     const ins = this.ins;
-    const iy = (i) => this.ledge + ins[i];
+    const iy = (i) => top(i) + ins[i];
     ctx.beginPath();
-    ctx.moveTo(0, this.ledge);
-    ctx.lineTo(0, iy(0));
-    for (let i = 0; i < ins.length - 1; i++) {
-      ctx.quadraticCurveTo(cx(i), iy(i), (cx(i) + cx(i + 1)) / 2, (iy(i) + iy(i + 1)) / 2);
-    }
-    ctx.lineTo(w, iy(ins.length - 1));
-    ctx.lineTo(w, this.ledge);
+    ctx.moveTo(0, topEnd);
+    trace(iy, false, topEnd);
+    trace(top, true, topEnd);
     ctx.closePath();
     ctx.fillStyle = 'rgba(' + this.snow + ',.9)';
     ctx.fill();
@@ -296,22 +339,18 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, iy(0) + 1);
-    for (let i = 0; i < ins.length - 1; i++) {
-      ctx.quadraticCurveTo(cx(i), iy(i) + 1, (cx(i) + cx(i + 1)) / 2, (iy(i) + iy(i + 1)) / 2 + 1);
-    }
+    trace((i) => iy(i) + 1, false);
     ctx.stroke();
     /* 떨어지는 덩어리 — 카드 앞을 지나 아래로 나간다 */
     /* 카드 바닥에 쌓인 눈. 위쪽 눈과 달리 윗면이 밝다 — 빛이 위에서 온다 */
     const fl = this.fl;
-    const fy = (i) => this.floorY - fl[i];
+    /* 아래 귀퉁이도 같은 곡률이다 — 카드 바닥이 그만큼 올라와 있다 */
+    const bot = (i) => this.floorY - (dip ? dip[i] : 0);
+    const fy = (i) => bot(i) - fl[i];
     ctx.beginPath();
-    ctx.moveTo(0, this.floorY);
-    ctx.lineTo(0, fy(0));
-    for (let i = 0; i < fl.length - 1; i++) {
-      ctx.quadraticCurveTo(cx(i), fy(i), (cx(i) + cx(i + 1)) / 2, (fy(i) + fy(i + 1)) / 2);
-    }
-    ctx.lineTo(w, fy(fl.length - 1));
-    ctx.lineTo(w, this.floorY);
+    ctx.moveTo(0, botEnd);
+    trace(fy, false, botEnd);
+    trace(bot, true, botEnd);
     ctx.closePath();
     ctx.fillStyle = 'rgba(' + this.snow + ',.92)';
     ctx.fill();
@@ -319,9 +358,7 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(0, fy(0) - 0.75);
-    for (let i = 0; i < fl.length - 1; i++) {
-      ctx.quadraticCurveTo(cx(i), fy(i) - 0.75, (cx(i) + cx(i + 1)) / 2, (fy(i) + fy(i + 1)) / 2 - 0.75);
-    }
+    trace((i) => fy(i) - 0.75, false);
     ctx.stroke();
     for (const s of this.slabs) {
       const x0 = (s.a / ins.length) * w, x1 = ((s.b + 1) / ins.length) * w;
