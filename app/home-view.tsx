@@ -15,10 +15,11 @@ import { signupCounts } from '@/lib/db/signups';
 import { hiddenSlugs } from '@/lib/db/hidden';
 import { CATEGORIES, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { cookies } from 'next/headers';
-import { seasonStat, statementOfDay } from '@/lib/statements';
+import { seasonStat, statementOfDay, type SeasonStat } from '@/lib/statements';
+import { currentWeather } from '@/lib/weather';
 import { CARD_THEME_COOKIE, PREVIEW_COOKIE, themeDeco, toCardTheme } from '@/lib/card-theme';
 import { todayLocal } from '@/lib/dates';
-import { pick } from '@/lib/i18n';
+import { pick, type Locale } from '@/lib/i18n';
 import HomeClient from './home-client';
 import WhatsNewCard from './whats-new-card';
 import { CategoryCardsSkeleton, LOADING } from './skeleton';
@@ -88,8 +89,7 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
   const jar = await cookies();
   const theme = toCardTheme(jar.get(PREVIEW_COOKIE)?.value ?? jar.get(CARD_THEME_COOKIE)?.value);
   const today = statementOfDay(todayLocal(), theme);
-  /* 계절이 아니면 null이라 아래 줄이 아예 안 그려진다 */
-  const stat = seasonStat(themeDeco(theme));
+  const deco = themeDeco(theme);
   return (
     <>
       <div className="statement">
@@ -101,18 +101,14 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
         * 계절 상태줄 — 첫 줄 아래 한 줄. 봄은 개화, 여름은 강수, 가을은 단풍,
         * 겨울은 기온이다 (lib/statements.ts의 SEASON_STATS).
         *
-        * aria-hidden인 것은 장식이기 때문이다. 실제 일정은 아래 카드에 다 있고,
-        * 이 줄의 숫자는 지금 고정값이다 — 낭독기가 읽어 줄 값이 아니다.
+        * **날씨를 기다리느라 홈이 늦게 뜨지 않게 한다.** 여름·겨울은 Open-Meteo를
+        * 부르는데(lib/weather.ts), 그 사이 고정값으로 같은 줄을 그려 두고 값이 오면
+        * 갈아 끼운다. 줄의 높이가 같아서 자리가 흔들리지 않는다. 30분에 한 번만
+        * 받아 오므로 대개는 기다림 없이 바로 나온다.
         */}
-      {stat && (
-        <div className="season-status" aria-hidden>
-          <b>
-            {pick(locale, stat.label)}
-            {stat.sub && <em> {pick(locale, stat.sub)}</em>}
-          </b>
-          <i style={{ '--fill': stat.fill } as React.CSSProperties} />
-        </div>
-      )}
+      <Suspense fallback={<SeasonStatus stat={seasonStat(deco)} locale={locale} />}>
+        <LiveSeasonStatus deco={deco} locale={locale} />
+      </Suspense>
       {/*
         * 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다.
         * 관리자가 내려 둔 것은 여기서도 뺀다 — 카드에는 없는데 이 줄에만 남으면
@@ -131,4 +127,32 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
       </Suspense>
     </>
   );
+}
+
+/**
+ * 상태줄 한 줄.
+ *
+ * aria-hidden인 것은 장식이기 때문이다 — 실제 일정은 아래 카드에 다 있고, 이 줄은
+ * 계절의 결을 한 줄로 얹은 것이다.
+ */
+function SeasonStatus({ stat, locale }: { stat: SeasonStat | null; locale: Locale }) {
+  if (!stat) return null;
+  return (
+    <div className="season-status" aria-hidden>
+      <b>
+        {pick(locale, stat.label)}
+        {stat.sub && <em> {pick(locale, stat.sub)}</em>}
+      </b>
+      <i style={{ '--fill': stat.fill } as React.CSSProperties} />
+    </div>
+  );
+}
+
+/**
+ * 여름·겨울은 실제 날씨로 그린다. 나머지 계절은 부르지도 않는다 — 개화와 단풍은
+ * 날씨로 알 수 있는 값이 아니다.
+ */
+async function LiveSeasonStatus({ deco, locale }: { deco: 'petal' | 'rain' | 'snow' | 'leaf' | null; locale: Locale }) {
+  const w = deco === 'rain' || deco === 'snow' ? await currentWeather() : null;
+  return <SeasonStatus stat={seasonStat(deco, w)} locale={locale} />;
 }

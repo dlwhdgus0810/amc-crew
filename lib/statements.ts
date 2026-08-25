@@ -1,4 +1,5 @@
 import {Msg} from './i18n';
+import {Weather} from './weather';
 
 /**
  * 홈 첫 줄 — 날마다 바뀐다.
@@ -216,10 +217,11 @@ export function statementOfDay(today: string, theme?: string): Statement {
  * (fill) 숫자를 안 읽어도 어느 쯤인지 보인다. 겨울만 퍼센트가 아니라 온도라
  * 채울 값이 없고, 대신 체감을 sub로 옆에 붙인다.
  *
- * **지금은 고정값이다.** 도안이 준 숫자를 그대로 둔다 — 장식이라 aria-hidden이고,
- * 실제 일정은 아래 카드에 다 있다. 살아 있는 값으로 바꾸려면 겨울 기온·체감과 여름
- * 강수·습도는 Open-Meteo 한 번으로 넷이 다 나오고(키 없이 CORS 됨, 출처 표기 필요),
- * 봄 개화와 가을 단풍은 주는 데가 없어서 적산온도로 세거나 주마다 여기를 고쳐야 한다.
+ * **여름과 겨울은 실제 날씨다** (lib/weather.ts의 Open-Meteo). 아래 숫자는 날씨를 못
+ * 받아 왔을 때 쓰는 값이다 — 값이 없다고 줄이 사라지면 그게 더 이상하다.
+ *
+ * 봄(개화)과 가을(단풍)은 고정값이다. 퍼센트를 주는 데가 없어서 적산온도로 세거나
+ * 주마다 여기를 손으로 고쳐야 한다. 주 단위로 움직이는 값이라 그래도 된다.
  */
 export interface SeasonStat {
     label: Msg;
@@ -249,7 +251,43 @@ const SEASON_STATS: Record<'petal' | 'rain' | 'leaf' | 'snow', SeasonStat> = {
     },
 };
 
-/** 시즌 테마가 아니면 없다 — 그때는 이 줄을 아예 안 그린다 */
-export function seasonStat(kind: 'petal' | 'rain' | 'leaf' | 'snow' | null): SeasonStat | null {
-    return kind ? SEASON_STATS[kind] : null;
+/**
+ * 시즌 테마가 아니면 없다 — 그때는 이 줄을 아예 안 그린다.
+ *
+ * 날씨(w)를 주면 여름과 겨울은 그 값으로 바뀐다. 못 받아 왔으면(null) 위 고정값
+ * 그대로다 — 상태줄은 장식이라 값이 없다고 줄이 사라지면 그게 더 이상하다.
+ *
+ * 봄(개화)과 가을(단풍)은 날씨를 줘도 안 바뀐다. 재는 것이 날씨가 아니다.
+ */
+export function seasonStat(
+    kind: 'petal' | 'rain' | 'leaf' | 'snow' | null,
+    w?: Weather | null
+): SeasonStat | null {
+    const base = kind ? SEASON_STATS[kind] : null;
+    if (!base || !w) return base;
+    /* 소수점은 안 보인다 — 10px 글씨에 「-8.3°」는 읽는 값이 아니라 얼룩이다 */
+    const n = (v: number) => Math.round(v);
+    if (kind === 'snow') {
+        return {
+            label: {ko: `${n(w.temp)}°`, en: `${n(w.temp)}°`, es: `${n(w.temp)}°`},
+            sub: {
+                ko: `체감 ${n(w.feels)}°`,
+                en: `FEELS ${n(w.feels)}°`,
+                es: `SENSACIÓN ${n(w.feels)}°`,
+            },
+            fill: base.fill,
+        };
+    }
+    if (kind === 'rain') {
+        return {
+            label: {
+                ko: `강수 ${n(w.rain)}% 습도 ${n(w.humidity)}%`,
+                en: `RAIN ${n(w.rain)}% HUMIDITY ${n(w.humidity)}%`,
+                es: `LLUVIA ${n(w.rain)}% HUMEDAD ${n(w.humidity)}%`,
+            },
+            /* 눈금은 강수 확률을 따른다 — 둘 중 「오늘 어떤가」에 가까운 쪽이다 */
+            fill: `${Math.max(0, Math.min(100, n(w.rain)))}%`,
+        };
+    }
+    return base;
 }

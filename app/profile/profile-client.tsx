@@ -227,6 +227,12 @@ const T = {
   },
   ticketsGo: { ko: '건의함 열기 →', en: 'Open the suggestion box →', es: 'Abrir el buzón →' },
   logout: { ko: '로그아웃', en: 'Log out', es: 'Cerrar sesión' },
+  /* Open-Meteo는 CC BY 4.0이라 출처를 밝혀야 한다 (lib/weather.ts) */
+  weatherFrom: {
+    ko: '홈 첫 줄의 기온·강수는 Open-Meteo에서 받아요.',
+    en: 'The temperature and rain on the home screen come from Open-Meteo.',
+    es: 'La temperatura y la lluvia de la pantalla de inicio vienen de Open-Meteo.',
+  },
 };
 
 function KakaoIcon() {
@@ -1033,6 +1039,19 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
           {t(T.logout)}
         </button>
       </div>
+
+      {/*
+        * 날씨 출처. Open-Meteo가 CC BY 4.0이라 밝혀야 한다 (lib/weather.ts).
+        *
+        * 홈에 적지 않는 이유는 그 줄이 열 글자짜리 장식이라서다 — 거기에 출처까지
+        * 붙이면 출처가 값보다 길어진다. 평소에 안 보고 찾아볼 때 보는 자리에 둔다.
+        */}
+      <p style={{ color: 'var(--text-dim)', fontSize: 12, margin: '20px 2px 0' }}>
+        {t(T.weatherFrom)}{' '}
+        <a href="https://open-meteo.com/" target="_blank" rel="noreferrer noopener">
+          open-meteo.com
+        </a>
+      </p>
     </>
   );
 }
