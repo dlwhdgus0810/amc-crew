@@ -295,9 +295,19 @@
         for (let i = this.flakes.length - 1; i >= 0; i--) {
           const f = this.flakes[i];
           const py = f.y;
-          f.y += f.vy * dt;
+          /*
+           * 눈더미에 앉는 **중**이면 거의 멈춘다 — 내려앉는 동안 옅어질 시간을 벌려는
+           * 것이다 (아래 sink).
+           *
+           * 다 앉고 나면(sink가 1) 원래 속도로 돌아간다. 그때는 이미 안 보이니 빨라
+           * 보이지 않고, 무엇보다 계속 느리면 카드 뒤를 기어가느라 화면에 눈송이가
+           * 쌓인다 — 재 보니 스물몇 개여야 할 것이 백열여덟 개였고 그중 백여섯이
+           * 다 앉은 채 기어가는 중이었다.
+           */
+          const slow = f.sink != null && f.sink < 1 ? 1 - 0.85 * f.sink : 1;
+          f.y += f.vy * slow * dt;
           f.ph += f.sp * dt;
-          if (f.rv != null) f.rot += f.rv * dt;
+          if (f.rv != null) f.rot += f.rv * slow * dt;
           if (f.y - f.r > this.h) {
             this.flakes.splice(i, 1);
             continue;
@@ -310,6 +320,8 @@
            * 판이라 뒤로도 눈이 지나가는 것이 맞고, 그동안은 카드가 가려서 안 보이다가
            * 아래에서 다시 나온다. 비에서 쓴 것과 같다.
            *
+           * 결정일 때는 앉는 모습을 보여 준다 — 아래 sink 참고. 지나가는 것은 그대로다.
+           *
            * 한 카드에 두 번 쌓지 않으려고 표시를 달아 둔다 — 표면은 눈이 쌓일수록
            * 올라오므로 안 막으면 같은 눈송이가 내려가는 내내 계속 쌓는다.
            */
@@ -321,7 +333,27 @@
               /* 결정은 수를 줄인 만큼 한 송이가 무겁다 (mass, 위 CRYSTAL_MASS) */
               c.el.land(x - c.left, f.mass || f.r);
               f.on = c.el;
+              /*
+               * 결정은 **눈더미에 스르르 잠긴다.**
+               *
+               * 동그라미일 때는 지름이 4px이라 카드 뒤로 넘어가는 것이 안 보였는데,
+               * 20px짜리 결정이 눈더미를 뚫고 카드 뒤로 미끄러져 들어가니 눈이 쌓이는
+               * 것이 아니라 카드 밑으로 빨려 드는 것처럼 보였다.
+               *
+               * 앉는 순간부터 옅어지고 조금 작아진다. 거의 멈춘 채로 그러니 눈더미에
+               * 녹아드는 것으로 읽힌다. 카드 아랫변을 지나면(sinkAt) 도로 제 모습이
+               * 된다 — 그 자리는 카드가 가리고 있던 경계라, 뒤에서 내려오던 눈이
+               * 이어서 나오는 것으로 보인다.
+               */
+              if (f.kind != null) {
+                f.sink = 0;
+                f.sinkAt = c.bottom;
+              }
             }
+          }
+          if (f.sink != null) {
+            if (f.y > f.sinkAt) f.sink = null;
+            else f.sink = Math.min(1, f.sink + 0.055 * dt);
           }
         }
       }
@@ -363,14 +395,18 @@
             ctx.fill();
             continue;
           }
+          /* 눈더미에 잠기는 중이면 옅어지고 조금 작아진다 (step의 sink) */
+          const sunk = f.sink || 0;
+          if (sunk > 0.98) continue;
           /* 미리 그려 둔 것 중 가까운 크기를 골라 돌려서 얹는다 */
           const sheet = this.sheets[f.px < 19 ? 0 : f.px < 26 ? 1 : 2];
           const img = sheet[f.kind];
+          const px = f.px * (1 - 0.28 * sunk);
           ctx.save();
-          ctx.globalAlpha = Math.max(0, Math.min(1, a));
+          ctx.globalAlpha = Math.max(0, Math.min(1, a)) * (1 - sunk);
           ctx.translate(x, f.y);
           ctx.rotate(f.rot);
-          ctx.drawImage(img, -f.px / 2, -f.px / 2, f.px, f.px);
+          ctx.drawImage(img, -px / 2, -px / 2, px, px);
           ctx.restore();
         }
       }
