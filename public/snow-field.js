@@ -16,6 +16,26 @@
   if (window.customElements && customElements.get('snow-field')) return;
 
   /*
+   * 결정으로 그릴 때 눈송이 수를 이만큼으로 줄인다.
+   *
+   * 지금 값은 지름 2~6px 동그라미에 맞춰 고른 것이라, 그대로 두면 폰 화면에 결정이
+   * 일흔 개 넘게 뜬다 (재 봤다). 눈이 아니라 스티커를 뿌린 것이 된다.
+   */
+  const CRYSTAL_RATE = 0.38;
+  /*
+   * 줄인 만큼 한 송이가 더 무겁다.
+   *
+   * 카드에 쌓이는 양은 land(x, r)이 r²에 비례해 얹는다 (public/snow-canvas.js).
+   * 수만 줄이고 r을 그대로 두면 쌓이는 속도도 같이 줄어 **다지는 것에 진다** —
+   * 재 보니 1800프레임에 가장자리가 9.5에서 6.9로 내려갔다(v1은 9.2로 버틴다).
+   * 그러면 가장자리가 안 차니 카드 안으로 넘치지도, 바닥이 차 카드 밑으로 쓸려
+   * 나가지도 않는다. 눈은 오는데 안 쌓이는 것이 그 때문이었다.
+   *
+   * 한 송이가 대신하는 수만큼 무겁게 친다. r² 비례라 √를 씌운다.
+   */
+  const CRYSTAL_MASS = Math.sqrt(1 / CRYSTAL_RATE);
+
+  /*
    * 눈 결정 다섯 종 — 보내 주신 도안(patch12/snowflakes)을 그대로 쓴다.
    *
    * SVG가 viewBox 0 0 24 24에 선 하나로 그려져 있어서, d 문자열을 Path2D에 그냥
@@ -205,14 +225,7 @@
         this.cv.width = Math.max(1, Math.round(this.w * this.dpr));
         this.cv.height = Math.max(1, Math.round(this.h * this.dpr));
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-        /*
-         * 결정은 수를 줄인다.
-         *
-         * 지금 값은 지름 2~6px짜리 동그라미에 맞춰 고른 것이라, 그대로 두면 폰 화면에
-         * 14~27px짜리 결정이 일흔 개 넘게 뜬다 (재 봤다). 눈이 아니라 스티커를 뿌린 것이
-         * 된다. 결정 하나가 눈에 차지하는 자리가 열 배쯤 되니 수를 그만큼 줄인다.
-         */
-        this.rate = this.w * this.per * (this.crystal ? 0.38 : 1);
+        this.rate = this.w * this.per * (this.crystal ? CRYSTAL_RATE : 1);
       }
 
       /** 지금 화면에 보이는 카드들의 자리 — 스크롤·크기 변화 때만 다시 잰다 */
@@ -305,7 +318,8 @@
           if (c && f.on !== c.el && typeof c.el.surfaceY === 'function') {
             const sy = c.el.surfaceY(x - c.left);
             if (sy != null && f.y - c.top + c.ledge + f.r >= sy) {
-              c.el.land(x - c.left, f.r);
+              /* 결정은 수를 줄인 만큼 한 송이가 무겁다 (mass, 위 CRYSTAL_MASS) */
+              c.el.land(x - c.left, f.mass || f.r);
               f.on = c.el;
             }
           }
@@ -315,8 +329,8 @@
       /**
        * 결정 한 장에 입힐 것 — 어느 종류인지, 화면에서 몇 px인지, 도는 속도.
        *
-       * **r은 그대로 둔다.** 카드에 쌓이는 양이 r로 정해지는데(snow-canvas.js의 land),
-       * 여기서 r을 키우면 v2에서만 눈이 몇 배로 쌓인다. 보이는 크기(px)만 따로 든다.
+       * **r은 그대로 둔다.** 떨어지는 속도와 옅어지는 정도가 r을 본다. 보이는 크기(px)와
+       * 카드에 얹을 무게(mass)는 따로 든다.
        */
       dress(r) {
         return {
@@ -329,6 +343,8 @@
            * 거기 맞춰 선도 가늘게 잡았다.
            */
           px: 14 + ((r - 1) / 2.2) * 10 + Math.random() * 3,
+          /* 카드에 앉을 때만 쓰는 값 — 떨어지는 속도와 옅어지는 정도는 r 그대로다 */
+          mass: r * CRYSTAL_MASS,
           rot: Math.random() * 6.28,
           rv: (Math.random() - 0.5) * 0.02,
         };
