@@ -144,6 +144,24 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
     this.step(dt); this.draw();
   }
   bin(x) { return Math.max(0, Math.min(this.hs.length - 1, Math.floor((x / this.w) * this.hs.length))); }
+  /**
+   * 떨어지는 눈덩이의 가장자리 — 덩어리마다 한 번 지어 두고 그대로 쓴다.
+   *
+   * 매 프레임 새로 뽑으면 떨어지는 동안 모양이 부글거린다. 눈덩이는 떨어지면서 모양이
+   * 안 바뀐다.
+   *
+   * up은 윗변, dn은 아랫변이다. 위는 눈의 표면이었으니 고르고, 아래는 떨어져 나온
+   * 자리라 들쭉날쭉하다. 양 끝은 뾰족하게 좁힌다 — 옆의 눈에서 찢어져 나온 자리다.
+   */
+  edgeProfile() {
+    const N = 7, up = [], dn = [];
+    for (let i = 0; i <= N; i++) {
+      const taper = Math.pow(Math.sin((Math.PI * i) / N), 0.55);
+      up.push(taper * (0.74 + Math.random() * 0.26));
+      dn.push(taper * (0.42 + Math.random() * 0.58));
+    }
+    return { up, dn };
+  }
   cap(i) {
     const x = ((i + 0.5) / this.hs.length) * this.w;
     return this.max * Math.max(0, Math.min(1, Math.min(x, this.w - x) / 14));
@@ -212,7 +230,7 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
         const a = i - run, b = i - 1;
         let sum = 0;
         for (let k = a; k <= b; k++) { sum += ins[k]; ins[k] = 0.8 + Math.random() * 0.6; }
-        this.slabs.push({ a, b, th: sum / run, y: 0, vy: 0.35, rot: (Math.random() - 0.5) * 0.5 });
+        this.slabs.push({ a, b, th: sum / run, y: 0, vy: 0.35, rot: (Math.random() - 0.5) * 0.5, edge: this.edgeProfile() });
       }
       run = 0;
     }
@@ -275,7 +293,7 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
         let sum = 0;
         for (let k = a; k <= b; k++) { sum += fl[k]; fl[k] = 1 + Math.random() * 0.8; }
         const th = sum / frun;
-        this.slabs.push({ a, b, th, y: this.floorY - this.ledge - th, vy: 0.3, rot: (Math.random() - 0.5) * 0.6, out: true });
+        this.slabs.push({ a, b, th, y: this.floorY - this.ledge - th, vy: 0.3, rot: (Math.random() - 0.5) * 0.6, out: true, edge: this.edgeProfile() });
       }
       frun = 0;
     }
@@ -377,16 +395,49 @@ if (!customElements.get('snow-canvas')) customElements.define('snow-canvas', cla
     ctx.moveTo(0, fy(0) - 0.75);
     trace((i) => fy(i) - 0.75, false);
     ctx.stroke();
+    /*
+     * **떨어지는 눈덩이는 타원이 아니다.**
+     *
+     * 전에는 ctx.ellipse 하나였다. 가장자리가 자로 그린 듯 매끈하고 좌우가 똑같아서,
+     * 눈이 떨어지는 것이 아니라 흰 알약이 지나가는 것으로 보였다.
+     *
+     * 윗변과 아랫변을 따로 그린다 — 위는 눈의 표면이었으니 고르고, 아래는 찢어져 나온
+     * 자리라 들쭉날쭉하다. 양 끝은 뾰족하다. 모양은 덩어리마다 다르고(edgeProfile)
+     * 떨어지는 내내 그대로다.
+     */
     for (const s of this.slabs) {
       const x0 = (s.a / ins.length) * w, x1 = ((s.b + 1) / ins.length) * w;
       const a = Math.max(0, 1 - s.y / (h - this.ledge + 30));
+      const hw = (x1 - x0) / 2, hh = Math.max(2.5, s.th / 2);
+      const e = s.edge || { up: [0, 1, 1, 1, 1, 1, 1, 0], dn: [0, 1, 1, 1, 1, 1, 1, 0] };
+      const N = e.up.length - 1;
+      const px = (i) => -hw + ((2 * hw) / N) * i;
       ctx.save();
       ctx.translate((x0 + x1) / 2, this.ledge + s.y + s.th / 2);
       ctx.rotate(s.rot * Math.min(1, s.y / 60));
-      ctx.fillStyle = 'rgba(' + this.snow + ',' + (a * 0.92).toFixed(3) + ')';
       ctx.beginPath();
-      ctx.ellipse(0, 0, (x1 - x0) / 2, Math.max(2.5, s.th / 2), 0, 0, 6.2832);
+      ctx.moveTo(px(0), 0);
+      /* 윗변 — 칸 가운데를 이차 곡선으로 이어야 각이 안 진다 (이 파일의 다른 선들과 같다) */
+      for (let i = 0; i < N; i++) {
+        ctx.quadraticCurveTo(px(i), -hh * e.up[i], (px(i) + px(i + 1)) / 2, (-hh * e.up[i] - hh * e.up[i + 1]) / 2);
+      }
+      ctx.lineTo(px(N), 0);
+      /* 아랫변 — 오른쪽에서 왼쪽으로 되짚는다 */
+      for (let i = N; i > 0; i--) {
+        ctx.quadraticCurveTo(px(i), hh * e.dn[i], (px(i) + px(i - 1)) / 2, (hh * e.dn[i] + hh * e.dn[i - 1]) / 2);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(' + this.snow + ',' + (a * 0.92).toFixed(3) + ')';
       ctx.fill();
+      /* 윗면만 한 겹 더 밝게 — 빛이 위에서 온다. 바닥 눈에 쓴 것과 같은 방식이다 */
+      ctx.strokeStyle = 'rgba(255,255,255,' + (a * 0.5).toFixed(3) + ')';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px(0), 0);
+      for (let i = 0; i < N; i++) {
+        ctx.quadraticCurveTo(px(i), -hh * e.up[i], (px(i) + px(i + 1)) / 2, (-hh * e.up[i] - hh * e.up[i + 1]) / 2);
+      }
+      ctx.stroke();
       ctx.restore();
     }
   }
