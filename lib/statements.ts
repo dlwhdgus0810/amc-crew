@@ -252,19 +252,64 @@ const SEASON_STATS: Record<'petal' | 'rain' | 'leaf' | 'snow', SeasonStat> = {
 };
 
 /**
+ * 단풍이 제일 짙은 날 — 캔자스는 10월 하순이다.
+ *
+ * 날짜 하나라 API가 필요 없다. 해마다 며칠씩 다르지만 상태줄이 받을 정밀도가 아니다 —
+ * 「이제 곧」인지 「지났는지」만 말하면 된다.
+ */
+const LEAF_PEAK = {month: 10, day: 25};
+
+/** 눈금이 차기 시작하는 시점 — 이만큼 남았을 때부터 채운다 */
+const LEAF_RUNUP_DAYS = 60;
+/** 지나고 나서 D+로 세는 기간. 넘으면 내년 것을 센다 */
+const LEAF_AFTER_DAYS = 30;
+
+const DAY_MS = 86400000;
+
+/**
+ * 단풍 D-day.
+ *
+ * 지나고 30일까지는 D+로 세고(막 지난 것은 지났다고 말해야 한다), 그 뒤로는 내년
+ * 것을 센다 — 3월에 「D+130」은 아무 말도 아니다.
+ */
+function leafDday(today: string): SeasonStat {
+    const [y, m, d] = today.split('-').map(Number);
+    const now = Date.UTC(y!, m! - 1, d!);
+    const peakOf = (year: number) => Date.UTC(year, LEAF_PEAK.month - 1, LEAF_PEAK.day);
+    let left = Math.round((peakOf(y!) - now) / DAY_MS);
+    if (left < -LEAF_AFTER_DAYS) left = Math.round((peakOf(y! + 1) - now) / DAY_MS);
+
+    const label = (word: string, today_: string) =>
+        left === 0 ? `${word} ${today_}` : left > 0 ? `${word} D-${left}` : `${word} D+${-left}`;
+    return {
+        label: {
+            ko: label('단풍', 'D-DAY'),
+            en: label('FOLIAGE', 'TODAY'),
+            es: label('FOLLAJE', 'HOY'),
+        },
+        /* 남은 날이 줄수록 찬다. 지나고 나면 가득 — 단풍이 든 것이다 */
+        fill: `${Math.max(0, Math.min(100, Math.round(((LEAF_RUNUP_DAYS - left) / LEAF_RUNUP_DAYS) * 100)))}%`,
+    };
+}
+
+/**
  * 시즌 테마가 아니면 없다 — 그때는 이 줄을 아예 안 그린다.
  *
- * 날씨(w)를 주면 여름과 겨울은 그 값으로 바뀐다. 못 받아 왔으면(null) 위 고정값
- * 그대로다 — 상태줄은 장식이라 값이 없다고 줄이 사라지면 그게 더 이상하다.
- *
- * 봄(개화)과 가을(단풍)은 날씨를 줘도 안 바뀐다. 재는 것이 날씨가 아니다.
+ * 계절마다 값이 오는 데가 다르다:
+ *   여름·겨울  날씨 (w). 못 받아 왔으면 위 고정값 그대로다 — 상태줄은 장식이라
+ *              값이 없다고 줄이 사라지면 그게 더 이상하다.
+ *   가을       날짜만으로 센다 (leafDday). 부를 데가 없다.
+ *   봄         아직 고정값이다.
  */
 export function seasonStat(
     kind: 'petal' | 'rain' | 'leaf' | 'snow' | null,
+    today: string,
     w?: Weather | null
 ): SeasonStat | null {
     const base = kind ? SEASON_STATS[kind] : null;
-    if (!base || !w) return base;
+    if (!base) return null;
+    if (kind === 'leaf') return leafDday(today);
+    if (!w) return base;
     /* 소수점은 안 보인다 — 10px 글씨에 「-8.3°」는 읽는 값이 아니라 얼룩이다 */
     const n = (v: number) => Math.round(v);
     if (kind === 'snow') {

@@ -88,7 +88,8 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
    */
   const jar = await cookies();
   const theme = toCardTheme(jar.get(PREVIEW_COOKIE)?.value ?? jar.get(CARD_THEME_COOKIE)?.value);
-  const today = statementOfDay(todayLocal(), theme);
+  const day = todayLocal();
+  const today = statementOfDay(day, theme);
   const deco = themeDeco(theme);
   return (
     <>
@@ -106,8 +107,8 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
         * 갈아 끼운다. 줄의 높이가 같아서 자리가 흔들리지 않는다. 30분에 한 번만
         * 받아 오므로 대개는 기다림 없이 바로 나온다.
         */}
-      <Suspense fallback={<SeasonStatus stat={seasonStat(deco)} locale={locale} />}>
-        <LiveSeasonStatus deco={deco} locale={locale} />
+      <Suspense fallback={<SeasonStatus stat={seasonStat(deco, day)} locale={locale} />}>
+        <LiveSeasonStatus deco={deco} day={day} locale={locale} />
       </Suspense>
       {/*
         * 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다.
@@ -152,7 +153,7 @@ function SeasonStatus({ stat, locale }: { stat: SeasonStat | null; locale: Local
  * 여름·겨울은 실제 날씨로 그린다. 나머지 계절은 부르지도 않는다 — 개화와 단풍은
  * 날씨로 알 수 있는 값이 아니다.
  */
-async function LiveSeasonStatus({ deco, locale }: { deco: 'petal' | 'rain' | 'snow' | 'leaf' | null; locale: Locale }) {
+async function LiveSeasonStatus({ deco, day, locale }: { deco: 'petal' | 'rain' | 'snow' | 'leaf' | null; day: string; locale: Locale }) {
   const w = deco === 'rain' || deco === 'snow' ? await currentWeather() : null;
-  return <SeasonStatus stat={seasonStat(deco, w)} locale={locale} />;
+  return <SeasonStatus stat={seasonStat(deco, day, w)} locale={locale} />;
 }
