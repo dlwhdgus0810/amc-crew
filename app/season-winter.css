@@ -47,8 +47,19 @@ html[data-season='snow'] snow-canvas {
 html[data-season='snow'][data-snow='css'] snow-canvas {
   display: none;
 }
-html[data-season='snow'][data-snow='canvas'] .card-season i,
-html[data-season='snow'][data-snow='canvas'] .card-season em {
+/*
+ * 캔버스가 눈을 그리면 CSS로 그리던 더미는 끈다.
+ *
+ * **:not('css')로 잡는 이유.** 예전에는 [data-snow='canvas']로 잡았는데, 겨울 v2가
+ * 들어오면서 값이 하나 늘었다('crystal'). 그러자 v2에서만 이 규칙이 안 맞아 CSS 더미가
+ * 캔버스 위에 겹쳐 그려졌다 — 카드 위 눈이 두 겹으로 보이고, 위 겹(em)은 폭 전체를
+ * 가로지르는 15px짜리 띠라 양 끝이 1자로 잘려 있었다.
+ *
+ * 값이 늘어날 때마다 여기를 같이 고쳐야 하는 것이 문제였으므로, 「css가 아니면」으로
+ * 뒤집는다. 캔버스로 그리는 값이 몇 개가 되든 이 줄은 그대로 맞는다.
+ */
+html[data-season='snow']:not([data-snow='css']) .card-season i,
+html[data-season='snow']:not([data-snow='css']) .card-season em {
   display: none;
 }
 /* 가장자리를 덮는 이랑 하나. 낱개 i로는 폭 전체를 이을 수 없어서 em을 쓴다 — 장마에서
