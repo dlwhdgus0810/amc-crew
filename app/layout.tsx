@@ -222,7 +222,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
        */
       data-season={themeDeco(cardTheme) ?? undefined}
       data-rain={RAIN_MODE}
-      data-snow={SNOW_MODE}
+      /*
+       * 겨울 v2는 떨어지는 눈을 결정으로 그린다 (public/snow-field.js).
+       * 테마 이름을 CSS·캔버스에 넘기는 고리가 이것뿐이라 여기서 갈라 둔다 —
+       * data-season은 둘 다 'snow'여야 겨울 CSS가 그대로 먹는다.
+       */
+      data-snow={cardTheme === 'winter2' ? 'crystal' : SNOW_MODE}
     >
       <head>
         {/*
@@ -250,7 +255,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </>
         )}
         {/* 카드 위에 쌓이는 눈 — 겨울일 때만 받는다 (public/snow-canvas.js) */}
-        {SNOW_MODE === 'canvas' && themeDeco(cardTheme) === 'snow' && (
+        {SNOW_MODE !== 'css' && themeDeco(cardTheme) === 'snow' && (
           <>
             <script src="/snow-canvas.js" defer />
             {/* 화면 전체의 눈 — 카드를 만나면 위 캔버스에 넘긴다 */}
@@ -271,7 +276,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           kind={
             themeDeco(cardTheme) === 'rain' && RAIN_MODE === 'canvas'
               ? 'rain'
-              : themeDeco(cardTheme) === 'snow' && SNOW_MODE === 'canvas'
+              : themeDeco(cardTheme) === 'snow' && SNOW_MODE !== 'css'
                 ? 'snow'
                 : null
           }
