@@ -31,6 +31,41 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-08-25T17:00',
+    notable: true,
+    title: { ko: '친구에게 테마를 선물할 수 있어요', en: 'You can gift a theme to a friend' },
+    items: [
+      {
+        ko: '상점에서 테마 줄의 「선물하기」를 누르면 친구 목록이 떠요. 이름을 누르면 그 친구 것이 됩니다.',
+        en: 'In the shop, “Gift it” on a theme opens your friends. Tap a name and the theme becomes theirs.',
+      },
+      {
+        ko: '값은 보내는 사람 달란트에서 빠져요. 받는 분 달란트는 그대로예요.',
+        en: 'The talents come out of your balance. The other person’s balance doesn’t change.',
+      },
+      {
+        ko: '내가 아직 안 산 테마도 사 줄 수 있어요. 선물한다고 나까지 갖게 되는 건 아니에요.',
+        en: 'You can buy one you don’t own yourself. Gifting it doesn’t give you a copy.',
+      },
+      {
+        ko: '친구에게만 보낼 수 있어요. 이 앱은 모임에서 만난 사람끼리 친구가 되니까, 모르는 분께 선물이 가는 일은 없어요.',
+        en: 'Friends only. In this app you become friends with people you’ve actually met at a meetup, so a gift never lands on a stranger.',
+      },
+      {
+        ko: '받으면 알림이 가고, 프로필의 「카드 테마」에 누가 준 선물인지 적혀요.',
+        en: 'They get a notification, and “Card theme” on their profile says who it came from.',
+      },
+      {
+        ko: '이미 가지고 계신 분께는 안 보내져요. 눌러도 「이미 가지고 있는 테마예요」라고 알려드려요.',
+        en: 'If they already own it, it won’t send — it tells you instead.',
+      },
+      {
+        ko: '고마운 사람에게 한 번 보내 보세요. 앱을 열 때마다 보이니까, 말보다 오래 남아요.',
+        en: 'Send one to someone you owe a thank-you. They’ll see it every time they open the app — it lasts longer than saying it.',
+      },
+    ],
+  },
+  {
     at: '2026-08-25T14:20',
     notable: true,
     title: { ko: '계절 테마에 상태줄이 생겼어요', en: 'Season themes have a status line now' },
