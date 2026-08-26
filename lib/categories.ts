@@ -565,6 +565,66 @@ export const CATEGORIES: Category[] = [
     name: { ko: '볼링', en: 'Bowling', es: 'Bolos' },
     description: { ko: '양말만 챙겨 오세요', en: 'Just bring socks.', es: 'Solo trae calcetines.' },
   },
+  /*
+   * 나들이 — Jessica 님이 제안했다.
+   *
+   * 여행·캠핑과 겹치지 않는다. 저 둘은 자고 오는 일정이라 날짜 범위와 숙소를 받는데,
+   * 나들이는 하루짜리다. 그래서 여느 카드와 같이 날짜 하나와 시각을 받는다.
+   *
+   * 「어디로」를 따로 안 받는 이유: 여행은 모이는 곳과 가는 곳이 달라서 둘을 나눠 받지만,
+   * 나들이는 그 둘이 같은 데다. 한 칸이면 된다.
+   *
+   * 색 — 볼링(308.9°)과 생일파티(337.0°) 사이 323.0°. 여기가 남은 가장 넓은 자리였다.
+   * 밝기가 같은 열다섯 장의 이웃 간격이 19~28°였는데 열여섯 장째는 그 안에 못 들어간다.
+   * 제일 넓은 28.1° 구멍이 셋 있었고(이삿짐–러닝, 볼링–생일, 생일–밥친구) 그중
+   * 이삿짐–러닝은 sRGB가 그 부근에서 채도를 .09까지밖에 못 내 한 장 더 묽어지고,
+   * 생일–밥친구는 원이 닫히는 자리라 분홍 셋이 나란히 선다. 남은 자리를 반으로 갈라
+   * 양쪽 14°씩 두었다 — 「10° 안쪽으로 붙지 않게」는 지킨다.
+   * L .551 / C .129로 가족 안에 있고, 크림색 글씨 대비는 4.70:1이다 (볼링 4.66, 생일 4.74).
+   */
+  {
+    slug: 'outing',
+    emoji: '🧺',
+    en: 'OUTING',
+    color: '#95559D',
+    fg: '#F6F4EE',
+    kind: 'posts',
+    name: { ko: '나들이', en: 'Outing', es: 'Salida' },
+    // 나들이라고 하면 하루 잡고 멀리 가는 것부터 떠올라서 시작이 무거워진다
+    description: {
+      ko: '멀리 안 가도 나들이예요',
+      en: 'It still counts if it’s close by.',
+      es: 'Cuenta aunque sea aquí al lado.',
+    },
+    seasonal: {
+      cherryblossom: {
+        ko: '이맘때 집에 있으면 좀 아깝잖아요',
+        en: 'This is the month it would be a shame to stay in.',
+        es: 'Este es el mes en que da pena quedarse en casa.',
+      },
+      rainyseason: {
+        ko: '우산 쓰고 걷는 것도 나들이고요',
+        en: 'Walking under an umbrella counts too.',
+        es: 'Pasear con paraguas también cuenta.',
+      },
+      autumn: {
+        ko: '사과 따러 가기 좋은 철이에요',
+        en: 'Apple-picking weather.',
+        es: 'Tiempo de ir a coger manzanas.',
+      },
+      winter: {
+        ko: '추우면 실내로 들어가면 되고요',
+        en: 'If it turns cold, go inside — that still counts.',
+        es: 'Si hace frío, entrad: también cuenta.',
+      },
+    },
+    locationHint: {
+      ko: '예: Loose Park, Kansas City',
+      en: 'e.g. Loose Park, Kansas City',
+      es: 'p. ej. Loose Park, Kansas City',
+    },
+    proposedBy: 'Jessica',
+  },
   {
     slug: 'birthday',
     emoji: '🎂',
