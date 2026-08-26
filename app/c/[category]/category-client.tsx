@@ -289,6 +289,11 @@ const T = {
   signupTermsOk: { ko: '확인했어요, 신청할게요', en: 'Got it — sign me up', es: 'Entendido, me apunto' },
   signupTermsCancel: { ko: '다음에요', en: 'Not now', es: 'Ahora no' },
   joinTermsOk: { ko: '확인했어요, 참가할게요', en: 'Got it — count me in', es: 'Entendido, me apunto' },
+  signupOrCreate: {
+    ko: '기다리지 않고 직접 날짜를 잡아도 돼요. 그렇게 만든 모임은 이 명단을 비우지 않아요.',
+    en: 'You don’t have to wait — you can set a date yourself, and this list stays as it is.',
+    es: 'No hace falta esperar: puedes fijar tú la fecha y esta lista se queda igual.',
+  },
   signupOnlyMembers: {
     ko: '참가신청을 하면 모임을 만들 수 있어요.',
     en: 'Sign up first, then you can create the meetup.',
@@ -724,11 +729,20 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   /*
    * 「모임 만들기」 버튼을 어디에 둘 것인가.
    *
-   * 참가신청을 쓰는 카테고리에서는 목록 어디에도 두지 않는다. 모임을 만드는 길은
-   * 참가신청 카드 하나뿐이다 — 명단이 곧 그 모임의 참가자라서, 명단을 거치지 않고
-   * 만들면 모아 둔 사람들이 빈손으로 남는다.
+   * 참가신청을 쓰는 카테고리에도 둔다. 길이 두 개다:
+   *
+   *  1. 명단이 다 차면 참가신청 카드에서 「이 5명으로 모임 만들기」 — 신청한 사람들이
+   *     그대로 참가자로 들어가고 명단은 비워진다.
+   *  2. 아무 때나 목록에서 직접 만들기 — 명단은 건드리지 않는다.
+   *
+   * 한동안은 1번뿐이었다. 명단을 거치지 않고 만들면 모아 둔 사람들이 빈손으로 남는다는
+   * 이유였는데, 실제로는 다섯이 찰 때까지 아무것도 못 하는 쪽이 더 답답했다. 읽고 싶은
+   * 책이 정해져 있고 날짜도 아는 사람이, 모르는 넷을 기다려야 할 까닭이 없다.
+   *
+   * 두 길은 서로 건드리지 않는다. 직접 만든 모임은 명단을 비우지도 끌어오지도 않으므로,
+   * 「독서나눔 할 사람」 명단은 다섯이 찰 때까지 그대로 쌓인다.
    */
-  const canCreate = Boolean(user) && signupTarget === 0;
+  const canCreate = Boolean(user);
   /* 명단으로 만들 수 있는 사람 = 신청한 사람 (관리자는 바로잡을 수 있어야 하므로 예외) */
   const canCreateFromSignups = signupReady && (signedUp || isAdmin);
 
@@ -783,8 +797,11 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
     resetForm();
     // resetForm이 꺼 두므로 그 뒤에 켠다
     setFromSignups(fromSignups);
-    // 명단으로 만드는 모임은 정원이 정해져 있다 — 미리 채워 두되 고칠 수는 있게 둔다
-    if (fromSignups && category?.signup) setFCapacity(String(category.signup.limit));
+    /*
+     * 이 카테고리의 모임은 정원이 정해져 있다 — 미리 채워 두되 고칠 수는 있게 둔다.
+     * 명단으로 만들든 직접 만들든 책 한 권을 두고 이야기가 굴러가는 인원은 같다.
+     */
+    if (category?.signup) setFCapacity(String(category.signup.limit));
     if (date) setFDate(date);
     // 초대는 아무도 안 고른 채로 시작한다 (resetForm이 비워 둔 그대로) —
     // 미리 전부 골라 두면 뺄 사람을 빼지 않고 그냥 만들어서, 부를 생각이 없던 친구에게 알림이 간다
@@ -1158,6 +1175,13 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
           {signupReady && !signedUp && !isAdmin && (
             <p className="hint" style={{ margin: '12px 0 0' }}>{t(T.signupOnlyMembers)}</p>
           )}
+          {/*
+            * 명단으로 만드는 길이 아직 안 열렸을 때만 낸다. 열린 뒤에는 「이 5명으로
+            * 만들기」가 이 카드의 할 일이라, 그 옆에 다른 길을 같이 적으면 둘 다 흐려진다.
+            */}
+          {canCreate && !canCreateFromSignups && (
+            <p className="hint" style={{ margin: '12px 0 0' }}>{t(T.signupOrCreate)}</p>
+          )}
           <button
             className={signedUp || canCreateFromSignups ? 'secondary' : ''}
             style={{ marginTop: 12, width: '100%' }}
@@ -1210,7 +1234,12 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             </div>
           )}
           {groupByDate(posts).map((group) => renderGroup(group, false))}
-          {canCreate && posts.length > 0 && (
+          {/*
+            * 참가신청 카드가 있는 카테고리에서는 목록이 비어도 이 버튼을 낸다 — 위의
+            * feed-empty가 그런 곳에서는 안 나오므로(카드가 그 자리를 대신한다), 여기서
+            * 안 내면 아직 모임이 하나도 없을 때 직접 만들 길이 화면에서 사라진다.
+            */}
+          {canCreate && (posts.length > 0 || signupTarget > 0) && (
             <button className="new-inline" onClick={() => openCreate()}>
               {t(T.newMeetupWide)}
             </button>

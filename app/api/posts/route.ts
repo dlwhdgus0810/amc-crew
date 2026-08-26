@@ -149,10 +149,13 @@ export async function POST(req: NextRequest) {
   }
 
   /*
-   * 명단으로 만드는 모임은 정원이 정해져 있다 (signup.limit).
+   * 이 카테고리의 모임은 정원이 정해져 있다 (signup.limit).
    * 다 모인 뒤에도 더 들어올 수 있게 하되 거기까지다 — 만든 사람이 안 적어도 서버가 채운다.
+   *
+   * 명단으로 만든 모임만이 아니라 직접 만든 모임도 마찬가지다. 책 한 권을 두고 이야기가
+   * 굴러가는 인원에는 위아래가 다 있고, 그건 어느 길로 만들었는지와 상관이 없다.
    */
-  const signupLimit = body?.fromSignups === true ? getCategory(category)?.signup?.limit : undefined;
+  const signupLimit = getCategory(category)?.signup?.limit;
   if (signupLimit && capacity === undefined) capacity = signupLimit;
 
   const common = {
@@ -237,8 +240,10 @@ export async function POST(req: NextRequest) {
   /*
    * 참가신청 명단으로 만든 모임 — 신청한 사람들을 그대로 참가자로 넣는다.
    *
-   * 이 카테고리(독서나눔)에서 모임을 만드는 유일한 길이다. 「5명이 모였으니 이제 만들자」로
-   * 온 것이라, 만들고 나서 그 5명을 한 명씩 다시 부르라고 하면 뭘 위해 모았는지 알 수 없다.
+   * 이 카테고리(독서나눔)에서 모임을 만드는 두 길 중 하나다 — 나머지 하나는 목록에서 그냥
+   * 만드는 것이고, 그쪽은 fromSignups 없이 오므로 명단을 건드리지 않는다. 이쪽은
+   * 「5명이 모였으니 이제 만들자」로 온 것이라, 만들고 나서 그 5명을 한 명씩 다시 부르라고
+   * 하면 뭘 위해 모았는지 알 수 없다.
    *
    * 명단은 서버에서 다시 읽는다 — 브라우저가 보낸 id를 믿으면 아무나 참가자로 넣을 수 있다.
    */
