@@ -60,7 +60,7 @@ const ENTRIES: ChangelogEntry[] = [
         en: 'If they already own it, it won’t send — it tells you instead.',
       },
       {
-        ko: '고마운 사람에게 한 번 보내 보세요. 앱을 열 때마다 보이니까, 말보다 오래 남아요.',
+        ko: '고마운 사람에게 한 번 보내 보세요. 앱을 열 때마다 보이니까, 말보다 오래 남아요. 꽃은 시들지만 벚꽃 테마는 시들지 않아요.',
         en: 'Send one to someone you owe a thank-you. They’ll see it every time they open the app — it lasts longer than saying it.',
       },
     ],
