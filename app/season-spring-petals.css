@@ -149,13 +149,20 @@
  * 가로 흔들림이 같은 키프레임 안에 있습니다. 겉을 한 겹 더 감싸면 흔들림 주기를 낙하와
  * 어긋나게 둘 수 있지만, season-deco.tsx가 그리는 낱개 span에는 자식이 없습니다.
  * y를 각 지점에서 직접 재서 등속을 유지합니다.
+ *
+ * **꺾이는 자리를 값으로 뽑아 둔 이유.** 아래 여덟 개(--x0..--x4, --y1..--y3)는 이 파일이
+ * 기본값만 정하고, 한 바퀴가 끝날 때마다 app/season-deco.tsx가 새 값을 꽂습니다. 그러지
+ * 않으면 열여섯 장이 **같은 춤을 속도만 달리해서** 춥니다 — 좌우로 꼭 두 번 흔들리고,
+ * 흔들리는 폭도 -20 → 18 → -16 → 20으로 늘 같습니다. 자리와 주기를 아무리 흩어 놓아도
+ * 몇십 초 보고 있으면 그 한 가지 춤이 눈에 들어옵니다. 그 반복을 없애려면 폭도 높이도
+ * 한 장 한 장, 한 바퀴 한 바퀴 달라야 합니다.
  */
 @keyframes kk-petal-air {
-  0%   { transform: translate3d(calc(var(--w, 1) * -20px), 0, 0) rotate3d(1, .5, .25, 0deg); }
-  25%  { transform: translate3d(calc(var(--w, 1) * 18px), 30vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 180deg)); }
-  50%  { transform: translate3d(calc(var(--w, 1) * -16px), 60vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 360deg)); }
-  75%  { transform: translate3d(calc(var(--w, 1) * 20px), 90vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 540deg)); }
-  100% { transform: translate3d(calc(var(--w, 1) * -20px), 120vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 720deg)); }
+  0%   { transform: translate3d(calc(var(--w, 1) * var(--x0, -20px)), 0, 0) rotate3d(1, .5, .25, 0deg); }
+  25%  { transform: translate3d(calc(var(--w, 1) * var(--x1, 18px)), var(--y1, 30vh), 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 180deg)); }
+  50%  { transform: translate3d(calc(var(--w, 1) * var(--x2, -16px)), var(--y2, 60vh), 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 360deg)); }
+  75%  { transform: translate3d(calc(var(--w, 1) * var(--x3, 20px)), var(--y3, 90vh), 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 540deg)); }
+  100% { transform: translate3d(calc(var(--w, 1) * var(--x4, -20px)), 120vh, 0) rotate3d(1, .5, .25, calc(var(--spin, .5) * 720deg)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
