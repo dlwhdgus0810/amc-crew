@@ -3291,3 +3291,11 @@ body:has(.sky-scope.night) .tabbar a.active {
   padding: 8px 14px;
   font-size: 14px;
 }
+
+/* 선물로 받은 테마 표시 — 이름 옆에 한 마디. 줄을 늘리지 않는다 */
+.theme-gift {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+}

@@ -4,9 +4,10 @@ import { getSubscriptions } from '@/lib/db/posts';
 import { getNewsAlerts } from '@/lib/db/news';
 import { hiddenSlugs } from '@/lib/db/hidden';
 import { cookies } from 'next/headers';
-import { walletOf } from '@/lib/db/shop';
+import { giftsFor, walletOf } from '@/lib/db/shop';
 import { CARD_THEME_COOKIE, toCardTheme } from '@/lib/card-theme';
 import { dbGetUser } from '@/lib/db/users';
+import { getLocale } from '@/lib/locale';
 import ProfileClient from './profile-client';
 
 export const dynamic = 'force-dynamic';
@@ -25,17 +26,20 @@ async function ProfileData() {
   if (!user) {
     return (
       <ProfileClient
-        initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0, hidden: [], owned: [], themeShort: 0, theme: 'default' }}
+        initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0, hidden: [], owned: [], gifts: [], themeShort: 0, theme: 'default' }}
       />
     );
   }
-  const [subs, newsAlerts, row, hidden, wallet, jar] = await Promise.all([
+  const locale = await getLocale();
+  const [subs, newsAlerts, row, hidden, wallet, gifts, jar] = await Promise.all([
     getSubscriptions(user.id),
     getNewsAlerts(user.id),
     dbGetUser(user.id),
     hiddenSlugs(),
     // 산 테마를 여기서 읽는다 — 고를 수 있는 것이 산 것뿐이라 목록이 곧 이 값이다
     walletOf(user.id),
+    // 그중 선물로 받은 것은 누가 줬는지까지 (lib/db/shop.ts의 giftsFor)
+    giftsFor(user.id, locale),
     cookies(),
   ]);
   return (
@@ -48,6 +52,7 @@ async function ProfileData() {
         unread,
         hidden,
         owned: wallet.owned,
+        gifts,
         /* 사진을 내려 달란트가 마이너스면 산 테마도 못 고른다 (lib/db/shop.ts의 themeAllowed) */
         themeShort: wallet.left < 0 ? -wallet.left : 0,
         theme: toCardTheme(jar.get(CARD_THEME_COOKIE)?.value),

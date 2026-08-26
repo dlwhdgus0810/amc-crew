@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { themePurchases, users } from './schema';
 import { unstable_cache } from 'next/cache';
@@ -141,6 +141,29 @@ export async function buyTheme(userId: string, theme: string): Promise<BuyResult
    */
   await db.insert(themePurchases).values({ userId, theme, coins: price }).onConflictDoNothing();
   return { ok: true, left: wallet.left - price };
+}
+
+/**
+ * 이 사람이 **선물로 받은** 테마와 준 사람의 이름.
+ *
+ * 지갑의 gifts는 테마 이름뿐이라 「누가 줬는지」가 없다. 프로필에서 「○○님이 준 선물」로
+ * 적으려면 이름이 필요한데, 지갑은 관리자 표도 쓰는 값이라 거기까지 이름을 실어 나르면
+ * 쉰 명 몫의 이름을 늘 같이 읽게 된다. 필요한 화면에서만 따로 묻는다.
+ */
+export async function giftsFor(userId: string, locale: Locale): Promise<{ theme: string; from: string }[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({ theme: themePurchases.theme, gifterId: themePurchases.gifterId })
+    .from(themePurchases)
+    .where(and(eq(themePurchases.userId, userId), isNotNull(themePurchases.gifterId)));
+  if (rows.length === 0) return [];
+  const ids = [...new Set(rows.map((r) => r.gifterId!))];
+  const people = await db
+    .select({ id: users.id, kakaoName: users.kakaoName, nickname: users.nickname, nameEn: users.nameEn })
+    .from(users)
+    .where(inArray(users.id, ids));
+  const byId = new Map(people.map((p) => [p.id, p]));
+  return rows.map((r) => ({ theme: r.theme, from: nameOf(byId.get(r.gifterId!), UNKNOWN_NAME, locale) }));
 }
 
 export type GiftResult =

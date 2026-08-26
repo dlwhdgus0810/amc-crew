@@ -154,6 +154,12 @@ const T = {
   privacyHide: { ko: '숨기기', en: 'Hide', es: 'Ocultar' },
   shop: { ko: '테마 상점', en: 'Theme shop', es: 'Tienda' },
   themeTitle: { ko: '카드 테마', en: 'Card theme', es: 'Tema de tarjetas' },
+  /* 선물로 받은 테마 — 준 사람 이름을 적어 준다 */
+  themeGift: {
+    ko: '{name}님이 준 선물',
+    en: 'a gift from {name}',
+    es: 'un regalo de {name}',
+  },
   themeNone: {
     ko: '아직 산 테마가 없어요. 이 화면 맨 위의 「테마 상점」에서 살 수 있어요.',
     en: 'No themes yet — get one from the shop, at the top of this screen.',
@@ -257,6 +263,8 @@ export interface ProfileInitial {
   unread: number;
   /** 상점에서 산 테마 (lib/db/shop.ts) — 고를 수 있는 것이 이것뿐이다 */
   owned: string[];
+  /** 그중 선물로 받은 것 — 누가 줬는지까지 */
+  gifts: { theme: string; from: string }[];
   /**
    * 달란트가 모자란 만큼 (0이면 정상).
    *
@@ -294,6 +302,8 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
    * 기기에 남기는 이유는, 안 남기면 열 때마다 다시 펴져 있어서 접는 뜻이 없어서다.
    * 서버에 안 둔다 — 이 화면에서 고르는 테마 자체가 기기마다 다르다(쿠키).
    */
+  /* 테마 → 준 사람 이름. 선물이 아니면 없다 */
+  const gaveMe = new Map((initial.gifts ?? []).map((g) => [g.theme, g.from]));
   const [themeOpen, setThemeOpen] = useState(true);
   useEffect(() => {
     try {
@@ -930,6 +940,10 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
                 <span className="theme-pick-body">
                   <span className="theme-pick-name">
                     {key === 'default' ? t(T.themeBasic) : t(CARD_THEMES[key as CardTheme].label)}
+                    {/* 선물로 받은 것이면 누가 줬는지 — 산 것과 받은 것은 다른 이야기다 */}
+                    {gaveMe.get(key) && (
+                      <span className="theme-gift">🎁 {t(T.themeGift, { name: gaveMe.get(key)! })}</span>
+                    )}
                   </span>
                   {key !== 'default' && <span className="hint">{t(CARD_THEMES[key as CardTheme].note)}</span>}
                 </span>
