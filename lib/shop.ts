@@ -206,6 +206,32 @@ export const SHOP_T = {
   price: { ko: '{n} 달란트', en: '{n} talents', es: '{n} talentos' },
   buy: { ko: '사기', en: 'Buy', es: 'Comprar' },
   /*
+   * 친구에게 사 주기 — 값은 내 지갑에서 나가고 테마는 그 친구 것이 된다.
+   *
+   * 친구에게만 보낼 수 있다. 이 앱은 모임에서 만난 사람만 친구가 되므로, 선물도
+   * 서로 아는 사이로 좁혀진다 — 모르는 사람에게 알림이 가는 일이 없다.
+   */
+  gift: { ko: '선물하기', en: 'Gift it', es: 'Regalar' },
+  giftClose: { ko: '접기', en: 'Close', es: 'Cerrar' },
+  giftLoading: { ko: '친구 목록 불러오는 중…', en: 'Loading your friends…', es: 'Cargando tus amigos…' },
+  giftIntro: {
+    ko: '친구에게 이 테마를 사 줄 수 있어요. {n} 달란트가 내 지갑에서 빠지고, 테마는 그 친구 것이 돼요.',
+    en: 'You can buy this theme for a friend. {n} talents come out of your balance and the theme becomes theirs.',
+    es: 'Puedes comprarle este tema a un amigo. Se descuentan {n} talentos de tu saldo y el tema pasa a ser suyo.',
+  },
+  giftNoFriends: {
+    ko: '아직 친구가 없어요. 모임에서 만난 사람을 친구로 추가하면 선물할 수 있어요.',
+    en: 'No friends yet. Add someone you’ve met at a meetup and you can gift to them.',
+    es: 'Aún no tienes amigos. Añade a alguien de una quedada y podrás regalarle.',
+  },
+  giftOwnedTag: { ko: '이미 있어요', en: 'has it', es: 'ya lo tiene' },
+  giftSending: { ko: '보내는 중…', en: 'Sending…', es: 'Enviando…' },
+  giftDone: {
+    ko: '{name}님에게 보냈어요. 알림으로 전해집니다.',
+    en: 'Sent to {name} — they’ll see it in their notifications.',
+    es: 'Enviado a {name}: lo verá en sus avisos.',
+  },
+  /*
    * 산 테마에만 열리는 칸 — 「이건 이렇게 하면 좋겠다」를 그 자리에서 적는다.
    *
    * 건의함(/tickets)이 이미 있는데 여기 따로 두는 이유는 **자리** 때문이다. 테마를

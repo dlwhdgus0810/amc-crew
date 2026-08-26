@@ -325,6 +325,7 @@ CREATE TABLE IF NOT EXISTS theme_purchases (
   user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   theme text NOT NULL,
   coins integer NOT NULL,
+  gifter_id text REFERENCES users(id) ON DELETE SET NULL,
   bought_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, theme)
 );

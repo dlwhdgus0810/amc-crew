@@ -4,6 +4,7 @@ import { themePurchases, users } from './schema';
 import { unstable_cache } from 'next/cache';
 import { allBoardScores, allReviewedShares, boardScoresFor, reviewedSharesFor } from './hosting';
 import { APOLOGY_BEFORE, coinsEarned, priceOf } from '../shop';
+import { areFriends } from './friends';
 import { nameOf, UNKNOWN_NAME } from '../store';
 import type { Locale } from '../i18n';
 
@@ -47,6 +48,8 @@ export interface Wallet {
    */
   left: number;
   owned: string[];
+  /** 그중 선물로 받은 것 */
+  gifts: string[];
 }
 
 /** 사진 데이터를 안 읽는다 — 데이터 URL이라 쉰 명치를 끌어오면 그것만 몇 MB다 */
@@ -58,10 +61,12 @@ const wasHere = sql<boolean>`(${users.createdAt} < ${APOLOGY_BEFORE})`;
 
 export async function walletOf(userId: string): Promise<Wallet> {
   const db = await getDb();
-  const [scores, reviewed, rows, me] = await Promise.all([
+  const [scores, reviewed, rows, gifted, me] = await Promise.all([
     boardScoresFor(userId),
     reviewedSharesFor(userId),
     db.select().from(themePurchases).where(eq(themePurchases.userId, userId)),
+    /* 내가 남에게 사 준 것 — 값은 내 지갑에서 나갔지만 테마는 그 사람 것이다 */
+    db.select().from(themePurchases).where(eq(themePurchases.gifterId, userId)),
     db
       .select({ avatar: hasAvatar, push: hasPush, news: users.newsAlerts, apology: wasHere })
       .from(users)
@@ -72,7 +77,14 @@ export async function walletOf(userId: string): Promise<Wallet> {
   const news = me[0]?.news ?? false;
   const apology = me[0]?.apology ?? false;
   const earned = coinsEarned({ ...scores, reviewed, avatar, push, news, apology });
-  const spent = rows.reduce((n, r) => n + r.coins, 0);
+  /*
+   * 쓴 값 = 내가 산 것 + 내가 사 준 것.
+   *
+   * 받은 것(gifterId가 있는 내 줄)은 안 센다 — 그 값은 사 준 사람이 냈다. 안 거르면
+   * 선물을 받는 순간 받은 사람의 잔액이 깎인다.
+   */
+  const spent =
+    rows.reduce((n, r) => n + (r.gifterId ? 0 : r.coins), 0) + gifted.reduce((n, r) => n + r.coins, 0);
   return {
     ...scores,
     reviewed,
@@ -84,6 +96,8 @@ export async function walletOf(userId: string): Promise<Wallet> {
     spent,
     left: earned - spent,
     owned: rows.map((r) => r.theme),
+    /** 그중 선물로 받은 것 */
+    gifts: rows.filter((r) => r.gifterId).map((r) => r.theme),
   };
 }
 
@@ -129,6 +143,48 @@ export async function buyTheme(userId: string, theme: string): Promise<BuyResult
   return { ok: true, left: wallet.left - price };
 }
 
+export type GiftResult =
+  | { ok: true; left: number }
+  | { ok: false; reason: 'not-for-sale' | 'self' | 'not-friend' | 'owned' | 'short' };
+
+/**
+ * 친구에게 테마를 사 준다.
+ *
+ * 값은 **주는 사람 지갑에서** 빠지고, 테마는 받는 사람 것이 된다. 한 줄로 둘 다
+ * 적는다 — 받는 사람 이름으로 줄을 넣고 gifterId에 주는 사람을 적으면, walletOf가
+ * 값은 주는 쪽에서 빼고 소유는 받는 쪽에 준다.
+ *
+ * **친구에게만.** 이 앱은 모임에서 만난 사람만 친구가 되므로(lib/db/friends.ts),
+ * 선물도 서로 아는 사이로 좁혀진다. 모르는 사람에게 알림이 가는 일이 없다.
+ *
+ * 이미 가진 사람에게는 못 보낸다. 열쇠가 (사람, 테마)라 넣어도 묻히는데, 그러면
+ * 값만 나가고 아무 일도 안 일어난다 — 미리 막고 알려 준다.
+ */
+export async function giftTheme(gifterId: string, toId: string, theme: string): Promise<GiftResult> {
+  const price = priceOf(theme);
+  if (price == null) return { ok: false, reason: 'not-for-sale' };
+  if (gifterId === toId) return { ok: false, reason: 'self' };
+  if (!(await areFriends(gifterId, toId))) return { ok: false, reason: 'not-friend' };
+
+  const [mine, theirs] = await Promise.all([walletOf(gifterId), walletOf(toId)]);
+  if (theirs.owned.includes(theme)) return { ok: false, reason: 'owned' };
+  if (mine.left < price) return { ok: false, reason: 'short' };
+
+  const db = await getDb();
+  /*
+   * 같은 사람에게 같은 테마를 두 번 보내는 것은 기본키가 막는다. 값이 나갔는데 줄이
+   * 안 들어가는 일을 막으려고 넣은 줄 수를 보고 판정한다 — 사는 쪽(buyTheme)과 달리
+   * 여기서는 낸 사람과 받은 사람이 달라서, 묻히면 값만 나간 꼴이 된다.
+   */
+  const put = await db
+    .insert(themePurchases)
+    .values({ userId: toId, theme, coins: price, gifterId })
+    .onConflictDoNothing()
+    .returning();
+  if (put.length === 0) return { ok: false, reason: 'owned' };
+  return { ok: true, left: mine.left - price };
+}
+
 /** 관리자 화면의 한 줄 */
 export interface WalletRow extends Wallet {
   id: string;
@@ -164,10 +220,14 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
       .from(users),
   ]);
 
-  const boughtBy = new Map<string, { theme: string; coins: number }[]>();
+  /* 가진 것은 받는 사람 밑에, 낸 값은 낸 사람 밑에 — 선물이면 그 둘이 다르다 */
+  const boughtBy = new Map<string, { theme: string; coins: number; gifted: boolean }[]>();
+  const paidBy = new Map<string, number>();
   for (const b of buys) {
     if (!boughtBy.has(b.userId)) boughtBy.set(b.userId, []);
-    boughtBy.get(b.userId)!.push({ theme: b.theme, coins: b.coins });
+    boughtBy.get(b.userId)!.push({ theme: b.theme, coins: b.coins, gifted: Boolean(b.gifterId) });
+    const payer = b.gifterId ?? b.userId;
+    paidBy.set(payer, (paidBy.get(payer) ?? 0) + b.coins);
   }
 
   return people
@@ -180,7 +240,7 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
       const apology = p.apology ?? false;
       const reviewed = reviewedAll.get(p.id) ?? 0;
       const earned = coinsEarned({ ...s, reviewed, avatar, push, news, apology });
-      const spent = mine.reduce((n, r) => n + r.coins, 0);
+      const spent = paidBy.get(p.id) ?? 0;
       return {
         id: p.id,
         name: nameOf(p, UNKNOWN_NAME, locale),
@@ -194,6 +254,7 @@ export async function allWallets(locale: Locale): Promise<WalletRow[]> {
         spent,
         left: earned - spent,
         owned: mine.map((r) => r.theme),
+        gifts: mine.filter((r) => r.gifted).map((r) => r.theme),
       };
     })
     /* 산 사람을 먼저, 그다음 달란트 많은 순 — 관리자가 보러 오는 이유가 그 둘이다 */

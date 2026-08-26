@@ -39,6 +39,56 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
   const [preview, setPreview] = useState<CardTheme | null>(null);
   /** 디자인 건의 칸이 열려 있는 테마 — 한 번에 하나만 연다 */
   const [asking, setAsking] = useState<CardTheme | null>(null);
+  /** 선물 칸이 열려 있는 테마 */
+  const [gifting, setGifting] = useState<CardTheme | null>(null);
+  const [friends, setFriends] = useState<{ id: string; name: string; owned: boolean }[] | null>(null);
+  const [giftBusy, setGiftBusy] = useState<string | null>(null);
+
+  /*
+   * 친구 목록은 선물 칸을 처음 열 때 한 번만 받아 온다.
+   *
+   * 상점을 여는 사람 대부분은 선물하러 온 것이 아니다 — 화면을 열 때마다 부르면
+   * 안 쓰는 사람 몫까지 매번 물어보게 된다.
+   */
+  async function openGift(theme: CardTheme) {
+    setGifting(theme);
+    setAsking(null);
+    setMsg(null);
+    if (friends) return;
+    try {
+      const res = await fetch('/api/friends');
+      const data = await res.json();
+      const list: { id: string; name: string }[] = res.ok ? (data.friends ?? []) : [];
+      setFriends(list.map((f) => ({ id: f.id, name: f.name, owned: false })));
+    } catch {
+      setFriends([]);
+    }
+  }
+
+  /*
+   * 선물 보내기. 값은 내 지갑에서 빠지므로 서버가 준 새 지갑으로 갈아 끼운다 —
+   * 여기서 빼기를 하면 화면의 잔액과 실제가 갈릴 수 있다 (사는 것과 같은 이유다).
+   */
+  async function sendGift(theme: CardTheme, to: string, name: string) {
+    setGiftBusy(to);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/shop/gift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme, to }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t(SHOP_T.failed));
+      setW(data.wallet);
+      setMsg({ type: 'ok', text: t(SHOP_T.giftDone, { name }) });
+      setGifting(null);
+    } catch (e) {
+      setMsg({ type: 'err', text: e instanceof Error ? e.message : t(SHOP_T.failed) });
+    } finally {
+      setGiftBusy(null);
+    }
+  }
   const [askTitle, setAskTitle] = useState('');
   const [askBody, setAskBody] = useState('');
   const [askBusy, setAskBusy] = useState(false);
@@ -239,6 +289,10 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
                 ) : owned ? (
                   <>
                     <span className="shop-owned">{t(SHOP_T.owned)}</span>
+                    {/* 내가 가졌어도 친구는 아직 없을 수 있다 */}
+                    <button className="link-btn" onClick={() => (gifting === key ? setGifting(null) : void openGift(key))}>
+                      {gifting === key ? t(SHOP_T.giftClose) : t(SHOP_T.gift)}
+                    </button>
                     {/* 산 사람에게만 열리는 칸 — 서버도 같은 것을 다시 본다 */}
                     <button className="link-btn" onClick={() => (asking === key ? setAsking(null) : openAsk(key))}>
                       {asking === key ? t(SHOP_T.suggestClose) : t(SHOP_T.suggest)}
@@ -251,6 +305,10 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
                       {busy === key ? t(SHOP_T.buying) : t(SHOP_T.buy)}
                     </button>
                     {short > 0 && <span className="hint">{t(SHOP_T.short, { n: short })}</span>}
+                    {/* 내가 안 가진 테마도 친구에게는 사 줄 수 있다 */}
+                    <button className="link-btn" onClick={() => (gifting === key ? setGifting(null) : void openGift(key))}>
+                      {gifting === key ? t(SHOP_T.giftClose) : t(SHOP_T.gift)}
+                    </button>
                     {isAdmin && (
                       <button className="link-btn" onClick={() => (asking === key ? setAsking(null) : openAsk(key))}>
                         {asking === key ? t(SHOP_T.suggestClose) : t(SHOP_T.suggest)}
@@ -259,6 +317,29 @@ export default function ShopClient({ wallet }: { wallet: Wallet }) {
                   </>
                 )}
               </span>
+              {gifting === key && (
+                <span className="shop-ask">
+                  <span className="hint">{t(SHOP_T.giftIntro, { n: price ?? 0 })}</span>
+                  {friends == null ? (
+                    <span className="hint">{t(SHOP_T.giftLoading)}</span>
+                  ) : friends.length === 0 ? (
+                    <span className="hint">{t(SHOP_T.giftNoFriends)}</span>
+                  ) : (
+                    <span className="gift-friends">
+                      {friends.map((f) => (
+                        <button
+                          key={f.id}
+                          className="secondary"
+                          disabled={giftBusy !== null || (price ?? 0) > w.left}
+                          onClick={() => void sendGift(key, f.id, f.name)}
+                        >
+                          {giftBusy === f.id ? t(SHOP_T.giftSending) : f.name}
+                        </button>
+                      ))}
+                    </span>
+                  )}
+                </span>
+              )}
               {asking === key && (
                 <span className="shop-ask">
                   <span className="hint">{t(SHOP_T.suggestIntro)}</span>

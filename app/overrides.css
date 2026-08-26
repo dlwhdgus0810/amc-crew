@@ -3279,3 +3279,15 @@ body:has(.sky-scope.night) .tabbar a.active {
 .shop-ask button {
   align-self: flex-start;
 }
+
+/* 선물 받을 친구 고르기 — 이름이 버튼이다. 몇 명이든 접혀 내려간다 */
+.gift-friends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gift-friends button {
+  min-height: 0;
+  padding: 8px 14px;
+  font-size: 14px;
+}

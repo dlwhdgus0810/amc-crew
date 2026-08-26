@@ -28,6 +28,8 @@ export const NOTIF = {
   signup: 'signup',
   /** 등급이 올랐다 — 순위표로 */
   tier: 'tier',
+  /** 친구가 테마를 선물했다 — 프로필의 「카드 테마」로 */
+  gift: 'gift',
 } as const;
 
 /**

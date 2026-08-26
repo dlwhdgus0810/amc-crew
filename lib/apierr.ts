@@ -189,6 +189,21 @@ export const E = {
     en: 'Not enough talents.',
     es: 'No tienes talentos suficientes.',
   },
+  giftSelf: {
+    ko: '나에게는 선물할 수 없어요.',
+    en: 'You can’t gift a theme to yourself.',
+    es: 'No puedes regalarte un tema a ti mismo.',
+  },
+  giftNotFriend: {
+    ko: '친구인 사람에게만 선물할 수 있어요.',
+    en: 'You can only gift to a friend.',
+    es: 'Solo puedes regalar a un amigo.',
+  },
+  giftOwned: {
+    ko: '그분은 이미 가지고 있는 테마예요.',
+    en: 'They already own that theme.',
+    es: 'Ya tiene ese tema.',
+  },
   themeNotOwned: {
     ko: '이 테마를 아직 안 사셨어요.',
     en: 'You don’t own that theme yet.',

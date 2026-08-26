@@ -790,6 +790,13 @@ export const themePurchases = pgTable(
     theme: text('theme').notNull(),
     /** 살 때 낸 값 — 나중에 값이 바뀌어도 이 줄은 그대로다 */
     coins: integer('coins').notNull(),
+    /**
+     * 선물이면 **낸 사람**. 자기가 산 것이면 null이다.
+     *
+     * 값을 낸 사람과 갖는 사람이 달라서 칸이 하나 더 필요하다. 이 줄의 coins는 낸
+     * 사람의 지갑에서 빠지고(lib/db/shop.ts의 walletOf), 받은 사람은 갖기만 한다.
+     */
+    gifterId: text('gifter_id').references(() => users.id, { onDelete: 'set null' }),
     boughtAt: timestamp('bought_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.theme] })]
