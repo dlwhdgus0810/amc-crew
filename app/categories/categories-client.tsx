@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES, CAT_LAYOUT_COOKIE, CAT_LAYOUT_MAX_AGE, type CatLayout } from '@/lib/categories';
 import { useT } from '../i18n';
 import CategoryCard from '../category-card';
 import useNextMeetups, { type NextMeetupsSeed } from '../use-next-meetups';
@@ -48,10 +48,17 @@ function KakaoIcon() {
 /*
  * 배열 선택 — 좁은 화면(폰·PWA)에서만 쓴다. 700px 이상은 이미 2열, 1024px 이상은 3열이라
  * 고를 것이 없어서 cat-tile.css가 토글 자체를 숨긴다.
- * 값은 localStorage에 남긴다. 서버가 알 필요가 없고(취향이라 계정에 묶지 않는다),
- * 첫 렌더는 서버와 같은 'rows'로 그린 뒤 마운트 후에 바꿔 하이드레이션 불일치를 피한다.
+ *
+ * **여기서 고른 것이 홈에도 걸린다.** 두 화면이 같은 카드를 그리므로 한쪽만 한 줄로
+ * 남을 이유가 없다. 스위치는 이 화면에만 둔다 — 홈에도 달면 같은 스위치가 둘이 된다.
+ *
+ * 그래서 값이 쿠키다 (lib/categories.ts). localStorage면 서버가 모르니 홈도 늘 한 줄로
+ * 그렸다가 마운트한 뒤에 바뀌는데, 홈은 앱을 열면 처음 보는 화면이라 그 다시 배치가
+ * 매번 보인다. 쿠키는 서버가 첫 렌더에 읽어 html에 붙인다 (app/layout.tsx).
+ *
+ * 값을 바꿀 때 router.refresh()를 안 부른다 — html의 표시를 직접 갈아 끼우면 CSS가
+ * 그 자리에서 따라오고, 서버를 다시 부르면 카드가 한 번 껌뻑인다.
  */
-type Layout = 'rows' | 'tile';
 const LAYOUT_KEY = 'kk-cat-layout';
 
 /* 아이콘은 카테고리 아이콘(app/cat-icon.tsx)·탭바와 같은 규격 — 24 격자, 굵기 1.8, 둥근 끝 */
@@ -97,6 +104,8 @@ export interface CategoriesInitial {
   summaries: NextMeetupsSeed;
   /** 관리자가 목록에서 내려 둔 카테고리 */
   hidden: string[];
+  /* 지난번에 고른 배열 — 서버가 쿠키에서 읽어 온다. 토글의 눌린 표시가 첫 렌더부터 맞아야 한다 */
+  layout: CatLayout;
 }
 
 export default function CategoriesPage({ initial }: { initial: CategoriesInitial }) {
@@ -108,19 +117,31 @@ export default function CategoriesPage({ initial }: { initial: CategoriesInitial
   /* 관리자가 내려 둔 카테고리는 목록에서 뺀다 — 주소로는 그대로 열린다 */
   const shown = CATEGORIES.filter((c) => !initial.hidden.includes(c.slug));
 
-  const [layout, setLayoutState] = useState<Layout>('rows');
+  const [layout, setLayoutState] = useState<CatLayout>(initial.layout);
   const loggedIn = Boolean(useViewer().user);
   const refresh = useRefreshSession();
 
-  // 지난번에 고른 배열
+  /*
+   * 쿠키로 옮기기 전에 고른 사람들 — localStorage에 남아 있던 값을 한 번 쿠키로 옮긴다.
+   * 이게 없으면 바둑판으로 보던 사람이 이번 배포에서 말없이 한 줄로 돌아간다.
+   * 옮기고 나면 그 자리를 지운다 — 두 곳에 남으면 다음에 어느 쪽이 맞는지 알 수 없다.
+   */
   useEffect(() => {
     const saved = localStorage.getItem(LAYOUT_KEY);
-    if (saved === 'tile' || saved === 'rows') setLayoutState(saved);
+    if (!saved) return;
+    localStorage.removeItem(LAYOUT_KEY);
+    // 쿠키를 이미 고른 뒤라면 그쪽이 최신이다
+    if (document.cookie.includes(`${CAT_LAYOUT_COOKIE}=`)) return;
+    if (saved === 'tile' || saved === 'rows') chooseLayout(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function chooseLayout(next: Layout) {
+  function chooseLayout(next: CatLayout) {
     setLayoutState(next);
-    localStorage.setItem(LAYOUT_KEY, next);
+    document.cookie = `${CAT_LAYOUT_COOKIE}=${next}; path=/; max-age=${CAT_LAYOUT_MAX_AGE}; samesite=lax`;
+    // CSS가 읽는 것은 이 표시다 — 쿠키만 쓰면 다음에 서버가 그릴 때까지 안 바뀐다
+    if (next === 'tile') document.documentElement.dataset.catLayout = 'tile';
+    else delete document.documentElement.dataset.catLayout;
   }
 
   // 서버가 다시 그려 새 prop이 오면 상태로 옮긴다 (useState의 첫 값은 처음 한 번만 쓰인다)
@@ -201,7 +222,7 @@ export default function CategoriesPage({ initial }: { initial: CategoriesInitial
         </div>
       )}
 
-      <div className={layout === 'tile' ? 'cat-grid tile' : 'cat-grid'}>
+      <div className="cat-grid">
         {shown.map((c) => (
           <CategoryCard
             key={c.slug}

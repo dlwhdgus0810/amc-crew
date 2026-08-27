@@ -195,7 +195,12 @@ export default function CategoryCard({
       <div className="car-top">
         <span className="car-idx">
           {dragHandle}
-          {category.en}
+          {/*
+            * 영문 라벨을 감싸 두는 이유는 바둑판 배열이다 — 거기서는 이 글자만 접는데,
+            * 맨 글자면 CSS로 집을 수가 없어서 .car-idx를 통째로 접게 되고 그러면 홈의
+            * 순서 바꾸기 손잡이(⠿)가 같이 사라진다.
+            */}
+          <span className="car-en">{category.en}</span>
         </span>
         {showToggles && (
           <span className="car-actions">

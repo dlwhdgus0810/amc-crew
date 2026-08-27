@@ -25,6 +25,7 @@ import SeasonScripts from './season-scripts';
 import { CardThemeProvider } from './card-theme-context';
 import { themeAllowed } from '@/lib/db/shop';
 import { priceOf } from '@/lib/shop';
+import { CAT_LAYOUT_COOKIE, toCatLayout } from '@/lib/categories';
 import {
   CARD_THEME_COOKIE,
   PREVIEW_COOKIE,
@@ -223,6 +224,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
        * (변수 값만 내려간다) 카드 등장 지연은 시즌에서만 걸어야 해서 이 고리가 필요하다.
        */
       data-season={themeDeco(cardTheme) ?? undefined}
+      /*
+       * 카드 배열 취향. 둘러보기의 토글이 쿠키에 적고 홈도 같이 따른다 — CSS가 쿠키를
+       * 읽을 방법이 없어서 여기서 한 번 붙여 준다 (app/cat-tile.css의 선택자).
+       * 'rows'일 때는 안 붙인다. 기본값이라 붙여 봐야 걸리는 규칙이 없다.
+       */
+      data-cat-layout={toCatLayout(jar.get(CAT_LAYOUT_COOKIE)?.value) === 'tile' ? 'tile' : undefined}
       data-rain={RAIN_MODE}
       data-snow={SNOW_MODE}
     >

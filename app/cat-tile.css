@@ -5,12 +5,15 @@
 
    하는 일
    1) 둘러보기 제목 줄 오른쪽의 「배열」 아이콘 토글 두 개
-   2) .cat-grid.tile — 좁은 화면에서 2열 바둑판 (카드 안쪽 값까지)
+   2) 좁은 화면에서 2열 바둑판 (카드 안쪽 값까지) — 둘러보기(.cat-grid)와 홈(.car) 둘 다.
+      켜는 스위치는 둘러보기에만 있고, 고른 값은 쿠키로 남아 html의 data-cat-layout으로
+      내려온다 (lib/categories.ts의 CAT_LAYOUT_COOKIE, app/layout.tsx). CSS가 쿠키를 읽을
+      방법이 없어서 그 한 고리를 거친다.
    3) 리더보드 링크에 선 아이콘이 붙은 자리 정리
 
    왜 좁은 화면에만: globals.css가 700px에서 2열, 1024px에서 3열로 이미 나눈다.
    그 위에서는 고를 것이 없으므로 토글을 숨기고 바둑판 규칙도 걸지 않는다
-   (걸어두면 .cat-grid.tile이 3열 규칙을 이겨서 데스크톱이 2열로 내려간다).
+   (걸어두면 [data-cat-layout='tile'] :is(.cat-grid, .car)이 3열 규칙을 이겨서 데스크톱이 2열로 내려간다).
    ============================================================ */
 
 /* ── 제목 줄 오른쪽 ──────────────────────────────────────── */
@@ -64,28 +67,36 @@
 
 /* ── 2열 바둑판 ─────────────────────────────────────────── */
 @media (max-width: 699px) {
-  .cat-grid.tile {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) {
+    /* 둘러보기(.cat-grid)는 이미 격자지만 홈(.car)은 세로 flex다 — 여기서 격자로 바꾼다 */
+    display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
   /* 폭이 절반이라 카드 안쪽을 줄인다 */
-  .cat-grid.tile .car-card {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-card {
     min-height: 122px;
     padding: 14px 15px;
     gap: 12px;
   }
-  /* 영문 코드(SOCCER)는 장식이라 먼저 접는다 — 그 자리에 카테고리 아이콘이 들어간다 */
-  .cat-grid.tile .car-idx {
+  /*
+   * 영문 코드(SOCCER)는 장식이라 먼저 접는다 — 그 자리에 카테고리 아이콘이 들어간다.
+   *
+   * 감싸고 있는 .car-idx가 아니라 그 안의 .car-en만 접는 것이 중요하다. 홈에서는 같은 칸에
+   * 순서 바꾸기 손잡이(⠿)가 들어 있어서, 칸째로 접으면 즐겨찾기 순서를 바꿀 방법이 사라진다.
+   * 손잡이가 없는 둘러보기에서는 .car-idx가 빈 칸으로 남는데 inline-flex라 폭을 안 먹는다.
+   */
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-en {
     display: none;
   }
-  .cat-grid.tile .car-top {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-top {
     justify-content: flex-end;
     min-height: 22px;
   }
   /* 카테고리 아이콘을 제목 옆에서 카드 왼쪽 위로 올린다.
      제목 안(.car-name)에 있는 그대로를 자리만 옮기는 것이라 카드 컴포넌트는 손대지 않는다 —
      .car-card가 position:relative라 카드 안쪽 여백 기준으로 붙는다. */
-  .cat-grid.tile .car-name .cat-icon {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-name .cat-icon {
     position: absolute;
     top: 14px;
     left: 15px;
@@ -94,25 +105,25 @@
     /* 제목 옆에 붙어 있을 때의 앞 여백 — 왼쪽 위로 오면 카드 여백과 겹친다 */
     margin-left: 0;
   }
-  .cat-grid.tile .car-name {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-name {
     font-size: 19px;
     line-height: 1.18;
     letter-spacing: -0.036em;
     text-wrap: pretty;
   }
   /* 부제목은 접는다. 「못해도 된다」 문구가 중요해서 기본값은 한 줄(rows)로 둔다 */
-  .cat-grid.tile .car-desc {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-desc {
     display: none;
   }
   /* ★·🔔은 동그란 면을 벗고 아이콘만 남긴다 — 카드가 절반 폭이라 면까지 있으면
      제목과 다툰다. 고른 상태는 면 대신 흰색으로 알린다.
      padding/margin을 같은 값으로 맞물려 눈에 보이는 것만 줄이고 누를 자리는 남긴다. */
-  .cat-grid.tile .car-actions {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-actions {
     gap: 12px;
   }
-  .cat-grid.tile .car-icon,
-  .cat-grid.tile .car-icon:hover,
-  .cat-grid.tile .car-icon.on {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-icon,
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-icon:hover,
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-icon.on {
     width: auto;
     height: auto;
     padding: 6px;
@@ -122,7 +133,7 @@
     background: none;
     font-size: 16px;
   }
-  .cat-grid.tile .car-icon.on {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-icon.on {
     color: #fff;
     opacity: 1;
   }
@@ -130,15 +141,15 @@
   /* 다음 일정이 있으면 날짜·시간만 — 장소는 이 폭에서 두 글자만 보이고 말줄임이 된다.
      없을 때는 반대로 「예정된 모임 없음」이 유일한 문구라 그건 남긴다
      (그 경우 .car-foot-when 자체가 없다). */
-  .cat-grid.tile .car-foot {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-foot {
     gap: 8px;
     padding-top: 10px;
   }
-  .cat-grid.tile .car-foot-when ~ .car-foot-detail,
-  .cat-grid.tile .car-foot-sep {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-foot-when ~ .car-foot-detail,
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-foot-sep {
     display: none;
   }
-  .cat-grid.tile .car-foot-detail {
+  [data-cat-layout='tile'] :is(.cat-grid, .car) .car-foot-detail {
     font-size: 12px;
   }
 }

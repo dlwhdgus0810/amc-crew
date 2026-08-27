@@ -123,6 +123,28 @@ export interface Category {
   meteors?: true;
 }
 
+/**
+ * 카드 배열 취향 — 한 줄로 볼지, 두 칸 바둑판으로 볼지.
+ *
+ * **스위치는 둘러보기에만 있고 홈도 이걸 따른다.** 두 화면이 같은 카드(app/category-card.tsx)를
+ * 그리는데 한쪽만 취향을 무시하면 고친 사람이 홈에서 그걸 다시 만난다.
+ *
+ * localStorage가 아니라 쿠키인 이유는 홈이다. 브라우저에만 있으면 서버는 늘 한 줄로 그리고
+ * 마운트한 뒤에 바꾸게 되는데, 둘러보기는 눌러서 들어가는 화면이라 넘어갔지만 홈은 앱을
+ * 열면 처음 보는 화면이라 카드 더미가 매번 눈앞에서 다시 배치된다. 쿠키면 서버가 처음부터
+ * 맞게 그린다 (app/layout.tsx가 html에 data-cat-layout으로 붙이고, app/cat-tile.css가 읽는다).
+ *
+ * 계정에 묶지 않는 것은 그대로다 — 취향이고, 기기마다 다를 수 있다(폰은 바둑판, 노트북은 한 줄).
+ * 폭이 700px을 넘으면 어차피 2·3열이라 이 값이 아무것도 안 바꾼다.
+ */
+export type CatLayout = 'rows' | 'tile';
+export const CAT_LAYOUT_COOKIE = 'cat-layout';
+export const CAT_LAYOUT_MAX_AGE = 400 * 24 * 60 * 60;
+/** 쿠키 값은 손으로 고칠 수 있으므로 아는 값이 아니면 기본으로 돌린다 */
+export function toCatLayout(v: string | undefined | null): CatLayout {
+  return v === 'tile' ? 'tile' : 'rows';
+}
+
 /** 카테고리별로 지정하지 않았을 때 쓰는 장소 문구 */
 export const DEFAULT_LOCATION_LABEL: Msg = { ko: '장소', en: 'Place', es: 'Lugar' };
 export const DEFAULT_LOCATION_HINT: Msg = {

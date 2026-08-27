@@ -420,5 +420,5 @@ html[data-season='rain'] .car-card .car-icon.on .star::before { content: '◉'; 
 }
 
 /* 2열 바둑판에서 물결을 여덟 장으로 줄이려면 이 줄을 켜세요
-.cat-grid.tile .card-season i:nth-child(2n) { display: none; }
+html[data-cat-layout='tile'] :is(.cat-grid, .car) .card-season i:nth-child(2n) { display: none; }
 */
