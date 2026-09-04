@@ -38,9 +38,22 @@
 
 /* ══ 바탕 ═════════════════════════════════════════════════════
    단색 대신 위에서 내려오는 따뜻한 빛 한 단계. 토큰(--bg)은 그대로 쓰고 위쪽만 밝힌다 —
-   겨울이 #E7EDF4 한 줄을 얹은 것과 같은 방식이다. */
+   겨울이 #E7EDF4 한 줄을 얹은 것과 같은 방식이다.
+
+   **background 한 줄이 아니라 color와 image를 나눠 적는다.**
+
+   도안은 `background: radial-gradient(...)` 한 줄이었는데, 그 줄임말은 background-color를
+   함께 transparent로 되돌린다. body의 배경은 화면 전체(canvas)로 번지지만 **번지는 것은
+   색이고 그림은 body 상자 안에만** 그려진다 — 색이 투명이면 상자 밖은 브라우저 기본
+   흰색이 된다. PWA로 열면 상단 노치와 하단 홈 인디케이터 자리가 그 상자 밖이라,
+   금빛인데 위아래만 하얀 띠가 생겼다. 시즌 넷은 globals.css의 `body { background: var(--bg) }`를
+   그대로 두어서 이 일이 없었고, 금빛만 그 줄을 덮어쓰고 있었다.
+
+   색을 따로 두면 상자 밖은 --bg로 차고, 그림(그라데이션)은 그 위에 얹힌다. 그라데이션의
+   끝 색도 --bg 그대로라 상자 안팎에 경계가 없다. */
 html[data-season='gold'] body {
-  background: radial-gradient(120% 52% at 50% -8%, #FBF5E6 0%, var(--bg) 72%);
+  background-color: var(--bg);
+  background-image: radial-gradient(120% 52% at 50% -8%, #FBF5E6 0%, var(--bg) 72%);
 }
 
 /* ══ 머리 ═════════════════════════════════════════════════════
