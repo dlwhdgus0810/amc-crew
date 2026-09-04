@@ -67,6 +67,22 @@ export const CONTRIB_TIERS: HostTier[] = [
   { min: 60, icon: 'trophy', label: { ko: '기록 대장', en: 'Chief archivist', es: 'Jefe del archivo' } },
 ];
 
+/**
+ * 전설의 호스트 카드 **미리보기** 스위치 (관리자 전용).
+ *
+ * 켜면 모임 카드가 전부 그 옷을 입는다 — 시안을 보려는 것뿐이라 등급을 안 본다.
+ * 관리자 화면에서 껐다 켠다 (app/admin/page.tsx).
+ *
+ * **왜 필요한가.** 전설은 60점인데 지금 최고가 54.5점이라 그 옷을 입은 카드가 화면에
+ * 하나도 없다. 볼 것이 없으면 고칠 수도 없다.
+ *
+ * 서버가 이 쿠키를 읽어 html에 표시를 붙이는데, **관리자일 때만 붙인다**
+ * (app/layout.tsx). 쿠키는 브라우저에서 손으로 넣을 수 있으므로 그것만 믿으면
+ * 아무나 켤 수 있다 — 그래도 새는 것은 없지만, 아직 다듬는 중인 시안이다.
+ */
+export const LEGEND_PREVIEW_COOKIE = 'legend-preview';
+export const LEGEND_PREVIEW_MAX_AGE = 30 * 24 * 60 * 60;
+
 /** 점수 → 등급 (첫 칸에 못 미치면 null). 세 순위표가 같은 함수를 쓴다 */
 export function tierOf(tiers: HostTier[], count: number): HostTier | null {
   let tier: HostTier | null = null;

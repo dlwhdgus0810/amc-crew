@@ -16,6 +16,7 @@ import {
   type CardTheme,
 } from '@/lib/card-theme';
 import { COIN } from '@/lib/shop';
+import { LEGEND_PREVIEW_COOKIE, LEGEND_PREVIEW_MAX_AGE } from '@/lib/hosting';
 import { entryLabel } from '@/lib/datefmt';
 import { useViewer } from '../session';
 import { shrinkToJpeg, THUMB_EDGE, uploadThumbOnly } from '@/lib/photo-client';
@@ -165,6 +166,12 @@ const T = {
   placeNone: { ko: '이름을 붙일 사진이 없어요.', en: 'Nothing to name.' },
   placeFailed: { ko: '붙이다 멈췄어요: {why}', en: 'Stopped: {why}' },
   themeTitle: { ko: '카드 색 테마', en: 'Card color theme' },
+  legendTitle: { ko: '전설의 호스트 카드 미리보기', en: 'Legendary-host card preview' },
+  legendHint: {
+    ko: '켜면 모임 카드가 전부 전설의 호스트 카드 모양으로 보여요. 나에게만 보이고, 다른 분들 화면은 그대로예요. 지금은 60점을 넘긴 분이 없어서 이걸 켜야 시안을 볼 수 있어요.',
+    en: 'Turns every meetup card into the legendary-host design, for you only. Nobody has passed 60 points yet, so this is the only way to see it.',
+  },
+  legendOn: { ko: '미리보기 켜짐 — 모임 목록으로 가서 확인해보세요', en: 'Preview on — open a category feed to look', },
   shopLink: { ko: '테마 상점 열기 →', en: 'Open the theme shop →' },
   walletTitle: { ko: '달란트와 산 테마', en: 'Talents and purchases' },
   walletHint: {
@@ -355,6 +362,24 @@ export default function AdminPage() {
     document.cookie = `${CARD_THEME_COOKIE}=${next}; path=/; max-age=${CARD_THEME_MAX_AGE}; samesite=lax`;
     setTheme(next);
     router.refresh();
+  }
+  /*
+   * 전설의 호스트 카드 미리보기 — 켜면 모임 카드가 전부 그 옷을 입는다 (나에게만).
+   * 테마 고르기와 같은 방식이다: 쿠키를 쓰고, 서버가 그걸 읽어 html에 표시를 붙인다.
+   * 다만 여기서는 표시를 그 자리에서 직접 갈아 끼운다 — 이 화면에는 모임 카드가 없어서
+   * 다시 그려 봐야 볼 것이 없고, 어차피 목록으로 넘어가면서 서버가 다시 정한다.
+   */
+  const [legendPreview, setLegendPreview] = useState(false);
+  useEffect(() => {
+    setLegendPreview(document.cookie.includes(`${LEGEND_PREVIEW_COOKIE}=1`));
+  }, []);
+  function toggleLegendPreview(next: boolean) {
+    setLegendPreview(next);
+    document.cookie = next
+      ? `${LEGEND_PREVIEW_COOKIE}=1; path=/; max-age=${LEGEND_PREVIEW_MAX_AGE}; samesite=lax`
+      : `${LEGEND_PREVIEW_COOKIE}=; path=/; max-age=0; samesite=lax`;
+    if (next) document.documentElement.dataset.legendPreview = '';
+    else delete document.documentElement.dataset.legendPreview;
   }
   const [deleted, setDeleted] = useState<
     { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
@@ -1272,6 +1297,26 @@ export default function AdminPage() {
                     </span>
                   </label>
                 ))}
+              </div>
+              {/*
+                * 색 테마와 같은 묶음에 둔다 — 둘 다 「카드가 어떻게 보이나」다.
+                * 스위치 하나 때문에 접는 칸을 열셋으로 늘리지 않는다.
+                */}
+              <h2 style={{ marginTop: 28 }}>{t(T.legendTitle)}</h2>
+              <p className="subtitle" style={{ marginTop: 0 }}>{t(T.legendHint)}</p>
+              <div className="card">
+                <label className="field-row" style={{ justifyContent: 'space-between', gap: 12 }}>
+                  <span style={{ fontWeight: 600 }}>{t(T.legendTitle)}</span>
+                  <input
+                    type="checkbox"
+                    checked={legendPreview}
+                    onChange={(e) => toggleLegendPreview(e.target.checked)}
+                    style={{ width: 20, height: 20, flex: 'none' }}
+                  />
+                </label>
+                {legendPreview && (
+                  <p className="hint" style={{ margin: '10px 0 0' }}>{t(T.legendOn)}</p>
+                )}
               </div>
             </>
           )}

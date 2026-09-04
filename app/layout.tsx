@@ -26,6 +26,7 @@ import { CardThemeProvider } from './card-theme-context';
 import { themeAllowed } from '@/lib/db/shop';
 import { priceOf } from '@/lib/shop';
 import { CAT_LAYOUT_COOKIE, toCatLayout } from '@/lib/categories';
+import { LEGEND_PREVIEW_COOKIE } from '@/lib/hosting';
 import {
   CARD_THEME_COOKIE,
   PREVIEW_COOKIE,
@@ -231,11 +232,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
        */
       data-cat-layout={toCatLayout(jar.get(CAT_LAYOUT_COOKIE)?.value) === 'tile' ? 'tile' : undefined}
       /*
-       * 관리자 표시 — 아직 관리자에게만 보여줄 것이 있을 때 CSS가 이걸 본다
-       * (지금은 전설의 호스트 카드, app/overrides.css). 비밀이 아니다: 관리자에게는
-       * 관리자 화면이 이미 보이고, 이 표시는 무엇이 보이는지만 정할 뿐 값을 담지 않는다.
+       * 전설의 호스트 카드 미리보기 — 켜져 있으면 모임 카드가 전부 그 옷을 입는다.
+       * 아직 60점에 닿은 사람이 없어서 시안을 볼 방법이 이것뿐이다 (lib/hosting.ts).
+       *
+       * **관리자일 때만 붙인다.** 쿠키는 브라우저에서 손으로 넣을 수 있으니 값만 보고
+       * 붙이면 아무나 켤 수 있다.
        */
-      data-admin={viewer.isAdmin ? '' : undefined}
+      data-legend-preview={
+        viewer.isAdmin && jar.get(LEGEND_PREVIEW_COOKIE)?.value === '1' ? '' : undefined
+      }
       data-rain={RAIN_MODE}
       data-snow={SNOW_MODE}
     >

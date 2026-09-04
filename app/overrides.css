@@ -788,12 +788,13 @@ body:has(.poster-zoom) nav.tabbar {
   box-shadow: 0 1px 2px rgba(16, 16, 16, 0.14);
 }
 /* ── 전설의 호스트가 연 모임 ─────────────────────────────────
-   아직 **관리자에게만** 보인다. 열 때는 아래 두 가지를 지운다:
-   선택자 앞의 html[data-admin]과, 「flame」이 붙은 줄.
+   규칙은 첫 줄이 전부다 — 주최 60점을 넘긴 사람이 연 모임이면 카드가 옷을 갈아입고,
+   그건 **모두에게** 보인다. 지금 최고가 54.5점이라 아직 걸리는 카드가 없을 뿐이다.
 
-   flame(열정·30점)이 왜 끼어 있는가: 전설은 60점인데 지금 최고가 54.5점이라
-   crown만 걸어 두면 화면에 나올 카드가 하나도 없다. 볼 것이 없으면 시안을 볼 수가 없어서
-   테스트 동안만 한 칸 아래에도 같은 옷을 입혀 둔다. 규칙 자체는 crown 줄이 전부다.
+   둘째 줄은 시안을 보기 위한 것이다. 걸리는 카드가 하나도 없으면 디자인을 고칠 수가
+   없어서, 관리자가 스위치를 켜면 **모든** 모임 카드가 같은 옷을 입는다 (관리자 본인에게만).
+   스위치는 관리자 화면에 있다 (lib/hosting.ts의 LEGEND_PREVIEW_COOKIE).
+   다 다듬은 뒤에 그 줄만 지우면 되고, 첫 줄은 손댈 일이 없다.
 
    옷은 셋으로 만든다 — 금빛 한 올 테두리, 위에서 내려오는 옅은 금빛, 살짝 뜬 그림자.
    글자나 딱지를 더 얹지 않는 이유는 **이미 말하고 있어서**다. 연 사람의 얼굴이 카드 안
@@ -805,8 +806,8 @@ body:has(.poster-zoom) nav.tabbar {
    위 92px까지만 내려오게 둔다 — 시각과 장소가 있는 머리 부분에만 걸리고 참가자 줄부터는
    여느 카드와 같아진다.
    ────────────────────────────────────────────────────────── */
-html[data-admin] .post-card[data-host-tier='crown'],
-html[data-admin] .post-card[data-host-tier='flame'] {
+.post-card[data-host-tier='crown'],
+html[data-legend-preview] .post-card {
   border-color: color-mix(in oklab, #e3a712 50%, var(--border));
   background-image: linear-gradient(180deg, color-mix(in oklab, #e3a712 10%, transparent), transparent 92px);
   box-shadow: 0 8px 20px -14px color-mix(in oklab, #e3a712 70%, transparent);
