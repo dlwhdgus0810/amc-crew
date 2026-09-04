@@ -7,6 +7,13 @@
    1) IBM Plex Sans KR 로드 + 본문 서체 교체 (Pretendard 자리)
    2) 굵기 450 → 400 (Plex Sans KR은 가변 폰트가 아니라 450이 500으로 올라붙는다)
    3) type-tune.css가 Pretendard로 못 박아둔 라벨들을 --sans로 되돌린다
+
+   **선택자마다 html이 붙어 있는 이유.** 여기 규칙은 전부 type-tune.css의 같은 이름을
+   덮으려고 있는 것인데, 이름이 같으면 명시도도 같아서 「나중에 오는 쪽」이 이긴다.
+   그 차례는 Next가 CSS를 묶는 방식이 정하고, CSS 파일을 하나 더 넣는 것만으로 뒤집힌
+   적이 있다 — 그때 화면 전체의 서체가 테마와 무관하게 Pretendard로 통일됐다.
+   html 한 단어를 앞에 붙이면 (0,0,1)이 (0,0,2)가 되어 차례와 상관없이 이긴다.
+   lib/card-theme.ts가 :root 대신 html:root을 쓰는 것과 같은 이유다.
    ============================================================ */
 
 /*
@@ -18,62 +25,62 @@
   --sans: var(--font-sans), 'IBM Plex Sans KR', -apple-system, 'Malgun Gothic', sans-serif;
 }
 
-body,
-button,
-input,
-select,
-textarea {
+html body,
+html button,
+html input,
+html select,
+html textarea {
   font-family: var(--sans);
 }
 
 /* ── 굵기 재조정 ──────────────────────────────────────────
    Plex Sans KR은 400/500/600/700만 있는 정적 폰트다. 450을 주면
    CSS 매칭 규칙상 500이 선택돼 화면 전체가 무거워진다. 400으로 내린다. */
-body,
-.subtitle,
-.post-meta,
-.notif-item,
-.member-chip,
-.person-chip,
-.ticket-note,
-.msg,
-.install-body span,
-.date-heading .weekday,
-.car-card .car-desc,
-input[type='text'],
-input[type='password'],
-input[type='number'],
-select,
-textarea {
+html body,
+html .subtitle,
+html .post-meta,
+html .notif-item,
+html .member-chip,
+html .person-chip,
+html .ticket-note,
+html .msg,
+html .install-body span,
+html .date-heading .weekday,
+html .car-card .car-desc,
+html input[type='text'],
+html input[type='password'],
+html input[type='number'],
+html select,
+html textarea {
   font-weight: 400;
 }
 
 /* ── Pretendard로 고정돼 있던 라벨·배지 ──────────────────── */
-h2,
-.day-title,
-.eyebrow,
-.field-label,
-.day-hint,
-.format-label,
-.stack-label,
-.create-cat,
-.settle-eyebrow,
-.pay-label,
-.pay-zelle-label,
-.host-rank-title,
-th,
-.repeat-badge,
-.ticket-status,
-.req-status {
+html h2,
+html .day-title,
+html .eyebrow,
+html .field-label,
+html .day-hint,
+html .format-label,
+html .stack-label,
+html .create-cat,
+html .settle-eyebrow,
+html .pay-label,
+html .pay-zelle-label,
+html .host-rank-title,
+html th,
+html .repeat-badge,
+html .ticket-status,
+html .req-status {
   font-family: var(--sans);
 }
 
 /* Plex Sans KR은 Pretendard보다 자체 자간이 넓다 — 제목의 조임을 한 단계 더 준다 */
-h1,
-.statement {
+html h1,
+html .statement {
   letter-spacing: -0.04em;
 }
-.car-card .car-name,
-.settle-mine {
+html .car-card .car-name,
+html .settle-mine {
   letter-spacing: -0.042em;
 }

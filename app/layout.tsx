@@ -85,11 +85,6 @@ import './season.css';
 import './season-status.css';
 import './season-winter.css';
 import './season-autumn.css';
-/*
- * 금빛 · 골드 — 계절이 아니라 값이 붙는 프리미엄 한 장 (patch14).
- * 시즌 넷 뒤에 온다: 공통 규칙은 season.css에 있고 이 파일은 금빛만 담는다.
- */
-import './season-gold.css';
 
 /**
  * 장마 테마에서 카드 안의 물을 무엇으로 그릴지.
@@ -146,6 +141,27 @@ import './cat-tile.css';
  * 특정도가 같으므로 순서가 이긴다.
  */
 import './season-spring-petals.css';
+
+/*
+ * 금빛 · 골드 — 계절이 아니라 값이 붙는 프리미엄 한 장 (patch14).
+ *
+ * **자리를 옮기지 말 것.** 시즌 넷 옆(season-autumn.css 뒤)이 읽기에는 자연스럽지만,
+ * 거기 두면 Next가 CSS 덩어리를 묶는 차례가 통째로 뒤집힌다. 재 봤다 — 빌드된
+ * <link> 차례가 이렇게 됐다:
+ *
+ *   맞을 때   … type-tune → overrides → font-plex·cat-tile (맨 끝)
+ *   뒤집혔을 때 font-plex·cat-tile (맨 앞) → overrides → … → type-tune
+ *
+ * 그러면 「반드시 맨 마지막」인 파일 셋이 맨 앞으로 가서 아무것도 못 덮는다.
+ * 눈에 먼저 띈 것은 서체였다: type-tune.css의 body{Pretendard}가 font-plex.css의
+ * body{var(--sans)}를 이겨서 테마마다 다르던 고운돋움·고운바탕이 전부 Pretendard가 됐다.
+ * 명시도가 같아 순서가 이기는 자리였다.
+ *
+ * 여기(맨 끝)에 두면 차례가 돌아온다. 왜 파일 하나가 그런 차이를 내는지는 Next가
+ * 정하는 일이라 우리가 기댈 수 없다 — 그래서 CSS 파일을 새로 더할 때는 빌드한 뒤
+ * .next/app-build-manifest.json의 /layout CSS 차례를 한 번 보는 편이 낫다.
+ */
+import './season-gold.css';
 
 const META = {
   title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?', es: 'Kansas Korean — ¿quién se apunta?' },
