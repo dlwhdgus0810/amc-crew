@@ -30,6 +30,36 @@ export interface ChangelogEntry {
 
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
+  /*
+   * notable을 안 붙인다 — 홈 카드는 바둑판 항목이 계속 갖는다.
+   * latestNotable()이 「가장 최근 notable」을 고르므로, 여기 붙이면 그쪽에서 뺏어 온다.
+   */
+  {
+    at: '2026-09-04T15:30',
+    title: { ko: '금빛 · 골드 테마가 생겼어요', en: 'A Gold theme, for whoever is first' },
+    items: [
+      {
+        ko: '금박 카드에 빛줄기가 스치고, 배경에는 금가루가 떠올라요. 버튼은 동전이 되고 서체도 고운바탕으로 바뀌어요.',
+        en: 'Gilded cards with a sheen passing across them and gold dust rising behind. Buttons become coins and the type switches to Gowun Batang.',
+      },
+      {
+        ko: '이 테마는 상점에서 팔지 않아요. 호스팅·참여·정성 순위표에서 1위인 분에게 열려요 — 셋 중 하나만 1위여도 돼요.',
+        en: 'It isn’t for sale. It opens to whoever is first on the hosting, attendance or contribution leaderboard — first on any one of the three is enough.',
+      },
+      {
+        ko: '1위에서 내려오면 잠기고, 그 자리에 오른 분에게 열려요. 나중에 다시 1위가 되면 다시 고르지 않아도 그대로 돌아와요.',
+        en: 'Lose the top spot and it locks, and it opens for whoever took it. Get back there later and it returns without you picking it again.',
+      },
+      {
+        ko: '점수가 같아 공동 1위면 그분들 모두 쓸 수 있어요.',
+        en: 'If a tie puts several people first, it opens for all of them.',
+      },
+      {
+        ko: '프로필의 「카드 테마」에서 고를 수 있어요. 열려 있는 분에게만 목록에 보여요.',
+        en: 'Pick it under “Card theme” in your profile. It only appears in the list while it is open to you.',
+      },
+    ],
+  },
   {
     at: '2026-09-04T11:00',
     title: { ko: '나들이 카테고리가 생겼어요', en: 'Outing is a category now' },
