@@ -4,7 +4,7 @@ import { getSubscriptions } from '@/lib/db/posts';
 import { getNewsAlerts } from '@/lib/db/news';
 import { hiddenSlugs } from '@/lib/db/hidden';
 import { cookies } from 'next/headers';
-import { giftsFor, walletOf } from '@/lib/db/shop';
+import { earnedThemesFor, giftsFor, walletOf } from '@/lib/db/shop';
 import { CARD_THEME_COOKIE, toCardTheme } from '@/lib/card-theme';
 import { dbGetUser } from '@/lib/db/users';
 import { getLocale } from '@/lib/locale';
@@ -26,12 +26,12 @@ async function ProfileData() {
   if (!user) {
     return (
       <ProfileClient
-        initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0, hidden: [], owned: [], gifts: [], themeShort: 0, theme: 'default' }}
+        initial={{ subs: [], newsAlerts: false, showPastPrivate: false, unread: 0, hidden: [], owned: [], earned: [], gifts: [], themeShort: 0, theme: 'default' }}
       />
     );
   }
   const locale = await getLocale();
-  const [subs, newsAlerts, row, hidden, wallet, gifts, jar] = await Promise.all([
+  const [subs, newsAlerts, row, hidden, wallet, gifts, earned, jar] = await Promise.all([
     getSubscriptions(user.id),
     getNewsAlerts(user.id),
     dbGetUser(user.id),
@@ -40,6 +40,8 @@ async function ProfileData() {
     walletOf(user.id),
     // 그중 선물로 받은 것은 누가 줬는지까지 (lib/db/shop.ts의 giftsFor)
     giftsFor(user.id, locale),
+    /* 산 것이 아니라 자격으로 열리는 테마 — 지금은 세 순위표 1위의 금빛 하나다 */
+    earnedThemesFor(user.id),
     cookies(),
   ]);
   return (
@@ -52,6 +54,8 @@ async function ProfileData() {
         unread,
         hidden,
         owned: wallet.owned,
+        /* 산 것이 아니라 지금 자격으로 열려 있는 것 — 1위에서 내려오면 사라진다 */
+        earned,
         gifts,
         /* 사진을 내려 달란트가 마이너스면 산 테마도 못 고른다 (lib/db/shop.ts의 themeAllowed) */
         themeShort: wallet.left < 0 ? -wallet.left : 0,

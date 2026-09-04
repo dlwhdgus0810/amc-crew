@@ -481,6 +481,49 @@ export const contribRanking = unstable_cache(contribQuery, ['contrib-ranking'], 
 });
 
 /**
+ * 세 순위표(호스팅·참여·정성)의 **1위들.**
+ *
+ * 금빛 테마를 쓸 수 있는 사람이 누구인지를 이것이 정한다 (lib/db/shop.ts의 themeUsable).
+ * 사서 갖는 것이 아니라 그 자리에 있는 동안만 빌려 쓰는 테마라, 자리에서 내려오면
+ * 다음에 화면을 그릴 때 바로 기본 테마로 돌아간다.
+ *
+ * **공동 1위는 다 준다.** 점수가 같은데 한쪽만 주면 그 순서를 정하는 것은 이름순
+ * (rankNames의 두 번째 정렬 기준)인데, 그건 등수가 아니라 우연이다.
+ *
+ * **0점짜리 1위는 없다.** 아무도 아직 안 한 순위표에서는 맨 윗줄도 0점인데, 그 사람이
+ * 「1위」라서 테마를 얻으면 아무것도 안 하고 얻은 것이 된다.
+ *
+ * 관리자는 애초에 순위표에 안 선다 (withProfiles가 뺀다). 관리자에게는 테마 확인이
+ * 따로 열려 있으므로(app/layout.tsx) 여기서 챙길 것이 없다.
+ *
+ * 열 명씩 받아 오는 것은 공동 1위 때문이다 — 마흔 명 중 열 명이 같은 점수로 1위인
+ * 경우는 없지만, 그 상황이 오면 열한 번째부터는 못 받는 편이 조용히 틀리는 것보다 낫다.
+ */
+export const goldHolders = unstable_cache(
+  async (): Promise<string[]> => {
+    /*
+     * **순위표의 캐시본(hostRanking 등)이 아니라 원본 질의를 부른다.**
+     *
+     * 저쪽은 5분 캐시다. 표를 그리는 데는 그 정도 지연이 괜찮지만 여기서는 다르다 —
+     * 1위에서 내려온 사람이 5분 동안 계속 금빛을 쓰고 있으면, 그 5분은 자격이 없는
+     * 사람이 쓰는 시간이다. 캐시본을 부르면 이 함수의 주기를 아무리 줄여도 안쪽이
+     * 5분이라 소용이 없다.
+     */
+    const [host, join, contrib] = await Promise.all([hostQuery(10), joinQuery(10), contribQuery(10)]);
+    const top = (rows: { id: string; count: number }[]) =>
+      rows.length > 0 && rows[0]!.count > 0 ? rows.filter((r) => r.count === rows[0]!.count).map((r) => r.id) : [];
+    return [...new Set([...top(host), ...top(join), ...top(contrib)])];
+  },
+  ['gold-holders'],
+  /*
+   * 30초. 매 요청마다 세 번 집계하는 것은 화면 한 장을 여는 값으로 비싸고, 그렇다고
+   * 순위표처럼 5분을 두면 「즉시」가 아니게 된다. 30초면 사람이 느끼기에 즉시이고,
+   * 질의는 접속자가 몇이든 1분에 여섯 번을 안 넘는다.
+   */
+  { tags: [POSTS_TAG], revalidate: 30 }
+);
+
+/**
  * 세 순위표의 점수를 **한 사람도 자르지 않고** 전부.
  *
  * 등급 알림이 쓴다 (lib/db/tiers.ts). 순위표는 상위 몇 명만 그리지만 등급은 열 위 밖에서도

@@ -23,8 +23,7 @@ import { getViewer } from '@/lib/session';
 import SeasonDeco from './season-deco';
 import SeasonScripts from './season-scripts';
 import { CardThemeProvider } from './card-theme-context';
-import { themeAllowed } from '@/lib/db/shop';
-import { priceOf } from '@/lib/shop';
+import { themeUsable } from '@/lib/db/shop';
 import { CAT_LAYOUT_COOKIE, toCatLayout } from '@/lib/categories';
 import { LEGEND_PREVIEW_COOKIE } from '@/lib/hosting';
 import {
@@ -223,18 +222,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const previewing = jar.get(PREVIEW_COOKIE)?.value;
   const picked = toCardTheme(previewing ?? jar.get(CARD_THEME_COOKIE)?.value);
   /*
-   * 값이 붙은 테마는 **여기서 자격을 확인한다.** 고른 테마는 쿠키라서, 확인하지 않으면
-   * 산 적 없는 테마를 손으로 넣어 쓸 수 있고 프로필 사진을 내려 달란트가 마이너스가 된
-   * 뒤에도 계속 쓰게 된다 (lib/db/shop.ts의 themeAllowed).
+   * **여기서 자격을 확인한다.** 고른 테마는 쿠키라서, 확인하지 않으면 산 적 없는 테마를
+   * 손으로 넣어 쓸 수 있고, 프로필 사진을 내려 달란트가 마이너스가 된 뒤에도 계속 쓰게
+   * 되고, 순위 1위에서 내려온 뒤에도 금빛이 남는다.
    *
-   * 기본 테마인 사람은 priceOf가 null이라 여기서 바로 끝난다 — DB를 안 부른다.
+   * 세 갈래(얻는 것·값이 있는 것·누구나)를 가르는 것은 lib/db/shop.ts의 themeUsable이다.
+   * 기본 테마인 사람은 그 안에서 DB를 안 부르고 바로 끝난다.
+   *
+   * **자리에서 내려오면 즉시 닫히는 것은 이 줄이 매 요청마다 돌기 때문이다.** 다만
+   * 순위표 자체는 5분 캐시라(lib/db/hosting.ts), 1위가 바뀐 것이 여기 닿기까지는
+   * 최대 5분이 걸린다.
    */
   const cardTheme =
     previewing ||
-    priceOf(picked) == null ||
-    /* 관리자는 산 적이 없어도 쓴다 — 관리자 화면의 선택기가 열 가지를 다 걸어 보는 자리다 */
+    /* 관리자는 자격과 무관하게 쓴다 — 관리자 화면의 선택기가 열세 가지를 다 걸어 보는 자리다 */
     viewer.isAdmin ||
-    (viewer.user && (await themeAllowed(viewer.user.id, picked)))
+    (await themeUsable(picked, viewer.user?.id ?? null))
       ? picked
       : 'default';
   return (

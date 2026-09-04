@@ -2,8 +2,8 @@ import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { getDb } from './index';
 import { themePurchases, users } from './schema';
 import { unstable_cache } from 'next/cache';
-import { allBoardScores, allReviewedShares, boardScoresFor, reviewedSharesFor } from './hosting';
-import { APOLOGY_BEFORE, coinsEarned, priceOf } from '../shop';
+import { allBoardScores, allReviewedShares, boardScoresFor, goldHolders, reviewedSharesFor } from './hosting';
+import { APOLOGY_BEFORE, coinsEarned, EARNED_THEMES, isEarnedTheme, priceOf } from '../shop';
 import { areFriends } from './friends';
 import { nameOf, UNKNOWN_NAME } from '../store';
 import type { Locale } from '../i18n';
@@ -114,6 +114,37 @@ export async function walletOf(userId: string): Promise<Wallet> {
  * 사람만 앱이 느려진다. 사진을 내린 뒤 잠기기까지 최대 1분인데, 잠그는 목적이
  * 「이득이 없게 하는 것」이지 「1초 안에 막는 것」이 아니라 그 정도면 된다.
  */
+/**
+ * **이 사람이 지금 이 테마를 걸 수 있나.** 세 갈래를 한 곳에서 가른다.
+ *
+ *   얻는 테마   그 조건을 지금 만족하는가 (금빛 = 세 순위표 중 하나의 1위)
+ *   값이 있는 것 샀고 달란트가 마이너스가 아닌가 (themeAllowed)
+ *   나머지     누구나
+ *
+ * 예전에는 layout.tsx가 「값이 없으면 통과」로 갈랐는데, 얻는 테마가 생기면서 그
+ * 한 줄로는 안 된다 — 금빛도 값이 없지만 아무나 쓰면 안 되기 때문이다.
+ *
+ * 관리자 예외는 여기 없다. 그건 「이 사람이 자격이 있나」가 아니라 「확인하려고 열어
+ * 둔다」라서, 자격을 재는 이 함수가 아니라 부르는 쪽(app/layout.tsx)이 판단한다.
+ */
+export async function themeUsable(theme: string, userId: string | null): Promise<boolean> {
+  if (isEarnedTheme(theme)) {
+    if (!userId) return false;
+    return (await goldHolders()).includes(userId);
+  }
+  if (priceOf(theme) == null) return true;
+  return userId ? await themeAllowed(userId, theme) : false;
+}
+
+/**
+ * 이 사람이 **지금 얻어서 쓸 수 있는** 테마들 — 프로필의 테마 고르기가 쓴다.
+ * 산 것(owned)과 나눠 두는 이유는 성질이 달라서다: 산 것은 남고, 이것은 자리에서
+ * 내려오면 사라진다.
+ */
+export async function earnedThemesFor(userId: string): Promise<string[]> {
+  return (await goldHolders()).includes(userId) ? [...EARNED_THEMES] : [];
+}
+
 export const themeAllowed = unstable_cache(
   async (userId: string, theme: string): Promise<boolean> => {
     const w = await walletOf(userId);

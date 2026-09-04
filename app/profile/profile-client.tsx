@@ -160,6 +160,12 @@ const T = {
     en: 'a gift from {name}',
     es: 'un regalo de {name}',
   },
+  /* 산 것이 아니라 자격으로 열린 테마 — 왜 열렸고 언제 닫히는지 한 줄로 */
+  themeEarned: {
+    ko: '순위표 1위에게 열리는 테마예요. 1위에서 내려오면 잠겨요.',
+    en: 'Open to whoever is first on a leaderboard. It locks when you are not.',
+    es: 'Abierto a quien va primero en una clasificación. Se bloquea si dejas de estarlo.',
+  },
   themeNone: {
     ko: '아직 산 테마가 없어요. 이 화면 맨 위의 「테마 상점」에서 살 수 있어요.',
     en: 'No themes yet — get one from the shop, at the top of this screen.',
@@ -261,8 +267,14 @@ export interface ProfileInitial {
   showPastPrivate: boolean;
   /** 안 읽은 알림 수 — 아래 알림 줄의 배지에만 쓴다 (세는 것은 서버가 한다) */
   unread: number;
-  /** 상점에서 산 테마 (lib/db/shop.ts) — 고를 수 있는 것이 이것뿐이다 */
+  /** 상점에서 산 테마 (lib/db/shop.ts) */
   owned: string[];
+  /**
+   * 사지 않고 **자격으로 열려 있는** 테마 — 지금은 세 순위표 1위의 금빛 하나다.
+   * 산 것과 달리 자리에서 내려오면 사라지고, 달란트가 마이너스라도 잠기지 않는다
+   * (달란트로 산 것이 아니라서).
+   */
+  earned: string[];
   /** 그중 선물로 받은 것 — 누가 줬는지까지 */
   gifts: { theme: string; from: string }[];
   /**
@@ -916,9 +928,15 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
       </h2>
       {themeOpen && (
       <div className="card">
-        {initial.owned.length === 0 ? (
+        {/*
+          * 고를 수 있는 것 = 산 것 + 자격으로 열린 것.
+          *
+          * 달란트가 마이너스면 **산 것만** 잠긴다. 자격으로 열린 금빛은 달란트로 산 것이
+          * 아니라 지금 1위라서 열린 것이므로, 잔액과 상관이 없다.
+          */}
+        {initial.owned.length === 0 && initial.earned.length === 0 ? (
           <p className="hint" style={{ margin: 0 }}>{t(T.themeNone)}</p>
-        ) : initial.themeShort > 0 ? (
+        ) : initial.themeShort > 0 && initial.earned.length === 0 ? (
           /* 잠긴 동안은 고르는 칸을 안 그린다 — 눌러도 안 되는 것을 보여 주면 고장으로 읽힌다 */
           <p className="hint" style={{ margin: 0 }}>{t(T.themeLocked, { n: initial.themeShort })}</p>
         ) : (
@@ -929,7 +947,15 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
               * initial.owned는 DB가 준 순서라 산 차례로 온다 — 사람마다 줄이 달라진다.
               * CARD_THEMES에 적힌 순서로 걸러 세우면 누구에게나 같은 차례가 된다.
               */}
-            {['default', ...(Object.keys(CARD_THEMES) as CardTheme[]).filter((k) => initial.owned.includes(k))].map((key) => (
+            {[
+              'default',
+              ...(Object.keys(CARD_THEMES) as CardTheme[]).filter(
+                (k) =>
+                  initial.earned.includes(k) ||
+                  /* 달란트가 모자라면 산 것만 빠진다 — 위 주석 참고 */
+                  (initial.themeShort === 0 && initial.owned.includes(k))
+              ),
+            ].map((key) => (
               <label key={key} className="theme-pick">
                 <input
                   type="radio"
@@ -944,6 +970,8 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
                     {gaveMe.get(key) && (
                       <span className="theme-gift">🎁 {t(T.themeGift, { name: gaveMe.get(key)! })}</span>
                     )}
+                    {/* 산 것이 아니라 지금 자격으로 열린 것 — 왜 열렸는지 안 적으면 산 줄 안다 */}
+                    {initial.earned.includes(key) && <span className="theme-gift">👑 {t(T.themeEarned)}</span>}
                   </span>
                   {key !== 'default' && <span className="hint">{t(CARD_THEMES[key as CardTheme].note)}</span>}
                 </span>
@@ -956,6 +984,9 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
                 </span>
               </label>
             ))}
+            {initial.themeShort > 0 && (
+              <p className="hint" style={{ margin: '10px 2px 0' }}>{t(T.themeLocked, { n: initial.themeShort })}</p>
+            )}
             <p className="hint" style={{ margin: '10px 2px 0' }}>{t(T.themeHint)}</p>
           </>
         )}

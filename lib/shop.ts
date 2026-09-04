@@ -135,6 +135,23 @@ export const SOON_THEMES: CardTheme[] = [];
  */
 export const PLANNED: { key: string; label: Msg; note: Msg }[] = [];
 
+/**
+ * **사는 것이 아니라 얻는** 테마.
+ *
+ * 값이 없다고 아무나 쓰는 것이 아니다 — 값이 없는 테마는 둘로 갈린다. 기본·무료 테마는
+ * 누구나 쓰고, 여기 적힌 것은 조건을 만족하는 동안만 쓴다. 누가 쓸 수 있는지는 값이
+ * 아니라 그때그때의 상태가 정하므로 THEME_PRICE로는 표현할 수가 없다.
+ *
+ * 지금은 금빛 하나다 — 호스팅·참여·정성 순위표의 1위에게 열린다
+ * (lib/db/hosting.ts의 goldHolders). 1위에서 내려오면 그 자리에서 닫힌다.
+ */
+export const EARNED_THEMES: CardTheme[] = ['gold'];
+
+/** 이 테마가 「얻어서 쓰는」 것인지 — 값이 없어도 아무나 못 쓴다는 뜻이다 */
+export function isEarnedTheme(theme: string): boolean {
+  return (EARNED_THEMES as string[]).includes(theme);
+}
+
 export function priceOf(theme: string): number | null {
   return THEME_PRICE[theme as CardTheme] ?? null;
 }
