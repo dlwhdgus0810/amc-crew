@@ -31,6 +31,43 @@ export interface ChangelogEntry {
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
   {
+    at: '2026-09-04T11:00',
+    title: { ko: '나들이 카테고리가 생겼어요', en: 'Outing is a category now' },
+    items: [
+      {
+        ko: 'Jessica 님이 제안한 카테고리예요. 둘러보기에서 볼링과 생일파티 사이에 있어요.',
+        en: 'Suggested by Jessica. You’ll find it between Bowling and Birthday Party.',
+      },
+      {
+        ko: '하루 나들이용이에요. 여행처럼 며칠 잡는 게 아니라 날짜 하나와 시각만 정하면 돼요.',
+        en: 'It’s for a day out. Unlike Trip you don’t block off several days — one date and a time is all it takes.',
+      },
+      {
+        ko: '멀리 안 가도 됩니다. Loose Park 한 바퀴도, 사과 따러 가는 것도 나들이예요.',
+        en: 'It doesn’t have to be far. A lap around Loose Park counts, and so does going apple picking.',
+      },
+    ],
+  },
+  {
+    at: '2026-09-04T10:40',
+    notable: true,
+    title: { ko: '카드를 바둑판으로 보면 홈도 같이 바뀌어요', en: 'Choose the grid once and the home follows' },
+    items: [
+      {
+        ko: '둘러보기 오른쪽 위의 배열 스위치가 이제 홈에도 걸려요. 한 번만 고르면 두 화면이 같이 따라와요. 폰에서만이에요 — 넓은 화면은 원래 두세 칸이라 고를 것이 없어요.',
+        en: 'The layout switch at the top right of Browse now applies to the home screen too — choose once and both follow. Phones only: wider screens are already two or three columns, so there is nothing to choose.',
+      },
+      {
+        ko: '앱을 열 때 카드가 한 줄로 보였다가 바둑판으로 다시 배치되던 것도 없어졌어요.',
+        en: 'And the cards no longer flash as a single column before rearranging into the grid when you open the app.',
+      },
+      {
+        ko: '계절 테마를 켜 두면 바둑판에서 카드 안의 별·종 버튼이 찌그러져 보이던 것도 고쳤어요.',
+        en: 'Fixed too: with a season theme on, the star and bell on each card came out squashed in the grid.',
+      },
+    ],
+  },
+  {
     at: '2026-08-25T17:00',
     notable: true,
     title: { ko: '친구에게 테마를 선물할 수 있어요', en: 'You can gift a theme to a friend' },
