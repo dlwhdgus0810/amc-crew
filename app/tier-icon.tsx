@@ -177,7 +177,13 @@ export default function TierIcon({ id, size = '1em' }: { id: string; size?: numb
   const path = PATHS[id];
   if (!path) return null;
   return (
-    <svg {...base} width={size} height={size} className="tier-icon">
+    /*
+     * data-id는 CSS가 「무슨 배지인가」를 알아야 해서 붙인다. 왕관은 아바타 위에 얹혀야
+     * 하는데(app/overrides.css의 .host-sticker), 자리를 정하는 것은 감싸는 span이라
+     * 그 span이 안에 뭐가 들었는지 볼 방법이 필요하다. 부르는 자리 셋에 각각 표시를
+     * 넘기는 대신 여기 한 곳에 두면 새로 부르는 자리가 생겨도 따라온다.
+     */
+    <svg {...base} data-id={id} width={size} height={size} className="tier-icon">
       {path}
     </svg>
   );
