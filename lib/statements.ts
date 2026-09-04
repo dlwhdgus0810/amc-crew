@@ -324,11 +324,16 @@ function leafDday(today: string): SeasonStat {
  *   봄         개화일을 USA-NPN에서 받아(lib/spring.ts) 거기까지 몇 %인지 센다.
  */
 export function seasonStat(
-    kind: 'petal' | 'rain' | 'leaf' | 'snow' | null,
+    /*
+     * 금빛(gold)은 재는 값이 없어서 늘 null이다 — 개화도 기온도 단풍 D-day도 계절의
+     * 것이지 값이 붙은 테마의 것이 아니다. 여기서 걸러 두면 홈에 빈 줄조차 안 그린다
+     * (CSS로 감추면 자리는 남는다).
+     */
+    kind: 'petal' | 'rain' | 'leaf' | 'snow' | 'gold' | null,
     today: string,
     live?: {weather?: Weather | null; bloomDoy?: number | null}
 ): SeasonStat | null {
-    const base = kind ? SEASON_STATS[kind] : null;
+    const base = kind && kind !== 'gold' ? SEASON_STATS[kind] : null;
     if (!base) return null;
     if (kind === 'leaf') return leafDday(today);
     if (kind === 'petal') {

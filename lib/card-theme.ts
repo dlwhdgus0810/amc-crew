@@ -55,7 +55,9 @@ export type CardTheme =
   | 'cherryblossom'
   | 'rainyseason'
   | 'winter'
-  | 'autumn';
+  | 'autumn'
+  /* 계절이 아니다 — 값이 붙는 프리미엄 한 장. 그래서 시즌 넷 뒤에 온다 */
+  | 'gold';
 
 /**
  * 시즌 테마만 갖는 값.
@@ -90,7 +92,7 @@ export interface SeasonTokens {
   /** app/layout.tsx가 심는 next/font 변수 이름 (--font-dodum / --font-batang) */
   font: 'dodum' | 'batang';
   /** 배경 장식 종류 — app/season-deco.tsx가 읽는다 */
-  deco: 'petal' | 'rain' | 'snow' | 'leaf';
+  deco: 'petal' | 'rain' | 'snow' | 'leaf' | 'gold';
 }
 
 export interface CardThemeDef {
@@ -329,6 +331,49 @@ export const CARD_THEMES: Record<CardTheme, CardThemeDef> = {
       deco: 'snow',
     },
   },
+  /*
+   * 금빛 · 골드 (patch14) — 계절이 아니라 값이 붙는 프리미엄 한 장이라 시즌 넷 뒤다.
+   * 적은 순서가 곧 선택기 순서이고, 시즌 사이에 끼우면 봄·여름·가을·겨울 줄이 끊긴다.
+   */
+  gold: {
+    label: { ko: '금빛 · 골드', en: 'Gold', es: 'Oro' },
+    note: {
+      ko: '금박 카드에 빛줄기가 스치고, 금가루가 떠오르는 테마. 버튼은 동전, 서체는 고운바탕이에요.',
+      en: 'Gilded cards with a passing sheen and rising gold dust; buttons become coins, type switches to Gowun Batang.',
+      es: 'Tarjetas doradas con destellos y polvo de oro que asciende; los botones son monedas y la tipografía cambia a Gowun Batang.',
+    },
+    /*
+     * 어두운 청동빛에서 밝은 금으로. 앞 둘은 크림 글씨, 뒤 둘은 어두운 글씨가 된다(textOn).
+     * #B8860B 위의 크림은 2.6:1이라 자동으로 어두운 쪽으로 넘어간다 — 그 카드부터 제목의
+     * 옅은 금색도 빠진다(--card-lit 0).
+     */
+    stops: ['#3B2A0F', '#7A5514', '#B8860B', '#E9C766'],
+    tokens: {
+      bg: '#F3EBD8',
+      surface: '#FFFBF0',
+      surface2: '#F3E4BC',
+      border: '#E6D6B0',
+      borderSoft: '#F0E5CC',
+      text: '#2A2213',
+      textMid: '#6A5A3A',
+      textDim: '#98876A',
+      /*
+       * 강조색은 금(#B8860B)이 아니라 한 단 어두운 #8A5F08이다 — 흰 글자와 5.3:1로
+       * 버튼 면에 쓸 수 있다. 금 그 자체는 3.0:1이라 글자·면에 못 쓴다. 금은 장식(카드
+       * 금선·빛줄기·금가루)에서만 제 색으로 나온다.
+       */
+      accent: '#8A5F08',
+      accentDark: '#5E4006',
+      accentSoft: '#F3E4BC',
+      r: '16px',
+      rSm: '12px',
+      cardR: '16px',
+      tabbarR: '20px',
+      iconStroke: '1.5',
+      font: 'batang',
+      deco: 'gold',
+    },
+  },
 };
 
 export function toCardTheme(v: string | undefined): CardTheme {
@@ -553,6 +598,6 @@ export function themeBarColor(theme: CardTheme): string {
 }
 
 /** 배경 장식 종류. 색만 바꾸는 테마는 null. */
-export function themeDeco(theme: CardTheme): 'petal' | 'rain' | 'snow' | 'leaf' | null {
+export function themeDeco(theme: CardTheme): 'petal' | 'rain' | 'snow' | 'leaf' | 'gold' | null {
   return CARD_THEMES[theme].tokens?.deco ?? null;
 }

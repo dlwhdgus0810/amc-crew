@@ -157,7 +157,7 @@ function SeasonStatus({ stat, locale }: { stat: SeasonStat | null; locale: Local
  *   봄         올해 개화일 (USA-NPN)
  *   가을       아무것도 — 절정일이 날짜 하나라 셈만 하면 된다
  */
-async function LiveSeasonStatus({ deco, day, locale }: { deco: 'petal' | 'rain' | 'snow' | 'leaf' | null; day: string; locale: Locale }) {
+async function LiveSeasonStatus({ deco, day, locale }: { deco: 'petal' | 'rain' | 'snow' | 'leaf' | 'gold' | null; day: string; locale: Locale }) {
   const [weather, bloomDoy] = await Promise.all([
     deco === 'rain' || deco === 'snow' ? currentWeather() : null,
     deco === 'petal' ? springBloomDay() : null,

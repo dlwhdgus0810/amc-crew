@@ -1,0 +1,341 @@
+/* ============================================================
+   테마 「금빛 · 골드」 (patch14)
+
+   app/season.css(벚꽃·장마)·season-winter.css·season-autumn.css와 나란히 있는
+   파일입니다. 공통 규칙(.card-season 숨김, .car-card 곡률·isolation, ::after 자리,
+   prefers-reduced-motion)은 season.css에 이미 있어서 여기서는 빼고 **금빛만의 것**을
+   담습니다.
+
+   계절이 아니라 「값이 붙은」 테마입니다 — 상점에서 사는 프리미엄 한 장. 그래서 재는
+   값(개화·기온)이 없고 상태줄은 끕니다. 그림은 네 가지입니다.
+
+     1. 배경 — 금가루가 떠오릅니다. 떨어지는 것이 아니라 **올라갑니다.** 꽃잎·낙엽·눈은
+        다 내려오는 것이라, 하나가 반대로 가면 그것만으로 다른 테마가 됩니다. 스물두
+        점 중 다섯은 네 갈래 별(반짝)이고 나머지는 둥근 빛점입니다.
+     2. 카드 — 금박 면입니다. 인라인 색 위에 비스듬한 광택 한 겹, 가장자리 1px 금선,
+        그리고 **빛줄기가 7~11초에 한 번 스쳐 지나갑니다**(em). 카드마다 시각이 달라서
+        한꺼번에 번쩍하지 않습니다. 반짝임 여섯 점(i 1~6)이 카드 안에서 켜졌다 꺼집니다.
+     3. 버튼 — 동전입니다. 꺼지면 테 두 겹(바깥 실선·안쪽 톱니 점선), 켜지면 금화가
+        되며 한 바퀴 뒤집힙니다.
+     4. 머리·탭바 — 제목은 금박 글자(그라데이션 텍스트, 천천히 빛이 흐름), 머리와
+        탭바 가장자리에 금선 한 올.
+
+   낱개 요소(i·em)는 app/category-card.tsx가 항상 그려 두고, 무엇이 되는지는
+   여기서 정합니다. 배경 낱개 <span>은 app/season-deco.tsx가 COUNT.gold(22)만큼 그립니다.
+
+   import 순서: season.css → season-status.css → … → season-gold.css
+   ============================================================ */
+
+:root {
+  /* 네 갈래 별. 배경 반짝이와 카드 안 반짝이가 같이 쓴다 — 24 단위, 면 채움 */
+  --gd-spark: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%3E%3Cpath%20d=%27M12%201.5C12.6%207.4%2016.6%2011.4%2022.5%2012%2016.6%2012.6%2012.6%2016.6%2012%2022.5%2011.4%2016.6%207.4%2012.6%201.5%2012%207.4%2011.4%2011.4%207.4%2012%201.5Z%27%20fill=%27%23fff%27/%3E%3C/svg%3E);
+  /* 금박 팔레트 — 카드 계단(#3B2A0F → #E9C766)과 같은 줄이다 */
+  --gd-hi: #FFF3C4;
+  --gd-mid: #E9C25A;
+  --gd-deep: #B8860B;
+  --gd-dark: #6E4A0A;
+}
+
+/* ══ 바탕 ═════════════════════════════════════════════════════
+   단색 대신 위에서 내려오는 따뜻한 빛 한 단계. 토큰(--bg)은 그대로 쓰고 위쪽만 밝힌다 —
+   겨울이 #E7EDF4 한 줄을 얹은 것과 같은 방식이다. */
+html[data-season='gold'] body {
+  background: radial-gradient(120% 52% at 50% -8%, #FBF5E6 0%, var(--bg) 72%);
+}
+
+/* ══ 머리 ═════════════════════════════════════════════════════
+   제목만 금박 글자다. 부제·라벨은 그대로 — 셋 다 금색이면 어디를 먼저 읽을지 없어진다.
+   글자 위로 빛이 9초에 한 번 흐른다(background-position). 글자 자체는 안 움직인다. */
+html[data-season='gold'] .page-head {
+  box-shadow: 0 1px 0 rgba(184, 134, 11, 0.38), 0 2px 12px rgba(74, 52, 12, 0.1);
+}
+/*
+ * 도안의 .page-title은 이 저장소에 없는 이름이다 — 화면 제목은 그냥 <h1>이다
+ * (.page-head 안이든 밖이든). 가을을 올릴 때도 같은 자리를 고쳤다.
+ *
+ * 관리자 화면의 접는 머리(h1.admin-sec)와 정지 가리개(h1.ban-title)는 뺀다. 앞은 한
+ * 화면에 열다섯 개라 전부 금박이 되면 어디가 제목인지 없어지고, 뒤는 붉은 가리개 위라
+ * 금색이 읽히지 않는다.
+ */
+html[data-season='gold'] h1:not(.admin-sec):not(.ban-title) {
+  background: linear-gradient(100deg, #6E4A0A 0%, #B8860B 32%, #F1D27A 50%, #B8860B 68%, #6E4A0A 100%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: kk-gold-text 9s ease-in-out infinite;
+}
+/* 상태줄은 끈다 — 이 테마는 재는 값이 없다 */
+html[data-season='gold'] .season-status {
+  display: none;
+}
+
+/* ══ 카드 ═════════════════════════════════════════════════════ */
+html[data-season='gold'] .car-card {
+  box-shadow: 0 6px 18px rgba(74, 52, 12, 0.22);
+}
+/*
+ * 금박 면 — 인라인으로 칠한 색 위에 한 겹 (season.css의 ::after 자리).
+ *   광택   118deg로 왼쪽 위가 밝고, 60% 지점에 두 번째 옅은 띠가 하나 더 있다. 금속은
+ *          빛을 한 번만 받지 않는다 — 띠가 하나면 플라스틱 광택이다.
+ *   그늘   오른왁 아래로 내려가며 어두워진다(0.28).
+ *   금선   가장자리 1px. 안쪽 위에 흰 1px을 하나 더 두면 눌린 금박처럼 도드라진다.
+ */
+html[data-season='gold'] .car-card::after {
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.05) 26%, rgba(255, 255, 255, 0) 44%, rgba(255, 246, 214, 0.15) 60%, rgba(255, 255, 255, 0) 74%),
+    linear-gradient(160deg, rgba(60, 40, 8, 0) 46%, rgba(60, 40, 8, 0.28) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 232, 170, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+/*
+ * 어두운 카드의 제목은 옅은 금색(#FFE9A8). 밝은 금색 카드(계단의 끝 쪽)에서는 제 글자색
+ * 그대로다 — --card-lit(1/0)로 섞는 비율을 가른다 (season-autumn.css와 같은 방식).
+ */
+html[data-season='gold'] .car-card .car-name {
+  color: color-mix(in oklab, #FFE9A8 calc(var(--card-lit, 1) * 100%), currentColor);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, calc(var(--card-lit, 1) * 0.18));
+}
+/* 도안의 .car-kind는 옛 이름이다 — 이 저장소는 .car-idx 하나다 */
+html[data-season='gold'] .car-card .car-idx {
+  color: color-mix(in oklab, #E9C25A calc(var(--card-lit, 1) * 100%), currentColor);
+}
+
+/* 장식 상자 — 글자 뒤(z-index:-1), 카드 곡률로 자른다. 빛줄기가 카드 밖으로 안 나간다 */
+html[data-season='gold'] .card-season {
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+}
+/*
+ * 빛줄기(em). 폭 30%의 비스듬한 밝은 띠가 왼쪽 밖에서 오른쪽 밖으로 지나간다.
+ * 한 바퀴 중 40%만 움직이고 나머지는 밖에서 쉰다 — 계속 오가면 광택이 아니라 스캐너다.
+ * 시각·주기는 카드마다 다르다 (아래 「카드마다 다르게」).
+ */
+html[data-season='gold'] .card-season em {
+  display: block;
+  position: absolute;
+  top: -30%;
+  left: 0;
+  width: 30%;
+  height: 160%;
+  background: linear-gradient(90deg, rgba(255, 250, 230, 0) 0%, rgba(255, 250, 230, 0.22) 45%, rgba(255, 255, 255, 0.34) 50%, rgba(255, 250, 230, 0.22) 55%, rgba(255, 250, 230, 0) 100%);
+  transform: translateX(-140%) skewX(-18deg);
+  animation: kk-gold-sweep calc(9s * var(--rate, 1)) cubic-bezier(0.4, 0, 0.3, 1) var(--seed, 0s) infinite;
+}
+/* 반짝임 여섯 점(i 1~6). 네 갈래 별이 주기의 14%만 켜진다. 7번부터는 안 쓴다 */
+html[data-season='gold'] .card-season i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: var(--gd-hi);
+  -webkit-mask: var(--gd-spark) center / contain no-repeat;
+  mask: var(--gd-spark) center / contain no-repeat;
+  opacity: 0;
+  transform: scale(0.4);
+  animation: kk-gold-twinkle var(--pd, 5.4s) ease-in-out calc(var(--pt, 0s) + var(--seed, 0s)) infinite;
+}
+html[data-season='gold'] .card-season i:nth-child(1) { left: 9%;  top: 22%; --pd: 5.4s; --pt: -0.6s; }
+html[data-season='gold'] .card-season i:nth-child(2) { left: 31%; top: 70%; --pd: 6.8s; --pt: -2.9s; width: 7px; height: 7px; }
+html[data-season='gold'] .card-season i:nth-child(3) { left: 58%; top: 18%; --pd: 4.6s; --pt: -1.7s; width: 11px; height: 11px; }
+html[data-season='gold'] .card-season i:nth-child(4) { left: 76%; top: 58%; --pd: 7.6s; --pt: -4.1s; }
+html[data-season='gold'] .card-season i:nth-child(5) { left: 91%; top: 30%; --pd: 5.9s; --pt: -3.3s; width: 7px; height: 7px; }
+html[data-season='gold'] .card-season i:nth-child(6) { left: 46%; top: 86%; --pd: 6.3s; --pt: -0.2s; width: 8px; height: 8px; }
+html[data-season='gold'] .card-season i:nth-child(n + 7) { display: none; }
+/*
+ * ── 카드마다 다르게 ──────────────────────────────────────────
+ * 빛줄기 시각(--seed)과 주기(--rate)를 카드 차례로 흩뜬다. 열일곱 장이 같이 번쩍하면
+ * 금박이 아니라 네온이다. 7은 한 줄 카드 수(1·2·3)와 서로소라 일곱 장을 지나야 돌아온다.
+ */
+html[data-season='gold'] :is(.cat-grid, .car) > *:nth-child(7n + 1) { --seed: 0s;    --rate: 1; }
+html[data-season='gold'] :is(.cat-grid, .car) > *:nth-child(7n + 2) { --seed: -3.7s; --rate: 1.18; }
+html[data-season='gold'] :is(.cat-grid, .car) > *:nth-child(7n + 3) { --seed: -6.9s; --rate: 0.86; }
+html[data-season='gold'] :is(.cat-grid, .car) > *:nth-child(7n + 4) { --seed: -1.6s; --rate: 1.31; }
+html[data-season='gold'] :is(.cat-grid, .car) > *:nth-child(7n + 5) { --seed: -8.2s; --rate: 0.94; }
+html[data-season='gold'] :is(.cat-grid, .car) > *:nth-child(7n + 6) { --seed: -4.8s; --rate: 1.09; }
+html[data-season='gold'] :is(.cat-grid, .car) > *:nth-child(7n + 7) { --seed: -2.4s; --rate: 0.78; }
+
+/* 2열 타일 — 좁은 면에서는 곡률을 12px로 내리고 반짝임을 셋으로 줄인다 */
+html[data-cat-layout='tile'][data-season='gold'] :is(.cat-grid, .car) .car-card {
+  border-radius: 12px;
+}
+/* .cat-grid.tile은 이제 없는 클래스다 — 바둑판은 html의 data-cat-layout이 정한다 */
+html[data-cat-layout='tile'][data-season='gold'] :is(.cat-grid, .car) .card-season i:nth-child(n + 4) {
+  display: none;
+}
+
+/* ══ 카드 위 버튼 — 동전 ══════════════════════════════════════
+   꺼짐: 바깥 실선 + 안쪽 톱니(점선) 테 두 겹, 속은 비었다.
+   켜짐: 금화. 가운데가 밝고 가장자리로 갈수록 짙은 금, 위에 흰 1px 빛. 켜지는 순간
+   한 바퀴 뒤집힌다(kk-coin-flip, 0.55s 한 번).
+
+   즐겨찾기(★)는 네 갈래 별(✦)로, 구독(종)은 그대로다. 안의 그림을 지우지 않는다 —
+   동전은 새겨진 무늬가 있어야 동전이다.
+
+   보이는 원은 30px인데 눌리는 데는 ::after로 44px이다. */
+html[data-season='gold'] .car-card .car-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
+  background: none;
+  color: inherit;
+  transition: transform 0.14s ease-out, border-color 0.14s linear;
+}
+html[data-season='gold'] .car-card .car-icon::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, currentColor 38%, transparent);
+  pointer-events: none;
+}
+html[data-season='gold'] .car-card .car-icon::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+html[data-season='gold'] .car-card .car-icon .star::before { content: '✦'; }
+html[data-season='gold'] .car-card .car-icon.on .star::before { content: '✦'; }
+html[data-season='gold'] .car-card .car-icon.on {
+  border-color: rgba(110, 74, 10, 0.55);
+  background: radial-gradient(circle at 38% 30%, #FFF3C4 0 16%, #E9C25A 44%, #B8860B 76%, #8A5F08 100%);
+  color: #4A3206;
+  box-shadow: 0 1px 2px rgba(40, 26, 4, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  animation: kk-coin-flip 0.55s cubic-bezier(0.3, 0.7, 0.3, 1) 1;
+}
+html[data-season='gold'] .car-card .car-icon.on::before {
+  border-color: rgba(74, 50, 6, 0.4);
+}
+html[data-season='gold'] .car-card .car-icon:active {
+  transform: scale(0.92);
+}
+
+/* ══ 탭바 ═════════════════════════════════════════════════════
+   크림 그라데이션 + 위 가장자리 금선 한 올. 넷(집·나침반·달력·사진)은 그대로다.
+   프로필 자리만 그림이 계절을 따른다 — 금화 (README의 ProfileIcon 참고). */
+html[data-season='gold'] nav.tabbar {
+  background: linear-gradient(#FFFBF0, #F6ECD3);
+  box-shadow: 0 -1px 0 rgba(184, 134, 11, 0.36), 0 -2px 12px rgba(74, 52, 12, 0.08);
+}
+html[data-season='gold'] .tabbar a.active {
+  color: #8A5F08;
+}
+/* 활성 탭 아이콘 아래 금점 하나 — 배경 모양은 두지 않는다 (겨울과 같은 이유) */
+html[data-season='gold'] .tabbar a.active::after {
+  content: '';
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(#F1D27A, #B8860B);
+}
+
+/* ══ 배경 금가루 ══════════════════════════════════════════════
+   낱개 <span> 스물둘 (app/season-deco.tsx의 COUNT.gold). 캔버스로 안 가는 이유는
+   넘겨줄 데가 없어서다 — 금가루는 카드에 쌓이지 않는다.
+
+   **올라간다.** bottom에서 시작해 -112vh까지. 가로로는 ±--dx만큼 사인 곡선으로 오가고,
+   opacity는 따로 3~5초 주기로 숨 쉰다(kk-gold-breathe). transform과 opacity만 움직이니
+   둘 다 합성기에 올라간다 — 폰에서 스크롤하는 동안에도 멈추지 않는다.
+
+   카드 뒤로 지난다(.season-deco z-index:0). 카드 사이 크림 여백에서만 보인다. */
+html[data-season='gold'] .season-gold > span {
+  position: absolute;
+  top: auto;
+  bottom: -4%;
+  left: var(--x, 50%);
+  width: var(--s, 6px);
+  height: var(--s, 6px);
+  border-radius: 999px;
+  background: radial-gradient(circle, #FFF6D2 0 28%, rgba(233, 194, 90, 0.9) 52%, rgba(233, 194, 90, 0) 100%);
+  filter: drop-shadow(0 0 3px rgba(212, 160, 40, 0.6));
+  opacity: 0;
+  animation:
+    kk-gold-rise var(--dur, 26s) linear var(--dl, 0s) infinite,
+    kk-gold-breathe var(--tw, 3.8s) ease-in-out var(--dl, 0s) infinite;
+}
+/* 넷에 하나는 네 갈래 별 — 반짝이는 것은 이것이고, 둥근 점은 그냥 떠 있다 */
+html[data-season='gold'] .season-gold > span:nth-child(4n) {
+  border-radius: 0;
+  background: var(--gd-hi);
+  filter: drop-shadow(0 0 2px rgba(233, 194, 90, 0.9));
+  -webkit-mask: var(--gd-spark) center / contain no-repeat;
+  mask: var(--gd-spark) center / contain no-repeat;
+  --tw: 2.6s;
+}
+/* 자리·크기·주기·지연·흔들림. 값이 규칙적이면 스물두 점이 한 덩어리로 오른다.
+   음수 지연이라 화면을 열자마자 이미 떠 있는 중이다. 큰 것이 가까운 것이고, 가까운 것이 빠르다. */
+html[data-season='gold'] .season-gold > span:nth-child(1)  { --x: 4%;  --s: 5px;  --dur: 28s; --dl: -3s;  --dx: 18px;  --tw: 4.1s; }
+html[data-season='gold'] .season-gold > span:nth-child(2)  { --x: 11%; --s: 8px;  --dur: 21s; --dl: -14s; --dx: -26px; --tw: 3.3s; }
+html[data-season='gold'] .season-gold > span:nth-child(3)  { --x: 17%; --s: 4px;  --dur: 34s; --dl: -7s;  --dx: 12px;  --tw: 4.9s; }
+html[data-season='gold'] .season-gold > span:nth-child(4)  { --x: 23%; --s: 11px; --dur: 24s; --dl: -19s; --dx: -20px; }
+html[data-season='gold'] .season-gold > span:nth-child(5)  { --x: 29%; --s: 6px;  --dur: 26s; --dl: -1s;  --dx: 30px;  --tw: 3.6s; }
+html[data-season='gold'] .season-gold > span:nth-child(6)  { --x: 34%; --s: 9px;  --dur: 19s; --dl: -11s; --dx: -14px; --tw: 3.1s; }
+html[data-season='gold'] .season-gold > span:nth-child(7)  { --x: 40%; --s: 4px;  --dur: 36s; --dl: -23s; --dx: 22px;  --tw: 5.2s; }
+html[data-season='gold'] .season-gold > span:nth-child(8)  { --x: 46%; --s: 13px; --dur: 22s; --dl: -5s;  --dx: -28px; }
+html[data-season='gold'] .season-gold > span:nth-child(9)  { --x: 51%; --s: 7px;  --dur: 27s; --dl: -16s; --dx: 16px;  --tw: 3.9s; }
+html[data-season='gold'] .season-gold > span:nth-child(10) { --x: 57%; --s: 5px;  --dur: 31s; --dl: -9s;  --dx: -22px; --tw: 4.4s; }
+html[data-season='gold'] .season-gold > span:nth-child(11) { --x: 62%; --s: 9px;  --dur: 20s; --dl: -25s; --dx: 26px;  --tw: 3.2s; }
+html[data-season='gold'] .season-gold > span:nth-child(12) { --x: 68%; --s: 10px; --dur: 25s; --dl: -2s;  --dx: -18px; }
+html[data-season='gold'] .season-gold > span:nth-child(13) { --x: 73%; --s: 4px;  --dur: 33s; --dl: -13s; --dx: 14px;  --tw: 5.0s; }
+html[data-season='gold'] .season-gold > span:nth-child(14) { --x: 79%; --s: 7px;  --dur: 23s; --dl: -20s; --dx: -30px; --tw: 3.5s; }
+html[data-season='gold'] .season-gold > span:nth-child(15) { --x: 85%; --s: 6px;  --dur: 29s; --dl: -6s;  --dx: 20px;  --tw: 4.2s; }
+html[data-season='gold'] .season-gold > span:nth-child(16) { --x: 91%; --s: 12px; --dur: 21s; --dl: -17s; --dx: -16px; }
+html[data-season='gold'] .season-gold > span:nth-child(17) { --x: 96%; --s: 5px;  --dur: 30s; --dl: -10s; --dx: 24px;  --tw: 4.6s; }
+html[data-season='gold'] .season-gold > span:nth-child(18) { --x: 8%;  --s: 4px;  --dur: 35s; --dl: -27s; --dx: -12px; --tw: 5.4s; }
+html[data-season='gold'] .season-gold > span:nth-child(19) { --x: 37%; --s: 6px;  --dur: 24s; --dl: -4s;  --dx: 28px;  --tw: 3.7s; }
+html[data-season='gold'] .season-gold > span:nth-child(20) { --x: 64%; --s: 9px;  --dur: 22s; --dl: -21s; --dx: -24px; }
+html[data-season='gold'] .season-gold > span:nth-child(21) { --x: 88%; --s: 4px;  --dur: 32s; --dl: -8s;  --dx: 10px;  --tw: 4.8s; }
+html[data-season='gold'] .season-gold > span:nth-child(22) { --x: 26%; --s: 7px;  --dur: 27s; --dl: -15s; --dx: -20px; --tw: 3.4s; }
+
+/* ══ 키프레임 ═════════════════════════════════════════════════ */
+/* 떠오르기 — 세로는 고르게, 가로는 ±--dx로 두 번 반 오간다 */
+@keyframes kk-gold-rise {
+  0%   { transform: translate3d(0, 0, 0); }
+  20%  { transform: translate3d(var(--dx, 20px), -22vh, 0); }
+  40%  { transform: translate3d(calc(var(--dx, 20px) * -0.7), -45vh, 0); }
+  60%  { transform: translate3d(var(--dx, 20px), -67vh, 0); }
+  80%  { transform: translate3d(calc(var(--dx, 20px) * -0.5), -90vh, 0); }
+  100% { transform: translate3d(0, -112vh, 0); }
+}
+/* 숨 쉬기 — 완전히 꺼지진 않는다(0.15). 꺼지면 점이 나타났다 사라지는 것으로 보인다 */
+@keyframes kk-gold-breathe {
+  0%, 100% { opacity: 0.15; }
+  50%      { opacity: 0.95; }
+}
+/* 카드 안 반짝임 — 14%만 켜진다. 나머지 86%는 없는 것과 같다 */
+@keyframes kk-gold-twinkle {
+  0%, 82%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  89%           { opacity: 0.95; transform: scale(1) rotate(22deg); }
+  96%           { opacity: 0; transform: scale(0.5) rotate(45deg); }
+}
+/* 카드 빛줄기 — 40%만 움직이고 나머지는 밖에서 쉰다 */
+@keyframes kk-gold-sweep {
+  0%   { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+  4%   { opacity: 1; }
+  38%  { opacity: 1; }
+  40%  { transform: translateX(440%) skewX(-18deg); opacity: 0; }
+  100% { transform: translateX(440%) skewX(-18deg); opacity: 0; }
+}
+/* 제목 금박 — 빛이 왼쪽에서 오른쪽으로 흐른다 */
+@keyframes kk-gold-text {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+/* 동전 뒤집기 — 켜지는 순간 한 번 */
+@keyframes kk-coin-flip {
+  0%   { transform: perspective(90px) rotateY(0deg); }
+  100% { transform: perspective(90px) rotateY(360deg); }
+}
+
+/* 움직임을 줄여 달라고 한 사람에게는 멈춘다. 금박 면·금선·동전은 모양이라 남는다.
+   카드 빛줄기·반짝임은 없어지고, 배경 금가루는 옅게(0.35) 서 있다. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-season='gold'] .card-season em,
+  html[data-season='gold'] .card-season i { display: none; }
+  html[data-season='gold'] h1:not(.admin-sec):not(.ban-title) { animation: none; background-position: 50% 50%; }
+  html[data-season='gold'] .car-card .car-icon.on { animation: none; }
+  html[data-season='gold'] .season-gold > span { animation: none; opacity: 0.35; bottom: auto; top: calc(var(--y, 40%)); }
+}

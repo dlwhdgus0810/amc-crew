@@ -85,6 +85,11 @@ import './season.css';
 import './season-status.css';
 import './season-winter.css';
 import './season-autumn.css';
+/*
+ * 금빛 · 골드 — 계절이 아니라 값이 붙는 프리미엄 한 장 (patch14).
+ * 시즌 넷 뒤에 온다: 공통 규칙은 season.css에 있고 이 파일은 금빛만 담는다.
+ */
+import './season-gold.css';
 
 /**
  * 장마 테마에서 카드 안의 물을 무엇으로 그릴지.

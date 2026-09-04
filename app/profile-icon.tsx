@@ -1,5 +1,5 @@
 /*
- * 탭바 프로필 아이콘 — 벚꽃 · 장마 · 겨울 · 단풍
+ * 탭바 프로필 아이콘 — 벚꽃 · 장마 · 겨울 · 단풍 · 금빛
  *
  * 이 자리는 원래 아이콘이 아니라 .t-ava 하나입니다 — 사진이 있으면 사진, 없으면 이름 첫
  * 자입니다. 사진이 있을 때는 틀 곡률만 계절을 따르고(그건 season.css에 있습니다),
@@ -8,11 +8,11 @@
  * SVG의 d 속성이라 CSS로는 바꿀 수 없어서 nav.tsx에서 갈라야 합니다. 넷(집·나침반·달력·
  * 사진틀)은 그대로 두십시오 — 탭을 그림으로 기억한 사람이 매번 다시 찾게 됩니다.
  *
- * 선 굵기가 계절마다 다릅니다: 벚꽃 1.5 / 장마 1.2 / 겨울 1.8 / 단풍 1.6. 나머지 넷과
- * 같은 값이라 한 탭바 안에서 굵기가 어긋나지 않습니다.
+ * 선 굵기가 계절마다 다릅니다: 벚꽃 1.5 / 장마 1.2 / 겨울 1.8 / 단풍 1.6 / 금빛 1.5.
+ * 나머지 넷과 같은 값이라 한 탭바 안에서 굵기가 어긋나지 않습니다.
  */
 
-type Season = 'petal' | 'rain' | 'snow' | 'leaf';
+type Season = 'petal' | 'rain' | 'snow' | 'leaf' | 'gold';
 
 const base = {
   viewBox: '0 0 24 24',
@@ -54,6 +54,18 @@ export function ProfileIcon({ season, size = 20 }: { season?: Season; size?: num
       <svg {...base} width={size} height={size} style={{ strokeWidth: 1.6 }}>
         <path d="M7 17A10 10 0 0 1 17 7A10 10 0 0 1 7 17Z" />
         <path d="M7 17 17 7M7 17 4.8 19.2" />
+      </svg>
+    );
+  }
+
+  /* 금빛 — 금화. 바깥 원, 안쪽은 톱니 대신 점선(20px에서 톱니는 뭉갠다), 가운데는 카드
+     버튼과 같은 네 갈래 별입니다. 별만 면으로 채워 「새겨진 무늬」가 됩니다. */
+  if (season === 'gold') {
+    return (
+      <svg {...base} width={size} height={size} style={{ strokeWidth: 1.5 }}>
+        <circle cx="12" cy="12" r="8.5" />
+        <circle cx="12" cy="12" r="6" strokeDasharray="1.2 1.6" strokeWidth="1" />
+        <path d="M12 8.6c.3 2 1.4 3.1 3.4 3.4-2 .3-3.1 1.4-3.4 3.4-.3-2-1.4-3.1-3.4-3.4 2-.3 3.1-1.4 3.4-3.4z" fill="currentColor" stroke="none" />
       </svg>
     );
   }

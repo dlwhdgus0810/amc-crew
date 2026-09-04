@@ -55,8 +55,10 @@ const DECORATED = [
  *
  * 낙엽은 열여섯이다. 도안 여덟 종을 두 번씩 쓴다 — 여덟이면 같은 잎이 화면에 하나씩
  * 뿐이라 무엇이 떨어지는지 보이기 전에 지나가고, 서른둘이면 낙엽이 아니라 폭우다.
+ *
+ * 금가루는 스물둘이다. 4~13px짜리 빛점이라 열여섯이면 화면이 휑하다 (patch14).
  */
-const COUNT = { petal: 16, rain: 18, snow: 9, leaf: 16 } as const;
+const COUNT = { petal: 16, rain: 18, snow: 9, leaf: 16, gold: 22 } as const;
 
 /**
  * 꽃잎 한 장이 한 바퀴를 마칠 때마다 그 장을 다시 뽑는다.
@@ -168,7 +170,7 @@ function usePetalShuffle(box: { current: HTMLDivElement | null }, on: boolean) {
   }, [box, on]);
 }
 
-export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | 'snow' | 'leaf' | null }) {
+export default function SeasonDeco({ kind }: { kind: 'petal' | 'rain' | 'snow' | 'leaf' | 'gold' | null }) {
   const path = usePathname();
   const box = useRef<HTMLDivElement>(null);
   /* 훅은 늘 같은 수만큼 불러야 하므로 「그릴 자리인가」를 먼저 재고 돌아가는 것은 뒤로 */
