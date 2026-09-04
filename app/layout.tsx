@@ -230,6 +230,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
        * 'rows'일 때는 안 붙인다. 기본값이라 붙여 봐야 걸리는 규칙이 없다.
        */
       data-cat-layout={toCatLayout(jar.get(CAT_LAYOUT_COOKIE)?.value) === 'tile' ? 'tile' : undefined}
+      /*
+       * 관리자 표시 — 아직 관리자에게만 보여줄 것이 있을 때 CSS가 이걸 본다
+       * (지금은 전설의 호스트 카드, app/overrides.css). 비밀이 아니다: 관리자에게는
+       * 관리자 화면이 이미 보이고, 이 표시는 무엇이 보이는지만 정할 뿐 값을 담지 않는다.
+       */
+      data-admin={viewer.isAdmin ? '' : undefined}
       data-rain={RAIN_MODE}
       data-snow={SNOW_MODE}
     >

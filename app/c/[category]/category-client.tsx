@@ -338,6 +338,8 @@ interface PostView {
   capacity: number | null;
   visibility: 'public' | 'link';
   participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
+  /** 연 사람의 주최 점수 — 카드가 등급에 따라 옷을 갈아입는다 (익명 카테고리에서는 0) */
+  authorHostCount: number;
   participantCount: number;
   commentCount: number;
   /** 정산 요약 — 없으면 null (서버 PostView와 같은 모양) */
@@ -1822,7 +1824,16 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
      * 쌓인 자리라, 그게 바래 보일 이유가 없다.
      */
     return (
-      <article key={post.id} className={`post-card ${past && !flat ? 'past' : ''}`}>
+      <article
+        key={post.id}
+        className={`post-card ${past && !flat ? 'past' : ''}`}
+        /*
+         * 연 사람의 주최 등급. 카드 모양을 정하는 것은 CSS라, 점수가 아니라 등급 이름을
+         * 넘긴다 — 「몇 점부터 무슨 등급인가」는 lib/hosting.ts 한 곳에서만 정해야 한다.
+         * 등급에 못 미치면 아무것도 안 붙어서 선택자가 걸리지 않는다.
+         */
+        data-host-tier={hostTier(post.authorHostCount)?.icon}
+      >
         {/*
           * 포스터가 있으면 머리 부분만 가로로 나눈다 — 왼쪽에 글, 오른쪽에 포스터.
           * 아래의 참여자·댓글은 전폭을 그대로 쓴다. 카드 전체를 둘로 쪼개면 댓글이

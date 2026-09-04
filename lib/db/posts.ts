@@ -82,6 +82,18 @@ export interface PostView {
    * 비로그인에게는 빈 배열이 나간다. 인원수는 participantCount로 따로 준다.
    */
   participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
+  /**
+   * 연 사람의 주최 점수 — 카드가 등급에 따라 옷을 갈아입는 데 쓴다
+   * (app/c/[category]/category-client.tsx가 data-host-tier로 옮기고, CSS가 그걸 본다).
+   *
+   * 새로 새는 값이 아니다. 같은 점수가 이미 participants[].hostCount로 내려가고 아바타에
+   * 뱃지로 그려진다 — 연 사람은 대개 참가자 명단에도 있다.
+   *
+   * **익명 카테고리에서는 0이다.** 이름을 「익명」으로 바꿔도 「전설의 호스트가 연 모임」
+   * 이라는 표시가 남으면, 그 점수에 닿은 사람이 한둘일 때 그게 곧 이름이다.
+   * 로그아웃에게도 0 — 명단과 이름을 안 주는 자리라 등급만 줄 이유가 없다.
+   */
+  authorHostCount: number;
   /** 명단과 무관하게 늘 내려가는 참가 인원수 */
   participantCount: number;
   /** 댓글도 이름이 붙으므로 비로그인에게는 개수만 준다 */
@@ -314,6 +326,7 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
       ...shellOf(p, repeatsOn(p)),
       authorName: null,
       coHost: null,
+      authorHostCount: 0,
       participants: [],
       participantCount: countOf(partByPostId as Map<string, unknown[]>, p.id),
       settle: null,
@@ -363,7 +376,8 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
   const [userRows, hostCounts, settleByPost, likeRows, ratingByPost, photoByPost, reviewByPost] =
     await Promise.all([
       nameIds.size ? db.select(NAME_COLS).from(users).where(inArray(users.id, [...nameIds])) : [],
-      hostCountsFor([...new Set(participantRows.map((p) => p.userId))]),
+      // 연 사람도 함께 읽는다 — 대개 참가자에도 있지만, 자기 모임에서 빠진 회차가 있다
+      hostCountsFor([...new Set([...participantRows.map((p) => p.userId), ...postRows.map((p) => p.authorId)])]),
       settlementSummaries(myPostIds, viewerId),
       commentIds.length ? db.select().from(commentLikes).where(inArray(commentLikes.commentId, commentIds)) : [],
       ratingSummaries(ratableIds, viewerId),
@@ -447,6 +461,8 @@ async function buildViews(postRows: (typeof posts.$inferSelect)[], viewerId?: st
             : displayNameOf(userById.get(p.coHostId), UNKNOWN_NAME, locale, p.allowNicknames),
         }
       : null,
+    // 익명 카테고리에서는 0 — 위 authorHostCount 주석 참고
+    authorHostCount: anonPost.get(p.id) ? 0 : (hostCounts.get(p.authorId) ?? 0),
     participants: byPost.get(p.id) ?? [],
     participantCount: (byPost.get(p.id) ?? []).length,
     settle: settleByPost.get(p.id) ?? null,

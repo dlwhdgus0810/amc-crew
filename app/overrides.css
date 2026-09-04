@@ -787,6 +787,31 @@ body:has(.poster-zoom) nav.tabbar {
   justify-content: center;
   box-shadow: 0 1px 2px rgba(16, 16, 16, 0.14);
 }
+/* ── 전설의 호스트가 연 모임 ─────────────────────────────────
+   아직 **관리자에게만** 보인다. 열 때는 아래 두 가지를 지운다:
+   선택자 앞의 html[data-admin]과, 「flame」이 붙은 줄.
+
+   flame(열정·30점)이 왜 끼어 있는가: 전설은 60점인데 지금 최고가 54.5점이라
+   crown만 걸어 두면 화면에 나올 카드가 하나도 없다. 볼 것이 없으면 시안을 볼 수가 없어서
+   테스트 동안만 한 칸 아래에도 같은 옷을 입혀 둔다. 규칙 자체는 crown 줄이 전부다.
+
+   옷은 셋으로 만든다 — 금빛 한 올 테두리, 위에서 내려오는 옅은 금빛, 살짝 뜬 그림자.
+   글자나 딱지를 더 얹지 않는 이유는 **이미 말하고 있어서**다. 연 사람의 얼굴이 카드 안
+   참가자 줄에 있고 그 머리 위에 왕관이 앉아 있다 — 카드에 또 왕관을 그리면 한 장에
+   왕관이 둘이다. 카드는 「이건 좀 다르다」만 말하고, 무엇이 다른지는 얼굴이 말한다.
+
+   금색은 왕관 안쪽과 같은 값이다 (app/tier-icon.tsx의 C.gold #E3A712). 다만 여기서는
+   면적이 넓어서 그대로 쓰면 카드가 노래진다. 테두리는 절반만 섞고, 바탕은 10%로 깔아
+   위 92px까지만 내려오게 둔다 — 시각과 장소가 있는 머리 부분에만 걸리고 참가자 줄부터는
+   여느 카드와 같아진다.
+   ────────────────────────────────────────────────────────── */
+html[data-admin] .post-card[data-host-tier='crown'],
+html[data-admin] .post-card[data-host-tier='flame'] {
+  border-color: color-mix(in oklab, #e3a712 50%, var(--border));
+  background-image: linear-gradient(180deg, color-mix(in oklab, #e3a712 10%, transparent), transparent 92px);
+  box-shadow: 0 8px 20px -14px color-mix(in oklab, #e3a712 70%, transparent);
+}
+
 /*
  * 왕관만 머리 위로 올린다 (전설의 호스트).
  *
