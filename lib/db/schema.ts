@@ -853,7 +853,15 @@ export const translations = pgTable(
   (t) => [primaryKey({ columns: [t.hash, t.target] })]
 );
 
-/** 관리자가 목록에서 내려 둔 카테고리 — 지역마다 따로 내린다 */
+/**
+ * 관리자가 목록에서 내려 둔 카테고리 — 지역마다 따로 내린다.
+ *
+ * PK 칸 순서가 bootstrap.ts(region, category)와 다른 이유: drizzle-kit이 DB에서 복합 PK를
+ * 읽을 때 **테이블 칸 순서**(category가 먼저, region은 나중에 붙었다)로 읽는다. 선언을
+ * 그 순서에 맞추고 이름을 실제 제약 이름으로 못 박아 두지 않으면, db:push가 매번 같은
+ * PK를 떼었다 다시 붙이자고 한다 (2026-09-08에 실제로 한 번 그랬다). 찾는 쪽은 region
+ * 하나로 걸러서 순서가 성능에 미치는 차이는 없다 — 열두어 줄짜리 표다.
+ */
 export const hiddenCategories = pgTable(
   'hidden_categories',
   {
@@ -861,7 +869,7 @@ export const hiddenCategories = pgTable(
     category: text('category').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.region, t.category] })]
+  (t) => [primaryKey({ name: 'hidden_categories_region_category_pk', columns: [t.category, t.region] })]
 );
 
 /**
@@ -887,7 +895,8 @@ export const categorySignups = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.region, t.category, t.userId] })]
+  // 칸 순서와 이름은 hiddenCategories의 주석과 같은 이유로 DB에 있는 그대로 맞춘다
+  (t) => [primaryKey({ name: 'category_signups_region_category_user_id_pk', columns: [t.category, t.userId, t.region] })]
 );
 
 /**
