@@ -57,7 +57,7 @@ function resultRows(res: unknown): Record<string, unknown>[] {
  *
  * 시각이 걸려 있어서 함수다 — 모듈을 읽을 때 한 번 굳으면 자정을 넘겨도 어제 기준을 쓴다.
  *
- * **지역을 받는다.** 「끝났다」는 그 지역 시계로 잰다 — 캔자스가 아직 저녁 6시일 때 필리는
+ * **지역을 받는다.** 「끝났다」는 그 지역 시계로 잰다 — 캔자스가 아직 저녁 6시일 때 펜는
  * 7시라, 같은 순간에도 넘어가는 모임이 다르다. 지역별 조건은 p.region까지 함께 건다.
  */
 function endedSql(region: Region) {
@@ -177,7 +177,7 @@ export async function allReviewedShares(): Promise<Map<string, number>> {
  * 주어진 사람들의 주최 점수 (한 번도 안 열었으면 빠진다 — 호출부에서 ?? 0).
  *
  * **두 지역을 합산한다.** 아바타의 왕관·뱃지는 사람에게 붙는 훈장이라, 캔자스에서 쌓은
- * 것이 필리에 가서 사라지면 안 된다. 순위표(hostQuery)는 지역별인 것과 다르다.
+ * 것이 펜에 가서 사라지면 안 된다. 순위표(hostQuery)는 지역별인 것과 다르다.
  */
 export async function hostCountsFor(userIds: string[]): Promise<Map<string, number>> {
   const admins = new Set(adminIds());
@@ -222,7 +222,7 @@ export function rankNames(seeds: RankSeed[], locale: Locale): HostRank[] {
 /**
  * 종합 주최 랭킹 — 카테고리를 가리지 않고 연 공개 모임 전부를 센다.
  *
- * **지역별이다.** 표는 그 동네 사람들끼리의 것이라, 필리가 작을 때 캔자스 사람들이 상위를
+ * **지역별이다.** 표는 그 동네 사람들끼리의 것이라, 펜가 작을 때 캔자스 사람들이 상위를
  * 다 차지하면 표가 아니다. region이 null이면 합산 — 등급 알림(allBoardCounts)이 쓴다.
  */
 async function hostQuery(limit: number, region: Region | null): Promise<RankSeed[]> {

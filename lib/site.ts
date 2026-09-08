@@ -5,7 +5,7 @@ import { REGIONS, type Region } from './region';
  *
  * 요청이 들어온 호스트를 그대로 쓰면 로컬 개발 중 보낸 알림에 localhost가 박히고,
  * vercel.app으로 들어온 요청은 알림도 vercel.app으로 나간다. 지역의 공개 주소로 고정한다
- * (NEXT_PUBLIC_SITE_URL·NEXT_PUBLIC_SITE_URL_PHILLY — lib/region.ts).
+ * (NEXT_PUBLIC_SITE_URL·NEXT_PUBLIC_SITE_URL_PENN — lib/region.ts).
  *
  * 어느 지역의 주소를 쓸지는 **무엇의 링크인가**로 정한다. 모임 링크는 그 모임의 지역
  * (post.region), 새 소식·승급처럼 사람에게 가는 것은 그 사람의 home_region, 그 밖에는

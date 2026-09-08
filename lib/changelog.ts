@@ -1637,8 +1637,8 @@ export const CHANGELOG: ChangelogEntry[] = [...ENTRIES].sort(
 /**
  * 그 지역이 보는 소식.
  *
- * 필리는 문을 연 날부터다 (lib/region.ts의 changelogSince) — 그 전 항목은 「Kansas Korean
- * 줄이 사라졌어요」처럼 캔자스 이야기라, 필리에서 읽으면 무슨 말인지 모른다. 캔자스는
+ * 펜는 문을 연 날부터다 (lib/region.ts의 changelogSince) — 그 전 항목은 「Kansas Korean
+ * 줄이 사라졌어요」처럼 캔자스 이야기라, 펜에서 읽으면 무슨 말인지 모른다. 캔자스는
  * ''라 전부 그대로다.
  */
 export function changelogFor(region: Region): ChangelogEntry[] {

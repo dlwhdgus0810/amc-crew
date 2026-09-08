@@ -53,7 +53,7 @@ CREATE INDEX IF NOT EXISTS recurring_rules_active_idx ON recurring_rules (active
 CREATE TABLE IF NOT EXISTS posts (
   id uuid PRIMARY KEY,
   category text NOT NULL,
-  -- 어느 지역의 모임인지 ('kansas' | 'philly') — lib/db/schema.ts의 주석 참고
+  -- 어느 지역의 모임인지 ('kansas' | 'penn') — lib/db/schema.ts의 주석 참고
   region text NOT NULL DEFAULT 'kansas',
   author_id text NOT NULL REFERENCES users(id),
   co_host_id text REFERENCES users(id),

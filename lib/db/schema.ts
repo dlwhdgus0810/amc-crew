@@ -99,11 +99,11 @@ export const users = pgTable('users', {
   /** 정지 사유 — 본인 화면에 그대로 보여준다 (왜 막혔는지 모르면 같은 일이 반복된다) */
   banReason: text('ban_reason'),
   /**
-   * 이 사람의 동네 — 마지막으로 로그인한 지역 ('kansas' | 'philly', lib/region.ts).
+   * 이 사람의 동네 — 마지막으로 로그인한 지역 ('kansas' | 'penn', lib/region.ts).
    *
    * 모임에 딸리지 않은 알림(새 소식·등급·정지·건의 답)은 어느 앱 이름으로, 어느 도메인
    * 주소로 보낼지를 이걸로 정한다. 로그인할 때마다 그 호스트로 갱신한다 — 이사 간 사람이
-   * 필리에서 로그인하면 그때부터 필리 이름으로 온다. 계정은 하나라 그 밖의 것은 안 갈린다.
+   * 펜에서 로그인하면 그때부터 펜 이름으로 온다. 계정은 하나라 그 밖의 것은 안 갈린다.
    */
   homeRegion: text('home_region').notNull().default('kansas'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -147,7 +147,7 @@ export const posts = pgTable(
     id: uuid('id').primaryKey(), // 앱에서 crypto.randomUUID()로 생성 (batch 트랜잭션용)
     category: text('category').notNull(),
     /**
-     * 어느 지역의 모임인지 ('kansas' | 'philly', lib/region.ts).
+     * 어느 지역의 모임인지 ('kansas' | 'penn', lib/region.ts).
      *
      * 목록·다음 모임·달력·순위·오늘 알림이 전부 이걸로 거른다. 요청이 들어온 도메인의
      * 지역으로 만들어지고, 그 뒤로는 바뀌지 않는다. 다른 지역 글도 id로는 열린다 —
@@ -470,7 +470,7 @@ export const postReviews = pgTable(
   (t) => [primaryKey({ columns: [t.postId, t.userId] }), index('post_reviews_recent_idx').on(t.updatedAt)]
 );
 
-/** 카테고리 알림 구독 — 지역별이다. 캔자스 축구를 구독한 사람에게 필리 축구가 가면 안 된다 */
+/** 카테고리 알림 구독 — 지역별이다. 캔자스 축구를 구독한 사람에게 펜 축구가 가면 안 된다 */
 export const subscriptions = pgTable(
   'subscriptions',
   {
@@ -887,7 +887,7 @@ export const hiddenCategories = pgTable(
 export const categorySignups = pgTable(
   'category_signups',
   {
-    /** 명단도 지역별이다 — 캔자스 독서나눔 다섯과 필리 독서나눔 다섯은 다른 모임이다 */
+    /** 명단도 지역별이다 — 캔자스 독서나눔 다섯과 펜 독서나눔 다섯은 다른 모임이다 */
     region: text('region').notNull().default('kansas'),
     category: text('category').notNull(),
     userId: text('user_id')

@@ -111,7 +111,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   /*
    * 다른 지역의 모임 링크를 이 도메인에서 열었으면 그 지역 도메인으로 보낸다.
    *
-   * 공유 링크는 지역을 가리지 않고 살아야 한다 — 캔자스 친구가 보낸 링크를 필리 앱에서
+   * 공유 링크는 지역을 가리지 않고 살아야 한다 — 캔자스 친구가 보낸 링크를 펜 앱에서
    * 눌러도 열려야 하고, 그 지역 앱(설치된 PWA)에서 열리는 편이 낫다. 보안 검사는 그대로다:
    * 옮겨간 자리에서 똑같은 getPostView(id, viewerId)를 지난다.
    *

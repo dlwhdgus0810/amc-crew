@@ -3,7 +3,7 @@ import type { Msg } from './i18n';
 /**
  * 지역 — 같은 앱·같은 DB 위에서 **도메인으로** 갈라 보는 동네들.
  *
- * kansaskorean.com으로 들어오면 캔자스, phillykorean.com으로 들어오면 필리다. 계정은
+ * kansaskorean.com으로 들어오면 캔자스, pennkorean.com으로 들어오면 펜다. 계정은
  * 하나다(카카오 앱이 같아서 회원번호가 같다) — 프로필·친구·테마·달란트는 어디서 열든
  * 그대로고, 모임·구독·명단·순위표만 지역별로 갈린다 (posts.region 등).
  *
@@ -14,7 +14,7 @@ import type { Msg } from './i18n';
  * 지역은 권한 경계가 아니다. 다른 지역 글을 id로 열면 그 글이 그대로 열린다 — 공유
  * 링크가 살아야 해서다. 목록에만 안 뜬다.
  */
-export const REGION_IDS = ['kansas', 'philly'] as const;
+export const REGION_IDS = ['kansas', 'penn'] as const;
 export type Region = (typeof REGION_IDS)[number];
 export const DEFAULT_REGION: Region = 'kansas';
 
@@ -29,7 +29,7 @@ export interface CategoryHintOverride {
   locationHint?: Msg;
   lodgingHint?: Msg;
   titleOptions?: Msg[];
-  /** null이면 지운다 — 캔자스 분들 이름이 필리 화면에 나오면 안 된다 */
+  /** null이면 지운다 — 캔자스 분들 이름이 펜 화면에 나오면 안 된다 */
   proposedBy?: string | null;
 }
 
@@ -54,7 +54,7 @@ export interface RegionConfig {
   placeKo: string;
   placeEn: string;
   categoryHints: Partial<Record<string, CategoryHintOverride>>;
-  /** 이 시각 이후의 새 소식만 보여준다. ''이면 전부 — 캔자스 이야기가 필리에 안 뜨게 */
+  /** 이 시각 이후의 새 소식만 보여준다. ''이면 전부 — 캔자스 이야기가 펜에 안 뜨게 */
   changelogSince: string;
 }
 
@@ -80,11 +80,11 @@ export const REGIONS: Record<Region, RegionConfig> = {
     categoryHints: {},
     changelogSince: '',
   },
-  philly: {
-    id: 'philly',
-    name: 'Philly Korean',
-    hosts: ['phillykorean.com', 'www.phillykorean.com'],
-    siteUrl: trimSlash(process.env.NEXT_PUBLIC_SITE_URL_PHILLY),
+  penn: {
+    id: 'penn',
+    name: 'Penn Korean',
+    hosts: ['pennkorean.com', 'www.pennkorean.com'],
+    siteUrl: trimSlash(process.env.NEXT_PUBLIC_SITE_URL_PENN),
     timeZone: 'America/New_York',
     /* 필라델피아 시내 */
     lat: '39.95',
@@ -98,7 +98,7 @@ export const REGIONS: Record<Region, RegionConfig> = {
     placeEn: 'Philadelphia',
     /*
      * 장소 예시 초안 — 실제 모임 자리에 맞게 고쳐 쓰면 된다. proposedBy는 전부 뺀다:
-     * 캔자스에서 제안한 분들 이름이라 필리 화면에 적을 이유가 없다.
+     * 캔자스에서 제안한 분들 이름이라 펜 화면에 적을 이유가 없다.
      */
     categoryHints: {
       reading: {
@@ -214,5 +214,5 @@ export function regionOfRow(v: string | null | undefined): Region {
 
 /** 지금 지역이 아닌 쪽 — 프로필의 「다른 지역」 링크가 쓴다 (둘뿐이라 이걸로 충분하다) */
 export function otherRegion(region: Region): Region {
-  return region === 'kansas' ? 'philly' : 'kansas';
+  return region === 'kansas' ? 'penn' : 'kansas';
 }

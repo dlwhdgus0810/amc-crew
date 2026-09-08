@@ -7,7 +7,7 @@ import type { Region } from './region';
  * 환경변수
  *  - AMC_VENDOR_KEY (또는 AMC_API_KEY) — developers.amctheatres.com 에서 발급한 Vendor Key
  *  - AMC_THEATRE_ID / AMC_THEATRE_NAME — 캔자스 극장 (미지정 시 Town Center 20)
- *  - AMC_THEATRE_ID_PHILLY / AMC_THEATRE_NAME_PHILLY — 필리 극장 (미지정이면 그 지역엔 AMC 도구가 안 뜬다)
+ *  - AMC_THEATRE_ID_PENN / AMC_THEATRE_NAME_PENN — 펜 극장 (미지정이면 그 지역엔 AMC 도구가 안 뜬다)
  *  - AMC_API_BASE — 샌드박스로 바꿀 때 https://api.sandbox-amctheatres.com/v2
  *
  * 인증은 X-AMC-Vendor-Key 헤더.
@@ -19,7 +19,7 @@ const API_BASE = process.env.AMC_API_BASE ?? 'https://api.amctheatres.com/v2';
 /**
  * 지역마다 극장이 다르다. 키(Vendor Key)는 하나고 극장만 갈린다.
  *
- * 캔자스는 예전 그대로 기본값이 있다 (AMC Town Center 20, Leawood, KS). 필리는 아직
+ * 캔자스는 예전 그대로 기본값이 있다 (AMC Town Center 20, Leawood, KS). 펜는 아직
  * 정한 극장이 없어서 env가 없으면 null — 그러면 무비나잇의 AMC 도구와 /movie가 그 지역에서
  * 안 열린다. 없는 극장의 상영표를 고르러 가는 문을 열어 둘 수는 없다.
  */
@@ -28,9 +28,9 @@ const THEATRE: Record<Region, { id: string | null; name: string | null }> = {
     id: process.env.AMC_THEATRE_ID ?? '38',
     name: process.env.AMC_THEATRE_NAME ?? 'AMC Town Center 20',
   },
-  philly: {
-    id: process.env.AMC_THEATRE_ID_PHILLY ?? null,
-    name: process.env.AMC_THEATRE_NAME_PHILLY ?? null,
+  penn: {
+    id: process.env.AMC_THEATRE_ID_PENN ?? null,
+    name: process.env.AMC_THEATRE_NAME_PENN ?? null,
   },
 };
 

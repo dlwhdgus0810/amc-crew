@@ -25,7 +25,7 @@ const T = {
 export default function WhatsNewPage() {
   const t = useT();
   const locale = useLocale();
-  // 문을 연 날 이후의 소식만 — 필리에서 캔자스 이야기를 읽을 이유가 없다 (lib/changelog.ts)
+  // 문을 연 날 이후의 소식만 — 펜에서 캔자스 이야기를 읽을 이유가 없다 (lib/changelog.ts)
   const region = useRegion();
   const entries = changelogFor(region);
 

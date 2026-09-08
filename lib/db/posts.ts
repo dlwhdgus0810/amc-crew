@@ -507,7 +507,7 @@ function shellOf(p: typeof posts.$inferSelect, repeatsOn: boolean) {
     capacity: p.capacity,
     visibility: (p.visibility === 'link' ? 'link' : 'public') as 'link' | 'public',
     photosPublic: p.photosPublic,
-    // 끝났는지는 **그 모임의 지역** 시간대로 본다 — 필리 저녁 모임을 캔자스 시계로 재면 한 시간 어긋난다
+    // 끝났는지는 **그 모임의 지역** 시간대로 본다 — 펜 저녁 모임을 캔자스 시계로 재면 한 시간 어긋난다
     isPast: isPastSlot(regionOfRow(p.region), p.date, p.startTime, p.endTime, p.endDate),
     createdAt: p.createdAt.toISOString(),
   };

@@ -718,7 +718,7 @@ export function getCategory(slug: string): Category | undefined {
  *
  * 위 목록의 값은 캔자스 것이라 캔자스는 그대로 돌려준다(같은 객체). 다른 지역은
  * lib/region.ts의 categoryHints가 덮어쓴다 — proposedBy: null이면 그 줄을 지운다.
- * 캔자스 분들 이름이 필리 화면에 적히면 안 된다.
+ * 캔자스 분들 이름이 펜 화면에 적히면 안 된다.
  */
 export function regionCategory(c: Category, region: Region): Category {
   const over = REGIONS[region].categoryHints[c.slug];
