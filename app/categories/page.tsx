@@ -9,6 +9,7 @@ import { signupCounts } from '@/lib/db/signups';
 import { hiddenSlugs } from '@/lib/db/hidden';
 import { CAT_LAYOUT_COOKIE, POST_CATEGORY_SLUGS, toCatLayout } from '@/lib/categories';
 import { todayLocal } from '@/lib/dates';
+import { getRegion } from '@/lib/region-server';
 import CategoriesClient from './categories-client';
 import { CategoryCardsSkeleton, LOADING } from '../skeleton';
 
@@ -21,15 +22,15 @@ export const dynamic = 'force-dynamic';
  * 하나도 남지 않는다 (홈도 이미 서버에서 읽는다).
  */
 async function CategoriesData() {
-  const { user } = await getViewer();
+  const [{ user }, region] = await Promise.all([getViewer(), getRegion()]);
   const [subs, favs, summaries, signups, hidden, jar] = await Promise.all([
-    user ? getSubscriptions(user.id) : [],
+    user ? getSubscriptions(user.id, region) : [],
     user ? getFavorites(user.id) : [],
-    nextMeetupByCategory(POST_CATEGORY_SLUGS),
+    nextMeetupByCategory(region, POST_CATEGORY_SLUGS),
     // 둘러보기에서도 같은 줄을 쓴다 — 모임이 없어도 신청이 모여 있으면 그걸 보여준다
-    signupCounts(),
+    signupCounts(region),
     // 관리자가 내려 둔 카테고리는 목록에서 뺀다 (카테고리 화면은 주소로 그대로 열린다)
-    hiddenSlugs(),
+    hiddenSlugs(region),
     /* 카드 배열 취향 — 토글의 눌린 표시를 첫 렌더부터 맞추려고 여기서도 읽는다.
        카드 배열 자체는 layout.tsx가 html에 붙여 둔 표시로 CSS가 정한다 */
     cookies(),
@@ -37,7 +38,7 @@ async function CategoriesData() {
   const layout = toCatLayout(jar.get(CAT_LAYOUT_COOKIE)?.value);
   return (
     <CategoriesClient
-      initial={{ subs, favs, summaries: { today: todayLocal(), summaries, signups }, hidden, layout }}
+      initial={{ subs, favs, summaries: { today: todayLocal(region), summaries, signups }, hidden, layout }}
     />
   );
 }

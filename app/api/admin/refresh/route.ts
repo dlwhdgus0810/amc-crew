@@ -4,6 +4,7 @@ import { clearDayCache, getDaySchedule } from '@/lib/store';
 import { amcConfigured, searchAmcTheatres, theatreId } from '@/lib/amc';
 import { scheduleDates } from '@/lib/seed';
 import { todayLocal } from '@/lib/dates';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +15,11 @@ function authorized(req: NextRequest): boolean {
 /** 극장 검색 — 극장 ID를 찾을 때 쓴다. ?name=town-center */
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return await errJson(E.adminKey, 401);
-  if (!amcConfigured()) return await errJson(E.amcNotConfigured, 400);
+  const region = regionOfRequest(req);
+  if (!amcConfigured(region)) return await errJson(E.amcNotConfigured, 400);
   try {
     const name = req.nextUrl.searchParams.get('name') ?? 'town-center';
-    return NextResponse.json({ theatreId: theatreId(), theatres: await searchAmcTheatres(name) });
+    return NextResponse.json({ theatreId: theatreId(region), theatres: await searchAmcTheatres(name) });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'AMC 요청 실패' }, { status: 502 });
   }
@@ -26,12 +28,13 @@ export async function GET(req: NextRequest) {
 /** 상영표 캐시를 비우고 다시 받아온다 */
 export async function POST(req: NextRequest) {
   if (!authorized(req)) return await errJson(E.adminKey, 401);
-  if (!amcConfigured()) return await errJson(E.amcNotConfigured, 400);
+  const region = regionOfRequest(req);
+  if (!amcConfigured(region)) return await errJson(E.amcNotConfigured, 400);
 
-  const dates = scheduleDates(todayLocal());
+  const dates = scheduleDates(todayLocal(region));
   try {
-    await clearDayCache(dates);
-    const day = await getDaySchedule(dates[0]);
+    await clearDayCache(region, dates);
+    const day = await getDaySchedule(region, dates[0]);
     const count = day.movies.reduce((n, m) => n + m.showtimes.length, 0);
     if (count === 0) return await errJson(E.amcNoShowtimes, 404);
     return NextResponse.json({ ok: true, date: day.date, movies: day.movies.length, showtimes: count });

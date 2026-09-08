@@ -8,6 +8,8 @@ import { sendPush } from '../push';
 import { insertInAppNotice } from './posts';
 import { Locale, Msg, pick, toLocale } from '../i18n';
 import { NOTIF } from '../notif-kinds';
+import type { Region } from '../region';
+import { appName } from '../site';
 
 /**
  * 카테고리 참가신청 — 「사람이 먼저, 모임은 그다음」인 카테고리.
@@ -36,8 +38,8 @@ export interface SignupView {
   createdAt: string;
 }
 
-/** 이 카테고리에 신청한 사람들 (신청한 순서대로) */
-export async function listSignups(category: string): Promise<SignupView[]> {
+/** 이 지역·카테고리에 신청한 사람들 (신청한 순서대로) — 명단은 지역별이다 */
+export async function listSignups(region: Region, category: string): Promise<SignupView[]> {
   const locale = await getLocale();
   const db = await getDb();
   const rows = await db
@@ -51,7 +53,7 @@ export async function listSignups(category: string): Promise<SignupView[]> {
     })
     .from(categorySignups)
     .innerJoin(users, eq(users.id, categorySignups.userId))
-    .where(eq(categorySignups.category, category))
+    .where(and(eq(categorySignups.region, region), eq(categorySignups.category, category)))
     .orderBy(asc(categorySignups.createdAt));
 
   return rows.map((r) => ({
@@ -68,11 +70,12 @@ export async function listSignups(category: string): Promise<SignupView[]> {
  * 열두어 줄짜리 표라 한 번에 다 세고 화면이 골라 쓴다. 카테고리마다 따로 물으면
  * 홈 한 번에 질의가 여럿이 된다.
  */
-export async function signupCounts(): Promise<Record<string, number>> {
+export async function signupCounts(region: Region): Promise<Record<string, number>> {
   const db = await getDb();
   const rows = await db
     .select({ category: categorySignups.category, n: sql<number>`count(*)::int` })
     .from(categorySignups)
+    .where(eq(categorySignups.region, region))
     .groupBy(categorySignups.category);
   return Object.fromEntries(rows.map((r) => [r.category, r.n]));
 }
@@ -84,12 +87,13 @@ export async function signupCounts(): Promise<Record<string, number>> {
  * 「다 모였어요」가 또 가면 그 말이 아무 뜻도 없어진다.
  */
 export async function addSignup(
+  region: Region,
   category: string,
   userId: string
 ): Promise<{ count: number; reached: boolean; full: boolean }> {
   const db = await getDb();
   const cfg = getCategory(category)?.signup;
-  const before = await listSignups(category);
+  const before = await listSignups(region, category);
 
   /*
    * 정원을 넘겨 받지 않는다. 아홉 명이 신청해 두고 모임 정원이 일곱이면 두 명은
@@ -101,18 +105,20 @@ export async function addSignup(
     return { count: before.length, reached: false, full: true };
   }
 
-  await db.insert(categorySignups).values({ category, userId }).onConflictDoNothing();
-  const list = await listSignups(category);
+  await db.insert(categorySignups).values({ region, category, userId }).onConflictDoNothing();
+  const list = await listSignups(region, category);
   const target = cfg?.target ?? 0;
   return { count: list.length, reached: target > 0 && list.length === target, full: false };
 }
 
-export async function removeSignup(category: string, userId: string): Promise<number> {
+export async function removeSignup(region: Region, category: string, userId: string): Promise<number> {
   const db = await getDb();
   await db
     .delete(categorySignups)
-    .where(and(eq(categorySignups.category, category), eq(categorySignups.userId, userId)));
-  return (await listSignups(category)).length;
+    .where(
+      and(eq(categorySignups.region, region), eq(categorySignups.category, category), eq(categorySignups.userId, userId))
+    );
+  return (await listSignups(region, category)).length;
 }
 
 /**
@@ -125,9 +131,11 @@ export async function removeSignup(category: string, userId: string): Promise<nu
  *
  * 다음 모임은 다시 사람을 모아서 연다 — 그게 이 카테고리가 굴러가는 방식이다.
  */
-export async function clearSignups(category: string): Promise<void> {
+export async function clearSignups(region: Region, category: string): Promise<void> {
   const db = await getDb();
-  await db.delete(categorySignups).where(eq(categorySignups.category, category));
+  await db
+    .delete(categorySignups)
+    .where(and(eq(categorySignups.region, region), eq(categorySignups.category, category)));
 }
 
 /**
@@ -136,9 +144,9 @@ export async function clearSignups(category: string): Promise<void> {
  * 구독자가 아니라 **신청한 사람들**에게 간다. 이건 「새 모임이 열렸다」가 아니라
  * 「당신이 신청한 그 일이 이제 굴러갈 수 있다」는 소식이라, 받을 사람이 다르다.
  */
-export async function notifySignupReached(category: string, origin: string): Promise<number> {
+export async function notifySignupReached(region: Region, category: string, origin: string): Promise<number> {
   const db = await getDb();
-  const list = await listSignups(category);
+  const list = await listSignups(region, category);
   if (list.length === 0) return 0;
 
   const localeRows = await db.select({ id: users.id, locale: users.locale }).from(users);
@@ -162,7 +170,7 @@ export async function notifySignupReached(category: string, origin: string): Pro
   for (const [locale, userIds] of byLocale) {
     const message = pick(locale, N.reached as Msg, { cat: catName(category, locale), n: String(list.length) });
     await insertInAppNotice(userIds, null, kind, () => message);
-    await sendPush(userIds, { title: 'Kansas Korean', body: message, url, tag: `signup:${category}` });
+    await sendPush(userIds, { title: appName(region), body: message, url, tag: `signup:${category}` });
     sent += userIds.length;
   }
   return sent;

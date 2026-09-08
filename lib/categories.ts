@@ -1,4 +1,5 @@
 import {Locale, Msg, pick} from './i18n';
+import {REGIONS, type Region} from './region';
 
 export interface Category {
   slug: string;
@@ -95,8 +96,13 @@ export interface Category {
     limit: number;
     terms: Msg[];
   };
-  /** 카테고리 안에서 여는 도구 (무비나잇 → AMC 회차 고르기) */
-  tool?: { href: string; label: Msg; desc: Msg };
+  /**
+   * 카테고리 안에서 여는 도구 (무비나잇 → AMC 회차 고르기).
+   *
+   * needsAmc가 켜진 도구는 그 지역에 AMC 극장이 정해져 있을 때만 그린다 — 없는 극장의
+   * 상영표를 고르러 가는 문을 열어 둘 수는 없다. desc의 {theatre}에 극장 이름이 들어간다.
+   */
+  tool?: { href: string; label: Msg; desc: Msg; needsAmc?: true };
   /**
    * 이 카테고리 안에서는 **아무 이름도 보이지 않는다.**
    *
@@ -402,11 +408,13 @@ export const CATEGORIES: Category[] = [
     tool: {
       href: '/movie',
       label: { ko: 'AMC 회차 고르기', en: 'Pick AMC showtimes', es: 'Elegir funciones de AMC' },
+      // 극장 이름은 지역마다 다르다 — 그리는 쪽이 {theatre}를 채운다 (lib/amc.ts의 theatreName)
       desc: {
-        ko: 'AMC Town Center 20 상영표에서 회차를 고르면, 같은 회차를 고른 사람끼리 모임이 만들어져요.',
-        en: 'Pick a showtime at AMC Town Center 20 and everyone who picked the same one becomes a meetup.',
-        es: 'Elige una función en AMC Town Center 20 y quienes elijan la misma forman una quedada.',
+        ko: '{theatre} 상영표에서 회차를 고르면, 같은 회차를 고른 사람끼리 모임이 만들어져요.',
+        en: 'Pick a showtime at {theatre} and everyone who picked the same one becomes a meetup.',
+        es: 'Elige una función en {theatre} y quienes elijan la misma forman una quedada.',
       },
+      needsAmc: true,
     },
   },
   {
@@ -703,6 +711,23 @@ export const POST_CATEGORY_SLUGS = CATEGORIES.filter((c) => c.kind === 'posts').
 
 export function getCategory(slug: string): Category | undefined {
   return CATEGORIES.find((c) => c.slug === slug);
+}
+
+/**
+ * 그 지역에서 보는 카테고리 — 동네에 묶인 문구(장소 예시·여행지 보기·제안한 사람)만 갈아 끼운다.
+ *
+ * 위 목록의 값은 캔자스 것이라 캔자스는 그대로 돌려준다(같은 객체). 다른 지역은
+ * lib/region.ts의 categoryHints가 덮어쓴다 — proposedBy: null이면 그 줄을 지운다.
+ * 캔자스 분들 이름이 필리 화면에 적히면 안 된다.
+ */
+export function regionCategory(c: Category, region: Region): Category {
+  const over = REGIONS[region].categoryHints[c.slug];
+  if (!over) return c;
+  const { proposedBy, ...rest } = over;
+  const out: Category = { ...c, ...rest };
+  if (proposedBy === null) delete out.proposedBy;
+  else if (proposedBy !== undefined) out.proposedBy = proposedBy;
+  return out;
 }
 
 /** 알림·메타데이터처럼 문자열이 바로 필요한 곳에서 쓰는 카테고리 이름 (이모지 없음) */

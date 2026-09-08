@@ -35,8 +35,12 @@ import {
   toCardTheme,
 } from '@/lib/card-theme';
 import { getLocale } from '@/lib/locale';
-import { SITE_URL } from '@/lib/site';
+import { configuredSiteUrl } from '@/lib/site';
 import { HTML_LANG, pick } from '@/lib/i18n';
+import { getRegion } from '@/lib/region-server';
+import { REGIONS } from '@/lib/region';
+import { theatreName } from '@/lib/amc';
+import { RegionProvider } from './region-context';
 
 /*
  * 글꼴은 빌드 때 받아 우리 도메인에서 준다.
@@ -162,8 +166,9 @@ import './season-spring-petals.css';
  */
 import './season-gold.css';
 
+/* 앱 이름은 지역마다 다르다 — {name}에 들어간다 (lib/region.ts) */
 const META = {
-  title: { ko: 'Kansas Korean — 같이 놀 사람?', en: 'Kansas Korean — Who’s in?', es: 'Kansas Korean — ¿quién se apunta?' },
+  title: { ko: '{name} — 같이 놀 사람?', en: '{name} — Who’s in?', es: '{name} — ¿quién se apunta?' },
   description: {
     ko: '영화·피클볼·볼링·축구·밥친구·카페 — 취미 모임 만들고 같이 놀 사람 모으기',
     en: 'Movies, pickleball, bowling, soccer, meals, cafés — create a meetup and find people to join',
@@ -172,11 +177,13 @@ const META = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocale();
+  const [locale, region] = await Promise.all([getLocale(), getRegion()]);
+  const name = REGIONS[region].name;
+  const siteUrl = configuredSiteUrl(region);
   return {
     // 미리보기 이미지 주소를 공개 주소 기준으로 만든다 (안 정해 두면 요청 호스트를 쓴다)
-    ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
-    title: pick(locale, META.title),
+    ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
+    title: pick(locale, META.title, { name }),
     description: pick(locale, META.description),
     /*
      * 아이콘은 public/ 에 두고 여기서 가리킨다.
@@ -193,7 +200,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // 홈 화면에 추가했을 때 주소창 없이 열리게 (구형 iOS는 매니페스트만으로는 부족하다)
     appleWebApp: {
       capable: true,
-      title: 'Kansas Korean',
+      title: name,
       statusBarStyle: 'default',
     },
     // Next는 표준 이름(mobile-web-app-capable)만 내보내는데, 예전 iOS는 애플 전용 이름을 본다
@@ -213,7 +220,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
    * 세션을 여기서 한 번 읽어 화면 전체가 나눠 쓴다 — 예전에는 탭바·정지 가리개·
    * 대리 보기 띠·알림 권유가 각자 /api/auth/me를 불러 한 번 열 때 여섯 번이 나갔다.
    */
-  const [locale, viewer, jar] = await Promise.all([getLocale(), getViewer(), cookies()]);
+  const [locale, viewer, jar, region] = await Promise.all([getLocale(), getViewer(), cookies(), getRegion()]);
   /*
    * 미리보기 쿠키가 있으면 그것이 이긴다. 그 쿠키는 경로가 /preview라 미리보기 화면을
    * 부를 때만 딸려 오므로, 다른 화면은 늘 자기가 고른 테마 그대로다. 미리보기는 안 산
@@ -237,9 +244,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     previewing ||
     /* 관리자는 자격과 무관하게 쓴다 — 관리자 화면의 선택기가 열세 가지를 다 걸어 보는 자리다 */
     viewer.isAdmin ||
-    (await themeUsable(picked, viewer.user?.id ?? null))
+    (await themeUsable(picked, viewer.user?.id ?? null, region))
       ? picked
       : 'default';
+  /* 헤더 워드마크 — 띄어쓰기는 줄이 안 갈리게 NBSP로 (React가 &nbsp;와 같은 글자로 낸다) */
+  const wordmark = REGIONS[region].name.replace(/ /g, '\u00A0');
   return (
     <html
       lang={HTML_LANG[locale]}
@@ -321,6 +330,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }
         />
         <I18nProvider locale={locale}>
+          <RegionProvider value={{ region, amcName: theatreName(region) }}>
           <CardThemeProvider value={cardTheme}>
           <SessionProvider value={viewer}>
           <ServiceWorkerRegistrar />
@@ -330,7 +340,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <header className="site-header">
             <div className="container header-inner">
               <Link href="/" className="logo">
-                Kansas&nbsp;Korean<sup>®</sup>
+                {wordmark}<sup>®</sup>
               </Link>
             </div>
           </header>
@@ -347,6 +357,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <BanGate />
           </SessionProvider>
           </CardThemeProvider>
+          </RegionProvider>
         </I18nProvider>
       </body>
     </html>

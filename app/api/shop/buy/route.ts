@@ -9,6 +9,7 @@ import { CARD_THEMES, toCardTheme } from '@/lib/card-theme';
 import { priceOf } from '@/lib/shop';
 import { pick } from '@/lib/i18n';
 import { siteUrl } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 /** 관리자에게 가는 알림 문구 — 받는 관리자의 언어로 그려진다 */
 const N = {
@@ -69,7 +70,8 @@ export async function POST(req: NextRequest) {
         n: String(priceOf(theme_) ?? 0),
       }),
     button: (locale) => pick(locale, N.btn),
-    linkUrl: `${siteUrl(req.nextUrl.origin)}/shop`,
+    linkUrl: `${siteUrl(regionOfRequest(req), req.nextUrl.origin)}/shop`,
+    region: regionOfRequest(req),
     tag: 'theme-buy',
   });
 

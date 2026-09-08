@@ -4,6 +4,7 @@ import { getDb } from './index';
 import { translations } from './schema';
 import { Locale } from '../i18n';
 import { translateText } from '../translate';
+import type { Region } from '../region';
 
 /**
  * 번역 캐시.
@@ -25,7 +26,8 @@ function hashOf(text: string): string {
  * 실패는 담아 두지 않는다 — 잠깐 끊긴 것 때문에 그 글이 영영 「번역 안 됨」으로 굳으면
  * 다시 눌러도 소용이 없어진다.
  */
-export async function translateCached(text: string, target: Locale): Promise<string | null> {
+/** region은 번역기 프롬프트의 동네 이름에만 쓴다 — 캐시는 원문 해시라 두 지역이 나눠 쓴다 */
+export async function translateCached(region: Region, text: string, target: Locale): Promise<string | null> {
   const source = text.trim();
   if (!source) return null;
   const hash = hashOf(source);
@@ -37,7 +39,7 @@ export async function translateCached(text: string, target: Locale): Promise<str
     .where(and(eq(translations.hash, hash), eq(translations.target, target)));
   if (hit) return hit.text;
 
-  const out = await translateText(source, target);
+  const out = await translateText(region, source, target);
   if (!out) return null;
 
   /*

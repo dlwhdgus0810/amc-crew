@@ -1,3 +1,5 @@
+import { REGIONS, type Region } from './region';
+
 /**
  * 지금 날씨 — 홈 상태줄의 여름·겨울 값 (lib/statements.ts의 seasonStat).
  *
@@ -6,17 +8,10 @@
  *
  * 봄은 여기가 아니라 lib/spring.ts가 받아 온다 (USA-NPN). 가을은 날짜 하나라 안 부른다.
  *
- * 자리(좌표)는 둘이 같이 쓴다 — 아래 SITE_LAT·SITE_LON을 spring.ts가 가져다 쓴다.
+ * 어디 날씨인가는 지역이 정한다 (lib/region.ts의 lat·lon — 캔자스는 오버랜드파크,
+ * 필리는 시내). 상태줄에 쓰는 값이라 도시 하나면 충분하다 — 회원마다 자리를 물어보는
+ * 것은 이 한 줄이 받을 값이 아니다.
  */
-
-/**
- * 어디 날씨인가 — 기본은 오버랜드파크(캔자스시티 광역의 캔자스 쪽)다.
- *
- * 모임이 열리는 자리와 다르면 .env에서 고치면 된다. 상태줄에 쓰는 값이라 도시 하나면
- * 충분하다 — 회원마다 자리를 물어보는 것은 이 한 줄이 받을 값이 아니다.
- */
-export const SITE_LAT = process.env.WEATHER_LAT ?? '38.98';
-export const SITE_LON = process.env.WEATHER_LON ?? '-94.67';
 
 /** 30분에 한 번만 받아 온다. 상태줄의 값은 분 단위로 움직이지 않는다 */
 const REVALIDATE = 1800;
@@ -34,9 +29,10 @@ export interface Weather {
   humidity: number;
 }
 
-const URL =
+/* 주소에 좌표가 들어가므로 지역마다 다른 주소 = 지역마다 따로 담긴다 (fetch 캐시) */
+const urlFor = (region: Region) =>
   'https://api.open-meteo.com/v1/forecast' +
-  `?latitude=${SITE_LAT}&longitude=${SITE_LON}` +
+  `?latitude=${REGIONS[region].lat}&longitude=${REGIONS[region].lon}` +
   '&current=temperature_2m,apparent_temperature,precipitation_probability,relative_humidity_2m' +
   '&timezone=auto';
 
@@ -46,9 +42,9 @@ const URL =
  * 던지지 않는 이유는 이 값이 없어도 화면이 멀쩡해야 하기 때문이다. 상태줄은 장식이고,
  * 날씨가 안 와서 홈이 안 뜨는 것이 훨씬 나쁘다.
  */
-export async function currentWeather(): Promise<Weather | null> {
+export async function currentWeather(region: Region): Promise<Weather | null> {
   try {
-    const res = await fetch(URL, {
+    const res = await fetch(urlFor(region), {
       next: { revalidate: REVALIDATE },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });

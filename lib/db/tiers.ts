@@ -6,6 +6,8 @@ import { insertPushNotice } from './posts';
 import { BOARD_LABEL, BOARDS, BOARD_TIERS, Board, tierOf } from '../hosting';
 import { Locale, Msg, pick } from '../i18n';
 import { NOTIF } from '../notif-kinds';
+import { siteUrl } from '../site';
+import { regionOfRow } from '../region';
 
 /**
  * 등급이 오른 사람에게 알린다 — 하루 한 번, 크론에서 (app/api/cron/reminders).
@@ -44,12 +46,13 @@ function tierMin(board: Board, count: number): number {
 }
 
 export async function announceTierUps(
-  origin: string
+  /** 공개 주소를 못 정했을 때 쓸 요청 주소 — 링크는 받는 사람의 지역(home_region) 주소로 만든다 */
+  originFallback: string
 ): Promise<{ ups: number; seeded: number; notified: number }> {
   const counts = await allBoardCounts();
   const db = await getDb();
   const rows = await db
-    .select({ id: users.id, tierSeen: users.tierSeen, bannedUntil: users.bannedUntil })
+    .select({ id: users.id, tierSeen: users.tierSeen, bannedUntil: users.bannedUntil, homeRegion: users.homeRegion })
     .from(users);
 
   const now = Date.now();
@@ -96,7 +99,9 @@ export async function announceTierUps(
             )
             .join(', '),
         });
-      await insertPushNotice([row.id], null, NOTIF.tier, `${origin}/leaderboard`, render);
+      // 등급은 사람의 것이라 모임이 없다 — 그 사람의 동네 앱 이름과 주소로 보낸다
+      const region = regionOfRow(row.homeRegion);
+      await insertPushNotice([row.id], null, NOTIF.tier, `${siteUrl(region, originFallback)}/leaderboard`, render, region);
       notified++;
       ups += risen.length;
     }

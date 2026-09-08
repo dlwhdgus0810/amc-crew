@@ -3,7 +3,7 @@ import { getPostView } from '@/lib/db/posts';
 import { catName, getCategory } from '@/lib/categories';
 import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
-import { siteUrl } from '@/lib/site';
+import { appName, siteUrl } from '@/lib/site';
 import { effectiveEnd } from '@/lib/dates';
 
 const T = {
@@ -48,7 +48,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     cat: catName(post.category, locale),
     title: post.title ? ` 〈${post.title}〉` : '',
   });
-  const detailUrl = `${siteUrl(req.nextUrl.origin)}/p/${post.id}`;
+  // 그 모임의 지역 주소로 — 다른 지역에서 받아도 원래 자리로 간다
+  const detailUrl = `${siteUrl(post.region, req.nextUrl.origin)}/p/${post.id}`;
   const description = [post.description, pick(locale, T.page, { url: detailUrl })]
     .filter(Boolean)
     .join('\n');
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Kansas Korean//meetup//KO',
+    `PRODID:-//${appName(post.region)}//meetup//KO`,
     'BEGIN:VEVENT',
     // UID는 캘린더가 같은 일정으로 인식하는 열쇠라 이름을 바꿔도 그대로 둔다
     // (바꾸면 이미 등록한 사람이 다시 받을 때 중복 일정이 생긴다)

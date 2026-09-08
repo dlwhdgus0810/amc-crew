@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { myPhotoWall } from '@/lib/db/photos';
 import { getViewer } from '@/lib/session';
+import { getRegion } from '@/lib/region-server';
 import PhotosClient from './photos-client';
 
 export const dynamic = 'force-dynamic';
@@ -12,9 +13,9 @@ export const dynamic = 'force-dynamic';
  * (lib/blob.ts).
  */
 async function PhotosData() {
-  const { user } = await getViewer();
+  const [{ user }, region] = await Promise.all([getViewer(), getRegion()]);
   if (!user) return <PhotosClient initial={null} />;
-  return <PhotosClient initial={{ groups: await myPhotoWall(user.id) }} />;
+  return <PhotosClient initial={{ groups: await myPhotoWall(user.id, region) }} />;
 }
 
 export default function PhotosPage() {

@@ -1,8 +1,9 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 import { getDb } from './index';
 import { noticeReads, notices } from './schema';
 import { NOTICE_TAG } from '../cache-tags';
+import { isRegion, type Region } from '../region';
 
 /**
  * 공지 — 관리자가 올리면 다들 앱을 열 때 알림창으로 한 번 보는 말.
@@ -25,6 +26,8 @@ export interface NoticeView {
   bodyEs: string | null;
   /** 「보러 가기」가 데려갈 앱 안의 경로 — 없으면 버튼도 없다 */
   linkPath: string | null;
+  /** 어느 지역에 띄우는지 — null이면 양쪽 다 */
+  region: Region | null;
   /** 빈 배열이면 전체 */
   targets: string[];
   active: boolean;
@@ -42,6 +45,7 @@ function view(r: typeof notices.$inferSelect): NoticeView {
     bodyEn: r.bodyEn,
     bodyEs: r.bodyEs,
     linkPath: r.linkPath,
+    region: isRegion(r.region) ? r.region : null,
     targets: r.targets ?? [],
     active: r.active,
     createdAt: r.createdAt.toISOString(),
@@ -58,17 +62,21 @@ function view(r: typeof notices.$inferSelect): NoticeView {
  */
 const ACTIVE_LIMIT = 20;
 
-async function activeQuery(): Promise<NoticeView[]> {
+/** 이 지역에 켜져 있는 공지 — 그 지역 것과 양쪽용(region이 null) */
+async function activeQuery(region: Region): Promise<NoticeView[]> {
   const db = await getDb();
   const rows = await db
     .select()
     .from(notices)
-    .where(and(eq(notices.active, true), isNull(notices.deletedAt)))
+    .where(
+      and(eq(notices.active, true), isNull(notices.deletedAt), or(isNull(notices.region), eq(notices.region, region)))
+    )
     .orderBy(desc(notices.createdAt))
     .limit(ACTIVE_LIMIT);
   return rows.map(view);
 }
 
+/* 인자(region)가 캐시 키에 들어가므로 지역마다 따로 담긴다 */
 export const activeNotices = unstable_cache(activeQuery, ['active-notices'], {
   tags: [NOTICE_TAG],
   revalidate: 300,
@@ -157,6 +165,8 @@ export interface NoticeInput {
   bodyEn: string | null;
   bodyEs: string | null;
   linkPath: string | null;
+  /** 어느 지역에 띄울지 — null이면 양쪽 */
+  region: Region | null;
 }
 
 /**

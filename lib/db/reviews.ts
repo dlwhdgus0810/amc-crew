@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { getDb } from './index';
+import type { Region } from '../region';
 import { postReviews, posts, users } from './schema';
 import { nameOf, UNKNOWN_NAME } from '../store';
 import { Locale, Msg, pick } from '../i18n';
@@ -134,6 +135,7 @@ export async function reviewCounts(postIds: string[]): Promise<Map<string, numbe
  * 이름은 보는 사람의 언어로 짓는다 — 그래서 이 함수는 캐시에 담지 않는다.
  */
 export async function recentReviews(
+  region: Region,
   limit: number,
   viewerId: string | undefined,
   locale: Locale
@@ -168,7 +170,8 @@ export async function recentReviews(
        * 일이다 — /p/{id}는 비공개 모임에서 곧 초대장이라, 화면에 링크를 안 그려도 값이
        * 실려 나가면 초대가 나간 셈이 된다.
        */
-      and(isNull(postReviews.deletedAt), isNull(posts.deletedAt))
+      // 지금 보고 있는 지역의 모임만
+      and(eq(posts.region, region), isNull(postReviews.deletedAt), isNull(posts.deletedAt))
     )
     .orderBy(desc(postReviews.updatedAt))
     .limit(limit);

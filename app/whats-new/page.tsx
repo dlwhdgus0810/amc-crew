@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import { CHANGELOG, latestAt } from '@/lib/changelog';
+import { changelogFor, latestAt } from '@/lib/changelog';
 import { entryLabel } from '@/lib/datefmt';
 import { useLocale, useT } from '../i18n';
+import { useRegion } from '../region-context';
 import { WHATS_NEW_SEEN } from '../whats-new-card';
 
 const T = {
@@ -24,10 +25,13 @@ const T = {
 export default function WhatsNewPage() {
   const t = useT();
   const locale = useLocale();
+  // 문을 연 날 이후의 소식만 — 필리에서 캔자스 이야기를 읽을 이유가 없다 (lib/changelog.ts)
+  const region = useRegion();
+  const entries = changelogFor(region);
 
   useEffect(() => {
     // 여기까지 왔으면 전부 본 것으로 친다 (홈 카드와 같은 기준이어야 한다)
-    const latest = latestAt();
+    const latest = latestAt(region);
     if (latest) {
       try {
         localStorage.setItem(WHATS_NEW_SEEN, latest);
@@ -35,17 +39,17 @@ export default function WhatsNewPage() {
         // 사파리 사생활 보호 모드 등 — 카드가 한 번 더 보이는 것뿐이라 넘어간다
       }
     }
-  }, []);
+  }, [region]);
 
   return (
     <>
       <h1>{t(T.title)}</h1>
       <p className="subtitle">{t(T.subtitle)}</p>
 
-      {CHANGELOG.length === 0 ? (
+      {entries.length === 0 ? (
         <p className="hint">{t(T.empty)}</p>
       ) : (
-        CHANGELOG.map((entry) => (
+        entries.map((entry) => (
           <section key={entry.at} id={entry.at} className="news-entry">
             <div className="news-date">{entryLabel(entry.at, locale)}</div>
             <h2 className="news-title">{t(entry.title)}</h2>

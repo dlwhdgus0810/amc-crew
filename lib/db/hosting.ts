@@ -10,6 +10,7 @@ import { adminIds } from '../auth';
 import { openEndCutoffTime, pastCutoff } from '../dates';
 import { POSTS_TAG } from '../cache-tags';
 import { Board } from '../hosting';
+import { REGION_IDS, type Region } from '../region';
 
 /**
  * 모임 주최 점수.
@@ -55,14 +56,30 @@ function resultRows(res: unknown): Record<string, unknown>[] {
  * 안 넘어갔다는 뜻이라 그 갈래를 아예 뺀다.
  *
  * 시각이 걸려 있어서 함수다 — 모듈을 읽을 때 한 번 굳으면 자정을 넘겨도 어제 기준을 쓴다.
+ *
+ * **지역을 받는다.** 「끝났다」는 그 지역 시계로 잰다 — 캔자스가 아직 저녁 6시일 때 필리는
+ * 7시라, 같은 순간에도 넘어가는 모임이 다르다. 지역별 조건은 p.region까지 함께 건다.
  */
-function endedSql() {
-  const { date: cutDate, time: cutTime } = pastCutoff();
-  const openCut = openEndCutoffTime();
+function endedSql(region: Region) {
+  const { date: cutDate, time: cutTime } = pastCutoff(region);
+  const openCut = openEndCutoffTime(region);
   const endedToday = openCut
     ? sql`(p.end_time <= ${cutTime} OR (p.end_time IS NULL AND p.start_time <= ${openCut}))`
     : sql`p.end_time <= ${cutTime}`;
-  return sql`(p.date < ${cutDate} OR (p.date = ${cutDate} AND ${endedToday}))`;
+  return sql`(p.region = ${region} AND (p.date < ${cutDate} OR (p.date = ${cutDate} AND ${endedToday})))`;
+}
+
+/**
+ * 지역을 가리지 않고 「끝난 모임」 — 사람에게 붙는 값(왕관·승급·달란트)이 쓴다.
+ * 지역마다 자기 시계로 재서 OR로 잇는다. 같은 사람이 두 지역에서 연 모임이 다 들어간다.
+ */
+function endedAnySql() {
+  return sql`(${sql.join(REGION_IDS.map((r) => endedSql(r)), sql` OR `)})`;
+}
+
+/** 지역이 있으면 그 지역의 끝난 모임, 없으면 전부 */
+function endedIn(region: Region | null) {
+  return region ? endedSql(region) : endedAnySql();
 }
 
 /**
@@ -71,7 +88,7 @@ function endedSql() {
  * 모임 하나가 호스트 수만큼의 줄로 펼쳐지고(UNION ALL), 각 줄이 인원 ÷ 호스트 수를 갖는다.
  * 행마다 나누므로 모임 크기가 제각각이어도 합이 맞는다.
  */
-function points() {
+function points(region: Region | null) {
   return sql`
   WITH hosted AS (
     SELECT
@@ -80,7 +97,7 @@ function points() {
       (SELECT count(*) FROM post_participants pp WHERE pp.post_id = p.id)::numeric AS people,
       CASE WHEN p.co_host_id IS NULL THEN 1 ELSE 2 END AS hosts
     FROM posts p
-    WHERE p.visibility = 'public' AND p.deleted_at IS NULL AND ${notAnonymous()} AND ${endedSql()}
+    WHERE p.visibility = 'public' AND p.deleted_at IS NULL AND ${notAnonymous()} AND ${endedIn(region)}
   ), shares AS (
     SELECT author_id AS user_id, people / hosts AS pts FROM hosted
     UNION ALL
@@ -114,7 +131,7 @@ function reviewedShares() {
     SELECT p.id, p.author_id, p.co_host_id,
       CASE WHEN p.co_host_id IS NULL THEN 1 ELSE 2 END AS hosts
     FROM posts p
-    WHERE p.visibility = 'public' AND p.deleted_at IS NULL AND ${notAnonymous()} AND ${endedSql()}
+    WHERE p.visibility = 'public' AND p.deleted_at IS NULL AND ${notAnonymous()} AND ${endedAnySql()}
   ), guests AS (
     SELECT d.id, count(*)::numeric AS n
     FROM done d JOIN post_participants pp ON pp.post_id = d.id
@@ -156,7 +173,12 @@ export async function allReviewedShares(): Promise<Map<string, number>> {
   return new Map(rows.map((r) => [String(r.user_id), Number(r.people)]));
 }
 
-/** 주어진 사람들의 주최 점수 (한 번도 안 열었으면 빠진다 — 호출부에서 ?? 0) */
+/**
+ * 주어진 사람들의 주최 점수 (한 번도 안 열었으면 빠진다 — 호출부에서 ?? 0).
+ *
+ * **두 지역을 합산한다.** 아바타의 왕관·뱃지는 사람에게 붙는 훈장이라, 캔자스에서 쌓은
+ * 것이 필리에 가서 사라지면 안 된다. 순위표(hostQuery)는 지역별인 것과 다르다.
+ */
 export async function hostCountsFor(userIds: string[]): Promise<Map<string, number>> {
   const admins = new Set(adminIds());
   const targets = userIds.filter((id) => !admins.has(id));
@@ -166,7 +188,7 @@ export async function hostCountsFor(userIds: string[]): Promise<Map<string, numb
     targets.map((id) => sql`${id}`),
     sql`, `
   );
-  const rows = resultRows(await db.execute(sql`SELECT user_id, points FROM (${points()}) s WHERE user_id IN (${list})`));
+  const rows = resultRows(await db.execute(sql`SELECT user_id, points FROM (${points(null)}) s WHERE user_id IN (${list})`));
   return new Map(rows.map((r) => [String(r.user_id), Number(r.points)]));
 }
 
@@ -197,12 +219,17 @@ export function rankNames(seeds: RankSeed[], locale: Locale): HostRank[] {
   return seeds.map((s) => ({ id: s.id, name: nameOf(s, UNKNOWN_NAME, locale), avatar: s.avatar, count: s.count }));
 }
 
-/** 종합 주최 랭킹 — 카테고리를 가리지 않고 연 공개 모임 전부를 센다 */
-async function hostQuery(limit: number): Promise<RankSeed[]> {
+/**
+ * 종합 주최 랭킹 — 카테고리를 가리지 않고 연 공개 모임 전부를 센다.
+ *
+ * **지역별이다.** 표는 그 동네 사람들끼리의 것이라, 필리가 작을 때 캔자스 사람들이 상위를
+ * 다 차지하면 표가 아니다. region이 null이면 합산 — 등급 알림(allBoardCounts)이 쓴다.
+ */
+async function hostQuery(limit: number, region: Region | null): Promise<RankSeed[]> {
   const db = await getDb();
   const rows = resultRows(
     await db.execute(sql`
-      SELECT user_id, points FROM (${points()}) s
+      SELECT user_id, points FROM (${points(region)}) s
       WHERE points > 0
       -- 동률일 때 순서가 흔들리면 새로고침마다 금·은메달이 서로 바뀐다 — id로 고정한다
       ORDER BY points DESC, user_id ASC
@@ -224,7 +251,7 @@ async function hostQuery(limit: number): Promise<RankSeed[]> {
  * 주최 점수와 같이 끝난 모임만 센다 — 참가 버튼을 눌러 두기만 해도 점수가 오르면
  * 가지 않은 모임으로 순위가 오른다.
  */
-async function joinQuery(limit: number): Promise<RankSeed[]> {
+async function joinQuery(limit: number, region: Region | null): Promise<RankSeed[]> {
   const db = await getDb();
   // endedSql()이 posts를 p로 부르므로 여기서도 같은 별칭으로 조인한다
   const p = alias(posts, 'p');
@@ -232,7 +259,7 @@ async function joinQuery(limit: number): Promise<RankSeed[]> {
     .select({ id: postParticipants.userId, n: sql<number>`count(*)::int` })
     .from(postParticipants)
     .innerJoin(p, eq(p.id, postParticipants.postId))
-    .where(and(eq(p.visibility, 'public'), isNull(p.deletedAt), notInArray(p.category, ANONYMOUS_SLUGS), endedSql()))
+    .where(and(eq(p.visibility, 'public'), isNull(p.deletedAt), notInArray(p.category, ANONYMOUS_SLUGS), endedIn(region)))
     .groupBy(postParticipants.userId)
     .orderBy(desc(sql`count(*)`), asc(postParticipants.userId));
   return withProfiles(rows, limit);
@@ -340,12 +367,20 @@ export function contribNames(seeds: ContribSeed[], locale: Locale): ContribRank[
  *
  * 끝났는지는 안 본다 — 사진과 댓글은 모임이 끝나야 생기는 것이 아니다.
  */
-async function contribQuery(limit: number): Promise<ContribSeed[]> {
+/**
+ * 지역 조건 — 사진·댓글·후기는 모임에 딸린 것이라 그 모임의 지역으로 가른다.
+ * 승인된 제안과 처리된 건의는 지역이 없어서 어느 표에서든 같이 센다.
+ */
+function inRegion(region: Region | null) {
+  return region ? sql`p.region = ${region}` : sql`TRUE`;
+}
+
+async function contribQuery(limit: number, region: Region | null): Promise<ContribSeed[]> {
   const db = await getDb();
   const rows = resultRows(
     await db.execute(sql`
       WITH ok AS (
-        SELECT p.id FROM posts p WHERE p.deleted_at IS NULL AND ${notAnonymous()}
+        SELECT p.id FROM posts p WHERE p.deleted_at IS NULL AND ${notAnonymous()} AND ${inRegion(region)}
       ), ph AS (
         SELECT user_id, SUM(LEAST(c, ${CONTRIB.photoCap})) AS n FROM (
           SELECT user_id, post_id, count(*) AS c FROM post_photos
@@ -428,7 +463,7 @@ export interface CategoryRank {
  * 「셋이 열두 번 모인 것」을 이기는데, 이 표가 답해야 하는 것은 「어느 종목이
  * 계속 굴러가나」다. 연인원은 옆에 같이 적어 둔다.
  */
-async function categoryQuery(): Promise<CategoryRank[]> {
+async function categoryQuery(region: Region): Promise<CategoryRank[]> {
   const db = await getDb();
   // endedSql()이 posts를 p로 부르므로 여기서도 같은 별칭을 쓴다
   const p = alias(posts, 'p');
@@ -440,7 +475,7 @@ async function categoryQuery(): Promise<CategoryRank[]> {
     })
     .from(p)
     .leftJoin(postParticipants, eq(postParticipants.postId, p.id))
-    .where(and(eq(p.visibility, 'public'), isNull(p.deletedAt), endedSql()))
+    .where(and(eq(p.visibility, 'public'), isNull(p.deletedAt), endedSql(region)))
     .groupBy(p.category)
     .orderBy(
       desc(sql`count(distinct p.id)`),
@@ -457,12 +492,15 @@ async function categoryQuery(): Promise<CategoryRank[]> {
  * 회원 전체의 모임을 통째로 세는 것이라 보는 사람이 누구든 같은 답이고, 그만큼 무겁다.
  * 모임·참가자가 바뀌면 태그로 지우고(revalidateTag), 그 사이에도 5분마다 스스로 다시
  * 읽는다 — 점수는 모임이 끝나야 오르는데, 끝나는 것은 아무도 누르지 않아도 일어난다.
+ *
+ * 인자(limit, region)가 캐시 키에 들어가므로 지역마다 따로 담긴다. 표는 지역별이라
+ * region을 null로 부르지 않는다.
  */
-export const hostRanking = unstable_cache(hostQuery, ['host-ranking'], {
+export const hostRanking = unstable_cache((limit: number, region: Region) => hostQuery(limit, region), ['host-ranking'], {
   tags: [POSTS_TAG],
   revalidate: 300,
 });
-export const joinRanking = unstable_cache(joinQuery, ['join-ranking'], {
+export const joinRanking = unstable_cache((limit: number, region: Region) => joinQuery(limit, region), ['join-ranking'], {
   tags: [POSTS_TAG],
   revalidate: 300,
 });
@@ -475,10 +513,11 @@ export const categoryRanking = unstable_cache(categoryQuery, ['category-ranking'
  * 그래서 5분마다 스스로 다시 읽는 것이 사실상 유일한 갱신이다 — 사진을 올리자마자
  * 점수가 오르지는 않는다. 순위표에 그 정도 지연은 괜찮다.
  */
-export const contribRanking = unstable_cache(contribQuery, ['contrib-ranking'], {
-  tags: [POSTS_TAG],
-  revalidate: 300,
-});
+export const contribRanking = unstable_cache(
+  (limit: number, region: Region) => contribQuery(limit, region),
+  ['contrib-ranking'],
+  { tags: [POSTS_TAG], revalidate: 300 }
+);
 
 /**
  * 세 순위표(호스팅·참여·정성)의 **1위들.**
@@ -500,7 +539,8 @@ export const contribRanking = unstable_cache(contribQuery, ['contrib-ranking'], 
  * 경우는 없지만, 그 상황이 오면 열한 번째부터는 못 받는 편이 조용히 틀리는 것보다 낫다.
  */
 export const goldHolders = unstable_cache(
-  async (): Promise<string[]> => {
+  /** 지역별이다 — 캔자스 1위는 kansaskorean.com에서만 금빛이다 */
+  async (region: Region): Promise<string[]> => {
     /*
      * **순위표의 캐시본(hostRanking 등)이 아니라 원본 질의를 부른다.**
      *
@@ -509,7 +549,7 @@ export const goldHolders = unstable_cache(
      * 사람이 쓰는 시간이다. 캐시본을 부르면 이 함수의 주기를 아무리 줄여도 안쪽이
      * 5분이라 소용이 없다.
      */
-    const [host, join, contrib] = await Promise.all([hostQuery(10), joinQuery(10), contribQuery(10)]);
+    const [host, join, contrib] = await Promise.all([hostQuery(10, region), joinQuery(10, region), contribQuery(10, region)]);
     const top = (rows: { id: string; count: number }[]) =>
       rows.length > 0 && rows[0]!.count > 0 ? rows.filter((r) => r.count === rows[0]!.count).map((r) => r.id) : [];
     return [...new Set([...top(host), ...top(join), ...top(contrib)])];
@@ -535,7 +575,8 @@ export const goldHolders = unstable_cache(
  */
 export async function allBoardCounts(): Promise<Record<Board, Map<string, number>>> {
   const all = Number.MAX_SAFE_INTEGER;
-  const [host, join, contrib] = await Promise.all([hostQuery(all), joinQuery(all), contribQuery(all)]);
+  // 등급은 사람에게 붙는다 — 두 지역을 합산해서 센다 (hostCountsFor와 같은 이유)
+  const [host, join, contrib] = await Promise.all([hostQuery(all, null), joinQuery(all, null), contribQuery(all, null)]);
   const map = (rows: { id: string; count: number }[]) => new Map(rows.map((r) => [r.id, r.count]));
   return { host: map(host), join: map(join), contrib: map(contrib) };
 }
@@ -587,8 +628,9 @@ export async function boardScoresFor(userId: string): Promise<{ host: number; jo
   const db = await getDb();
   const p = alias(posts, 'p');
 
+  // 달란트는 활동을 세는 것이라 지역을 안 가린다
   const hostRows = resultRows(
-    await db.execute(sql`SELECT points FROM (${points()}) s WHERE user_id = ${userId}`)
+    await db.execute(sql`SELECT points FROM (${points(null)}) s WHERE user_id = ${userId}`)
   );
 
   const [joinRow] = await db
@@ -601,7 +643,7 @@ export async function boardScoresFor(userId: string): Promise<{ host: number; jo
         eq(p.visibility, 'public'),
         isNull(p.deletedAt),
         notInArray(p.category, ANONYMOUS_SLUGS),
-        endedSql()
+        endedAnySql()
       )
     );
 
@@ -666,13 +708,13 @@ export async function allBoardScores(): Promise<Map<string, { host: number; join
   const p = alias(posts, 'p');
 
   const [hostRows, joinRows, contribRows] = await Promise.all([
-    db.execute(sql`SELECT user_id, points FROM (${points()}) s`).then(resultRows),
+    db.execute(sql`SELECT user_id, points FROM (${points(null)}) s`).then(resultRows),
     db
       .select({ id: postParticipants.userId, n: sql<number>`count(*)::int` })
       .from(postParticipants)
       .innerJoin(p, eq(p.id, postParticipants.postId))
       .where(
-        and(eq(p.visibility, 'public'), isNull(p.deletedAt), notInArray(p.category, ANONYMOUS_SLUGS), endedSql())
+        and(eq(p.visibility, 'public'), isNull(p.deletedAt), notInArray(p.category, ANONYMOUS_SLUGS), endedAnySql())
       )
       .groupBy(postParticipants.userId),
     db

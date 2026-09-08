@@ -11,6 +11,7 @@ import { priceOf } from '@/lib/shop';
 import { pick } from '@/lib/i18n';
 import { NOTIF } from '@/lib/notif-kinds';
 import { siteUrl } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,8 @@ export async function POST(req: NextRequest) {
   const key = toCardTheme(theme);
   const profiles = await getProfiles();
   const by = localName(profiles[user.id], user.name);
-  const origin = siteUrl(req.nextUrl.origin);
+  const region = regionOfRequest(req);
+  const origin = siteUrl(region, req.nextUrl.origin);
   const label = (locale: Parameters<typeof pick>[0]) =>
     pick(locale, N.got, { by: by(locale), theme: pick(locale, CARD_THEMES[key].label) });
 
@@ -86,6 +88,7 @@ export async function POST(req: NextRequest) {
       }),
     button: (locale) => pick(locale, N.btnShop),
     linkUrl: `${origin}/shop`,
+    region,
     tag: 'theme-gift',
   });
 

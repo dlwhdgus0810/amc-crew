@@ -6,6 +6,7 @@ import { ensureUser } from '@/lib/db/users';
 import { getCategory } from '@/lib/categories';
 import { addSignup, listSignups, notifySignupReached, removeSignup } from '@/lib/db/signups';
 import { siteUrl } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,12 +26,13 @@ export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category') ?? '';
   const bad = guardCategory(category);
   if (bad) return await bad;
+  const region = regionOfRequest(req);
   const user = await getSessionUser();
   if (!user) {
     // 비로그인에게는 인원수만 — 이름은 회원끼리 본다
-    return NextResponse.json({ count: (await listSignups(category)).length, signups: [], mine: false });
+    return NextResponse.json({ count: (await listSignups(region, category)).length, signups: [], mine: false });
   }
-  const signups = await listSignups(category);
+  const signups = await listSignups(region, category);
   return NextResponse.json({
     count: signups.length,
     signups,
@@ -53,7 +55,8 @@ export async function POST(req: NextRequest) {
   if (bad) return await bad;
 
   await ensureUser(user);
-  const { count, reached, full } = await addSignup(category, user.id);
+  const region = regionOfRequest(req);
+  const { count, reached, full } = await addSignup(region, category, user.id);
   if (full) {
     return await errJson(E.signupFull, 409);
   }
@@ -63,7 +66,7 @@ export async function POST(req: NextRequest) {
    */
   if (reached) {
     try {
-      await notifySignupReached(category, siteUrl(req.nextUrl.origin));
+      await notifySignupReached(region, category, siteUrl(region, req.nextUrl.origin));
     } catch (e) {
       console.error('[signups] notify failed:', e);
     }
@@ -84,6 +87,6 @@ export async function DELETE(req: NextRequest) {
   const bad = guardCategory(category);
   if (bad) return await bad;
 
-  const count = await removeSignup(category, user.id);
+  const count = await removeSignup(regionOfRequest(req), category, user.id);
   return NextResponse.json({ ok: true, count });
 }

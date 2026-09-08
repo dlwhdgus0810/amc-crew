@@ -8,6 +8,7 @@ import { catDisplayName, getCategory, isAnonymous } from '@/lib/categories';
 import { useLocale, useT } from '../../i18n';
 import { dateLabel as fmtDate, timeLabel as fmtTime, weekdayLabel as fmtWeekday, whenLabelShort, WHEN_TBD } from '@/lib/datefmt';
 import { effectiveEnd } from '@/lib/dates';
+import { REGIONS } from '@/lib/region';
 
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
@@ -199,7 +200,8 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
 
 
   async function copyLink() {
-    const url = `${siteUrl(window.location.origin)}/p/${id}`;
+    // 공유 주소는 그 모임의 지역 도메인으로 — 다른 지역에서 열어 공유해도 원래 자리로 간다
+    const url = `${siteUrl(post?.region ?? 'kansas', window.location.origin)}/p/${id}`;
     try {
       if (navigator.share) {
         await navigator.share({ url });
@@ -231,7 +233,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
   const past = post.isPast;
   const loginNext = `/api/auth/login?next=${encodeURIComponent(`/p/${id}`)}`;
 
-  // Google 캘린더 추가 링크 (ctz로 모임 시간대 고정)
+  // Google 캘린더 추가 링크 (ctz로 모임 시간대 고정 — 그 모임의 지역 시간대다)
   // 캘린더 제목에는 이모지 없는 이름을 쓴다 (.ics 쪽이 이모지를 앞에 따로 붙인다)
   const catLabel = cat ? t(cat.name) : post.category;
   const catHeading = cat ? t(catDisplayName(cat.slug)) : post.category;
@@ -249,7 +251,7 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
   const gcalUrl =
     `https://calendar.google.com/calendar/render?action=TEMPLATE` +
     `&text=${encodeURIComponent(gcalTitle)}` +
-    `&dates=${gcalDates}&ctz=America/Chicago` +
+    `&dates=${gcalDates}&ctz=${REGIONS[post.region].timeZone}` +
     `&location=${encodeURIComponent(post.location)}` +
     `&details=${encodeURIComponent(
       t(T.gcalDetails, { url: `${initial.origin}/p/${id}` })

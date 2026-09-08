@@ -2,6 +2,7 @@
 
 import { isMappable, mapsUrl } from '@/lib/maps';
 import { useT } from './i18n';
+import { useRegion } from './region-context';
 
 const T = {
   openMap: { ko: '{place} — 지도에서 열기', en: '{place} — open in Maps', es: '{place} — abrir en Mapas' },
@@ -29,12 +30,14 @@ const PinIcon = () => (
  */
 export default function PlaceLink({ location }: { location: string }) {
   const t = useT();
+  // 도시 이름이 빠진 장소에 붙일 지역은 지금 보는 동네다
+  const region = useRegion();
   if (!isMappable(location)) return <>{location}</>;
 
   return (
     <a
       className="place-link"
-      href={mapsUrl(location)}
+      href={mapsUrl(location, region)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t(T.openMap, { place: location })}

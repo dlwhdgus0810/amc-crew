@@ -7,6 +7,8 @@ import { payNote, venmoLink } from '@/lib/money';
 import { catName } from '@/lib/categories';
 import { whenLabelShort } from '@/lib/datefmt';
 import { DEFAULT_LOCALE } from '@/lib/i18n';
+import { appName } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
   const [post] = await db.select().from(posts).where(and(eq(posts.id, row.postId), isNull(posts.deletedAt)));
   const head = post
     ? `${catName(post.category, DEFAULT_LOCALE)} ${whenLabelShort(post.date, post.startTime, DEFAULT_LOCALE)}`
-    : 'Kansas Korean';
+    : appName(regionOfRequest(req));
   /*
    * 메모에 항목도 싣는다 — 앱을 안 쓰는 사람이라 이 화면 말고는 무슨 돈인지 알 길이 없다.
    * 앱 밖 인원이 걸린 항목만, 그 사람 몫으로 적는다 (화면에서 계산한 것과 같은 규칙).

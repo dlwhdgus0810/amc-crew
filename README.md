@@ -22,6 +22,24 @@
 - **Postgres (Neon + Drizzle)** — 사용자 프로필(닉네임), 모임 포스트, 참가, 구독, 알림
 - **Upstash Redis** — 영화 스케줄·회차 선택 (기존 기능 전용)
 
+## 두 지역 — 캔자스와 필라델피아
+
+같은 앱·같은 DB·같은 계정으로 두 동네를 돌립니다. **도메인이 지역입니다** — `kansaskorean.com`으로
+들어오면 캔자스, 필리 도메인으로 들어오면 필리 (`lib/region.ts`). 모임·구독·독서나눔 명단·
+감춘 카테고리·순위표·금빛 테마는 지역별이고, 프로필·친구·달란트·산 테마·전설의 호스트 왕관은
+하나입니다. 다른 지역의 모임 링크를 열면 그 지역 도메인으로 보냅니다.
+
+필리를 붙이는 순서:
+
+1. Vercel → Domains에 필리 도메인(apex + www)을 이 프로젝트에 추가. `lib/region.ts`의 `hosts`와 같아야 합니다.
+2. 환경변수 `NEXT_PUBLIC_SITE_URL_PHILLY=https://<필리 도메인>` (NEXT_PUBLIC이라 재빌드됩니다).
+   `DEFAULT_REGION`은 선택 — localhost·미리보기처럼 지역을 모르는 호스트에서 필리로 보고 싶을 때만.
+3. 카카오 개발자 콘솔 → **같은 앱**에 플랫폼 Web 도메인과 Redirect URI(`https://<필리 도메인>/api/auth/callback`) 추가.
+   새 앱을 만들면 안 됩니다 — 회원번호가 앱마다 달라져 같은 사람이 다른 계정이 됩니다.
+4. `AMC_THEATRE_ID_PHILLY` / `AMC_THEATRE_NAME_PHILLY`는 극장을 정한 뒤에. 그때까지 필리에는 무비나잇의 AMC 도구와 `/movie`가 안 뜹니다.
+
+로컬에서는 호스트로 지역을 알 수 없어서 `region` 쿠키(`kansas`/`philly`)로 고릅니다. 실제 도메인에선 이 쿠키를 무시합니다.
+
 ## 배포하기 (Vercel + Upstash)
 
 1. **GitHub에 푸시**
@@ -77,7 +95,7 @@
 모임은 **종료 시각이 지나고 1시간 뒤**에 "지난 모임"으로 내려갑니다
 (`lib/dates.ts`의 `PAST_GRACE_MINUTES`). 끝나자마자 접히면 후기 댓글을 달기 번거로워서 둔 유예예요.
 
-판정은 서버가 앱 시간대(`APP_TIMEZONE`, 기본 `America/Chicago`) 기준으로 하고
+판정은 서버가 그 지역의 시간대(캔자스 `America/Chicago`, 필리 `America/New_York` — `lib/region.ts`) 기준으로 하고
 `PostView.isPast`로 내려주므로, 다른 시간대에서 열어도 결과가 같습니다.
 
 ## 카테고리 제안
@@ -104,7 +122,7 @@
 
 ## 밖으로 나가는 링크 주소
 
-카톡 알림·공유·캘린더 링크는 `NEXT_PUBLIC_SITE_URL`(예: `https://www.kansaskorean.com`)을 씁니다.
+푸시 알림·공유·캘린더 링크는 지역의 공개 주소를 씁니다 — 캔자스는 `NEXT_PUBLIC_SITE_URL`(예: `https://www.kansaskorean.com`), 필리는 `NEXT_PUBLIC_SITE_URL_PHILLY`.
 설정하지 않으면 요청이 들어온 호스트를 그대로 쓰기 때문에, 로컬에서 만든 링크에 `localhost`가
 박히거나 vercel.app으로 들어온 요청의 알림이 vercel.app을 가리키게 됩니다.
 **Vercel 환경변수에 꼭 넣어주세요.** (로그인 redirect_uri는 실제 접속 호스트를 써야 하므로 이 값과 무관합니다.)

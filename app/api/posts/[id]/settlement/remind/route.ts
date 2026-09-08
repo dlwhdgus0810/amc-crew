@@ -3,7 +3,6 @@ import { E, errJson } from '@/lib/apierr';
 import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getSettlementById, notifySettlement, settlementOwner } from '@/lib/db/settlements';
-import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const userIds = [...new Set(asked)].filter((uid) => owing.has(uid));
   if (userIds.length === 0) return await errJson(E.remindNobody, 400);
 
-  const { sent } = await notifySettlement(settlementId, siteUrl(req.nextUrl.origin), userIds);
+  // 주소는 notifySettlement가 그 모임의 지역으로 만든다 — 여기서는 요청 주소만 넘긴다
+  const { sent } = await notifySettlement(settlementId, req.nextUrl.origin, userIds);
   return NextResponse.json({ ok: true, sent });
 }

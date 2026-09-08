@@ -3,15 +3,16 @@ import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { hiddenSlugs, setHiddenSlugs } from '@/lib/db/hidden';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
-/** 목록에서 내려 둔 카테고리 (관리자 전용) */
-export async function GET() {
+/** 목록에서 내려 둔 카테고리 (관리자 전용) — 지금 보고 있는 지역 것 */
+export async function GET(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) return await errJson(E.loginRequired, 401);
   if (!isAdmin(user)) return await errJson(E.adminOnly, 403);
-  return NextResponse.json({ hidden: await hiddenSlugs() });
+  return NextResponse.json({ hidden: await hiddenSlugs(regionOfRequest(req)) });
 }
 
 /** 통째로 맞바꾼다 — 화면이 켜고 끈 결과를 그대로 보낸다 */
@@ -26,6 +27,6 @@ export async function PUT(req: NextRequest) {
   if (!asked || asked.some((s: unknown) => typeof s !== 'string' || !POST_CATEGORY_SLUGS.includes(s))) {
     return await errJson(E.badRequest, 400);
   }
-  await setHiddenSlugs(asked);
+  await setHiddenSlugs(regionOfRequest(req), asked);
   return NextResponse.json({ ok: true, hidden: asked });
 }

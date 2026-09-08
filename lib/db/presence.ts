@@ -5,6 +5,7 @@ import { pushSubscriptions, users } from './schema';
 import { nameOf } from '../store';
 import { getLocale } from '../locale';
 import { addDays, instantAt, localStamp } from '../dates';
+import type { Region } from '../region';
 
 /**
  * 접속 현황 — 서버리스라 연결을 붙들고 있을 수 없어서, 앱을 보고 있는 사람이
@@ -32,7 +33,7 @@ const SESSION_GAP_MINUTES = 5;
 const MIN_SESSION_MINUTES = 1;
 
 /**
- * 사람들이 실제로 앱을 보는 시간대 — 캔자스 기준 오전 7시부터 다음날 새벽 1시까지.
+ * 사람들이 실제로 앱을 보는 시간대 — 그 지역 시간으로 오전 7시부터 다음날 새벽 1시까지.
  *
  * 예전에는 「최근 24시간」이었는데, 그 창은 새벽 1~7시를 끼고 있어서 아무도 안 쓰는
  * 여섯 시간이 늘 섞여 들어왔다. 게다가 굴러가는 창이라 아침에 본 것과 저녁에 본 것이
@@ -48,12 +49,12 @@ const ACTIVE_TO = '01:00';
  * 새벽 1시부터 아침 7시 사이에는 열려 있는 창이 없다 — 그때는 방금 닫힌 창을 준다.
  * (그 시간에 표를 열어 놓고 숫자가 0으로 보이면 기록이 날아간 줄 안다)
  */
-export function activeWindow(now = new Date()): { start: Date; end: Date } {
-  const stamp = localStamp(now);
+export function activeWindow(region: Region, now = new Date()): { start: Date; end: Date } {
+  const stamp = localStamp(region, now);
   const day = stamp.slice(0, 10);
   const hour = Number(stamp.slice(11, 13));
   const base = hour < Number(ACTIVE_FROM.slice(0, 2)) ? addDays(day, -1) : day;
-  return { start: instantAt(base, ACTIVE_FROM), end: instantAt(addDays(base, 1), ACTIVE_TO) };
+  return { start: instantAt(region, base, ACTIVE_FROM), end: instantAt(region, addDays(base, 1), ACTIVE_TO) };
 }
 
 export interface OnlineUser {
@@ -123,11 +124,12 @@ export interface PresenceStat {
  * 정렬은 화면에서 한다 — 열두 명짜리 표라 다시 물어보러 갈 일이 아니다.
  * 여기서는 보기 좋은 기본 순서(7일 많은 순)만 정해 준다.
  */
-export async function listPresenceStats(): Promise<PresenceStat[]> {
+export async function listPresenceStats(region: Region): Promise<PresenceStat[]> {
   const locale = await getLocale();
   const db = await getDb();
   const min = sql`(${MIN_SESSION_MINUTES} * interval '1 minute')`;
-  const { start, end } = activeWindow();
+  // 활동 시간대는 보는 관리자가 있는 호스트의 시계로 — 한 시간 어긋나는 것은 표의 정밀도 안이다
+  const { start, end } = activeWindow(region);
   const from = sql`${start.toISOString()}::timestamptz`;
   const to = sql`${end.toISOString()}::timestamptz`;
   const rows = await db.execute(sql`
@@ -191,7 +193,7 @@ export async function listPresenceStats(): Promise<PresenceStat[]> {
     lastSeenSecondsAgo: r.last_seen
       ? Math.max(0, Math.round((now - new Date(r.last_seen as string).getTime()) / 1000))
       : null,
-    lastSeenAt: r.last_seen ? localStamp(new Date(r.last_seen as string)) : null,
+    lastSeenAt: r.last_seen ? localStamp(region, new Date(r.last_seen as string)) : null,
     pushDevices: devices.get(String(r.id)) ?? 0,
   }));
 }

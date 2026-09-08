@@ -5,6 +5,7 @@ import { createPost } from './posts';
 import { getProfiles, LocalName, localName, UNKNOWN_NAME } from '../store';
 import { addDays, nextWeekdayOnOrAfter, todayLocal, weekdayOf } from '../dates';
 import type { Msg } from '../i18n';
+import type { Region } from '../region';
 
 /** 크론이 만든 회차의 알림 문구 (수신자 언어로 렌더된다) */
 const WEEKLY_LABEL: Msg = { ko: '이번 주 모임', en: 'this week', es: 'esta semana' };
@@ -15,6 +16,8 @@ const HORIZON_DAYS = 7;
 
 export interface RuleInput {
   category: string;
+  /** 어느 지역의 규칙인지 — 회차가 이 지역에 만들어진다 */
+  region: Region;
   authorId: string;
   /** 알림 문구에 실을 이름 — 받는 사람의 언어로 정해진다 */
   authorName: LocalName;
@@ -47,6 +50,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
   await db.insert(recurringRules).values({
     id: ruleId,
     category: input.category,
+    region: input.region,
     authorId: input.authorId,
     coHostId: input.coHostId ?? null,
     allowNicknames: input.allowNicknames ?? false,
@@ -64,6 +68,7 @@ export async function createRecurringRule(input: RuleInput): Promise<{ ruleId: s
 
   const postId = await createPost({
     category: input.category,
+    region: input.region,
     authorId: input.authorId,
     authorName: input.authorName,
     ...(input.coHostId ? { coHostId: input.coHostId } : {}),
@@ -100,12 +105,16 @@ export async function deactivateRule(ruleId: string): Promise<void> {
  * 앞으로 HORIZON_DAYS 안에 와야 하는 회차 중 아직 없는 것을 만든다 (크론이 매일 호출).
  * 이미 생성된 회차는 (규칙, 날짜)로 걸러내므로 여러 번 실행해도 중복되지 않는다.
  */
-export async function materializeDueOccurrences(origin: string): Promise<{ created: number }> {
+export async function materializeDueOccurrences(region: Region, origin: string): Promise<{ created: number }> {
   const db = await getDb();
-  const rules = await db.select().from(recurringRules).where(eq(recurringRules.active, true));
+  // 지역마다 「오늘」이 다르다 — 크론이 지역을 돌며 한 번씩 부른다
+  const rules = await db
+    .select()
+    .from(recurringRules)
+    .where(and(eq(recurringRules.active, true), eq(recurringRules.region, region)));
   if (rules.length === 0) return { created: 0 };
 
-  const today = todayLocal();
+  const today = todayLocal(region);
   const horizonEnd = addDays(today, HORIZON_DAYS - 1);
 
   /*
@@ -132,6 +141,7 @@ export async function materializeDueOccurrences(origin: string): Promise<{ creat
     try {
       await createPost({
         category: rule.category,
+        region,
         authorId: rule.authorId,
         authorName: localName(profiles[rule.authorId], UNKNOWN_NAME),
         ...(rule.coHostId ? { coHostId: rule.coHostId } : {}),

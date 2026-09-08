@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from '../i18n';
+import { useRegion, useRegionConfig } from '../region-context';
+import { REGIONS, type Region } from '@/lib/region';
 import { HTML_LANG, type Msg } from '@/lib/i18n';
 import { TEST_USERS } from '@/lib/test-users';
 import { useRouter } from 'next/navigation';
@@ -199,6 +201,10 @@ const T = {
   noticeTitlePhEs: { ko: 'Título (español)', en: 'Título (español)' },
   noticeBodyPhEs: { ko: 'Texto (español, opcional)', en: 'Texto (español, opcional)' },
   noticeWho: { ko: '누구에게', en: 'Who sees it' },
+  /* 어느 지역에 띄울지 — 기본은 지금 보고 있는 도메인의 지역 */
+  noticeWhere: { ko: '어느 지역에', en: 'Which region' },
+  noticeHere: { ko: '{place}만', en: '{place} only' },
+  noticeBoth: { ko: '두 지역 모두', en: 'Both regions' },
   noticeAll: { ko: '전체', en: 'Everyone' },
   noticeSome: { ko: '고른 사람만', en: 'Only picked' },
   noticeSomeHint: {
@@ -212,7 +218,7 @@ const T = {
   noticeReadWho: { ko: '확인: {names}', en: 'Confirmed: {names}' },
   noticeReadNot: { ko: '아직: {names}', en: 'Not yet: {names}' },
   noticeReadNone: { ko: '아직 아무도 안 눌렀어요.', en: 'Nobody has confirmed yet.' },
-  hideTitle: { ko: '카테고리 감추기', en: 'Hide categories' },
+  hideTitle: { ko: '카테고리 감추기 ({place})', en: 'Hide categories ({place})' },
   hideDesc: {
     ko: '고른 카테고리를 홈과 둘러보기 목록에서 내려요. 지우는 게 아니라 목록에서만 빠지는 거라, 그 안의 모임·명단은 그대로 있고 주소로 들어가면 열려요.',
     en: 'Takes the picked categories off the home and browse lists. Nothing is deleted — their meetups and lists stay, and the pages still open by link.',
@@ -275,9 +281,10 @@ const T = {
     ko: '앱 푸시는 홈 화면에 추가한 앱으로 오는 알림이에요 (앱 안 알림함과 별개). 켜 둔 기기가 하나라도 있으면 켜짐이에요.',
     en: 'App push is the notification that reaches the home-screen app — separate from the in-app alerts tab. On means at least one device has it.',
   },
+  /* {place}에 지금 보고 있는 지역 이름이 들어간다 (lib/region.ts) */
   statsActiveNote: {
-    ko: '활동시간은 캔자스 시간 오전 7시부터 다음날 새벽 1시까지 머문 시간이에요. 새벽 1시를 넘기면 그날 것으로 묶여요.',
-    en: 'Active hours counts time between 7am and 1am the next day, Kansas time — a late night still belongs to that day.',
+    ko: '활동시간은 {place} 시간 오전 7시부터 다음날 새벽 1시까지 머문 시간이에요. 새벽 1시를 넘기면 그날 것으로 묶여요.',
+    en: 'Active hours counts time between 7am and 1am the next day, {place} time — a late night still belongs to that day.',
   },
   statsSortBy: { ko: '정렬', en: 'Sort' },
   statsSortActive: { ko: '활동시간순', en: 'Active hours' },
@@ -447,6 +454,8 @@ export default function AdminPage() {
       bodyEn: string | null;
       bodyEs: string | null;
       linkPath: string | null;
+      /** null이면 양쪽 지역 */
+      region: Region | null;
       targets: string[];
       reads: { userId: string; seenAt: string }[];
       active: boolean;
@@ -468,10 +477,16 @@ export default function AdminPage() {
   /** 받는 사람 — 빈 배열이 곧 전체다. 「고른 사람만」을 골랐는지는 이 스위치가 따로 기억한다 */
   const [noticePicked, setNoticePicked] = useState(false);
   const [noticeTargets, setNoticeTargets] = useState<string[]>([]);
+  /** 두 지역 모두에 띄울지 — 기본은 지금 보고 있는 도메인의 지역에만 */
+  const [noticeBoth, setNoticeBoth] = useState(false);
   /** 받는 사람 고르기용 전체 명단 — 정지 목록(관리자가 빠져 있다)과 달리 나도 들어 있어야 한다 */
   const [everyone, setEveryone] = useState<{ id: string; name: string; avatar: string | null }[]>([]);
   const t = useT();
   const locale = useLocale();
+  // 지금 보고 있는 도메인의 지역 — 공지·감추기·활동시간 문구가 이걸 따른다
+  const region = useRegion();
+  const regionCfg = useRegionConfig();
+  const place = locale === 'ko' ? regionCfg.placeKo : regionCfg.placeEn;
 
   async function loadNotices() {
     const res = await fetch('/api/notices?all=1', { cache: 'no-store' });
@@ -546,6 +561,7 @@ export default function AdminPage() {
           bodyEs: noticeBodyEs.trim(),
           linkPath: noticeLink.trim(),
           targets: noticePicked ? noticeTargets : [],
+          region: noticeBoth ? 'all' : region,
         }),
       });
       const data = await res.json();
@@ -605,6 +621,8 @@ export default function AdminPage() {
           bodyEs: n.bodyEs ?? '',
           linkPath: n.linkPath ?? '',
           targets: [],
+          // 지역은 그대로 둔다 — 받는 사람만 넓히는 버튼이다
+          region: n.region ?? 'all',
         }),
       });
       const data = await res.json();
@@ -1405,7 +1423,7 @@ export default function AdminPage() {
 
           <h1 className="admin-sec">
             <button className="collapse-h1" aria-expanded={hideOpen} onClick={() => setHideOpen((v) => !v)}>
-              {t(T.hideTitle)}
+              {t(T.hideTitle, { place })}
               <span className="collapse-caret" aria-hidden>
                 {hideOpen ? '⌃' : '⌄'}
               </span>
@@ -1522,6 +1540,22 @@ export default function AdminPage() {
             </p>
 
             <div className="field-label" style={{ marginTop: 16 }}>
+              {t(T.noticeWhere)}
+            </div>
+            <div className="seg-group">
+              {[false, true].map((v) => (
+                <button
+                  key={String(v)}
+                  className={`seg ${noticeBoth === v ? 'on' : ''}`}
+                  disabled={noticeBusy}
+                  onClick={() => setNoticeBoth(v)}
+                >
+                  {v ? t(T.noticeBoth) : t(T.noticeHere, { place })}
+                </button>
+              ))}
+            </div>
+
+            <div className="field-label" style={{ marginTop: 16 }}>
               {t(T.noticeWho)}
             </div>
             <div className="seg-group">
@@ -1593,6 +1627,12 @@ export default function AdminPage() {
                     <span className="notice-state">
                       {n.targets.length === 0 ? t(T.noticeToAll) : t(T.noticeToSome, { n: n.targets.length })}
                     </span>
+                    {/* 어느 지역 공지인지 — 양쪽이면 따로 적지 않는다 */}
+                    {n.region && (
+                      <span className="notice-state">
+                        {locale === 'ko' ? REGIONS[n.region].placeKo : REGIONS[n.region].placeEn}
+                      </span>
+                    )}
                     <span className="notice-row-when">{n.createdAt.slice(0, 10)}</span>
                   </div>
                   <p className="notice-row-title">{n.titleKo}</p>
@@ -1842,7 +1882,7 @@ export default function AdminPage() {
           <p className="subtitle">{t(T.statsDesc)}</p>
           <div className="card">
             <p className="hint" style={{ marginBottom: 8 }}>
-              {t(T.statsActiveNote)}
+              {t(T.statsActiveNote, { place })}
             </p>
             <p className="hint" style={{ marginBottom: 12 }}>
               {t(T.statsPushNote)}

@@ -3,6 +3,7 @@ import { E, errJson } from '@/lib/apierr';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { getCategoryRequest, reviewCategoryRequest } from '@/lib/db/category-requests';
 import { siteUrl } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     ...(adminNote ? { adminNote } : {}),
     requesterId: request.userId,
     requestName: request.name,
-    origin: siteUrl(req.nextUrl.origin),
+    // 받는 사람의 동네 주소는 저쪽(lib/db)이 home_region으로 만든다 — 여기 origin은 폴백이다
+    origin: siteUrl(regionOfRequest(req), req.nextUrl.origin),
   });
   return NextResponse.json({ ok: true });
 }

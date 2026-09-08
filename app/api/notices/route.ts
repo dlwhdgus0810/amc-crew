@@ -6,6 +6,7 @@ import { getSessionUser, isAdmin } from '@/lib/auth';
 import { NOTICE_TAG } from '@/lib/cache-tags';
 import { activeNotices, createNotice, listNotices, noticeFor } from '@/lib/db/notices';
 import { readNoticeInput } from './input';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,8 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ notices: await listNotices() });
   }
-  return NextResponse.json({ notice: await noticeFor(await activeNotices(), user.id) });
+  // 이 도메인의 지역에 켜진 것(양쪽용 포함) 중에서 고른다
+  return NextResponse.json({ notice: await noticeFor(await activeNotices(regionOfRequest(req)), user.id) });
 }
 
 /** 새 공지 올리기 (관리자) */

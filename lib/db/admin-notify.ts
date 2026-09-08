@@ -4,6 +4,8 @@ import { notifications, users } from './schema';
 import { sendPush } from '../push';
 import { adminIds } from '../auth';
 import { Locale, toLocale } from '../i18n';
+import type { Region } from '../region';
+import { appName } from '../site';
 
 /**
  * 관리자에게 인앱 알림 + 카카오톡 메모를 보낸다.
@@ -16,6 +18,8 @@ export async function notifyAdmins(opts: {
   message: (locale: Locale) => string;
   button: (locale: Locale) => string;
   linkUrl: string;
+  /** 일이 난 지역 — 「어느 동네 소식인가」가 제목에 먼저 보인다 (관리자는 양쪽을 다 본다) */
+  region: Region;
   /** 로그 태그 */
   tag: string;
 }): Promise<void> {
@@ -32,7 +36,7 @@ export async function notifyAdmins(opts: {
       const locale = toLocale(r.locale);
       const message = opts.message(locale);
       await db.insert(notifications).values({ id: crypto.randomUUID(), userId: r.id, postId: null, message });
-      await sendPush([r.id], { title: 'Kansas Korean', body: message, url: opts.linkUrl });
+      await sendPush([r.id], { title: appName(opts.region), body: message, url: opts.linkUrl });
     }
   } catch (e) {
     console.error(`[${opts.tag}] admin notify failed:`, e);

@@ -4,6 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser } from '@/lib/auth';
 import { friendMeetups } from '@/lib/db/friend-meetups';
 import { listFriendships } from '@/lib/db/friends';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
  * 친구가 아니면 404다 — 403으로 "친구만 볼 수 있어요"라고 답하면
  * 그 사람이 회원인지 아닌지가 드러난다.
  */
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
   if (!user) {
     return await errJson(E.loginRequired, 401);
@@ -22,7 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (banned) return banned;
   const { id } = await params;
 
-  const meetups = await friendMeetups(user.id, id);
+  const meetups = await friendMeetups(regionOfRequest(req), user.id, id);
   if (!meetups) {
     return await errJson(E.friendNotFound, 404);
   }

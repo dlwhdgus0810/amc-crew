@@ -25,7 +25,6 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CATEGORIES, getCategory } from '@/lib/categories';
-import { todayLocal } from '@/lib/dates';
 import { useT } from './i18n';
 import CategoryCard from './category-card';
 import SortableCategoryCard from './sortable-card';

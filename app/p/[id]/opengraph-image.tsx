@@ -5,13 +5,15 @@ import { getLocale } from '@/lib/locale';
 import { pick } from '@/lib/i18n';
 import { whenLabelShort } from '@/lib/datefmt';
 import { OG_SIZE, loadFonts } from '@/lib/og';
+import { getRegion } from '@/lib/region-server';
+import { REGIONS } from '@/lib/region';
 
 /*
  * 모임 링크를 붙였을 때 뜨는 미리보기 카드.
  * 앱 안의 카테고리 카드와 같은 모양이라, 링크만 봐도 무슨 모임인지 색으로 먼저 안다.
  */
 
-export const alt = 'Kansas Korean';
+export const alt = 'meetup';
 export const size = OG_SIZE;
 export const contentType = 'image/png';
 // PGlite(로컬 폴백)는 edge에서 못 돌아간다 — 조회가 들어가는 이미지는 node에서 그린다
@@ -25,13 +27,15 @@ const T = {
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [post, locale] = await Promise.all([getPostView(id), getLocale()]);
+  const [post, locale, hostRegion] = await Promise.all([getPostView(id), getLocale(), getRegion()]);
   const cat = post ? getCategory(post.category) : undefined;
+  // 모임이 있으면 그 모임의 지역 이름, 없으면 열린 도메인의 이름
+  const appName = REGIONS[post?.region ?? hostRegion].name;
 
   const bg = cat?.color ?? '#101010';
   const fg = cat?.fg ?? '#F6F4EE';
-  const label = cat?.en ?? 'KANSAS KOREAN';
-  const heading = post ? `${catName(post.category, locale)} ${cat?.emoji ?? ''}` : 'Kansas Korean';
+  const label = cat?.en ?? appName.toUpperCase();
+  const heading = post ? `${catName(post.category, locale)} ${cat?.emoji ?? ''}` : appName;
   const when = post ? whenLabelShort(post.date, post.startTime, locale, post.endDate) : '';
   const where = post?.location ?? pick(locale, T.notFound);
   const title = post?.title ? `〈${post.title}〉` : '';
@@ -41,7 +45,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       : pick(locale, T.people, { n: post.participantCount })
     : '';
 
-  const fonts = await loadFonts(`${heading}${when}${where}${title}${count}${label}Kansas Korean`);
+  const fonts = await loadFonts(`${heading}${when}${where}${title}${count}${label}${appName}`);
 
   return new ImageResponse(
     (

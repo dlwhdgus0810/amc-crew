@@ -7,6 +7,9 @@ import { pushSubscriptions, users } from '@/lib/db/schema';
 import { notifyAdmins } from '@/lib/db/admin-notify';
 import { siteUrl } from '@/lib/site';
 import { pick } from '@/lib/i18n';
+import { localStamp } from '@/lib/dates';
+import { regionOfRequest } from '@/lib/region-server';
+import type { Region } from '@/lib/region';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,15 +22,10 @@ const T = {
   button: { ko: '앱 열기', en: 'Open the app', es: 'Abrir la app' },
 };
 
-/** 앱 시간대 기준 시:분 — 여러 번 눌렀을 때 어느 것이 방금 것인지 구분하려고 넣는다 */
-function stamp(): string {
-  return new Intl.DateTimeFormat('ko-KR', {
-    timeZone: process.env.APP_TIMEZONE ?? 'America/Chicago',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(new Date());
+/** 그 지역 시각 HH:mm:ss — 여러 번 눌렀을 때 어느 것이 방금 것인지 구분하려고 넣는다 */
+function stamp(region: Region): string {
+  const s = Date.now() % 60_000;
+  return `${localStamp(region, new Date()).slice(11)}:${String(Math.floor(s / 1000)).padStart(2, '0')}`;
 }
 
 /**
@@ -41,11 +39,13 @@ export async function POST(_req: NextRequest) {
   if (!user) return await errJson(E.loginRequired, 401);
   if (!isAdmin(user)) return await errJson(E.adminOnly, 403);
 
-  const time = stamp();
+  const region = regionOfRequest(_req);
+  const time = stamp(region);
   await notifyAdmins({
     message: (locale) => pick(locale, T.message, { time }),
     button: (locale) => pick(locale, T.button),
-    linkUrl: `${siteUrl(_req.nextUrl.origin)}/notifications`,
+    linkUrl: `${siteUrl(region, _req.nextUrl.origin)}/notifications`,
+    region,
     tag: 'test-notify',
   });
 

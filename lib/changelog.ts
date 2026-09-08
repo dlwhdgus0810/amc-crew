@@ -1,4 +1,5 @@
 import {Msg} from './i18n';
+import {REGIONS, type Region} from './region';
 
 /**
  * 업데이트 소식.
@@ -1633,9 +1634,21 @@ export const CHANGELOG: ChangelogEntry[] = [...ENTRIES].sort(
   (a, b) => Number(Boolean(b.pin)) - Number(Boolean(a.pin)) || b.at.localeCompare(a.at)
 );
 
+/**
+ * 그 지역이 보는 소식.
+ *
+ * 필리는 문을 연 날부터다 (lib/region.ts의 changelogSince) — 그 전 항목은 「Kansas Korean
+ * 줄이 사라졌어요」처럼 캔자스 이야기라, 필리에서 읽으면 무슨 말인지 모른다. 캔자스는
+ * ''라 전부 그대로다.
+ */
+export function changelogFor(region: Region): ChangelogEntry[] {
+  const since = REGIONS[region].changelogSince;
+  return since ? CHANGELOG.filter((e) => e.at >= since) : CHANGELOG;
+}
+
 /** 홈 카드에 띄울 소식 — 고정한 게 있으면 그것부터 (없으면 가장 최근 notable) */
-export function latestNotable(): ChangelogEntry | null {
-  return CHANGELOG.find((e) => e.notable) ?? null;
+export function latestNotable(region: Region): ChangelogEntry | null {
+  return changelogFor(region).find((e) => e.notable) ?? null;
 }
 
 /** 시간상 가장 최근 소식 — 고정과 무관하다 (카톡 발송처럼 "이번에 새로 올라온 것"이 필요한 곳) */
@@ -1649,6 +1662,7 @@ export function newestEntry(): ChangelogEntry | null {
  * 홈 카드를 "새 것이 있을 때만" 띄우는 기준은 이쪽이다. 카드에 보이는 항목(고정된 것)의
  * 시각으로 재면, 그 뒤에 새 소식이 아무리 쌓여도 이미 닫은 사람에게는 다시 뜨지 않는다.
  */
-export function latestAt(): string | null {
-  return newestEntry()?.at ?? null;
+export function latestAt(region: Region): string | null {
+  // 고정한 항목이 맨 앞이라 [0]을 쓰면 안 된다 — 시각으로 제일 늦은 것을 고른다
+  return changelogFor(region).reduce<string | null>((m, e) => (m && m >= e.at ? m : e.at), null);
 }

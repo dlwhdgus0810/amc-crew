@@ -3,6 +3,7 @@ import { getDb } from './index';
 import { postParticipants, posts } from './schema';
 import { isPastSlot } from '../dates';
 import { meetupScopeFor, type MeetupScope } from './friends';
+import type { Region } from '../region';
 
 /**
  * 친구 한 명이 참가한 모임 목록.
@@ -37,7 +38,8 @@ export interface FriendMeetups {
 /** 지난 모임은 최근 것부터 이만큼만 (끝없이 내려가는 화면이 아니다) */
 const PAST_LIMIT = 30;
 
-export async function friendMeetups(viewerId: string, ownerId: string): Promise<FriendMeetups | null> {
+/** 지금 보고 있는 지역에서 그 친구가 참가한 모임 — 다른 지역 것은 그쪽 앱에서 본다 */
+export async function friendMeetups(region: Region, viewerId: string, ownerId: string): Promise<FriendMeetups | null> {
   const scope = await meetupScopeFor(viewerId, ownerId);
   if (scope === null) return null; // 친구가 아니다
   if (scope === 'none') return { scope, upcoming: [], past: [] };
@@ -56,7 +58,14 @@ export async function friendMeetups(viewerId: string, ownerId: string): Promise<
     })
     .from(posts)
     .innerJoin(postParticipants, eq(postParticipants.postId, posts.id))
-    .where(and(eq(postParticipants.userId, ownerId), eq(posts.visibility, 'public'), isNull(posts.deletedAt)))
+    .where(
+      and(
+        eq(posts.region, region),
+        eq(postParticipants.userId, ownerId),
+        eq(posts.visibility, 'public'),
+        isNull(posts.deletedAt)
+      )
+    )
     .orderBy(asc(posts.date), asc(posts.startTime));
 
   // 내가 함께 있었던 모임 표시 — 한 번에 모아 온다
@@ -78,7 +87,7 @@ export async function friendMeetups(viewerId: string, ownerId: string): Promise<
      */
     if (!r.date || !r.startTime) continue;
     const item: FriendMeetup = { ...r, date: r.date, startTime: r.startTime, together: withMe.has(r.id) };
-    if (isPastSlot(r.date, r.startTime, r.endTime, r.endDate)) past.push(item);
+    if (isPastSlot(region, r.date, r.startTime, r.endTime, r.endDate)) past.push(item);
     else upcoming.push(item);
   }
   past.reverse(); // 최근 것부터

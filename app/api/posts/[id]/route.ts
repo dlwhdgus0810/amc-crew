@@ -9,6 +9,7 @@ import { getCategory } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
 import { isPastSlot, todayLocal } from '@/lib/dates';
 import { siteUrl } from '@/lib/site';
+import { regionOfRow } from '@/lib/region';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (post.authorId !== user.id && post.coHostId !== user.id && !isAdmin(user)) {
     return await errJson(E.authorOnlyEdit, 403);
   }
+  // 시각 판정과 알림은 그 모임의 지역으로 — 어느 도메인에서 고치든 같다
+  const region = regionOfRow(post.region);
 
   const body = await req.json().catch(() => null);
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
@@ -107,7 +110,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
    * 지난 날짜로 옮기는 것만 막는다 — 이미 끝난 모임의 메모·장소를 고치는 건 그대로 허용.
    * 관리자는 옮길 수도 있다 (날짜를 잘못 적어 둔 기록을 바로잡는 경우).
    */
-  if (date < todayLocal() && date !== post.date && !isAdmin(user)) {
+  if (date < todayLocal(region) && date !== post.date && !isAdmin(user)) {
     return await errJson(E.pastMove, 400);
   }
   if (!location || location.length > 100) {
@@ -144,8 +147,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
    * 고치기 전만 보면 그때 「모임 변경 · 7/1」이 나가는데, 이미 끝난 일을 알리는 셈이 된다.
    */
   const editingPast =
-    isPastSlot(post.date, post.startTime, post.endTime, post.endDate) ||
-    isPastSlot(date, startTime, endTime, endDate);
+    isPastSlot(region, post.date, post.startTime, post.endTime, post.endDate) ||
+    isPastSlot(region, date, startTime, endTime, endDate);
 
   /*
    * 같이 여는 사람만 바뀐 경우.
@@ -173,6 +176,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   await updatePost({
     postId: id,
     category: post.category,
+    region,
     actorId: user.id,
     actorName: await displayNameOf(user),
     title: hasTitle && title ? title : null,
@@ -191,7 +195,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     ...(coHostId !== undefined ? { coHostId } : {}),
     ...(typeof body?.allowNicknames === 'boolean' ? { allowNicknames: body.allowNicknames } : {}),
     ...(editingPast || onlyCoHostChanged ? { silent: true } : {}),
-    origin: siteUrl(req.nextUrl.origin),
+    origin: siteUrl(region, req.nextUrl.origin),
   });
 
 
@@ -234,16 +238,17 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (post.authorId !== user.id && post.coHostId !== user.id && !isAdmin(user)) {
     return await errJson(E.authorOnlyDelete, 403);
   }
+  const region = regionOfRow(post.region);
   /*
    * 지난 모임은 기록이다 — 누가 언제 뭘 했는지, 호스트 점수가 어디서 왔는지가 여기 남는다.
    * 그래서 호스트에게는 지우는 길을 막아 둔다. 실수로 하나 지우면 되돌릴 방법이 없다.
    * 관리자만 지운다: 잘못 올라간 모임을 치우는 사람이 아무도 없으면 그건 그것대로 막힌다.
    */
-  if (!isAdmin(user) && isPastSlot(post.date, post.startTime, post.endTime, post.endDate)) {
+  if (!isAdmin(user) && isPastSlot(region, post.date, post.startTime, post.endTime, post.endDate)) {
     return await errJson(E.pastDelete, 400);
   }
   // 지난 모임을 치우는 것은 정리지 취소가 아니다 — 알림을 보내지 않는다
-  const wasPast = isPastSlot(post.date, post.startTime, post.endTime, post.endDate);
-  await deletePost(post, user.id, await displayNameOf(user), siteUrl(req.nextUrl.origin), wasPast);
+  const wasPast = isPastSlot(region, post.date, post.startTime, post.endTime, post.endDate);
+  await deletePost(post, user.id, await displayNameOf(user), siteUrl(region, req.nextUrl.origin), wasPast);
   return NextResponse.json({ ok: true });
 }

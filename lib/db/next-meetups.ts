@@ -10,6 +10,7 @@ import { getDb } from './index';
 import { postParticipants, posts } from './schema';
 import { openEndCutoffTime, pastCutoff } from '../dates';
 import { POSTS_TAG } from '../cache-tags';
+import type { Region } from '../region';
 
 export interface NextMeetup {
   postId: string;
@@ -30,12 +31,12 @@ export interface NextMeetup {
  * 보는 사람이 누구든 같은 답이다 — 비공개 모임은 애초에 빼고 세므로 여기에 개인적인 것이
  * 하나도 없다. 그래서 아래에서 요청 사이에도 캐시할 수 있다.
  */
-async function query(categories: string[]): Promise<Record<string, NextMeetup>> {
+async function query(region: Region, categories: string[]): Promise<Record<string, NextMeetup>> {
   if (categories.length === 0) return {};
   const db = await getDb();
-  const { date: cutDate, time: cutTime } = pastCutoff();
+  const { date: cutDate, time: cutTime } = pastCutoff(region);
   // 종료 시각이 없는 모임은 시작 시각을 당겨 둔 기준과 견준다 (lib/dates.ts 참고)
-  const openCut = openEndCutoffTime();
+  const openCut = openEndCutoffTime(region);
   const upcomingToday = openCut
     ? or(gt(posts.endTime, cutTime), and(isNull(posts.endTime), gt(posts.startTime, openCut)))
     : or(gt(posts.endTime, cutTime), isNull(posts.endTime));
@@ -53,7 +54,15 @@ async function query(categories: string[]): Promise<Record<string, NextMeetup>> 
     })
     .from(posts)
     // 비공개(link) 모임은 카드 요약에도 올리지 않는다 — 링크 없는 사람 눈에 띄면 안 된다
-    .where(and(inArray(posts.category, categories), upcoming, eq(posts.visibility, 'public'), isNull(posts.deletedAt)))
+    .where(
+      and(
+        eq(posts.region, region),
+        inArray(posts.category, categories),
+        upcoming,
+        eq(posts.visibility, 'public'),
+        isNull(posts.deletedAt)
+      )
+    )
     .orderBy(asc(posts.date), asc(posts.startTime));
 
   // 날짜순으로 왔으므로 카테고리마다 처음 만난 행이 곧 다음 모임이다
@@ -98,6 +107,7 @@ async function query(categories: string[]): Promise<Record<string, NextMeetup>> 
  * (revalidateTag('posts')), 그 사이에도 60초마다 스스로 한 번 다시 읽는다 —
  * 아무도 아무것도 안 해도 「다음 모임」은 시간이 지나면 지난 모임이 되기 때문이다.
  */
+/* 인자(region, categories)가 캐시 키에 들어가므로 지역마다 따로 담긴다 */
 export const nextMeetupByCategory = unstable_cache(query, ['next-meetups'], {
   tags: [POSTS_TAG],
   revalidate: 60,

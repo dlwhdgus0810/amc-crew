@@ -23,12 +23,15 @@ CREATE TABLE IF NOT EXISTS users (
   show_presence boolean NOT NULL DEFAULT true,
   banned_until timestamptz,
   ban_reason text,
+  -- 마지막으로 로그인한 지역 — 모임에 딸리지 않은 알림의 앱 이름·주소 (lib/db/schema.ts의 주석 참고)
+  home_region text NOT NULL DEFAULT 'kansas',
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS recurring_rules (
   id uuid PRIMARY KEY,
   category text NOT NULL,
+  region text NOT NULL DEFAULT 'kansas',
   author_id text NOT NULL REFERENCES users(id),
   co_host_id text REFERENCES users(id),
   allow_nicknames boolean NOT NULL DEFAULT false,
@@ -50,6 +53,8 @@ CREATE INDEX IF NOT EXISTS recurring_rules_active_idx ON recurring_rules (active
 CREATE TABLE IF NOT EXISTS posts (
   id uuid PRIMARY KEY,
   category text NOT NULL,
+  -- 어느 지역의 모임인지 ('kansas' | 'philly') — lib/db/schema.ts의 주석 참고
+  region text NOT NULL DEFAULT 'kansas',
   author_id text NOT NULL REFERENCES users(id),
   co_host_id text REFERENCES users(id),
   allow_nicknames boolean NOT NULL DEFAULT false,
@@ -77,6 +82,7 @@ CREATE TABLE IF NOT EXISTS posts (
   deleted_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS posts_category_date_idx ON posts (category, date);
+CREATE INDEX IF NOT EXISTS posts_region_date_idx ON posts (region, date);
 
 CREATE TABLE IF NOT EXISTS post_participants (
   post_id uuid NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
@@ -150,8 +156,9 @@ CREATE INDEX IF NOT EXISTS post_reviews_recent_idx ON post_reviews (updated_at);
 CREATE TABLE IF NOT EXISTS subscriptions (
   user_id text NOT NULL REFERENCES users(id),
   category text NOT NULL,
+  region text NOT NULL DEFAULT 'kansas',
   created_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (user_id, category)
+  PRIMARY KEY (user_id, category, region)
 );
 
 CREATE TABLE IF NOT EXISTS favorites (
@@ -227,15 +234,18 @@ CREATE TABLE IF NOT EXISTS translations (
 );
 
 CREATE TABLE IF NOT EXISTS hidden_categories (
-  category text PRIMARY KEY,
-  created_at timestamptz NOT NULL DEFAULT now()
+  region text NOT NULL DEFAULT 'kansas',
+  category text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (region, category)
 );
 
 CREATE TABLE IF NOT EXISTS category_signups (
+  region text NOT NULL DEFAULT 'kansas',
   category text NOT NULL,
   user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (category, user_id)
+  PRIMARY KEY (region, category, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS notices (
@@ -248,6 +258,8 @@ CREATE TABLE IF NOT EXISTS notices (
   body_es text,
   -- 「보러 가기」가 데려갈 앱 안의 경로 — lib/db/schema.ts의 주석 참고
   link_path text,
+  -- 어느 지역에 띄울지, null이면 양쪽 — lib/db/schema.ts의 주석 참고
+  region text,
   targets jsonb NOT NULL DEFAULT '[]',
   active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),

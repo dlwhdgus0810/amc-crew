@@ -14,6 +14,7 @@ import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
 import { isPastSlot } from '@/lib/dates';
 import { siteUrl } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
   const viewer = await getSessionUser();
   // 지난 비공개 모임을 볼지는 사람마다 다르다 (프로필 설정, 기본은 안 보임)
   const showPastPrivate = viewer ? ((await dbGetUser(viewer.id))?.showPastPrivate ?? false) : false;
-  return NextResponse.json({ posts: await listPosts(category, past, viewer?.id, showPastPrivate) });
+  return NextResponse.json({ posts: await listPosts(regionOfRequest(req), category, past, viewer?.id, showPastPrivate) });
 }
 
 export async function POST(req: NextRequest) {
@@ -51,6 +52,8 @@ export async function POST(req: NextRequest) {
   const banned = await banGuard(user);
   if (banned) return banned;
 
+  // 새 모임은 요청이 들어온 도메인의 지역에 열린다
+  const region = regionOfRequest(req);
   const body = await req.json().catch(() => null);
   const category = typeof body?.category === 'string' ? body.category : '';
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
@@ -109,7 +112,7 @@ export async function POST(req: NextRequest) {
    * 관리자는 예외다. 앱을 쓰기 전에 있었던 모임이나 누가 올리는 걸 잊은 모임을
    * 나중에 채워 넣어야 하는데, 그건 오타가 아니라 기록을 맞추는 일이다.
    */
-  const backfilling = isPastSlot(date, startTime, endTime, endDate);
+  const backfilling = isPastSlot(region, date, startTime, endTime, endDate);
   if (backfilling && !isAdmin(user)) {
     return await errJson(E.pastSlot, 400);
   }
@@ -160,6 +163,7 @@ export async function POST(req: NextRequest) {
 
   const common = {
     category,
+    region,
     authorId: user.id,
     authorName,
     ...(hasTitle && title ? { title } : {}),
@@ -173,7 +177,7 @@ export async function POST(req: NextRequest) {
     ...(capacity !== undefined ? { capacity } : {}),
     // 비공개면 링크를 아는 사람만 볼 수 있다 (목록·구독 알림·홈 요약에서 빠진다)
     ...(body?.visibility === 'link' ? { visibility: 'link' as const } : {}),
-    origin: siteUrl(req.nextUrl.origin),
+    origin: siteUrl(region, req.nextUrl.origin),
     ...(askedCoHost ? { coHostId: askedCoHost } : {}),
     // 닉네임 허용은 명시적으로 켤 때만 — 기본은 실명 모임이다
     ...(body?.allowNicknames === true ? { allowNicknames: true } : {}),
@@ -248,7 +252,7 @@ export async function POST(req: NextRequest) {
    * 명단은 서버에서 다시 읽는다 — 브라우저가 보낸 id를 믿으면 아무나 참가자로 넣을 수 있다.
    */
   if (body?.fromSignups === true && getCategory(category)?.signup) {
-    const roster = (await listSignups(category)).map((s) => s.userId).filter((uid) => uid !== user.id);
+    const roster = (await listSignups(region, category)).map((s) => s.userId).filter((uid) => uid !== user.id);
     if (roster.length > 0) {
       await addParticipants(postId, roster);
     }
@@ -257,7 +261,7 @@ export async function POST(req: NextRequest) {
      * 참가자로 넣은 **다음에** 비운다 (먼저 비우면 넣기가 실패했을 때 명단만 사라진다).
      * 신청자가 만든 사람 하나뿐이어도 비운다 — 그 한 줄도 이제 모임 쪽에 있다.
      */
-    await clearSignups(category);
+    await clearSignups(region, category);
     if (roster.length > 0) {
       // 넣긴 사람에게는 알린다 — 신청은 했어도 언제 어디로 정해졌는지는 이걸로 안다
       const created = await getPost(postId);

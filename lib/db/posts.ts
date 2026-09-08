@@ -22,10 +22,14 @@ import { ratable } from '../ratings';
 import { DEFAULT_LOCALE, Locale, Msg, pick, toLocale } from '../i18n';
 import { NOTIF } from '../notif-kinds';
 import { dateLabelShort, timeLabel, whenLabelShort } from '../datefmt';
+import { regionOfRow, type Region } from '../region';
+import { appName } from '../site';
 
 export interface PostView {
   id: string;
   category: string;
+  /** 어느 지역의 모임인지 — 캘린더 링크의 시간대, 공유 주소의 도메인이 이걸 따른다 */
+  region: Region;
   authorId: string;
   /** 비로그인에게는 null — 누가 열었는지는 회원끼리만 본다 */
   authorName: string | null;
@@ -157,9 +161,9 @@ function displayNameOf(
  * past=false: 아직 안 끝난 모임, 가까운 순. past=true: 끝난 모임, 최근 순 최대 30개.
  */
 export const listPosts = cache(
-  async (category: string, past = false, viewerId?: string, showPastPrivate = false): Promise<PostView[]> => {
+  async (region: Region, category: string, past = false, viewerId?: string, showPastPrivate = false): Promise<PostView[]> => {
   const db = await getDb();
-  const { date: cutDate, time: cutTime } = pastCutoff();
+  const { date: cutDate, time: cutTime } = pastCutoff(region);
   /*
    * 비공개(link) 모임은 목록에서 뺀다. 단, 만든 사람과 이미 참가한 사람은 계속 봐야 한다 —
    * 그러지 않으면 링크를 잃어버린 순간 자기 모임을 찾을 길이 없다.
@@ -185,7 +189,7 @@ export const listPosts = cache(
    * 종료 시각을 안 적은 모임은 시작 시각을 당겨 둔 기준(openCut)과 견준다 —
    * openCut이 null이면 오늘은 아직 아무것도 안 넘어갔다는 뜻이다.
    */
-  const openCut = openEndCutoffTime();
+  const openCut = openEndCutoffTime(region);
   const endedToday = openCut
     ? or(lte(posts.endTime, cutTime), and(isNull(posts.endTime), lte(posts.startTime, openCut)))
     : lte(posts.endTime, cutTime);
@@ -220,13 +224,13 @@ export const listPosts = cache(
     ? await db
         .select()
         .from(posts)
-        .where(and(eq(posts.category, category), ended, visible, isNull(posts.deletedAt)))
+        .where(and(eq(posts.region, region), eq(posts.category, category), ended, visible, isNull(posts.deletedAt)))
         .orderBy(desc(posts.date), desc(posts.startTime))
         .limit(30)
     : await db
         .select()
         .from(posts)
-        .where(and(eq(posts.category, category), upcoming, visible, isNull(posts.deletedAt)))
+        .where(and(eq(posts.region, region), eq(posts.category, category), upcoming, visible, isNull(posts.deletedAt)))
         .orderBy(sql`${posts.date} ASC NULLS FIRST`, sql`${posts.startTime} ASC NULLS FIRST`);
     return buildViews(postRows, viewerId);
   }
@@ -484,6 +488,7 @@ function shellOf(p: typeof posts.$inferSelect, repeatsOn: boolean) {
   return {
     id: p.id,
     category: p.category,
+    region: regionOfRow(p.region),
     authorId: p.authorId,
     title: p.title,
     titleMeta: p.titleMeta ?? null,
@@ -502,7 +507,8 @@ function shellOf(p: typeof posts.$inferSelect, repeatsOn: boolean) {
     capacity: p.capacity,
     visibility: (p.visibility === 'link' ? 'link' : 'public') as 'link' | 'public',
     photosPublic: p.photosPublic,
-    isPast: isPastSlot(p.date, p.startTime, p.endTime, p.endDate),
+    // 끝났는지는 **그 모임의 지역** 시간대로 본다 — 필리 저녁 모임을 캔자스 시계로 재면 한 시간 어긋난다
+    isPast: isPastSlot(regionOfRow(p.region), p.date, p.startTime, p.endTime, p.endDate),
     createdAt: p.createdAt.toISOString(),
   };
 }
@@ -548,7 +554,7 @@ export async function toggleCommentLike(
 
 /** 댓글 알림: 댓글 단 사람을 제외한 참가자 전원에게 인앱 + 카톡 발송 */
 export async function notifyComment(
-  post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
+  post: { id: string; category: string; region: string; date: string | null; startTime: string | null; location: string; title?: string | null },
   commenterId: string,
   commenterName: LocalName,
   body: string,
@@ -566,8 +572,9 @@ export async function notifyComment(
    *    "장소 바뀌었어요"를 놓친다. 그래서 둘의 교집합이다.
    * 답글은 예외 — 내 댓글에 달린 답글은 구독과 무관하게 알려준다.
    */
+  const region = regionOfRow(post.region);
   const participants = await participantIdsExcept(post.id, commenterId);
-  const subscribed = new Set(await subscriberIds(post.category));
+  const subscribed = new Set(await subscriberIds(region, post.category));
   const recipients = [...new Set([
     ...participants.filter((id) => subscribed.has(id)),
     ...(parentAuthorId && parentAuthorId !== commenterId ? [parentAuthorId] : []),
@@ -593,7 +600,7 @@ export async function notifyComment(
   await db.insert(notifications).values(
     notice.rows.map((r) => ({ id: crypto.randomUUID(), userId: r.userId, postId: post.id, message: r.message }))
   );
-  await sendNotice(notice, `${origin}/p/${post.id}`);
+  await sendNotice(notice, `${origin}/p/${post.id}`, region);
 }
 
 export async function getComment(commentId: string) {
@@ -807,10 +814,11 @@ async function buildNotice(
  * 언어 그룹별로 카톡 메모 + 앱 푸시 발송.
  * 두 경로는 서로 독립이다 — 카톡을 거부한 사람은 푸시로, 푸시를 안 켠 사람은 카톡으로 받는다.
  */
-async function sendNotice(notice: Notice, linkUrl: string): Promise<void> {
+async function sendNotice(notice: Notice, linkUrl: string, region: Region): Promise<void> {
   for (const g of notice.groups) {
     await sendPush(g.userIds, {
-      title: APP_NAME,
+      // 어느 앱에서 온 알림인지가 먼저 보여야 한다 — 그 지역의 이름으로
+      title: appName(region),
       body: g.message,
       url: linkUrl,
       // 같은 모임의 알림끼리는 덮어쓴다 — 댓글이 연달아 달려도 알림함이 밀리지 않게
@@ -838,7 +846,9 @@ export async function insertPushNotice(
   postId: string | null,
   kind: string,
   linkUrl: string,
-  render: (locale: Locale) => string
+  render: (locale: Locale) => string,
+  /** 푸시 제목에 적을 앱 이름의 지역 — 모임이 없는 소식은 받는 사람의 home_region */
+  region: Region
 ): Promise<void> {
   const notice = await buildNotice(recipients, render);
   if (notice.rows.length === 0) return;
@@ -846,7 +856,7 @@ export async function insertPushNotice(
   await db
     .insert(notifications)
     .values(notice.rows.map((r) => ({ id: crypto.randomUUID(), userId: r.userId, postId, kind, message: r.message })));
-  await sendNotice(notice, linkUrl);
+  await sendNotice(notice, linkUrl, region);
 }
 
 export async function insertInAppNotice(
@@ -964,9 +974,6 @@ export async function isParticipant(postId: string, userId: string): Promise<boo
   return rows.length > 0;
 }
 
-/** 알림 제목 — 어느 앱에서 온 알림인지가 먼저 보여야 한다 */
-const APP_NAME = 'Kansas Korean';
-
 /** 링크의 경로를 묶음 키로 쓴다 (예: /p/<id>) */
 function noticeTag(linkUrl: string): string | undefined {
   try {
@@ -994,6 +1001,8 @@ function postsChanged(): void {
 
 export async function createPost(input: {
   category: string;
+  /** 어느 지역에 여는지 — 요청이 들어온 도메인, 정기 회차면 규칙의 지역 */
+  region: Region;
   authorId: string;
   /** 알림 문구에 실을 이름 — 받는 사람의 언어로 정해진다 */
   authorName: LocalName;
@@ -1038,14 +1047,20 @@ export async function createPost(input: {
    * 내린 뜻과 반대고, 프로필의 구독 칸에서도 빠져서(app/profile) 받는 사람이 끌 방법이
    * 없다. 구독 기록은 그대로 두므로 다시 올리면 알림도 같이 돌아온다.
    */
-  const hidden = await hiddenSlugs();
+  const hidden = await hiddenSlugs(input.region);
   const subscriberRows =
     input.visibility === 'link' || input.silent || hidden.includes(input.category)
       ? []
       : await db
           .select({ userId: subscriptions.userId })
           .from(subscriptions)
-          .where(and(eq(subscriptions.category, input.category), ne(subscriptions.userId, input.authorId)));
+          .where(
+            and(
+              eq(subscriptions.region, input.region),
+              eq(subscriptions.category, input.category),
+              ne(subscriptions.userId, input.authorId)
+            )
+          );
 
   const notice = await buildNotice(
     subscriberRows.map((r) => r.userId),
@@ -1068,6 +1083,7 @@ export async function createPost(input: {
   const postValues = {
     id: postId,
     category: input.category,
+    region: input.region,
     authorId: input.authorId,
     coHostId: input.coHostId ?? null,
     allowNicknames: input.allowNicknames ?? false,
@@ -1152,7 +1168,7 @@ export async function createPost(input: {
 
   // 구독자에게 카카오톡 "나에게 보내기" 발송 (토큰 없는 사용자는 인앱 알림만)
   if (input.origin && notificationValues.length > 0) {
-    await sendNotice(notice, `${input.origin}/p/${postId}`);
+    await sendNotice(notice, `${input.origin}/p/${postId}`, input.region);
   }
   return postId;
 }
@@ -1210,12 +1226,12 @@ export async function countParticipants(postId: string): Promise<number> {
 
 /** 참가자(actor 제외) 목록 조회 — 변경/취소 알림 수신자 */
 /** 이 카테고리를 구독한 사람 */
-async function subscriberIds(category: string): Promise<string[]> {
+async function subscriberIds(region: Region, category: string): Promise<string[]> {
   const db = await getDb();
   const rows = await db
     .select({ userId: subscriptions.userId })
     .from(subscriptions)
-    .where(eq(subscriptions.category, category));
+    .where(and(eq(subscriptions.region, region), eq(subscriptions.category, category)));
   return rows.map((r) => r.userId);
 }
 
@@ -1232,6 +1248,8 @@ async function participantIdsExcept(postId: string, actorId: string): Promise<st
 export async function updatePost(input: {
   postId: string;
   category: string;
+  /** 그 모임의 지역 — 푸시 제목에 쓴다 */
+  region: Region;
   actorId: string;
   /** 알림 문구에 실을 이름 — 받는 사람의 언어로 정해진다 */
   actorName: LocalName;
@@ -1353,7 +1371,7 @@ export async function updatePost(input: {
   }
 
   if (input.origin && recipients.length > 0) {
-    await sendNotice(notice, `${input.origin}/p/${input.postId}`);
+    await sendNotice(notice, `${input.origin}/p/${input.postId}`, input.region);
   }
   postsChanged();
 }
@@ -1371,7 +1389,7 @@ export async function updatePost(input: {
  * 소프트 딜리트가 되어도 이유가 그대로다 (getPostView가 지운 모임에 404를 준다).
  */
 export async function deletePost(
-  post: { id: string; category: string; date: string | null; startTime: string | null; location: string; title?: string | null },
+  post: { id: string; category: string; region: string; date: string | null; startTime: string | null; location: string; title?: string | null },
   actorId: string,
   actorName: LocalName,
   origin?: string,
@@ -1419,7 +1437,7 @@ export async function deletePost(
   // 취소된 모임은 상세 페이지가 사라지므로 카테고리 피드로 링크
   if (origin && recipients.length > 0) {
     // 취소된 모임은 상세 페이지가 없으므로 목록으로 보낸다
-    await sendNotice(notice, `${origin}/c/${post.category}`);
+    await sendNotice(notice, `${origin}/c/${post.category}`, regionOfRow(post.region));
   }
 }
 
@@ -1431,11 +1449,16 @@ export async function deletePost(
  * 남아 있으면 건너뛴다 (리마인더 메시지는 REMINDER_PREFIX로 식별).
  */
 export async function sendTodayReminders(
+  /** 지역마다 「오늘」이 다르다 — 크론이 지역을 돌며 한 번씩 부른다 */
+  region: Region,
   origin: string
 ): Promise<{ posts: number; recipients: number; skipped: number }> {
   const db = await getDb();
-  const today = todayLocal();
-  const todayPosts = await db.select().from(posts).where(and(eq(posts.date, today), isNull(posts.deletedAt)));
+  const today = todayLocal(region);
+  const todayPosts = await db
+    .select()
+    .from(posts)
+    .where(and(eq(posts.region, region), eq(posts.date, today), isNull(posts.deletedAt)));
   if (todayPosts.length === 0) return { posts: 0, recipients: 0, skipped: 0 };
 
   const todayPostIds = todayPosts.map((p) => p.id);
@@ -1480,7 +1503,7 @@ export async function sendTodayReminders(
     await db.insert(notifications).values(
       notice.rows.map((r) => ({ id: crypto.randomUUID(), userId: r.userId, postId: post.id, message: r.message }))
     );
-    await sendNotice(notice, `${origin}/p/${post.id}`);
+    await sendNotice(notice, `${origin}/p/${post.id}`, region);
   }
   return { posts: sentPosts, recipients, skipped };
 }
@@ -1512,18 +1535,24 @@ export async function leavePost(postId: string, userId: string): Promise<void> {
   postsChanged();
 }
 
-export async function getSubscriptions(userId: string): Promise<string[]> {
+/** 이 지역에서 구독한 카테고리 — 구독은 지역별이다 (schema.ts의 subscriptions) */
+export async function getSubscriptions(userId: string, region: Region): Promise<string[]> {
   const db = await getDb();
-  const rows = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId));
+  const rows = await db
+    .select()
+    .from(subscriptions)
+    .where(and(eq(subscriptions.userId, userId), eq(subscriptions.region, region)));
   return rows.map((r) => r.category);
 }
 
-export async function setSubscription(userId: string, category: string, subscribed: boolean): Promise<void> {
+export async function setSubscription(userId: string, category: string, region: Region, subscribed: boolean): Promise<void> {
   const db = await getDb();
   if (subscribed) {
-    await db.insert(subscriptions).values({ userId, category }).onConflictDoNothing();
+    await db.insert(subscriptions).values({ userId, category, region }).onConflictDoNothing();
   } else {
-    await db.delete(subscriptions).where(and(eq(subscriptions.userId, userId), eq(subscriptions.category, category)));
+    await db
+      .delete(subscriptions)
+      .where(and(eq(subscriptions.userId, userId), eq(subscriptions.category, category), eq(subscriptions.region, region)));
   }
 }
 

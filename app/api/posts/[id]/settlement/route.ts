@@ -17,7 +17,6 @@ import {
 } from '@/lib/db/settlements';
 import { friendIds } from '@/lib/db/friends';
 import { parseAmountCents } from '@/lib/money';
-import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,7 +143,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     items,
     extraMemberIds,
   });
-  const { sent } = await notifySettlement(savedId, siteUrl(req.nextUrl.origin));
+  // 주소는 notifySettlement가 그 모임의 지역으로 만든다 — 여기서는 요청 주소만 넘긴다
+  const { sent } = await notifySettlement(savedId, req.nextUrl.origin);
   return NextResponse.json({ ok: true, notified: sent, settlements: await getSettlements(id) });
 }
 

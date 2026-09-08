@@ -3,6 +3,7 @@ import { getDb } from './index';
 import { users } from './schema';
 import { notifyAdmins } from './admin-notify';
 import { pick } from '../i18n';
+import type { Region } from '../region';
 
 const N = {
   newMember: { ko: '🎉 새 회원 가입: {name} (총 {n}명)', en: '🎉 New member: {name} ({n} total)', es: '🎉 Nuevo miembro: {name} ({n} en total)' },
@@ -14,6 +15,8 @@ export async function notifyAdminsNewUser(input: {
   userId: string;
   name: string;
   origin: string;
+  /** 어느 도메인으로 가입했나 */
+  region: Region;
 }): Promise<void> {
   const db = await getDb();
   const total = (await db.select({ n: count() }).from(users))[0]?.n ?? 0;
@@ -22,6 +25,7 @@ export async function notifyAdminsNewUser(input: {
     message: (locale) => pick(locale, N.newMember, { name: input.name, n: String(total) }),
     button: (locale) => pick(locale, N.btnOpen),
     linkUrl: `${input.origin}/`,
+    region: input.region,
     tag: 'signup',
   });
 }

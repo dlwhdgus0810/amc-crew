@@ -3,6 +3,7 @@
 import {useEffect, useMemo, useState} from 'react';
 import {DaySchedule, Format, Selections, Showtime} from '@/lib/types';
 import { useLocale, useT } from '../i18n';
+import { useAmcName } from '../region-context';
 import { useRefreshSession, useViewer } from '../session';
 import { usePosterZoom } from '../poster-zoom';
 import type { ScheduleDay } from '@/lib/schedule-day';
@@ -24,10 +25,11 @@ const FORMAT_CLASS: Record<Format, string> = {
 
 const T = {
   loading: { ko: '스케줄 불러오는 중…', en: 'Loading showtimes…', es: 'Cargando funciones…' },
+  /* 극장 이름은 지역마다 다르다 — {theatre}에 들어간다 (lib/amc.ts의 theatreName) */
   intro: {
-    ko: 'AMC Town Center 20 — 날짜를 고르고, 보고 싶은 영화의 회차를 모두 선택하세요. 같은 회차를 고른 사람끼리 그룹이 만들어져요.',
-    en: 'AMC Town Center 20 — pick a date, then every showtime that works. People who pick the same one get grouped.',
-    es: 'AMC Town Center 20: elige un día y todas las funciones que te vengan bien. Quien elija la misma acaba en tu grupo.',
+    ko: '{theatre} — 날짜를 고르고, 보고 싶은 영화의 회차를 모두 선택하세요. 같은 회차를 고른 사람끼리 그룹이 만들어져요.',
+    en: '{theatre} — pick a date, then every showtime that works. People who pick the same one get grouped.',
+    es: '{theatre}: elige un día y todas las funciones que te vengan bien. Quien elija la misma acaba en tu grupo.',
   },
   noMovies: { ko: '이 날짜에는 상영표가 없어요.', en: 'No showtimes for this date.', es: 'No hay funciones ese día.' },
   amcDown: {
@@ -127,6 +129,7 @@ export default function PickPage({ initial }: { initial: ScheduleDay }) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const amcName = useAmcName();
   const t = useT();
   const locale = useLocale();
   const to12h = (time: string) => fmtTime(time, locale);
@@ -267,7 +270,7 @@ export default function PickPage({ initial }: { initial: ScheduleDay }) {
         AMC
       </h1>
       <p className="subtitle">
-        {t(T.intro)}
+        {t(T.intro, { theatre: amcName ?? 'AMC' })}
       </p>
 
       <div className="card">

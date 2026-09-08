@@ -22,7 +22,7 @@
  * 그래서 여행 카테고리에서만, 관리자가 눌렀을 때만 부른다.
  */
 
-import { SITE_URL } from './site';
+import { configuredSiteUrl } from './site';
 
 const BASE = 'https://nominatim.openstreetmap.org';
 const GOOGLE_NEARBY = 'https://places.googleapis.com/v1/places:searchNearby';
@@ -47,7 +47,8 @@ export function placePipeline(): PlaceSource {
  * Nominatim 이용 정책이 요구하는 신원 표시. 이게 없으면 막힌다 — 선택이 아니다.
  * 남의 무료 서비스라 누가 쓰는지 밝히고 쓴다.
  */
-const UA = `KansasKorean/1.0 (${SITE_URL ?? 'https://github.com/dlwhdgus0810/amc-crew'})`;
+// 운영자 식별용 — 어느 지역에서 부르든 같은 운영자다
+const UA = `KansasKorean/1.0 (${configuredSiteUrl('kansas') ?? 'https://github.com/dlwhdgus0810/amc-crew'})`;
 
 /** 정책상 초당 한 번. 넉넉히 잡는다 — 서두를 일이 아니다 */
 const MIN_GAP_MS = 1_200;

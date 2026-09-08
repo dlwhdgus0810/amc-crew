@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { getViewer } from '@/lib/session';
 import { friendMeetups } from '@/lib/db/friend-meetups';
 import { listFriendships } from '@/lib/db/friends';
+import { getRegion } from '@/lib/region-server';
 import FriendClient, { type FriendInitial } from './friend-client';
 
 export const dynamic = 'force-dynamic';
@@ -13,11 +14,11 @@ export const dynamic = 'force-dynamic';
  * 그 사람이 회원인지 아닌지가 드러난다. (/api/friends/[id]/meetups와 같은 규칙)
  */
 async function FriendData({ id }: { id: string }) {
-  const { user } = await getViewer();
+  const [{ user }, region] = await Promise.all([getViewer(), getRegion()]);
   const empty: FriendInitial = { data: null, missing: true };
   if (!user) return <FriendClient id={id} initial={empty} />;
 
-  const [meetups, all] = await Promise.all([friendMeetups(user.id, id), listFriendships(user.id)]);
+  const [meetups, all] = await Promise.all([friendMeetups(region, user.id, id), listFriendships(user.id)]);
   const friend = all.find((f) => f.id === id && f.status === 'friends');
   if (!meetups || !friend) return <FriendClient id={id} initial={empty} />;
 

@@ -7,6 +7,7 @@ import { getProfiles, localName } from '@/lib/store';
 import { createCategoryRequest, listCategoryRequests } from '@/lib/db/category-requests';
 import { isExistingCategoryName } from '@/lib/categories';
 import { siteUrl } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +67,8 @@ export async function POST(req: NextRequest) {
     color,
     description,
     ...(featureRequest ? { featureRequest } : {}),
-    origin: siteUrl(req.nextUrl.origin),
+    origin: siteUrl(regionOfRequest(req), req.nextUrl.origin),
+    region: regionOfRequest(req),
   });
   return NextResponse.json({ ok: true, id });
 }

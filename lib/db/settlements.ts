@@ -2,6 +2,8 @@
 
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from './index';
+import { regionOfRow } from '../region';
+import { appName, siteUrl } from '../site';
 import {
   notifications,
   postParticipants,
@@ -456,7 +458,8 @@ export async function settlementOwner(
 export async function notifySettlement(
   /** 어느 정산인지 — 모임에 여러 개라 정산 단위로 알린다 */
   settlementId: string,
-  origin: string,
+  /** 공개 주소를 못 정했을 때 쓸 요청 주소 — 링크는 그 모임의 지역 주소로 만든다 */
+  originFallback: string,
   onlyUserIds?: string[]
 ): Promise<{ sent: number }> {
   const view = await getSettlementById(settlementId);
@@ -471,6 +474,9 @@ export async function notifySettlement(
   const postId = owner.postId;
   const [post] = await db.select().from(posts).where(and(eq(posts.id, postId), isNull(posts.deletedAt)));
   if (!post) return { sent: 0 };
+  // 정산은 모임에 딸린다 — 그 모임의 지역 이름과 주소로 나간다
+  const region = regionOfRow(post.region);
+  const origin = siteUrl(region, originFallback);
 
   /*
    * 받을 사람 이름은 여기서 다시 짓는다.
@@ -624,7 +630,7 @@ export async function notifySettlement(
 
   if (rows.length > 0) await db.insert(notifications).values(rows);
   for (const [userId, { plain, kakao, locale }] of messages) {
-    await sendPush([userId], { title: 'Kansas Korean', body: plain, url: linkUrl, tag: `settle:${settlementId}` });
+    await sendPush([userId], { title: appName(region), body: plain, url: linkUrl, tag: `settle:${settlementId}` });
   }
   return { sent: targets.length };
 }

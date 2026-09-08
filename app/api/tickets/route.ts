@@ -9,6 +9,7 @@ import { walletOf } from '@/lib/db/shop';
 import { CARD_THEMES, toCardTheme } from '@/lib/card-theme';
 import { priceOf } from '@/lib/shop';
 import { siteUrl } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +85,8 @@ export async function POST(req: NextRequest) {
     kind: kind as TicketKind,
     title: finalTitle,
     ...(detail ? { body: detail } : {}),
-    origin: siteUrl(req.nextUrl.origin),
+    origin: siteUrl(regionOfRequest(req), req.nextUrl.origin),
+    region: regionOfRequest(req),
   });
   return NextResponse.json({ ok: true, ...ticket });
 }

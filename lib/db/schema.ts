@@ -98,6 +98,14 @@ export const users = pgTable('users', {
   bannedUntil: timestamp('banned_until', { withTimezone: true }),
   /** 정지 사유 — 본인 화면에 그대로 보여준다 (왜 막혔는지 모르면 같은 일이 반복된다) */
   banReason: text('ban_reason'),
+  /**
+   * 이 사람의 동네 — 마지막으로 로그인한 지역 ('kansas' | 'philly', lib/region.ts).
+   *
+   * 모임에 딸리지 않은 알림(새 소식·등급·정지·건의 답)은 어느 앱 이름으로, 어느 도메인
+   * 주소로 보낼지를 이걸로 정한다. 로그인할 때마다 그 호스트로 갱신한다 — 이사 간 사람이
+   * 필리에서 로그인하면 그때부터 필리 이름으로 온다. 계정은 하나라 그 밖의 것은 안 갈린다.
+   */
+  homeRegion: text('home_region').notNull().default('kansas'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -107,6 +115,8 @@ export const recurringRules = pgTable(
   {
     id: uuid('id').primaryKey(),
     category: text('category').notNull(),
+    /** 어느 지역의 규칙인지 — 크론이 회차를 이 지역에 만든다 */
+    region: text('region').notNull().default('kansas'),
     authorId: text('author_id')
       .notNull()
       .references(() => users.id),
@@ -136,6 +146,14 @@ export const posts = pgTable(
   {
     id: uuid('id').primaryKey(), // 앱에서 crypto.randomUUID()로 생성 (batch 트랜잭션용)
     category: text('category').notNull(),
+    /**
+     * 어느 지역의 모임인지 ('kansas' | 'philly', lib/region.ts).
+     *
+     * 목록·다음 모임·달력·순위·오늘 알림이 전부 이걸로 거른다. 요청이 들어온 도메인의
+     * 지역으로 만들어지고, 그 뒤로는 바뀌지 않는다. 다른 지역 글도 id로는 열린다 —
+     * 공유 링크가 살아야 해서다 (app/p/[id]가 그 지역 주소로 보낸다).
+     */
+    region: text('region').notNull().default('kansas'),
     authorId: text('author_id')
       .notNull()
       .references(() => users.id),
@@ -234,7 +252,7 @@ export const posts = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: deletedAt(),
   },
-  (t) => [index('posts_category_date_idx').on(t.category, t.date)]
+  (t) => [index('posts_category_date_idx').on(t.category, t.date), index('posts_region_date_idx').on(t.region, t.date)]
 );
 
 export const postParticipants = pgTable(
@@ -452,6 +470,7 @@ export const postReviews = pgTable(
   (t) => [primaryKey({ columns: [t.postId, t.userId] }), index('post_reviews_recent_idx').on(t.updatedAt)]
 );
 
+/** 카테고리 알림 구독 — 지역별이다. 캔자스 축구를 구독한 사람에게 필리 축구가 가면 안 된다 */
 export const subscriptions = pgTable(
   'subscriptions',
   {
@@ -459,9 +478,10 @@ export const subscriptions = pgTable(
       .notNull()
       .references(() => users.id),
     category: text('category').notNull(),
+    region: text('region').notNull().default('kansas'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.category] })]
+  (t) => [primaryKey({ columns: [t.userId, t.category, t.region] })]
 );
 
 /** 즐겨찾기 — 홈에 먼저 띄울 카테고리. 알림을 받는 subscriptions와는 별개다. */
@@ -833,10 +853,16 @@ export const translations = pgTable(
   (t) => [primaryKey({ columns: [t.hash, t.target] })]
 );
 
-export const hiddenCategories = pgTable('hidden_categories', {
-  category: text('category').primaryKey(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+/** 관리자가 목록에서 내려 둔 카테고리 — 지역마다 따로 내린다 */
+export const hiddenCategories = pgTable(
+  'hidden_categories',
+  {
+    region: text('region').notNull().default('kansas'),
+    category: text('category').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.region, t.category] })]
+);
 
 /**
  * 카테고리 참가신청 — 「사람이 먼저, 모임은 그다음」인 카테고리에서 쓴다.
@@ -853,13 +879,15 @@ export const hiddenCategories = pgTable('hidden_categories', {
 export const categorySignups = pgTable(
   'category_signups',
   {
+    /** 명단도 지역별이다 — 캔자스 독서나눔 다섯과 필리 독서나눔 다섯은 다른 모임이다 */
+    region: text('region').notNull().default('kansas'),
     category: text('category').notNull(),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.category, t.userId] })]
+  (t) => [primaryKey({ columns: [t.region, t.category, t.userId] })]
 );
 
 /**
@@ -898,6 +926,11 @@ export const notices = pgTable('notices', {
    * 같은 이유로 거르는 lib/auth.ts의 safeNextPath와 같은 규칙이다.
    */
   linkPath: text('link_path'),
+  /**
+   * 어느 지역에 띄울지 — null이면 양쪽 다.
+   * 관리자가 올린 호스트의 지역이 기본이고, 「두 지역 모두」를 고르면 null이다.
+   */
+  region: text('region'),
   /**
    * 이 공지를 볼 사람들. 빈 배열이면 전체 —
    * 기본이 전체이고, 골라 담는 것은 올리기 전에 나한테만 띄워 보려고 두는 장치다.

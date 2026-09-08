@@ -7,6 +7,8 @@ import { insertInAppNotice } from './posts';
 import { sendPush } from '../push';
 import { NOTIF } from '../notif-kinds';
 import { Locale, pick, toLocale } from '../i18n';
+import { regionOfRow } from '../region';
+import { appName, siteUrl } from '../site';
 
 /**
  * 이용 정지.
@@ -95,9 +97,11 @@ function durLabel(minutes: number, locale: Locale): string {
  * 카톡으로는 보내지 않는다. "나와의 채팅"에 남는 기록이라 지워지지 않는데,
  * 몇 분짜리 정지까지 그렇게 남길 일은 아니다.
  */
-export async function notifyBan(userId: string, minutes: number, reason: string, origin: string): Promise<void> {
+export async function notifyBan(userId: string, minutes: number, reason: string, originFallback: string): Promise<void> {
   const row = await dbGetUser(userId);
   const locale = toLocale(row?.locale ?? null);
+  // 사람에게 가는 알림이라 그 사람의 동네 앱 이름·주소로
+  const region = regionOfRow(row?.homeRegion ?? 'kansas');
   const text =
     minutes <= 0
       ? pick(locale, N.lifted)
@@ -107,7 +111,7 @@ export async function notifyBan(userId: string, minutes: number, reason: string,
 
   // 인앱 줄을 먼저 넣는다 — 푸시가 아이콘 뱃지 숫자를 이 표에서 읽어 간다
   await insertInAppNotice([userId], null, NOTIF.ban, () => text);
-  await sendPush([userId], { title: 'Kansas Korean', body: text, url: `${origin}/`, tag: 'ban' });
+  await sendPush([userId], { title: appName(region), body: text, url: `${siteUrl(region, originFallback)}/`, tag: 'ban' });
 }
 
 export interface BannedUser {

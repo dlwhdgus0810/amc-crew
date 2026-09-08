@@ -1,4 +1,4 @@
-import { SITE_LAT, SITE_LON } from './weather';
+import { REGIONS, type Region } from './region';
 
 /**
  * 봄이 언제 오는가 — 홈 상태줄의 개화 값 (lib/statements.ts의 seasonStat).
@@ -31,8 +31,8 @@ const TIMEOUT_MS = 2500;
  * 그림을 요청하고 가운데 칸의 값을 받는 셈이다. 상자를 좌표 둘레로 아주 좁게 잡는다.
  */
 const D = 0.02;
-const url = () => {
-  const lat = Number(SITE_LAT), lon = Number(SITE_LON);
+const url = (region: Region) => {
+  const lat = Number(REGIONS[region].lat), lon = Number(REGIONS[region].lon);
   const q = new URLSearchParams({
     service: 'WMS',
     version: '1.1.1',
@@ -56,9 +56,9 @@ const url = () => {
  * 정식 API가 아니라 지도 조회라 응답 모양이 바뀔 수 있다. 그래서 값 하나까지 확인하고,
  * 조금이라도 어긋나면 null이다. 상태줄은 장식이라 이것 때문에 홈이 안 뜨면 안 된다.
  */
-export async function springBloomDay(): Promise<number | null> {
+export async function springBloomDay(region: Region): Promise<number | null> {
   try {
-    const res = await fetch(url(), {
+    const res = await fetch(url(region), {
       next: { revalidate: REVALIDATE },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });

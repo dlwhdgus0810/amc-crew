@@ -5,6 +5,7 @@ import { amcConfigured } from './amc';
 import { scheduleDates } from './seed';
 import { postIdsByShowtime } from './db/posts';
 import { todayLocal } from './dates';
+import type { Region } from './region';
 
 /**
  * 무비나잇 화면이 쓰는 하루치.
@@ -16,22 +17,22 @@ import { todayLocal } from './dates';
  */
 
 /** 고를 수 있는 날짜와, 그 안에서 실제로 보여줄 하루 */
-function resolveDate(requested?: string | null) {
-  const today = todayLocal();
+function resolveDate(region: Region, requested?: string | null) {
+  const today = todayLocal(region);
   const dates = scheduleDates(today);
   return { dates, date: requested && dates.includes(requested) ? requested : today };
 }
 
 /** 상영표 — 사람에 따라 다르지 않고, 하루 동안 거의 바뀌지 않는다 */
-export async function scheduleMovies(requested?: string | null) {
-  const { dates, date } = resolveDate(requested);
+export async function scheduleMovies(region: Region, requested?: string | null) {
+  const { dates, date } = resolveDate(region, requested);
 
   // AMC 호출이 실패해도 화면은 떠야 한다 — 상영표만 비우고 까닭을 함께 내려준다
   let movies: Awaited<ReturnType<typeof getDaySchedule>>['movies'] = [];
   let sample = false;
   let error: string | null = null;
   try {
-    const day = await getDaySchedule(date);
+    const day = await getDaySchedule(region, date);
     movies = day.movies;
     sample = Boolean(day.sample);
   } catch (e) {
@@ -39,13 +40,13 @@ export async function scheduleMovies(requested?: string | null) {
     error = e instanceof Error ? e.message : 'AMC 상영표를 불러오지 못했어요.';
   }
 
-  return { date, dates, movies, sample, amcConfigured: amcConfigured(), ...(error ? { error } : {}) };
+  return { date, dates, movies, sample, amcConfigured: amcConfigured(region), ...(error ? { error } : {}) };
 }
 
 /** 선택 현황 — 누가 무엇을 골랐는지. 회차를 누를 때마다 바뀐다 */
-export async function schedulePicks(requested?: string | null) {
-  const { dates, date } = resolveDate(requested);
-  const [selections, profiles, locale] = await Promise.all([getSelections(), getProfiles(), getLocale()]);
+export async function schedulePicks(region: Region, requested?: string | null) {
+  const { dates, date } = resolveDate(region, requested);
+  const [selections, profiles, locale] = await Promise.all([getSelections(region), getProfiles(), getLocale()]);
 
   // 표시 이름은 읽기 시점에 프로필 기준으로 해석 (앱 닉네임 → 카카오 닉네임 → 저장 시점 스냅샷)
   const resolved: Selections = {};
@@ -61,8 +62,8 @@ export async function schedulePicks(requested?: string | null) {
 }
 
 /** 서버 렌더용 — 한 요청 안에서 둘을 같이 읽는다 (서로를 안 기다린다) */
-export async function scheduleDay(requested?: string | null) {
-  const [movies, picks] = await Promise.all([scheduleMovies(requested), schedulePicks(requested)]);
+export async function scheduleDay(region: Region, requested?: string | null) {
+  const [movies, picks] = await Promise.all([scheduleMovies(region, requested), schedulePicks(region, requested)]);
   return { ...movies, ...picks };
 }
 

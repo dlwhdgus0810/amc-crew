@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import type { NoticeInput } from '@/lib/db/notices';
+import { isRegion } from '@/lib/region';
+import { regionOfRequest } from '@/lib/region-server';
 
 /**
  * 공지 본문 읽기 — 올릴 때와 고칠 때가 같은 값을 받으므로 한 곳에 둔다.
@@ -47,6 +49,17 @@ export async function readNoticeInput(req: NextRequest): Promise<Parsed> {
     return { error: await errJson(E.noticeLink, 400) };
   }
 
+  /*
+   * 어느 지역에 띄울지. 안 보내면 올린 호스트의 지역, 'all'이면 양쪽(null).
+   * 아는 값 밖이면 잘못 만든 요청이다.
+   */
+  const askedRegion = body?.region;
+  let region: NoticeInput['region'];
+  if (askedRegion === undefined || askedRegion === null) region = regionOfRequest(req);
+  else if (askedRegion === 'all') region = null;
+  else if (isRegion(askedRegion)) region = askedRegion;
+  else return { error: await errJson(E.badRequest, 400) };
+
   const raw = Array.isArray(body?.targets) ? body.targets : [];
   if (raw.length > TARGETS_MAX || raw.some((v: unknown) => typeof v !== 'string' || !v)) {
     return { error: await errJson(E.badRequest, 400) };
@@ -63,6 +76,7 @@ export async function readNoticeInput(req: NextRequest): Promise<Parsed> {
       bodyEn: bodyEn || null,
       bodyEs: bodyEs || null,
       linkPath: linkPath || null,
+      region,
     },
     targets,
   };

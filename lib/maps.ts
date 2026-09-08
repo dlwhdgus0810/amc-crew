@@ -1,17 +1,16 @@
+import { REGIONS, type Region } from './region';
+
 /**
  * 장소 텍스트를 지도 검색 링크로.
  *
  * 장소는 자유 입력이라("Monarch Coffee", "Swope Soccer Village Field 12", "우리집")
  * 좌표가 없다. 구글 지도 검색 URL은 키도 과금도 없이 이 문자열을 그대로 받아주고,
  * 폰에서는 지도 앱이 대신 열려 바로 길찾기로 넘어간다.
+ *
+ * 도시 이름이 빠진 장소에 붙여 줄 지역과, 이미 적혀 있는지 보는 규칙은 지역마다 다르다
+ * (lib/region.ts의 mapsRegion·hasRegion). "대장금 Overland Park Kansas City"처럼
+ * 두 번 붙으면 오히려 안 나와서, 이미 적혀 있으면 안 붙인다.
  */
-
-/** 도시 이름이 빠진 장소에 붙여 줄 지역 (검색이 엉뚱한 주로 새지 않게) */
-const REGION = process.env.NEXT_PUBLIC_MAPS_REGION ?? 'Kansas City';
-
-/** 이미 지역이 적혀 있으면 REGION을 덧붙이지 않는다 — "대장금 Overland Park Kansas City"가 되면 오히려 안 나온다 */
-const HAS_REGION =
-  /\b(KS|MO|Kansas|Missouri|Overland Park|Leawood|Olathe|Lenexa|Shawnee|Prairie Village|Merriam)\b/i;
 
 /**
  * 지도에서 열 수 있는 장소인지.
@@ -25,9 +24,10 @@ export function isMappable(location: string): boolean {
 }
 
 /** 구글 지도 검색 URL (설치돼 있으면 지도 앱이 받아간다) */
-export function mapsUrl(location: string): string {
+export function mapsUrl(location: string, region: Region): string {
   const s = location.trim();
-  const query = HAS_REGION.test(s) ? s : `${s} ${REGION}`;
+  const { mapsRegion, hasRegion } = REGIONS[region];
+  const query = hasRegion.test(s) ? s : `${s} ${mapsRegion}`;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
@@ -35,7 +35,7 @@ export function mapsUrl(location: string): string {
  * 좌표 하나를 지도에서 여는 주소.
  *
  * 위의 mapsUrl은 사람이 쓴 장소 이름을 검색시키는 것이고, 이건 사진에 박혀 있던 좌표를
- * 그대로 찍어 준다 (여행 타임라인). 검색이 아니라 지점이라 REGION을 안 붙인다 —
+ * 그대로 찍어 준다 (여행 타임라인). 검색이 아니라 지점이라 지역을 안 붙인다 —
  * 좌표에는 헤맬 여지가 없다.
  *
  * 소수점 다섯 자리면 1m 남짓이다. 그 아래는 GPS 자체가 못 맞추는 자리라 자릿수만 는다.

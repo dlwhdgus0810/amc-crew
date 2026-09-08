@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { scheduleMovies } from '@/lib/schedule-day';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * 상영표를 매번 다시 받지 않는다. 선택 현황은 /api/schedule이 따로 내려준다.
  */
 export async function GET(req: NextRequest) {
-  return NextResponse.json(await scheduleMovies(req.nextUrl.searchParams.get('date')), {
+  return NextResponse.json(await scheduleMovies(regionOfRequest(req), req.nextUrl.searchParams.get('date')), {
     headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=1800' },
   });
 }

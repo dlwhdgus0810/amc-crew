@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { E, errJson } from '@/lib/apierr';
 import { clearSelections, getSelections, removeUser, setUserSelection, validPicks } from '@/lib/store';
 import { getSessionUser, isAdmin } from '@/lib/auth';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,20 +25,21 @@ export async function PUT(req: NextRequest) {
     return await errJson(E.userIdShowtimes, 400);
   }
 
-  const existing = (await getSelections())[userId];
+  const region = regionOfRequest(req);
+  const existing = (await getSelections(region))[userId];
   if (!existing) {
     return await errJson(E.participantNotFound, 404);
   }
 
   // 관리자 화면은 기존 선택에서 빼는 용도이므로, 남길 id만 받아 기존 스냅샷에서 고른다
   const keep = new Set(picks.filter((id: unknown): id is string => typeof id === 'string'));
-  const filtered = await validPicks(existing.picks.filter((p) => keep.has(p.id)));
+  const filtered = await validPicks(region, existing.picks.filter((p) => keep.has(p.id)));
 
   if (filtered.length === 0) {
-    await removeUser(userId);
+    await removeUser(region, userId);
     return NextResponse.json({ ok: true, removed: true });
   }
-  await setUserSelection(userId, existing.name, filtered);
+  await setUserSelection(region, userId, existing.name, filtered);
   return NextResponse.json({ ok: true, count: filtered.length });
 }
 export async function DELETE(req: NextRequest) {
@@ -46,12 +48,13 @@ export async function DELETE(req: NextRequest) {
     return await errJson(E.adminOnly, 403);
   }
 
+  const region = regionOfRequest(req);
   const userId = req.nextUrl.searchParams.get('userId');
   if (userId) {
-    await removeUser(userId);
+    await removeUser(region, userId);
     return NextResponse.json({ ok: true, cleared: userId });
   }
 
-  await clearSelections();
+  await clearSelections(region);
   return NextResponse.json({ ok: true, cleared: 'all' });
 }

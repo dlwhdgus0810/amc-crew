@@ -2,6 +2,7 @@ import { and, asc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { getDb } from './index';
 import { postParticipants, posts } from './schema';
 import { isPastSlot, todayLocal } from '../dates';
+import type { Region } from '../region';
 
 /**
  * 달력 한 칸에 필요한 만큼만 담은 모임.
@@ -33,6 +34,7 @@ export interface CalendarMeetup {
  * 지난 날짜가 빈칸이면 오히려 고장처럼 보인다.
  */
 export async function listMeetupsBetween(
+  region: Region,
   from: string,
   to: string,
   viewerId?: string,
@@ -58,7 +60,7 @@ export async function listMeetupsBetween(
       )
     : undefined;
   const visible = mine
-    ? or(eq(posts.visibility, 'public'), showPastPrivate ? mine : and(mine, gte(posts.date, todayLocal())))
+    ? or(eq(posts.visibility, 'public'), showPastPrivate ? mine : and(mine, gte(posts.date, todayLocal(region))))
     : eq(posts.visibility, 'public');
 
   const rows = await db
@@ -75,7 +77,7 @@ export async function listMeetupsBetween(
       visibility: posts.visibility,
     })
     .from(posts)
-    .where(and(inRange, visible, isNull(posts.deletedAt)))
+    .where(and(eq(posts.region, region), inRange, visible, isNull(posts.deletedAt)))
     .orderBy(asc(posts.date), asc(posts.startTime));
 
   if (rows.length === 0) return [];
@@ -114,7 +116,7 @@ export async function listMeetupsBetween(
     capacity: r.capacity,
     count: count.get(r.id) ?? 0,
     joined: joined.has(r.id),
-    isPast: isPastSlot(r.date, r.startTime, r.endTime, r.endDate),
+    isPast: isPastSlot(region, r.date, r.startTime, r.endTime, r.endDate),
     private: r.visibility === 'link',
   }));
 }

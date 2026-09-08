@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth';
 import { getLocale } from '@/lib/locale';
 import { translateCached } from '@/lib/db/translations';
 import { TRANSLATE_MAX, translateEnabled } from '@/lib/translate';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     return await errJson(E.badRequest, 400);
   }
 
-  const out = await translateCached(text, await getLocale());
+  const out = await translateCached(regionOfRequest(req), text, await getLocale());
   if (!out) {
     return await errJson(E.translateFailed, 502);
   }

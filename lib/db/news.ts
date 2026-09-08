@@ -4,6 +4,8 @@ import { notifications, users } from './schema';
 import { sendPush } from '../push';
 import { Locale, Msg, pick, toLocale } from '../i18n';
 import { NOTIF } from '../notif-kinds';
+import { isRegion, type Region } from '../region';
+import { appName, siteUrl } from '../site';
 
 /**
  * 새 소식 알림.
@@ -42,27 +44,40 @@ export interface NewsSendResult {
  * 같은 문구를 이미 받은 사람은 건너뛴다 — 관리자가 버튼을 두 번 눌러도 두 번 가지 않는다.
  * 소식 제목이 곧 문구라, 발송 이력 테이블을 따로 두지 않고 알림 자체를 표식으로 쓴다.
  */
-export async function sendNews(title: Msg, linkUrl: string, at?: string): Promise<NewsSendResult> {
-  // 소식 자리로 바로 열리게 (whats-new의 각 항목이 at를 id로 갖는다)
-  const url = at ? `${linkUrl}#${encodeURIComponent(at)}` : linkUrl;
+export async function sendNews(
+  title: Msg,
+  /** 앱 안 경로 (`/whats-new`) — 주소는 받는 사람의 동네 도메인으로 만든다 */
+  path: string,
+  at: string | undefined,
+  /** 공개 주소를 못 정했을 때 쓸 요청 주소 */
+  originFallback: string
+): Promise<NewsSendResult> {
   const db = await getDb();
   const rows = await db
-    .select({ id: users.id, locale: users.locale })
+    .select({ id: users.id, locale: users.locale, homeRegion: users.homeRegion })
     .from(users)
     .where(eq(users.newsAlerts, true));
   if (rows.length === 0) return { sent: 0, skipped: 0 };
 
-  // 수신자 언어별로 문구가 달라서, 언어 단위로 묶어 처리한다
-  const byLocale = new Map<Locale, string[]>();
+  /*
+   * 수신자 언어별로 문구가, 동네별로 앱 이름과 주소가 달라서 (언어, 지역) 단위로 묶는다.
+   * 소식 자체는 하나다 — 코드로 배포되는 것이라 지역을 안 가린다.
+   */
+  const groups = new Map<string, { locale: Locale; region: Region; ids: string[] }>();
   for (const r of rows) {
     const locale = toLocale(r.locale);
-    if (!byLocale.has(locale)) byLocale.set(locale, []);
-    byLocale.get(locale)!.push(r.id);
+    const region: Region = isRegion(r.homeRegion) ? r.homeRegion : 'kansas';
+    const key = `${locale}|${region}`;
+    if (!groups.has(key)) groups.set(key, { locale, region, ids: [] });
+    groups.get(key)!.ids.push(r.id);
   }
 
   let sent = 0;
   let skipped = 0;
-  for (const [locale, ids] of byLocale) {
+  for (const { locale, region, ids } of groups.values()) {
+    // 소식 자리로 바로 열리게 (whats-new의 각 항목이 at를 id로 갖는다)
+    const linkUrl = `${siteUrl(region, originFallback)}${path}`;
+    const url = at ? `${linkUrl}#${encodeURIComponent(at)}` : linkUrl;
     const message = pick(locale, T.message, { title: pick(locale, title) });
     const already = await db
       .select({ userId: notifications.userId })
@@ -80,7 +95,7 @@ export async function sendNews(title: Msg, linkUrl: string, at?: string): Promis
        */
       targets.map((userId) => ({ id: crypto.randomUUID(), userId, postId: null, kind: NOTIF.news, message }))
     );
-    await sendPush(targets, { title: 'Kansas Korean', body: message, url, tag: 'whats-new' });
+    await sendPush(targets, { title: appName(region), body: message, url, tag: 'whats-new' });
     sent += targets.length;
   }
   return { sent, skipped };

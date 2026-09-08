@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { asc } from 'drizzle-orm';
 import { getPostView } from '@/lib/db/posts';
 import { listRatings } from '@/lib/db/ratings';
@@ -10,7 +11,8 @@ import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
 import { friendsOf, listFriendships } from '@/lib/db/friends';
 import { nameOf } from '@/lib/store';
-import { siteUrl } from '@/lib/site';
+import { appName, configuredSiteUrl, siteUrl } from '@/lib/site';
+import { getRegion } from '@/lib/region-server';
 import { catName, getCategory, isAnonymous } from '@/lib/categories';
 import SkyBackdrop from '@/app/sky-backdrop';
 import { getLocale } from '@/lib/locale';
@@ -21,7 +23,7 @@ import PostClient from './post-client';
 export const dynamic = 'force-dynamic';
 
 const T = {
-  notFound: { ko: '모임을 찾을 수 없어요 — Kansas Korean', en: 'Meetup not found — Kansas Korean', es: 'Quedada no encontrada — Kansas Korean' },
+  notFound: { ko: '모임을 찾을 수 없어요 — {name}', en: 'Meetup not found — {name}', es: 'Quedada no encontrada — {name}' },
   title: { ko: '{cat} 모임{title} · {when}', en: '{cat} meetup{title} · {when}', es: 'quedada de {cat}{title} · {when}' },
   director: { ko: '감독 {name}', en: 'Dir. {name}', es: 'Dir. {name}' },
   joined: { ko: '{n}명 참여 중', en: '{n} joined', es: '{n} apuntados' },
@@ -38,8 +40,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
    * 인자가 다르면 캐시가 갈라져 같은 모임을 두 번 읽는다.
    */
   const { user } = await getViewer();
-  const [post, locale] = await Promise.all([getPostView(id, user?.id), getLocale()]);
-  if (!post) return { title: pick(locale, T.notFound) };
+  const [post, locale, region] = await Promise.all([getPostView(id, user?.id), getLocale(), getRegion()]);
+  if (!post) return { title: pick(locale, T.notFound, { name: appName(region) }) };
 
   const title = pick(locale, T.title, {
     cat: catName(post.category, locale),
@@ -59,7 +61,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     n: post.participantCount,
   })}${post.capacity != null ? pick(locale, T.capacity, { n: post.capacity }) : ''}${pick(locale, T.cta)}`;
   return {
-    title: `${title} — Kansas Korean`,
+    // 모임의 지역 이름으로 — 다른 지역 링크를 이 도메인에서 열어도 그 모임의 앱 이름이다
+    title: `${title} — ${appName(post.region)}`,
     description,
     openGraph: { title, description },
   };
@@ -94,24 +97,40 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const { user, isAdmin } = await getViewer();
 
-  /*
-   * 캘린더 링크에 들어갈 주소는 서버가 정한다.
-   *
-   * 예전에는 클라이언트에서 `typeof window !== 'undefined' ? location.origin : ''`로
-   * 만들었는데, 서버 렌더가 붙은 지금은 서버('')와 브라우저(localhost)가 서로 다른 href를
-   * 그려 하이드레이션이 어긋난다. 한쪽에서 정해 내려보내면 그럴 일이 없다.
-   */
-  const h = await headers();
-  const origin = siteUrl(h.get('host') ? `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host')}` : '');
-
   const noPeople: Awaited<ReturnType<typeof adminMembers>> = [];
-  const [post, members, friendships] = await Promise.all([
+  const [post, members, friendships, region, h] = await Promise.all([
     getPostView(id, user?.id),
     // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
     isAdmin ? adminMembers() : noPeople,
     // 호스트는 친구 중에서만 넣는다
     user ? listFriendships(user.id) : ([] as Awaited<ReturnType<typeof listFriendships>>),
+    getRegion(),
+    headers(),
   ]);
+
+  /*
+   * 다른 지역의 모임 링크를 이 도메인에서 열었으면 그 지역 도메인으로 보낸다.
+   *
+   * 공유 링크는 지역을 가리지 않고 살아야 한다 — 캔자스 친구가 보낸 링크를 필리 앱에서
+   * 눌러도 열려야 하고, 그 지역 앱(설치된 PWA)에서 열리는 편이 낫다. 보안 검사는 그대로다:
+   * 옮겨간 자리에서 똑같은 getPostView(id, viewerId)를 지난다.
+   *
+   * 그 지역의 공개 주소를 **정해 뒀을 때만** 보낸다. 없으면(로컬) 자기 자신으로 무한히
+   * 되돌아가므로 그 자리에서 그린다.
+   */
+  if (post && post.region !== region && configuredSiteUrl(post.region)) {
+    redirect(`${configuredSiteUrl(post.region)}/p/${id}`);
+  }
+
+  /*
+   * 캘린더 링크에 들어갈 주소는 서버가 정한다 — 그 모임의 지역 주소로.
+   *
+   * 예전에는 클라이언트에서 `typeof window !== 'undefined' ? location.origin : ''`로
+   * 만들었는데, 서버 렌더가 붙은 지금은 서버('')와 브라우저(localhost)가 서로 다른 href를
+   * 그려 하이드레이션이 어긋난다. 한쪽에서 정해 내려보내면 그럴 일이 없다.
+   */
+  const requestOrigin = h.get('host') ? `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host')}` : '';
+  const origin = siteUrl(post?.region ?? region, requestOrigin);
 
   /*
    * 누가 몇 점 줬는지 — 평점을 매길 수 있는 모임일 때만 읽는다.

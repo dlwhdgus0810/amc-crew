@@ -3,6 +3,7 @@ import { sendTodayReminders } from '@/lib/db/posts';
 import { materializeDueOccurrences } from '@/lib/db/recurring';
 import { announceTierUps } from '@/lib/db/tiers';
 import { siteUrl } from '@/lib/site';
+import { REGION_IDS, type Region } from '@/lib/region';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,10 @@ export const dynamic = 'force-dynamic';
  * 등급은 마지막이다. 어제 끝난 모임의 점수를 세는 일이라 오늘 무엇이 만들어지든 상관이
  * 없고, 여기서 무슨 일이 나도 리마인더는 이미 나가 있어야 한다 — 오늘 모임에 못 오는
  * 쪽이 등급 축하를 못 받는 쪽보다 아프다.
+ *
+ * 1)·2)는 지역마다 한 번씩 돈다 — 「오늘」이 지역 시계마다 다르고 링크도 그 지역 도메인이다.
+ * 13:00 UTC 한 번이면 캔자스 8시·필리 9시(겨울엔 7시·8시)라 둘 다 아침이고 같은 날짜다.
+ * 3)은 사람의 것이라 한 번이다.
  * CRON_SECRET 환경변수가 있으면 Vercel이 보내는 Authorization 헤더를 검증한다.
  */
 export async function GET(req: NextRequest) {
@@ -31,9 +36,14 @@ export async function GET(req: NextRequest) {
   } else if (req.headers.get('authorization') !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
-  const origin = siteUrl(req.nextUrl.origin);
-  const recurring = await materializeDueOccurrences(origin);
-  const reminders = await sendTodayReminders(origin);
-  const tiers = await announceTierUps(origin);
-  return NextResponse.json({ ok: true, recurring, reminders, tiers });
+  const fallback = req.nextUrl.origin;
+  const regions: Partial<Record<Region, { recurring: unknown; reminders: unknown }>> = {};
+  for (const region of REGION_IDS) {
+    const origin = siteUrl(region, fallback);
+    const recurring = await materializeDueOccurrences(region, origin);
+    const reminders = await sendTodayReminders(region, origin);
+    regions[region] = { recurring, reminders };
+  }
+  const tiers = await announceTierUps(fallback);
+  return NextResponse.json({ ok: true, ...regions, tiers });
 }

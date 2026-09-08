@@ -4,6 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { setUserSelection, removeUser, validPicks } from '@/lib/store';
 import { getSessionUser } from '@/lib/auth';
 import { Showtime } from '@/lib/types';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,23 +48,25 @@ export async function POST(req: NextRequest) {
   }
 
   const picks = raw.map(sanitize).filter((p: Showtime | null): p is Showtime => p !== null);
+  // 선택 현황은 지역(극장)별이다
+  const region = regionOfRequest(req);
   // 실제 상영표에 있는 회차만 남긴다 (오래된 화면에서 사라진 회차를 보낼 수 있다)
-  const valid = await validPicks(picks);
+  const valid = await validPicks(region, picks);
   if (valid.length === 0) {
     return await errJson(E.showtimesInvalid, 400);
   }
 
-  await setUserSelection(user.id, user.name, valid);
+  await setUserSelection(region, user.id, user.name, valid);
   return NextResponse.json({ ok: true, saved: valid.length });
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return await errJson(E.loginRequired, 401);
   }
   const banned = await banGuard(user);
   if (banned) return banned;
-  await removeUser(user.id);
+  await removeUser(regionOfRequest(req), user.id);
   return NextResponse.json({ ok: true });
 }

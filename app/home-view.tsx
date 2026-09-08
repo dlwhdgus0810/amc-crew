@@ -21,6 +21,8 @@ import { springBloomDay } from '@/lib/spring';
 import { CARD_THEME_COOKIE, PREVIEW_COOKIE, themeDeco, toCardTheme } from '@/lib/card-theme';
 import { todayLocal } from '@/lib/dates';
 import { pick, type Locale } from '@/lib/i18n';
+import { getRegion } from '@/lib/region-server';
+import { REGIONS, type Region } from '@/lib/region';
 import HomeClient from './home-client';
 import WhatsNewCard from './whats-new-card';
 import { CategoryCardsSkeleton, LOADING } from './skeleton';
@@ -35,24 +37,24 @@ import { CategoryCardsSkeleton, LOADING } from './skeleton';
  * 셋은 서로를 안 기다리므로 묶는다.
  */
 async function HomeData({ only }: { only?: string[] }) {
-  const { user } = await getViewer();
+  const [{ user }, region] = await Promise.all([getViewer(), getRegion()]);
   const [subs, favs, summaries, signups, hidden] = await Promise.all([
-    user ? getSubscriptions(user.id) : [],
+    user ? getSubscriptions(user.id, region) : [],
     user ? getFavorites(user.id) : [],
-    nextMeetupByCategory(POST_CATEGORY_SLUGS),
+    nextMeetupByCategory(region, POST_CATEGORY_SLUGS),
     // 모임이 아직 없어도 신청한 사람이 있으면 홈에 띄운다 (독서나눔처럼 사람부터 모으는 곳)
-    signupCounts(),
+    signupCounts(region),
     // 관리자가 내려 둔 카테고리는 목록에서 뺀다 (카테고리 화면은 주소로 그대로 열린다)
-    hiddenSlugs(),
+    hiddenSlugs(region),
   ]);
   return (
-    <HomeClient initial={{ subs, favs, summaries: { today: todayLocal(), summaries, signups }, hidden }} only={only} />
+    <HomeClient initial={{ subs, favs, summaries: { today: todayLocal(region), summaries, signups }, hidden }} only={only} />
   );
 }
 
 /** 홈 맨 위의 카테고리 띠 — 감춘 것은 빼고 그린다 */
 async function CategoryStrip() {
-  const hidden = await hiddenSlugs();
+  const hidden = await hiddenSlugs(await getRegion());
   return (
     <div className="statement-meta">
       {CATEGORIES.filter((c) => !hidden.includes(c.slug))
@@ -76,10 +78,9 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
    * 그날의 문구는 읽어올 게 없다 — DB를 기다리는 자리 밖에 두어 먼저 칠해진다.
    * 안에 두면 카드가 올 때까지 화면 맨 위가 비어 있다.
    *
-   * todayLocal()은 앱 시간대(America/Chicago)로 날짜를 내므로 어느 기기에서 열어도
-   * 같은 줄이 나온다.
+   * todayLocal()은 그 지역 시간대로 날짜를 내므로 어느 기기에서 열어도 같은 줄이 나온다.
    */
-  const locale = await getLocale();
+  const [locale, region] = await Promise.all([getLocale(), getRegion()]);
   /*
    * 시즌 테마면 첫 줄도 계절 목록에서 고른다 (lib/statements.ts).
    *
@@ -89,9 +90,10 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
    */
   const jar = await cookies();
   const theme = toCardTheme(jar.get(PREVIEW_COOKIE)?.value ?? jar.get(CARD_THEME_COOKIE)?.value);
-  const day = todayLocal();
+  const day = todayLocal(region);
   const today = statementOfDay(day, theme);
   const deco = themeDeco(theme);
+  const leafPeak = REGIONS[region].leafPeak;
   return (
     <>
       <div className="statement">
@@ -108,8 +110,8 @@ export async function HomeView({ only }: { only?: string[] } = {}) {
         * 갈아 끼운다. 줄의 높이가 같아서 자리가 흔들리지 않는다. 30분에 한 번만
         * 받아 오므로 대개는 기다림 없이 바로 나온다.
         */}
-      <Suspense fallback={<SeasonStatus stat={seasonStat(deco, day)} locale={locale} />}>
-        <LiveSeasonStatus deco={deco} day={day} locale={locale} />
+      <Suspense fallback={<SeasonStatus stat={seasonStat(deco, day, { leafPeak })} locale={locale} />}>
+        <LiveSeasonStatus deco={deco} day={day} locale={locale} region={region} />
       </Suspense>
       {/*
         * 카테고리를 추가하거나 순서를 바꿔도 따라오도록 목록에서 만든다.
@@ -157,10 +159,23 @@ function SeasonStatus({ stat, locale }: { stat: SeasonStat | null; locale: Local
  *   봄         올해 개화일 (USA-NPN)
  *   가을       아무것도 — 절정일이 날짜 하나라 셈만 하면 된다
  */
-async function LiveSeasonStatus({ deco, day, locale }: { deco: 'petal' | 'rain' | 'snow' | 'leaf' | 'gold' | null; day: string; locale: Locale }) {
+async function LiveSeasonStatus({
+  deco,
+  day,
+  locale,
+  region,
+}: {
+  deco: 'petal' | 'rain' | 'snow' | 'leaf' | 'gold' | null;
+  day: string;
+  locale: Locale;
+  region: Region;
+}) {
+  // 날씨·개화·단풍 절정일이 전부 지역의 것이다 (lib/region.ts)
   const [weather, bloomDoy] = await Promise.all([
-    deco === 'rain' || deco === 'snow' ? currentWeather() : null,
-    deco === 'petal' ? springBloomDay() : null,
+    deco === 'rain' || deco === 'snow' ? currentWeather(region) : null,
+    deco === 'petal' ? springBloomDay(region) : null,
   ]);
-  return <SeasonStatus stat={seasonStat(deco, day, { weather, bloomDoy })} locale={locale} />;
+  return (
+    <SeasonStatus stat={seasonStat(deco, day, { weather, bloomDoy, leafPeak: REGIONS[region].leafPeak })} locale={locale} />
+  );
 }

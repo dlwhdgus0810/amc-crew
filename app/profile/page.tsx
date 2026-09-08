@@ -8,6 +8,7 @@ import { earnedThemesFor, giftsFor, walletOf } from '@/lib/db/shop';
 import { CARD_THEME_COOKIE, toCardTheme } from '@/lib/card-theme';
 import { dbGetUser } from '@/lib/db/users';
 import { getLocale } from '@/lib/locale';
+import { getRegion } from '@/lib/region-server';
 import ProfileClient from './profile-client';
 
 export const dynamic = 'force-dynamic';
@@ -30,18 +31,18 @@ async function ProfileData() {
       />
     );
   }
-  const locale = await getLocale();
+  const [locale, region] = await Promise.all([getLocale(), getRegion()]);
   const [subs, newsAlerts, row, hidden, wallet, gifts, earned, jar] = await Promise.all([
-    getSubscriptions(user.id),
+    getSubscriptions(user.id, region),
     getNewsAlerts(user.id),
     dbGetUser(user.id),
-    hiddenSlugs(),
+    hiddenSlugs(region),
     // 산 테마를 여기서 읽는다 — 고를 수 있는 것이 산 것뿐이라 목록이 곧 이 값이다
     walletOf(user.id),
     // 그중 선물로 받은 것은 누가 줬는지까지 (lib/db/shop.ts의 giftsFor)
     giftsFor(user.id, locale),
-    /* 산 것이 아니라 자격으로 열리는 테마 — 지금은 세 순위표 1위의 금빛 하나다 */
-    earnedThemesFor(user.id),
+    /* 산 것이 아니라 자격으로 열리는 테마 — 지금은 세 순위표 1위의 금빛 하나다 (이 지역 순위표) */
+    earnedThemesFor(user.id, region),
     cookies(),
   ]);
   return (

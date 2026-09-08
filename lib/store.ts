@@ -5,10 +5,15 @@ import {seedDay} from './seed';
 import {amcConfigured, fetchAmcDay, theatreId} from './amc';
 import {dbGetProfiles, dbUpdateProfile} from './db/users';
 import {findMovieMeta, TitleMeta, TMDB_IMG, tmdbEnabled} from './tmdb';
+import type {Region} from './region';
 
-const SELECTIONS_KEY = 'odyssey:selections';
+/**
+ * 회차 선택 현황 — 지역마다 따로다 (극장이 다르다).
+ * 캔자스는 예전 키 그대로라 담아 둔 것이 그대로 살고, 다른 지역은 뒤에 이름이 붙는다.
+ */
+const selectionsKey = (region: Region) => (region === 'kansas' ? 'odyssey:selections' : `odyssey:selections:${region}`);
 /** 하루치 상영표 캐시 — 극장이 바뀌면 키도 갈라진다 */
-const dayKey = (date: string) => `amc:day:${theatreId()}:${date}`;
+const dayKey = (region: Region, date: string) => `amc:day:${theatreId(region)}:${date}`;
 /** AMC를 매 요청마다 부르지 않도록 짧게 캐시한다 (초) */
 const DAY_TTL = 30 * 60;
 /**
@@ -43,14 +48,17 @@ function redis(): Redis {
 // dev 모드에서 라우트별 번들이 모듈을 각자 로드해도 저장소가 공유되도록 globalThis에 붙인다
 const globalMemory = globalThis as typeof globalThis & {
   __odysseyMemory?: {
+    /** dayKey(지역, 날짜)로 담는다 */
     days: Record<string, DaySchedule>;
-    selections: Selections;
+    /** 지역별 선택 현황 */
+    selections: Record<string, Selections>;
     titles: Record<string, CachedMeta>;
   };
 };
 const memory = (globalMemory.__odysseyMemory ??= { days: {}, selections: {}, titles: {} });
 // 예전 인스턴스가 titles 없이 만들어 두었을 수 있다
 memory.titles ??= {};
+const memSelections = (region: Region): Selections => (memory.selections[region] ??= {});
 
 // 오디세이 전용 시절의 데이터({ name, showtimeIds })는 영화 정보가 없어 렌더할 수 없으므로 걸러낸다
 function normalize(raw: Record<string, unknown> | null | undefined): Selections {
@@ -133,21 +141,21 @@ async function withTitleMeta(movies: DaySchedule['movies']): Promise<DaySchedule
   });
 }
 
-export async function getDaySchedule(date: string): Promise<DaySchedule> {
+export async function getDaySchedule(region: Region, date: string): Promise<DaySchedule> {
   // 키가 없거나 아직 활성화되지 않은 동안에는 예시 상영표로 화면을 볼 수 있게 한다.
   // 반드시 sample 플래그를 달아 화면에서 "예시"임을 밝힌다 (실제 상영표로 오해하면 안 된다).
-  if (!amcConfigured()) return { ...seedDay(date), sample: true };
+  if (!amcConfigured(region)) return { ...seedDay(date), sample: true };
 
   if (hasRedis()) {
-    const cached = await redis().get<DaySchedule>(dayKey(date));
+    const cached = await redis().get<DaySchedule>(dayKey(region, date));
     if (cached) return cached;
-  } else if (memory.days[date]) {
-    return memory.days[date];
+  } else if (memory.days[dayKey(region, date)]) {
+    return memory.days[dayKey(region, date)];
   }
 
   let day: DaySchedule;
   try {
-    day = await fetchAmcDay(date);
+    day = await fetchAmcDay(region, date);
   } catch (e) {
     // 키가 아직 승인 전이면 403이 온다 — 그동안은 예시 상영표로 대체하고 화면에 밝힌다
     console.error('[amc] 상영표 조회 실패 — 대체 상영표로 표시:', e instanceof Error ? e.message : e);
@@ -156,24 +164,24 @@ export async function getDaySchedule(date: string): Promise<DaySchedule> {
   // 평점·감독·출연 붙이기. 여기서 실패해도 상영표는 그대로 나가야 하므로 try 밖에서 한다
   day = { ...day, movies: await withTitleMeta(day.movies) };
   if (hasRedis()) {
-    await redis().set(dayKey(date), day, { ex: DAY_TTL });
+    await redis().set(dayKey(region, date), day, { ex: DAY_TTL });
   } else {
-    memory.days[date] = day;
+    memory.days[dayKey(region, date)] = day;
   }
   return day;
 }
 
 /** 캐시를 비운다 (관리자가 강제로 새로고침할 때) */
-export async function clearDayCache(dates: string[]): Promise<void> {
+export async function clearDayCache(region: Region, dates: string[]): Promise<void> {
   if (hasRedis()) {
-    await Promise.all(dates.map((d) => redis().del(dayKey(d))));
+    await Promise.all(dates.map((d) => redis().del(dayKey(region, d))));
   } else {
-    for (const d of dates) delete memory.days[d];
+    for (const d of dates) delete memory.days[dayKey(region, d)];
   }
 }
 
 /** 해당 날짜에 실제로 존재하는 회차만 남긴다 (저장 전 검증용) */
-export async function validPicks(picks: Showtime[]): Promise<Showtime[]> {
+export async function validPicks(region: Region, picks: Showtime[]): Promise<Showtime[]> {
   const byDate = new Map<string, Showtime[]>();
   for (const p of picks) {
     if (!byDate.has(p.date)) byDate.set(p.date, []);
@@ -181,7 +189,7 @@ export async function validPicks(picks: Showtime[]): Promise<Showtime[]> {
   }
   const out: Showtime[] = [];
   for (const [date, list] of byDate) {
-    const day = await getDaySchedule(date).catch(() => null);
+    const day = await getDaySchedule(region, date).catch(() => null);
     if (!day) continue;
     const ids = new Set(day.movies.flatMap((m) => m.showtimes.map((s) => s.id)));
     out.push(...list.filter((p) => ids.has(p.id)));
@@ -189,21 +197,21 @@ export async function validPicks(picks: Showtime[]): Promise<Showtime[]> {
   return out;
 }
 
-export async function getSelections(): Promise<Selections> {
+export async function getSelections(region: Region): Promise<Selections> {
   if (hasRedis()) {
-    return normalize(await redis().get<Record<string, unknown>>(SELECTIONS_KEY));
+    return normalize(await redis().get<Record<string, unknown>>(selectionsKey(region)));
   }
-  return memory.selections;
+  return memSelections(region);
 }
 
-export async function setUserSelection(userId: string, name: string, picks: Showtime[]): Promise<void> {
+export async function setUserSelection(region: Region, userId: string, name: string, picks: Showtime[]): Promise<void> {
   if (hasRedis()) {
     // 간단한 read-modify-write. 소규모 친구 그룹 용도로 충분.
-    const all = normalize(await redis().get<Record<string, unknown>>(SELECTIONS_KEY));
+    const all = normalize(await redis().get<Record<string, unknown>>(selectionsKey(region)));
     all[userId] = { name, picks };
-    await redis().set(SELECTIONS_KEY, all);
+    await redis().set(selectionsKey(region), all);
   } else {
-    memory.selections[userId] = { name, picks };
+    memSelections(region)[userId] = { name, picks };
   }
 }
 
@@ -215,7 +223,7 @@ export async function getProfiles(): Promise<Profiles> {
 
 export async function updateProfile(
   userId: string,
-  patch: { kakaoName?: string; nickname?: string | null; nameEn?: string | null }
+  patch: { kakaoName?: string; nickname?: string | null; nameEn?: string | null; homeRegion?: Region }
 ): Promise<UserProfile> {
   return dbUpdateProfile(userId, patch);
 }
@@ -311,20 +319,20 @@ export function resolveDisplayName(
   return fallback;
 }
 
-export async function clearSelections(): Promise<void> {
+export async function clearSelections(region: Region): Promise<void> {
   if (hasRedis()) {
-    await redis().set(SELECTIONS_KEY, {});
+    await redis().set(selectionsKey(region), {});
   } else {
-    memory.selections = {};
+    memory.selections[region] = {};
   }
 }
 
-export async function removeUser(userId: string): Promise<void> {
+export async function removeUser(region: Region, userId: string): Promise<void> {
   if (hasRedis()) {
-    const all = normalize(await redis().get<Record<string, unknown>>(SELECTIONS_KEY));
+    const all = normalize(await redis().get<Record<string, unknown>>(selectionsKey(region)));
     delete all[userId];
-    await redis().set(SELECTIONS_KEY, all);
+    await redis().set(selectionsKey(region), all);
   } else {
-    delete memory.selections[userId];
+    delete memSelections(region)[userId];
   }
 }

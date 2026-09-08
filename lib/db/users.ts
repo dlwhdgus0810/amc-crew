@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from './index';
 import { users } from './schema';
 import { Profiles, UserProfile } from '../types';
+import { isRegion, type Region } from '../region';
 
 const KAKAO_NAME_HISTORY_MAX = 50;
 
@@ -63,10 +64,12 @@ export async function setShowPresence(userId: string, on: boolean): Promise<void
  */
 export async function dbUpdateProfile(
   userId: string,
-  patch: { kakaoName?: string; nickname?: string | null; nameEn?: string | null; birthday?: string; gender?: string; locale?: string; avatar?: string | null; venmo?: string | null; zelle?: string | null }
+  patch: { kakaoName?: string; nickname?: string | null; nameEn?: string | null; birthday?: string; gender?: string; locale?: string; avatar?: string | null; venmo?: string | null; zelle?: string | null; homeRegion?: Region }
 ): Promise<UserProfile> {
   const db = await getDb();
   const existing = (await db.select().from(users).where(eq(users.id, userId)))[0];
+  // 동네 — 로그인 콜백만 넘긴다 (마지막으로 로그인한 지역). 안 넘기면 있던 값 그대로
+  const homeRegion: Region = patch.homeRegion ?? (isRegion(existing?.homeRegion) ? existing.homeRegion : 'kansas');
 
   let kakaoName = existing?.kakaoName ?? '';
   let nickname: string | null = existing?.nickname ?? null;
@@ -102,13 +105,23 @@ export async function dbUpdateProfile(
 
   await db
     .insert(users)
-    .values({ id: userId, kakaoName, nickname, nameEn, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo, zelle })
+    .values({ id: userId, kakaoName, nickname, nameEn, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo, zelle, homeRegion })
     .onConflictDoUpdate({
       target: users.id,
-      set: { kakaoName, nickname, nameEn, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo, zelle },
+      set: { kakaoName, nickname, nameEn, kakaoNameHistory: history, birthday, gender, locale, avatar, venmo, zelle, homeRegion },
     });
 
   return { kakaoName, ...(nickname ? { nickname } : {}), ...(nameEn ? { nameEn } : {}), kakaoNameHistory: history };
+}
+
+/**
+ * 이 사람의 동네 — 모임이 없는 알림(새 소식·등급·정지·건의 답)을 어느 앱 이름·주소로
+ * 보낼지 정한다. 행이 없으면 캔자스.
+ */
+export async function homeRegionOf(userId: string): Promise<Region> {
+  const db = await getDb();
+  const [row] = await db.select({ homeRegion: users.homeRegion }).from(users).where(eq(users.id, userId));
+  return isRegion(row?.homeRegion) ? row.homeRegion : 'kansas';
 }
 
 /**

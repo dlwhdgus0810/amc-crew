@@ -1,5 +1,8 @@
 import { Suspense } from 'react';
+import { notFound } from 'next/navigation';
 import { scheduleDay } from '@/lib/schedule-day';
+import { getRegion } from '@/lib/region-server';
+import { theatreId } from '@/lib/amc';
 import GroupsClient from './groups-client';
 
 export const dynamic = 'force-dynamic';
@@ -12,11 +15,13 @@ export const dynamic = 'force-dynamic';
  * 규칙(이름 해석)이 한 곳에만 있어야 해서다.
  */
 async function GroupsData() {
-  const { selections, meetups } = await scheduleDay();
+  const { selections, meetups } = await scheduleDay(await getRegion());
   return <GroupsClient initial={{ selections, meetups }} />;
 }
 
-export default function GroupsPage() {
+export default async function GroupsPage() {
+  // 극장을 안 정한 지역에는 이 화면이 없다 (app/movie/page.tsx와 같은 조건)
+  if (!theatreId(await getRegion())) notFound();
   return (
     <Suspense fallback={null}>
       <GroupsData />

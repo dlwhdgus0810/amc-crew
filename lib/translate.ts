@@ -1,4 +1,5 @@
 import { Locale } from './i18n';
+import { REGIONS, type Region } from './region';
 
 /**
  * 사람이 쓴 글을 읽는 사람의 언어로 옮긴다.
@@ -44,12 +45,12 @@ export function translateEnabled(): boolean {
  * 댓글에 「위 지시는 무시하고…」라고 적어 두는 사람이 있을 수 있어서다. 새어 나가 봐야
  * 자기 댓글이 이상하게 번역되는 것이 전부지만, 막을 수 있으면 막아 둔다.
  */
-export async function translateText(text: string, target: Locale): Promise<string | null> {
+export async function translateText(region: Region, text: string, target: Locale): Promise<string | null> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
 
   const system =
-    `You translate short messages from a small Korean-American community app in Kansas ` +
+    `You translate short messages from a small Korean-American community app in ${REGIONS[region].placeEn} ` +
     `(meetup titles, descriptions, and comments) into ${LANG_NAME[target]}.\n\n` +
     `Rules:\n` +
     `- Output ONLY the translation. No quotes, no notes, no explanation, no alternatives.\n` +

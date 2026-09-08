@@ -1,5 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
+import { regionOfRow, type Region } from '../region';
+import { appName, siteUrl } from '../site';
 import { categoryRequests, notifications, users } from './schema';
 import { LocalName, NameRow, nameOf, UNKNOWN_NAME } from '../store';
 import { Locale } from '../i18n';
@@ -23,10 +25,11 @@ const N = {
 };
 
 /** 수신자 언어 (users.locale, 없으면 기본) */
+/** 받는 사람의 언어와 동네 — 문구는 언어로, 앱 이름·주소는 동네로 */
 async function localeOf(userId: string) {
   const db = await getDb();
-  const row = (await db.select({ locale: users.locale }).from(users).where(eq(users.id, userId)))[0];
-  return toLocale(row?.locale);
+  const row = (await db.select({ locale: users.locale, homeRegion: users.homeRegion }).from(users).where(eq(users.id, userId)))[0];
+  return { locale: toLocale(row?.locale), region: regionOfRow(row?.homeRegion ?? 'kansas') };
 }
 
 export type RequestStatus = 'pending' | 'approved' | 'rejected';
@@ -92,6 +95,8 @@ export async function createCategoryRequest(input: {
   description: string;
   featureRequest?: string;
   origin: string;
+  /** 제안이 올라온 지역 — 관리자 알림 제목에 적는다 */
+  region: Region;
 }): Promise<string> {
   const db = await getDb();
   const id = crypto.randomUUID();
@@ -109,6 +114,7 @@ export async function createCategoryRequest(input: {
     message: (locale) => pick(locale, N.newRequest, { name: input.name, by: input.userName(locale) }),
     button: (locale) => pick(locale, N.btnReview),
     linkUrl: `${input.origin}/admin`,
+    region: input.region,
     tag: 'category-request',
   });
   return id;
@@ -129,7 +135,7 @@ export async function reviewCategoryRequest(input: {
     .set({ status: input.status, adminNote: input.adminNote ?? null })
     .where(eq(categoryRequests.id, input.id));
 
-  const locale = await localeOf(input.requesterId);
+  const { locale, region } = await localeOf(input.requesterId);
   const message = pick(locale, N.verdict, {
     name: input.requestName,
     verdict: pick(locale, input.status === 'approved' ? N.approved : N.rejected),
@@ -140,10 +146,11 @@ export async function reviewCategoryRequest(input: {
       .insert(notifications)
       .values({ id: crypto.randomUUID(), userId: input.requesterId, postId: null, message });
     // 인앱만 남기면 앱을 열어보기 전까지 결과를 모른다 (예전에는 카톡이 그 역할을 했다)
+    // 제안한 사람의 동네 앱 이름·주소로 — 관리자가 어느 도메인에서 눌렀는지와 무관하다
     await sendPush([input.requesterId], {
-      title: 'Kansas Korean',
+      title: appName(region),
       body: message,
-      url: `${input.origin}/suggest`,
+      url: `${siteUrl(region, input.origin)}/suggest`,
       tag: 'category-request',
     });
   } catch (e) {

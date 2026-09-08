@@ -7,6 +7,7 @@ import { APOLOGY_BEFORE, coinsEarned, EARNED_THEMES, isEarnedTheme, priceOf } fr
 import { areFriends } from './friends';
 import { nameOf, UNKNOWN_NAME } from '../store';
 import type { Locale } from '../i18n';
+import type { Region } from '../region';
 
 /**
  * 테마 상점 — 달란트 셈과 사기.
@@ -127,10 +128,11 @@ export async function walletOf(userId: string): Promise<Wallet> {
  * 관리자 예외는 여기 없다. 그건 「이 사람이 자격이 있나」가 아니라 「확인하려고 열어
  * 둔다」라서, 자격을 재는 이 함수가 아니라 부르는 쪽(app/layout.tsx)이 판단한다.
  */
-export async function themeUsable(theme: string, userId: string | null): Promise<boolean> {
+export async function themeUsable(theme: string, userId: string | null, region: Region): Promise<boolean> {
   if (isEarnedTheme(theme)) {
     if (!userId) return false;
-    return (await goldHolders()).includes(userId);
+    // 금빛은 지역별 — 이 도메인의 순위표에서 1위인가
+    return (await goldHolders(region)).includes(userId);
   }
   if (priceOf(theme) == null) return true;
   return userId ? await themeAllowed(userId, theme) : false;
@@ -141,8 +143,8 @@ export async function themeUsable(theme: string, userId: string | null): Promise
  * 산 것(owned)과 나눠 두는 이유는 성질이 달라서다: 산 것은 남고, 이것은 자리에서
  * 내려오면 사라진다.
  */
-export async function earnedThemesFor(userId: string): Promise<string[]> {
-  return (await goldHolders()).includes(userId) ? [...EARNED_THEMES] : [];
+export async function earnedThemesFor(userId: string, region: Region): Promise<string[]> {
+  return (await goldHolders(region)).includes(userId) ? [...EARNED_THEMES] : [];
 }
 
 export const themeAllowed = unstable_cache(

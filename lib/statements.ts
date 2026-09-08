@@ -274,7 +274,8 @@ function bloomPct(today: string, bloomDoy: number): number {
 }
 
 /**
- * 단풍이 제일 짙은 날 — 캔자스는 10월 하순이다.
+ * 단풍이 제일 짙은 날 — 지역마다 다르다 (lib/region.ts의 leafPeak). 아래는 캔자스 값이고,
+ * 부르는 쪽이 자기 지역 것을 넘긴다.
  *
  * 날짜 하나라 API가 필요 없다. 해마다 며칠씩 다르지만 상태줄이 받을 정밀도가 아니다 —
  * 「이제 곧」인지 「지났는지」만 말하면 된다.
@@ -294,10 +295,10 @@ const DAY_MS = 86400000;
  * 지나고 30일까지는 D+로 세고(막 지난 것은 지났다고 말해야 한다), 그 뒤로는 내년
  * 것을 센다 — 3월에 「D+130」은 아무 말도 아니다.
  */
-function leafDday(today: string): SeasonStat {
+function leafDday(today: string, peak = LEAF_PEAK): SeasonStat {
     const [y, m, d] = today.split('-').map(Number);
     const now = Date.UTC(y!, m! - 1, d!);
-    const peakOf = (year: number) => Date.UTC(year, LEAF_PEAK.month - 1, LEAF_PEAK.day);
+    const peakOf = (year: number) => Date.UTC(year, peak.month - 1, peak.day);
     let left = Math.round((peakOf(y!) - now) / DAY_MS);
     if (left < -LEAF_AFTER_DAYS) left = Math.round((peakOf(y! + 1) - now) / DAY_MS);
 
@@ -331,11 +332,11 @@ export function seasonStat(
      */
     kind: 'petal' | 'rain' | 'leaf' | 'snow' | 'gold' | null,
     today: string,
-    live?: {weather?: Weather | null; bloomDoy?: number | null}
+    live?: {weather?: Weather | null; bloomDoy?: number | null; leafPeak?: {month: number; day: number}}
 ): SeasonStat | null {
     const base = kind && kind !== 'gold' ? SEASON_STATS[kind] : null;
     if (!base) return null;
-    if (kind === 'leaf') return leafDday(today);
+    if (kind === 'leaf') return leafDday(today, live?.leafPeak);
     if (kind === 'petal') {
         if (live?.bloomDoy == null) return base;
         const pct = bloomPct(today, live.bloomDoy);

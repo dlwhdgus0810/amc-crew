@@ -3,6 +3,7 @@ import { recentReviews } from '@/lib/db/reviews';
 import { getLocale } from '@/lib/locale';
 import { getViewer } from '@/lib/session';
 import { REVIEW_FEED_LIMIT } from '@/lib/reviews';
+import { getRegion } from '@/lib/region-server';
 import ReviewsClient from './reviews-client';
 
 export const dynamic = 'force-dynamic';
@@ -14,9 +15,9 @@ export const dynamic = 'force-dynamic';
  * 캐시에 담지 않는다 (lib/db/hosting.ts의 순위표 주석 참고).
  */
 async function ReviewsData() {
-  const { user } = await getViewer();
+  const [{ user }, region] = await Promise.all([getViewer(), getRegion()]);
   if (!user) return <ReviewsClient initial={null} />;
-  const rows = await recentReviews(REVIEW_FEED_LIMIT, user.id, await getLocale());
+  const rows = await recentReviews(region, REVIEW_FEED_LIMIT, user.id, await getLocale());
   return <ReviewsClient initial={{ rows }} />;
 }
 

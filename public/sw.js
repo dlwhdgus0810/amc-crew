@@ -66,8 +66,9 @@ self.addEventListener('fetch', (event) => {
 // 서버(lib/push.ts)가 보낸 내용을 그대로 띄운다.
 
 self.addEventListener('push', (event) => {
-  // 내용 없이 오는 푸시도 규격상 가능하므로 빈 알림 대신 기본 문구를 쓴다
-  let data = { title: 'Kansas Korean', body: '새 소식이 있어요.', url: '/' };
+  // 내용 없이 오는 푸시도 규격상 가능하므로 빈 알림 대신 기본 문구를 쓴다.
+  // 앱 이름은 서버가 지역에 맞춰 실어 보낸다 (lib/site.ts의 appName) — 여기는 정적 파일이라 모른다
+  let data = { title: '새 소식', body: '새 소식이 있어요.', url: '/' };
   if (event.data) {
     try {
       data = { ...data, ...event.data.json() };

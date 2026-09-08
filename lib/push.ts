@@ -122,7 +122,7 @@ export async function sendPush(userIds: string[], payload: PushPayload): Promise
   // 여기에도 걸어두지 않으면 로컬에서 DATABASE_URL을 실제 DB로 두는 순간
   // 테스트 한 번이 진짜 사람들의 잠금화면을 울린다.
   if (process.env.NODE_ENV !== 'production' && process.env.PUSH_IN_DEV !== '1') {
-    console.info('[push] 개발 환경이라 발송을 건너뜁니다:', userIds.length + '명', '|', payload.body.slice(0, 60));
+    console.info('[push] 개발 환경이라 발송을 건너뜁니다:', userIds.length + '명', '|', payload.title, '|', payload.body.slice(0, 60));
     return;
   }
 

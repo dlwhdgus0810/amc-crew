@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 import { getDb } from './index';
+import type { Region } from '../region';
 import { postParticipants, postPhotos, posts } from './schema';
 import { signedUrls } from '../blob';
 import { NO_EXIF, type PhotoExifInput } from '../photos';
@@ -271,7 +272,7 @@ const WALL_PER_POST = 20;
  * 먼저 고르고 그중 사진 있는 것만 남겼는데, 요즘 모임에 사진이 없으면 더 옛날 모임에
  * 사진이 있어도 화면이 통째로 비었다.
  */
-export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
+export async function myPhotoWall(viewerId: string, region: Region): Promise<PhotoWallGroup[]> {
   const db = await getDb();
   /*
    * 실을 수 있는 모임을 최근 순으로 먼저 고른다. 사진부터 읽어 오면 못 보여줄 모임의
@@ -299,6 +300,8 @@ export async function myPhotoWall(viewerId: string): Promise<PhotoWallGroup[]> {
     .from(posts)
     .where(
       and(
+        // 모아보기는 지금 보고 있는 지역의 모임만 — 다른 지역 것은 그쪽 앱에서 본다
+        eq(posts.region, region),
         isNull(posts.deletedAt),
         inArray(posts.id, withPhotos.map((p) => p.postId)),
         // 내가 갔던 모임이거나, 호스트가 사진을 열어 둔 모임

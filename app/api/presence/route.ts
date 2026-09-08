@@ -4,6 +4,7 @@ import { banGuard } from '@/lib/guard';
 import { getSessionUser, isAdmin } from '@/lib/auth';
 import { listOnline, listPresenceStats, ONLINE_WINDOW_MINUTES, totalUsers, touchPresence } from '@/lib/db/presence';
 import { dbGetUser, ensureUser, setShowPresence } from '@/lib/db/users';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export async function POST() {
 }
 
 /** 지금 접속 중인 사람 (관리자 전용) */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     return await errJson(E.loginRequired, 401);
@@ -33,7 +34,8 @@ export async function GET() {
   const [online, total, stats, me] = await Promise.all([
     listOnline(),
     totalUsers(),
-    listPresenceStats(),
+    // 활동 시간대는 보고 있는 도메인의 시계로
+    listPresenceStats(regionOfRequest(req)),
     dbGetUser(user.id),
   ]);
   return NextResponse.json({

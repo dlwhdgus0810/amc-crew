@@ -4,7 +4,6 @@ import { getSessionUser, isAdmin } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { getNewsAlerts, sendNews, setNewsAlerts } from '@/lib/db/news';
 import { newestEntry } from '@/lib/changelog';
-import { siteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +46,7 @@ export async function POST(req: NextRequest) {
   if (!latest) {
     return await errJson(E.badRequest, 400);
   }
-  const result = await sendNews(latest.title, `${siteUrl(req.nextUrl.origin)}/whats-new`, latest.at);
+  // 주소는 받는 사람의 동네 도메인으로 sendNews가 만든다 — 여기서는 경로와 요청 주소만
+  const result = await sendNews(latest.title, '/whats-new', latest.at, req.nextUrl.origin);
   return NextResponse.json({ ok: true, ...result });
 }

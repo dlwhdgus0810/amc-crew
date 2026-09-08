@@ -13,7 +13,9 @@
 
 import {useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCategory } from '@/lib/categories';
+import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCategory, regionCategory } from '@/lib/categories';
+import { useAmcName, useRegion } from '@/app/region-context';
+import type { Region } from '@/lib/region';
 import PlaceLink from '@/app/place-link';
 import CatIcon from '@/app/cat-icon';
 import SkyBgm from '@/app/sky-bgm';
@@ -340,6 +342,8 @@ interface PostView {
   participants: { id: string; name: string; avatar: string | null; hostCount: number }[];
   /** 연 사람의 주최 점수 — 카드가 등급에 따라 옷을 갈아입는다 (익명 카테고리에서는 0) */
   authorHostCount: number;
+  /** 어느 지역의 모임인지 — 공유 주소의 도메인이 이걸 따른다 */
+  region: Region;
   participantCount: number;
   commentCount: number;
   /** 정산 요약 — 없으면 null (서버 PostView와 같은 모양) */
@@ -416,7 +420,11 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const t = useT();
   const locale = useLocale();
-  const category = getCategory(slug);
+  // 장소 예시·여행지 보기·제안한 사람은 동네마다 다르다 (lib/region.ts의 categoryHints)
+  const region = useRegion();
+  const amcName = useAmcName();
+  const base = getCategory(slug);
+  const category = base ? regionCategory(base, region) : undefined;
   /** 시각 대신 날짜 범위를 받는 카테고리인지 (여행) — lib/categories.ts의 dateRange */
   const ranged = Boolean(category?.dateRange);
   /** 이름이 하나도 안 보이는 카테고리 — 이름에 딸린 기능들을 화면에서도 내린다 */
@@ -438,7 +446,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
 
   /** 날짜 헤더 오른쪽에 붙는 짧은 힌트 — 오늘/내일/이번 주 */
   function whenHint(date: string) {
-    const today = todayLocal();
+    const today = todayLocal(region);
     if (date === today) return t(T.today);
     if (date === addDays(today, 1)) return t(T.tomorrow);
     if (date <= addDays(today, 6)) return t(T.thisWeek);
@@ -1022,7 +1030,8 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   }
 
   async function share(post: PostView) {
-    const url = `${siteUrl(window.location.origin)}/p/${post.id}`;
+    // 공유 주소는 그 모임의 지역 도메인으로
+    const url = `${siteUrl(post.region, window.location.origin)}/p/${post.id}`;
     try {
       if (navigator.share) {
         await navigator.share({
@@ -1106,12 +1115,13 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
         </div>
       </div>
 
-      {category?.tool && (
+      {/* AMC 도구는 이 지역에 극장이 정해져 있을 때만 — 없는 극장의 상영표로 가는 문을 열어 둘 수 없다 */}
+      {category?.tool && (!category.tool.needsAmc || amcName) && (
         <Link className="cat-tool" href={category.tool.href}>
           <span className="cat-tool-label" style={{ color }}>
             {t(category.tool.label)} →
           </span>
-          <span className="cat-tool-desc">{t(category.tool.desc)}</span>
+          <span className="cat-tool-desc">{t(category.tool.desc, { theatre: amcName ?? '' })}</span>
         </Link>
       )}
 

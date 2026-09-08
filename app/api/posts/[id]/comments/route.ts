@@ -7,6 +7,7 @@ import { ensureUser } from '@/lib/db/users';
 import { addComment, getComment, getPost, notifyComment } from '@/lib/db/posts';
 import { getProfiles, localName } from '@/lib/store';
 import { siteUrl } from '@/lib/site';
+import { regionOfRow } from '@/lib/region';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +55,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       user.id,
       localName(profile, user.name),
       text,
-      siteUrl(req.nextUrl.origin),
+      // 알림 링크는 그 모임의 지역 도메인으로
+      siteUrl(regionOfRow(post.region), req.nextUrl.origin),
       parentAuthorId,
       anonymous
     );

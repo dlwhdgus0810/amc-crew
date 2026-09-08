@@ -15,6 +15,7 @@ import { listSignups } from '@/lib/db/signups';
 import { getSubscriptions, listPosts } from '@/lib/db/posts';
 import { friendsOf, incomingOf, listFriendships, outgoingOf } from '@/lib/db/friends';
 import { nameOf } from '@/lib/store';
+import { getRegion } from '@/lib/region-server';
 import CategoryClient from './category-client';
 import { LOADING, PostCardsSkeleton } from '@/app/skeleton';
 
@@ -45,7 +46,7 @@ async function adminMembers() {
  * 서버에서는 예정 목록과 나란히 나가므로 기다림이 늘지 않는다.
  */
 async function CategoryData({ slug }: { slug: string }) {
-  const { user, isAdmin } = await getViewer();
+  const [{ user, isAdmin }, region] = await Promise.all([getViewer(), getRegion()]);
   // 지난 비공개 모임을 볼지는 사람마다 다르다 (프로필 설정, 기본은 안 보임)
   const showPastPrivate = user ? ((await dbGetUser(user.id))?.showPastPrivate ?? false) : false;
 
@@ -57,13 +58,13 @@ async function CategoryData({ slug }: { slug: string }) {
   // 참가신청을 쓰는 카테고리(독서나눔)만 명단을 읽는다 — 나머지는 빈 배열이라 질의도 없다
   const noSignups: Awaited<ReturnType<typeof listSignups>> = [];
   const [posts, pastPosts, subs, friendships, members, signups] = await Promise.all([
-    listPosts(slug, false, user?.id, showPastPrivate),
-    listPosts(slug, true, user?.id, showPastPrivate),
-    user ? getSubscriptions(user.id) : noSubs,
+    listPosts(region, slug, false, user?.id, showPastPrivate),
+    listPosts(region, slug, true, user?.id, showPastPrivate),
+    user ? getSubscriptions(user.id, region) : noSubs,
     user ? listFriendships(user.id) : noFriends,
     // 관리자만 — 명단을 고칠 때 친구가 아닌 사람도 골라야 한다
     isAdmin ? adminMembers() : noMembers,
-    getCategory(slug)?.signup ? listSignups(slug) : noSignups,
+    getCategory(slug)?.signup ? listSignups(region, slug) : noSignups,
   ]);
 
   return (

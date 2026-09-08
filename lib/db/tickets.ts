@@ -1,5 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 import { getDb } from './index';
+import { regionOfRow, type Region } from '../region';
+import { appName, siteUrl } from '../site';
 import { notifications, tickets, users } from './schema';
 import { LocalName, nameOf, UNKNOWN_NAME } from '../store';
 import { getLocale } from '../locale';
@@ -50,10 +52,11 @@ export interface TicketView {
 }
 
 /** 수신자 언어 (users.locale, 없으면 기본) */
+/** 받는 사람의 언어와 동네 — 문구는 언어로, 앱 이름·주소는 동네로 */
 async function localeOf(userId: string) {
   const db = await getDb();
-  const row = (await db.select({ locale: users.locale }).from(users).where(eq(users.id, userId)))[0];
-  return toLocale(row?.locale);
+  const row = (await db.select({ locale: users.locale, homeRegion: users.homeRegion }).from(users).where(eq(users.id, userId)))[0];
+  return { locale: toLocale(row?.locale), region: regionOfRow(row?.homeRegion ?? 'kansas') };
 }
 
 /** userId를 주면 그 사람 것만 (건의함), 없으면 전체 (관리자) */
@@ -101,6 +104,8 @@ export async function createTicket(input: {
   title: string;
   body?: string;
   origin: string;
+  /** 건의가 올라온 지역 — 관리자 알림 제목에 적는다 */
+  region: Region;
 }): Promise<{ id: string; number: number }> {
   const db = await getDb();
   const id = crypto.randomUUID();
@@ -126,6 +131,7 @@ export async function createTicket(input: {
       }),
     button: (locale) => pick(locale, N.btnReview),
     linkUrl: `${input.origin}/admin`,
+    region: input.region,
     tag: 'ticket',
   });
 
@@ -148,7 +154,7 @@ export async function reviewTicket(input: {
     .set({ status: input.status, adminNote: input.adminNote ?? null })
     .where(eq(tickets.id, input.id));
 
-  const locale = await localeOf(input.requesterId);
+  const { locale, region } = await localeOf(input.requesterId);
   const message = pick(locale, N.verdict, {
     n: String(input.number),
     title: input.title,
@@ -160,10 +166,11 @@ export async function reviewTicket(input: {
       .insert(notifications)
       .values({ id: crypto.randomUUID(), userId: input.requesterId, postId: null, message });
     // 인앱만 남기면 앱을 열어보기 전까지 결과를 모른다 (예전에는 카톡이 그 역할을 했다)
+    // 건의한 사람의 동네 앱 이름·주소로
     await sendPush([input.requesterId], {
-      title: 'Kansas Korean',
+      title: appName(region),
       body: message,
-      url: `${input.origin}/tickets`,
+      url: `${siteUrl(region, input.origin)}/tickets`,
       tag: 'ticket',
     });
   } catch (e) {

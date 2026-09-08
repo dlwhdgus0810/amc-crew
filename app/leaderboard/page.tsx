@@ -11,6 +11,7 @@ import {
   rankNames,
 } from '@/lib/db/hosting';
 import { hiddenSlugs } from '@/lib/db/hidden';
+import { getRegion } from '@/lib/region-server';
 import LeaderboardClient from './leaderboard-client';
 import { Bar, Block, LOADING_LEADERBOARD, Skeleton } from '../skeleton';
 
@@ -34,12 +35,14 @@ async function LeaderboardData() {
    * 이름은 담아 둔 것을 꺼낸 **뒤에** 고른다 — 순위 집계는 누가 보든 같지만
    * 이름은 보는 사람의 언어에 따라 다르다 (lib/db/hosting.ts의 RankSeed 참고).
    */
+  // 순위표는 지역별이다 — 이 도메인의 동네 사람들끼리 (lib/db/hosting.ts)
+  const region = await getRegion();
   const [hosts, joiners, cats, contrib, hidden, locale] = await Promise.all([
-    hostRanking(TOP),
-    joinRanking(TOP),
-    categoryRanking(),
-    contribRanking(TOP),
-    hiddenSlugs(),
+    hostRanking(TOP, region),
+    joinRanking(TOP, region),
+    categoryRanking(region),
+    contribRanking(TOP, region),
+    hiddenSlugs(region),
     getLocale(),
   ]);
   /*

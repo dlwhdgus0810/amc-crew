@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CATEGORIES, catDisplayName, getCategory } from '@/lib/categories';
 import { useLocale, useT } from '../i18n';
+import { useRegion } from '../region-context';
+import { REGIONS, otherRegion } from '@/lib/region';
 import { PROFILE_UPDATED } from '../nav';
 import { useRefreshSession, useViewer } from '../session';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
@@ -239,6 +241,8 @@ const T = {
   },
   ticketsGo: { ko: '건의함 열기 →', en: 'Open the suggestion box →', es: 'Abrir el buzón →' },
   logout: { ko: '로그아웃', en: 'Log out', es: 'Cerrar sesión' },
+  /* 같은 계정으로 다른 지역 앱을 연다 — 도메인이 달라 거기서 카카오 로그인을 한 번 더 한다 */
+  otherRegion: { ko: '다른 지역: {name} →', en: 'Other region: {name} →', es: 'Otra región: {name} →' },
   /* 둘 다 출처를 밝혀야 한다 (lib/weather.ts, lib/spring.ts) */
   weatherFrom: {
     ko: '홈 첫 줄의 기온·강수는 Open-Meteo, 개화 시기는 USA-NPN에서 받아요.',
@@ -362,6 +366,8 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
   const [gInput, setGInput] = useState<'male' | 'female' | ''>('');
   const [saving, setSaving] = useState(false);
 
+  const region = useRegion();
+  const otherSite = REGIONS[otherRegion(region)].siteUrl;
   const t = useT();
   const locale = useLocale();
   const genderLabel = (g: string) => (g === 'male' ? t(T.male) : g === 'female' ? t(T.female) : '');
@@ -1084,6 +1090,18 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
           {t(T.logout)}
         </button>
       </div>
+
+      {/*
+        * 다른 지역 앱으로 가는 문. 공개 주소를 정해 둔 지역만 (lib/region.ts의 siteUrl) —
+        * 로컬처럼 없으면 줄 자체를 안 그린다. 도메인이 다르니 그쪽에서 로그인을 한 번 더 한다.
+        */}
+      {otherSite && (
+        <p style={{ marginTop: 16 }}>
+          <a className="profile-link" href={otherSite}>
+            {t(T.otherRegion, { name: REGIONS[otherRegion(region)].name })}
+          </a>
+        </p>
+      )}
 
       {/*
         * 날씨 출처. Open-Meteo가 CC BY 4.0이라 밝혀야 한다 (lib/weather.ts).

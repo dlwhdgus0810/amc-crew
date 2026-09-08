@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth';
 import { resolveDisplayName } from '@/lib/store';
 import { dbGetUser, dbUpdateProfile, ensureUser } from '@/lib/db/users';
 import { todayLocal } from '@/lib/dates';
+import { regionOfRequest } from '@/lib/region-server';
 import { isLocale, Locale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from '@/lib/i18n';
 import { getLocale } from '@/lib/locale';
 
@@ -119,7 +120,7 @@ export async function PUT(req: NextRequest) {
       parsed.getFullYear() === y &&
       parsed.getMonth() === m - 1 &&
       parsed.getDate() === d;
-    if (!isRealDate || birthday < '1900-01-01' || birthday > todayLocal()) {
+    if (!isRealDate || birthday < '1900-01-01' || birthday > todayLocal(regionOfRequest(req))) {
       return await errJson(E.birthday, 400);
     }
     patch.birthday = birthday;

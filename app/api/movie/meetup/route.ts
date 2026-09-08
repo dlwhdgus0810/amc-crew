@@ -5,9 +5,10 @@ import { getSessionUser } from '@/lib/auth';
 import { ensureUser } from '@/lib/db/users';
 import { getProfiles, getSelections, localName } from '@/lib/store';
 import { addParticipants, createPost, findPostByShowtime } from '@/lib/db/posts';
-import { AMC_THEATRE_NAME } from '@/lib/amc';
+import { theatreName } from '@/lib/amc';
 import { Showtime } from '@/lib/types';
 import { siteUrl } from '@/lib/site';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,8 +51,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, postId: existing.id, existed: true });
   }
 
+  // 어느 지역의 극장인가 — 회차 선택도 모임도 그 지역 것이다
+  const region = regionOfRequest(req);
+  const theatre = theatreName(region);
+  if (!theatre) return await errJson(E.amcNotConfigured, 400);
+
   // 회차 정보와 참가자는 선택 현황에서 가져온다 (선택에 회차 스냅샷이 들어 있다)
-  const selections = await getSelections();
+  const selections = await getSelections(region);
   const pickers: string[] = [];
   let showtime: Showtime | undefined;
   for (const [userId, sel] of Object.entries(selections)) {
@@ -68,15 +74,16 @@ export async function POST(req: NextRequest) {
   const profiles = await getProfiles();
   const postId = await createPost({
     category: 'movienight',
+    region,
     authorId: user.id,
     authorName: localName(profiles[user.id], user.name),
     title: `${showtime.movieName} (${showtime.format})`,
     date: showtime.date,
     startTime: showtime.time,
     endTime: endTime(showtime.time),
-    location: AMC_THEATRE_NAME,
+    location: theatre,
     amcShowtimeId: showtimeId,
-    origin: siteUrl(req.nextUrl.origin),
+    origin: siteUrl(region, req.nextUrl.origin),
   });
 
   // 이 회차를 고른 사람들을 참가자로 (작성자는 createPost가 이미 넣었다)

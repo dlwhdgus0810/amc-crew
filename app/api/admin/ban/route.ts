@@ -5,7 +5,6 @@ import { adminIds, getSessionUser, isAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db/index';
 import { users } from '@/lib/db/schema';
 import { BAN_DURATIONS, notifyBan, setBan, toState, type BannedUser } from '@/lib/db/bans';
-import { siteUrl } from '@/lib/site';
 import { nameOf } from '@/lib/store';
 import { getLocale } from '@/lib/locale';
 
@@ -54,7 +53,8 @@ export async function POST(req: NextRequest) {
     // 본인에게 알린다 — 앱을 닫아 둔 사람은 이게 없으면 다음에 열어 보고서야 안다.
     // 알림이 실패해도 정지 자체는 성공 처리 (막는 일이 먼저다)
     try {
-      await notifyBan(userId, minutes, reason, siteUrl(req.nextUrl.origin));
+      // 주소는 notifyBan이 그 사람의 동네로 만든다 — 여기서는 요청 주소만 넘긴다
+      await notifyBan(userId, minutes, reason, req.nextUrl.origin);
     } catch (e) {
       console.error('[ban] notify failed:', e);
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { schedulePicks } from '@/lib/schedule-day';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
  * 누가 회차를 누르면 바로 달라져야 해서 담아 두지 않는다.
  */
 export async function GET(req: NextRequest) {
-  return NextResponse.json(await schedulePicks(req.nextUrl.searchParams.get('date')), {
+  return NextResponse.json(await schedulePicks(regionOfRequest(req), req.nextUrl.searchParams.get('date')), {
     headers: { 'Cache-Control': 'no-store' },
   });
 }

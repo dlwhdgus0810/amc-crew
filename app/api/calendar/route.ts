@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/auth';
 import { listMeetupsBetween } from '@/lib/db/calendar';
 import { dbGetUser } from '@/lib/db/users';
 import { todayLocal } from '@/lib/dates';
+import { regionOfRequest } from '@/lib/region-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,8 @@ const MAX_DAYS = 62;
  * 기간을 주지 않으면 오늘이 속한 달을 준다.
  */
 export async function GET(req: NextRequest) {
-  const today = todayLocal();
+  const region = regionOfRequest(req);
+  const today = todayLocal(region);
   const q = req.nextUrl.searchParams;
   const from = q.get('from') ?? `${today.slice(0, 7)}-01`;
   const to = q.get('to') ?? `${today.slice(0, 7)}-31`;
@@ -35,6 +37,6 @@ export async function GET(req: NextRequest) {
     from,
     to,
     today,
-    meetups: await listMeetupsBetween(from, to, viewer?.id, showPastPrivate),
+    meetups: await listMeetupsBetween(region, from, to, viewer?.id, showPastPrivate),
   });
 }

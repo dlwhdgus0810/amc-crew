@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { latestAt, latestNotable } from '@/lib/changelog';
 import { useT } from './i18n';
+import { useRegion } from './region-context';
 
 /** 마지막으로 확인한 소식의 날짜 (YYYY-MM-DD) */
 export const WHATS_NEW_SEEN = 'kk-whats-new-seen';
@@ -30,8 +31,9 @@ export default function WhatsNewCard() {
    * 카드에는 고정된 소식(제일 중요한 기능)을 띄우고, 새로 뜰지 말지는 소식 전체의
    * 최신 시각으로 잰다 — 고정된 항목의 시각으로 재면 그 뒤에 뭐가 올라와도 다시 뜨지 않는다.
    */
-  const entry = latestNotable();
-  const at = latestAt();
+  const region = useRegion();
+  const entry = latestNotable(region);
+  const at = latestAt(region);
   const t = useT();
 
   useEffect(() => {

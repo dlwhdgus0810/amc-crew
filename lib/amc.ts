@@ -1,11 +1,13 @@
 import { DaySchedule, Format, Movie, Showtime } from './types';
+import type { Region } from './region';
 
 /**
  * AMC 공식 Showtime API 연동.
  *
  * 환경변수
  *  - AMC_VENDOR_KEY (또는 AMC_API_KEY) — developers.amctheatres.com 에서 발급한 Vendor Key
- *  - AMC_THEATRE_ID — 극장 ID (미지정 시 Town Center 20)
+ *  - AMC_THEATRE_ID / AMC_THEATRE_NAME — 캔자스 극장 (미지정 시 Town Center 20)
+ *  - AMC_THEATRE_ID_PHILLY / AMC_THEATRE_NAME_PHILLY — 필리 극장 (미지정이면 그 지역엔 AMC 도구가 안 뜬다)
  *  - AMC_API_BASE — 샌드박스로 바꿀 때 https://api.sandbox-amctheatres.com/v2
  *
  * 인증은 X-AMC-Vendor-Key 헤더.
@@ -14,23 +16,42 @@ import { DaySchedule, Format, Movie, Showtime } from './types';
 
 const API_BASE = process.env.AMC_API_BASE ?? 'https://api.amctheatres.com/v2';
 
-/** AMC Town Center 20 (Leawood, KS) */
-const DEFAULT_THEATRE_ID = '38';
-
-/** 모임 장소로 쓰는 극장 이름 */
-export const AMC_THEATRE_NAME = process.env.AMC_THEATRE_NAME ?? 'AMC Town Center 20';
+/**
+ * 지역마다 극장이 다르다. 키(Vendor Key)는 하나고 극장만 갈린다.
+ *
+ * 캔자스는 예전 그대로 기본값이 있다 (AMC Town Center 20, Leawood, KS). 필리는 아직
+ * 정한 극장이 없어서 env가 없으면 null — 그러면 무비나잇의 AMC 도구와 /movie가 그 지역에서
+ * 안 열린다. 없는 극장의 상영표를 고르러 가는 문을 열어 둘 수는 없다.
+ */
+const THEATRE: Record<Region, { id: string | null; name: string | null }> = {
+  kansas: {
+    id: process.env.AMC_THEATRE_ID ?? '38',
+    name: process.env.AMC_THEATRE_NAME ?? 'AMC Town Center 20',
+  },
+  philly: {
+    id: process.env.AMC_THEATRE_ID_PHILLY ?? null,
+    name: process.env.AMC_THEATRE_NAME_PHILLY ?? null,
+  },
+};
 
 /** 발급 포털이 부르는 이름이 제각각이라 둘 다 받는다 */
 function vendorKey(): string | undefined {
   return process.env.AMC_VENDOR_KEY ?? process.env.AMC_API_KEY;
 }
 
-export function theatreId(): string {
-  return process.env.AMC_THEATRE_ID ?? DEFAULT_THEATRE_ID;
+/** 그 지역의 극장 ID — 안 정했으면 null */
+export function theatreId(region: Region): string | null {
+  return THEATRE[region].id;
 }
 
-export function amcConfigured(): boolean {
-  return Boolean(vendorKey());
+/** 모임 장소로 쓰는 극장 이름 — 안 정했으면 null */
+export function theatreName(region: Region): string | null {
+  return THEATRE[region].name;
+}
+
+/** 이 지역에서 AMC를 실제로 부를 수 있나 — 키가 있고 극장도 정해져 있어야 한다 */
+export function amcConfigured(region: Region): boolean {
+  return Boolean(vendorKey() && theatreId(region));
 }
 
 interface AmcShowtime {
@@ -128,11 +149,13 @@ export function groupByMovie(showtimes: Showtime[], movies: Map<string, Movie>):
 }
 
 /** 하루치 상영표를 AMC에서 가져온다 (날짜: YYYY-MM-DD) */
-export async function fetchAmcDay(date: string): Promise<DaySchedule> {
+export async function fetchAmcDay(region: Region, date: string): Promise<DaySchedule> {
   const key = vendorKey();
   if (!key) throw new Error('AMC_VENDOR_KEY(또는 AMC_API_KEY) 환경변수가 설정되지 않았습니다.');
+  const theatre = theatreId(region);
+  if (!theatre) throw new Error(`${region} 지역의 AMC 극장이 정해지지 않았습니다.`);
 
-  const url = `${API_BASE}/theatres/${theatreId()}/showtimes/${amcDate(date)}?page-size=200`;
+  const url = `${API_BASE}/theatres/${theatre}/showtimes/${amcDate(date)}?page-size=200`;
   const res = await fetch(url, {
     headers: { 'X-AMC-Vendor-Key': key, Accept: 'application/json' },
     cache: 'no-store',
