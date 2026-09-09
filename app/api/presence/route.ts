@@ -9,7 +9,7 @@ import { regionOfRequest } from '@/lib/region-server';
 export const dynamic = 'force-dynamic';
 
 /** 신호 한 번 — 앱을 보고 있는 동안 app/presence-beat.tsx가 주기적으로 부른다 */
-export async function POST() {
+export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) {
     // 비로그인은 조용히 401 — 클라이언트가 이걸 보고 신호를 아예 멈춘다
@@ -18,7 +18,7 @@ export async function POST() {
   // 정지된 사람은 "지금 접속 중"에도 뜨지 않는다 — 쓰지 못하는 사람이 쓰고 있는 것처럼 보이면 안 된다
   const banned = await banGuard(user);
   if (banned) return banned;
-  await touchPresence(user.id);
+  await touchPresence(user.id, regionOfRequest(req));
   return NextResponse.json({ ok: true });
 }
 

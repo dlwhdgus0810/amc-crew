@@ -267,8 +267,8 @@ const T = {
   banM: { ko: '{n}분', en: '{n} min' },
   statsTitle: { ko: '회원별 접속 기록', en: 'Time in the app' },
   statsDesc: {
-    ko: '신호가 이어지는 동안을 한 번의 접속으로 묶어 잰 시간이에요. 최근 7일치만 봅니다.',
-    en: 'Runs of consecutive check-ins counted as one visit. Last 7 days.',
+    ko: '신호가 이어지는 동안을 한 번의 접속으로 묶어 잰 시간이에요. {place}에서 접속한 것만, 최근 7일치를 봅니다.',
+    en: 'Runs of consecutive check-ins counted as one visit. Visits from {place} only, last 7 days.',
   },
   statsUser: { ko: '회원', en: 'Member' },
   statsActive: { ko: '활동시간', en: 'Active hours' },
@@ -392,7 +392,7 @@ export default function AdminPage() {
     { id: string; message: string; name: string; createdAt: string; deletedAt: string }[] | null
   >(null);
   const [presence, setPresence] = useState<{
-    online: { id: string; name: string; avatar: string | null; secondsAgo: number; hidden: boolean }[];
+    online: { id: string; name: string; avatar: string | null; secondsAgo: number; hidden: boolean; region: Region | null }[];
     total: number;
     windowMinutes: number;
     /** 내가 친구들에게 접속 중으로 보이는지 */
@@ -1835,6 +1835,11 @@ export default function AdminPage() {
                         {u.avatar ? <img src={u.avatar} alt="" /> : u.name.slice(0, 1)}
                       </span>
                       <span className="online-name">{u.name}</span>
+                      {u.region && (
+                        <span className="online-tag">
+                          {locale === 'ko' ? REGIONS[u.region].placeKo : REGIONS[u.region].placeEn}
+                        </span>
+                      )}
                       {u.hidden && <span className="online-tag">{t(T.onlineHidden)}</span>}
                       <span className="online-ago">
                         {u.secondsAgo < 60 ? t(T.onlineJustNow) : t(T.onlineMins, { n: Math.floor(u.secondsAgo / 60) })}
@@ -1879,7 +1884,7 @@ export default function AdminPage() {
           </h1>
           {statsOpen && (
             <>
-          <p className="subtitle">{t(T.statsDesc)}</p>
+          <p className="subtitle">{t(T.statsDesc, { place })}</p>
           <div className="card">
             <p className="hint" style={{ marginBottom: 8 }}>
               {t(T.statsActiveNote, { place })}

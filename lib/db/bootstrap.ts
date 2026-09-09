@@ -277,6 +277,7 @@ CREATE TABLE IF NOT EXISTS notice_reads (
 CREATE TABLE IF NOT EXISTS presence_sessions (
   id uuid PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  region text NOT NULL DEFAULT 'kansas',
   started_at timestamptz NOT NULL,
   ended_at timestamptz NOT NULL
 );

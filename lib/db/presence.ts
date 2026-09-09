@@ -5,7 +5,7 @@ import { pushSubscriptions, users } from './schema';
 import { nameOf } from '../store';
 import { getLocale } from '../locale';
 import { addDays, instantAt, localStamp } from '../dates';
-import type { Region } from '../region';
+import { isRegion, type Region } from '../region';
 
 /**
  * 접속 현황 — 서버리스라 연결을 붙들고 있을 수 없어서, 앱을 보고 있는 사람이
@@ -65,6 +65,8 @@ export interface OnlineUser {
   secondsAgo: number;
   /** 접속 표시를 꺼 둔 사람 — 친구들에게는 안 보이지만 이 표에는 그대로 나온다 */
   hidden: boolean;
+  /** 마지막 신호가 온 지역 (구간 기록이 없으면 null) */
+  region: Region | null;
 }
 
 /**
@@ -74,7 +76,7 @@ export interface OnlineUser {
  * 구간 갱신은 SQL 한 문장으로 처리한다 — neon-http에는 트랜잭션이 없어서,
  * "찾아보고 없으면 넣는다"를 두 번에 나눠 하면 신호가 겹칠 때 구간이 둘로 갈라진다.
  */
-export async function touchPresence(userId: string): Promise<void> {
+export async function touchPresence(userId: string, region: Region): Promise<void> {
   const db = await getDb();
   await db.update(users).set({ lastSeen: new Date() }).where(eq(users.id, userId));
 
@@ -83,6 +85,7 @@ export async function touchPresence(userId: string): Promise<void> {
     WITH latest AS (
       SELECT id FROM presence_sessions
       WHERE user_id = ${userId}
+        AND region = ${region}
         AND ended_at > now() - (${SESSION_GAP_MINUTES} * interval '1 minute')
       ORDER BY ended_at DESC
       LIMIT 1
@@ -91,8 +94,8 @@ export async function touchPresence(userId: string): Promise<void> {
       WHERE id IN (SELECT id FROM latest)
       RETURNING id
     )
-    INSERT INTO presence_sessions (id, user_id, started_at, ended_at)
-    SELECT ${newId}::uuid, ${userId}, now(), now()
+    INSERT INTO presence_sessions (id, user_id, region, started_at, ended_at)
+    SELECT ${newId}::uuid, ${userId}, ${region}, now(), now()
     WHERE NOT EXISTS (SELECT 1 FROM extended)
   `);
 }
@@ -116,7 +119,7 @@ export interface PresenceStat {
 }
 
 /**
- * 회원별 접속 기록 (최근 7일).
+ * 회원별 접속 기록 (최근 7일) — 이 지역 도메인에서 온 신호만.
  *
  * 구간 길이는 최소 1분으로 올려 잡는다 — 신호 한 번짜리 방문이 0분으로 보이면 안 된다.
  * 접속한 적 없는 회원도 0으로 함께 내려준다 (명단에서 빠지면 "아직 안 왔다"를 알 수 없다).
@@ -153,7 +156,7 @@ export async function listPresenceStats(region: Region): Promise<PresenceStat[]>
       COUNT(s.id) AS visits
     FROM users u
     LEFT JOIN presence_sessions s
-      ON s.user_id = u.id AND s.ended_at > now() - interval '7 days'
+      ON s.user_id = u.id AND s.region = ${region} AND s.ended_at > now() - interval '7 days'
     GROUP BY u.id, u.kakao_name, u.name_en, u.nickname, u.avatar, u.last_seen
     ORDER BY week_seconds DESC, u.kakao_name ASC
   `);
@@ -218,6 +221,8 @@ export async function listOnline(): Promise<OnlineUser[]> {
       avatar: users.avatar,
       lastSeen: users.lastSeen,
       showPresence: users.showPresence,
+      // 표 이름을 글자로 쓴다 — ${users.id}는 한 표짜리 select 안에서 "id"로만 찍혀 서브쿼리의 id를 가리킨다
+      region: sql<string | null>`(SELECT region FROM presence_sessions WHERE user_id = users.id ORDER BY ended_at DESC LIMIT 1)`,
     })
     .from(users)
     .where(and(isNotNull(users.lastSeen), gte(users.lastSeen, since)))
@@ -230,6 +235,7 @@ export async function listOnline(): Promise<OnlineUser[]> {
     avatar: r.avatar,
     secondsAgo: Math.max(0, Math.round((now - new Date(r.lastSeen!).getTime()) / 1000)),
     hidden: !r.showPresence,
+    region: isRegion(r.region) ? r.region : null,
   }));
 }
 

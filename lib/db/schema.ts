@@ -633,6 +633,8 @@ export const presenceSessions = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    // 신호가 온 도메인 — 지역이 바뀌면 구간도 새로 시작한다 (한 줄 = 한 지역)
+    region: text('region').notNull().default('kansas'),
     startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
     endedAt: timestamp('ended_at', { withTimezone: true }).notNull(),
   },
