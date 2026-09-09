@@ -555,7 +555,11 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
-    router.replace('/');
+    /*
+     * 통째로 다시 연다. router.replace로 옮기면 루트 레이아웃(세션 컨텍스트)은 다시
+     * 안 그려져서 홈에 로그인 헤더가 그대로 남았다 — app/ban-screen.tsx와 같은 길.
+     */
+    window.location.href = '/';
   }
 
   if (!user) {

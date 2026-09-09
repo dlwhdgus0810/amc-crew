@@ -16,6 +16,7 @@ import NoticePopup from './notice-popup';
 import BanGate from './ban-screen';
 import ChromeAutoHide from './chrome-autohide';
 import PresenceBeat from './presence-beat';
+import RefreshOnResume from './refresh-on-resume';
 import ViewingAs from './viewing-as';
 import { I18nProvider } from './i18n';
 import { SessionProvider } from './session';
@@ -337,6 +338,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ServiceWorkerRegistrar />
           <ChromeAutoHide />
           <PresenceBeat />
+          {/* 설치한 앱을 다시 앞으로 가져오면 화면을 새로 받는다 (app/refresh-on-resume.tsx) */}
+          <RefreshOnResume />
           <ViewingAs />
           <header className="site-header">
             <div className="container header-inner">
