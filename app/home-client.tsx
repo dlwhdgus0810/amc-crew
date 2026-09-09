@@ -28,6 +28,7 @@ import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useT } from './i18n';
 import CategoryCard from './category-card';
 import LangPick from './lang-pick';
+import LoginButtons, { useLoginMsg } from './login-buttons';
 import SortableCategoryCard from './sortable-card';
 import useNextMeetups, { type NextMeetupsSeed } from './use-next-meetups';
 import { useRefreshSession, useViewer } from './session';
@@ -35,9 +36,11 @@ import { useRefreshSession, useViewer } from './session';
 const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
   profile: { ko: '프로필 →', en: 'Profile →', es: 'Perfil →' },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
   loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.', es: 'Entra con Kakao para suscribirte.' },
   loginToFavorite: { ko: '카카오 로그인 후 즐겨찾기할 수 있어요.', en: 'Log in with Kakao to add favourites.', es: 'Entra con Kakao para guardar favoritos.' },
+  /* 로그인 문이 둘인 도메인(펜)용 — 어느 문인지 안 적는다 */
+  loginToSubscribeAny: { ko: '로그인 후 구독할 수 있어요.', en: 'Log in to subscribe.', es: 'Inicia sesión para suscribirte.' },
+  loginToFavoriteAny: { ko: '로그인 후 즐겨찾기할 수 있어요.', en: 'Log in to add favourites.', es: 'Inicia sesión para guardar favoritos.' },
   allCategories: { ko: '전체 카테고리 보기 →', en: 'See all categories →', es: 'Ver todas las categorías →' },
   dragHint: {
     ko: '⠿ 을 끌어서 즐겨찾기 순서를 바꿀 수 있어요. 키보드로는 ⠿에서 스페이스를 누른 뒤 방향키로 옮기세요.',
@@ -71,17 +74,6 @@ interface SessionUser {
   name: string;
 }
 
-function KakaoIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 3C6.48 3 2 6.54 2 10.9c0 2.8 1.86 5.26 4.66 6.66l-.95 3.52c-.08.31.27.56.54.38l4.19-2.78c.51.06 1.03.1 1.56.1 5.52 0 10-3.54 10-7.88C22 6.54 17.52 3 12 3z"
-      />
-    </svg>
-  );
-}
-
 /** 서버가 페이지를 그리면서 미리 읽어 둔 것 (app/page.tsx) */
 export interface HomeInitial {
   subs: string[];
@@ -98,6 +90,7 @@ export default function HubPage({ initial, only }: { initial: HomeInitial; only?
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   // 끄는 동안에는 카드가 손을 따라오도록 hover 들림을 멈춘다
   const [reordering, setReordering] = useState(false);
+  const loginMsg = useLoginMsg();
   const t = useT();
   const favs = useMemo(() => new Set(favList), [favList]);
   // 카드 하단 「다음 일정」 한 줄 — 서버가 읽어 둔 것을 그대로 쓴다
@@ -201,7 +194,7 @@ export default function HubPage({ initial, only }: { initial: HomeInitial; only?
 
   async function toggleSub(category: string) {
     if (!user) {
-      setMsg({ type: 'err', text: t(T.loginToSubscribe) });
+      setMsg({ type: 'err', text: t(loginMsg(T.loginToSubscribe, T.loginToSubscribeAny)) });
       return;
     }
     const next = !subs.has(category);
@@ -227,7 +220,7 @@ export default function HubPage({ initial, only }: { initial: HomeInitial; only?
   /** 즐겨찾기는 홈에 먼저 띄우기 위한 것 — 알림과는 무관하다 */
   async function toggleFav(category: string) {
     if (!user) {
-      setMsg({ type: 'err', text: t(T.loginToFavorite) });
+      setMsg({ type: 'err', text: t(loginMsg(T.loginToFavorite, T.loginToFavoriteAny)) });
       return;
     }
     const next = !favs.has(category);
@@ -351,10 +344,7 @@ export default function HubPage({ initial, only }: { initial: HomeInitial; only?
           </>
         ) : (
           <>
-            <a className="kakao-btn" href="/api/auth/login">
-              <KakaoIcon />
-              {t(T.kakaoLogin)}
-            </a>
+            <LoginButtons />
             {/* 로그인 전에도 언어를 고를 수 있어야 한다 — 이 단추가 무슨 뜻인지부터 읽혀야 누른다 */}
             <LangPick />
           </>

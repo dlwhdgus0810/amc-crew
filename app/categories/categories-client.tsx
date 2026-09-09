@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CATEGORIES, CAT_LAYOUT_COOKIE, CAT_LAYOUT_MAX_AGE, type CatLayout } from '@/lib/categories';
 import { useT } from '../i18n';
+import LoginButtons, { useLoginMsg } from '../login-buttons';
 import CategoryCard from '../category-card';
 import useNextMeetups, { type NextMeetupsSeed } from '../use-next-meetups';
 import { useRefreshSession, useViewer } from '../session';
@@ -31,19 +32,13 @@ const T = {
     en: 'Log in with Kakao to set favourites and subscriptions.',
     es: 'Entra con Kakao para elegir favoritos y suscripciones.',
   },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
+  /* 로그인 문이 둘인 도메인(펜)용 — 어느 문인지 안 적는다 */
+  loginPromptAny: {
+    ko: '로그인 후 즐겨찾기와 구독을 설정할 수 있어요.',
+    en: 'Log in to set favourites and subscriptions.',
+    es: 'Inicia sesión para elegir favoritos y suscripciones.',
+  },
 };
-
-function KakaoIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 3C6.48 3 2 6.54 2 10.9c0 2.8 1.86 5.26 4.66 6.66l-.95 3.52c-.08.31.27.56.54.38l4.19-2.78c.51.06 1.03.1 1.56.1 5.52 0 10-3.54 10-7.88C22 6.54 17.52 3 12 3z"
-      />
-    </svg>
-  );
-}
 
 /*
  * 배열 선택 — 좁은 화면(폰·PWA)에서만 쓴다. 700px 이상은 이미 2열, 1024px 이상은 3열이라
@@ -111,6 +106,7 @@ export interface CategoriesInitial {
 export default function CategoriesPage({ initial }: { initial: CategoriesInitial }) {
   const [subs, setSubs] = useState<Set<string>>(() => new Set(initial.subs));
   const [favs, setFavs] = useState<Set<string>>(() => new Set(initial.favs));
+  const loginMsg = useLoginMsg();
   const t = useT();
   // 카드 하단 「다음 일정」 한 줄 — 서버가 읽어 둔 것을 그대로 쓴다
   const { summaryFor } = useNextMeetups(initial.summaries);
@@ -213,11 +209,10 @@ export default function CategoriesPage({ initial }: { initial: CategoriesInitial
       {!loggedIn && (
         <div className="card">
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>{t(T.loginPrompt)}</span>
-            <a className="kakao-btn" href="/api/auth/login?next=/categories">
-              <KakaoIcon />
-              {t(T.kakaoLogin)}
-            </a>
+            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>
+              {t(loginMsg(T.loginPrompt, T.loginPromptAny))}
+            </span>
+            <LoginButtons next="/categories" />
           </div>
         </div>
       )}

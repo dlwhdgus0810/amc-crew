@@ -4,6 +4,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {DaySchedule, Format, Selections, Showtime} from '@/lib/types';
 import { useLocale, useT } from '../i18n';
 import { useAmcName } from '../region-context';
+import LoginButtons, { useLoginMsg } from '../login-buttons';
 import { useRefreshSession, useViewer } from '../session';
 import { usePosterZoom } from '../poster-zoom';
 import type { ScheduleDay } from '@/lib/schedule-day';
@@ -61,6 +62,11 @@ const T = {
     en: 'Leave it empty to use your Kakao nickname ({name}).',
     es: 'Déjalo vacío para usar tu apodo de Kakao ({name}).',
   },
+  nicknameHintGoogle: {
+    ko: '비워두고 저장하면 Google 계정 이름({name})을 사용해요.',
+    en: 'Leave it empty to use your Google account name ({name}).',
+    es: 'Déjalo vacío para usar el nombre de tu cuenta de Google ({name}).',
+  },
   save: { ko: '저장', en: 'Save', es: 'Guardar' },
   saving: { ko: '저장 중…', en: 'Saving…', es: 'Guardando…' },
   cancel: { ko: '취소', en: 'Cancel', es: 'Cancelar' },
@@ -72,9 +78,15 @@ const T = {
     en: 'Log in with Kakao to pick your showtimes.',
     es: 'Entra con Kakao para elegir tus funciones.',
   },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
+  /* 로그인 문이 둘인 도메인(펜)용 — 어느 문인지 안 적는다 */
+  loginPromptAny: {
+    ko: '로그인 후 가능한 회차를 선택할 수 있어요.',
+    en: 'Log in to pick your showtimes.',
+    es: 'Inicia sesión para elegir tus funciones.',
+  },
   saveMine: { ko: '내 스케줄 저장하기 · {n}개 선택됨', en: 'Save my picks · {n} selected', es: 'Guardar mi elección · {n} elegidas' },
   loginAndStart: { ko: '카카오 로그인하고 시작하기', en: 'Log in with Kakao to start', es: 'Entra con Kakao para empezar' },
+  loginAndStartGoogle: { ko: 'Google로 로그인하고 시작하기', en: 'Sign in with Google to start', es: 'Entra con Google para empezar' },
   dayLabel: { ko: '{m}월 {d}일', en: '{mon} {d}', es: '{d} {mon}' },
   weekdayLabel: { ko: '{wd}요일', en: '{wd}', es: '{wd}' },
 };
@@ -100,17 +112,6 @@ function formatDateHeading(
   };
 }
 
-function KakaoIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 3C6.48 3 2 6.54 2 10.9c0 2.8 1.86 5.26 4.66 6.66l-.95 3.52c-.08.31.27.56.54.38l4.19-2.78c.51.06 1.03.1 1.56.1 5.52 0 10-3.54 10-7.88C22 6.54 17.52 3 12 3z"
-      />
-    </svg>
-  );
-}
-
 export default function PickPage({ initial }: { initial: ScheduleDay }) {
   const [movies, setMovies] = useState<DaySchedule['movies']>(initial.movies);
   const [date, setDate] = useState(initial.date);
@@ -130,6 +131,7 @@ export default function PickPage({ initial }: { initial: ScheduleDay }) {
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
   const amcName = useAmcName();
+  const loginMsg = useLoginMsg();
   const t = useT();
   const locale = useLocale();
   const to12h = (time: string) => fmtTime(time, locale);
@@ -295,7 +297,7 @@ export default function PickPage({ initial }: { initial: ScheduleDay }) {
                 </button>
               </div>
               <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '10px 2px 0' }}>
-                {t(T.nicknameHint, { name: kakaoName })}
+                {t(viewer.provider === 'google' ? T.nicknameHintGoogle : T.nicknameHint, { name: kakaoName })}
               </p>
             </div>
           ) : (
@@ -322,12 +324,9 @@ export default function PickPage({ initial }: { initial: ScheduleDay }) {
         ) : (
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>
-              {t(T.loginPrompt)}
+              {t(loginMsg(T.loginPrompt, T.loginPromptAny))}
             </span>
-            <a className="kakao-btn" href="/api/auth/login">
-              <KakaoIcon />
-              {t(T.kakaoLogin)}
-            </a>
+            <LoginButtons />
           </div>
         )}
       </div>
@@ -455,10 +454,7 @@ export default function PickPage({ initial }: { initial: ScheduleDay }) {
             <span className="arrow">→</span>
           </button>
         ) : (
-          <a className="kakao-btn" href="/api/auth/login">
-            <KakaoIcon />
-            {t(T.loginAndStart)}
-          </a>
+          <LoginButtons kakaoLabel={T.loginAndStart} googleLabel={T.loginAndStartGoogle} />
         )}
       </div>
 

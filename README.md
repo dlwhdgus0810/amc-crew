@@ -78,6 +78,7 @@ All configuration is read from environment variables. Nothing is hardcoded. Copy
 | `ANTHROPIC_API_KEY` | On-demand translation of user-written text. Without it the feature is hidden |
 | `GOOGLE_MAPS_API_KEY` | Google Places lookup for photo and meetup locations (`lib/geocode.ts`) |
 | `NEXT_PUBLIC_SITE_URL_PENN`, `AMC_THEATRE_ID_PENN`, `AMC_THEATRE_NAME_PENN`, `DEFAULT_REGION` | Second region |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google login, offered only on regions whose `loginProviders` (in `lib/region.ts`) include `google`. Without the keys the button is not shown |
 | `PUSH_IN_DEV`, `KAKAO_MEMO_IN_DEV` | Send real push or KakaoTalk messages from a dev server |
 
 ## Deploying to Vercel
@@ -96,6 +97,16 @@ All configuration is read from environment variables. Nothing is hardcoded. Copy
 4. Put the REST API key in `KAKAO_REST_API_KEY`.
 
 If you add a second domain, register it on the **same** Kakao app. A new app issues different user ids, so the same person would become a different account.
+
+### Google login (optional, per region)
+
+A region can also offer "Sign in with Google" — `loginProviders` in `lib/region.ts` decides which doors a domain opens (Kansas: Kakao only; Penn: Kakao and Google). Accounts stay in the one `users` table: a Google user gets `id = 'google:<sub>'` and their Google account name in `kakao_name`; the provider is derived from the id prefix (`lib/provider.ts`). Kakao and Google callbacks share the same tail (`lib/auth-finish.ts`). On a domain that does not list `google`, `/api/auth/google/*` returns 404.
+
+1. In Google Cloud Console create an OAuth consent screen (External; scopes `openid`, `userinfo.email`, `userinfo.profile` — non-sensitive, no verification) and **publish** it. Left in Testing it caps at 100 test users and expires tokens after 7 days.
+2. Create an OAuth client (Web application). Authorized origins: your production origin(s) and `http://localhost:3000`. Redirect URIs: `https://<domain>/api/auth/google/callback` for each origin, plus `http://localhost:3000/api/auth/google/callback`. Exact match, no wildcards.
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+Kakao does not expose an email, so a Kakao account and a Google account cannot be linked automatically — one person can hold both. The Google button is hidden inside the KakaoTalk in-app browser, where Google refuses OAuth (`disallowed_useragent`).
 
 ## Design notes
 

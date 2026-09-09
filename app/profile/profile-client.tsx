@@ -14,6 +14,7 @@ import { formatZelle } from '@/lib/money';
 import { COIN } from '@/lib/shop';
 import PushToggle from '../push-toggle';
 import LangPick from '../lang-pick';
+import LoginButtons, { useLoginMsg } from '../login-buttons';
 import CoinIcon from '../coin-icon';
 import {
   CARD_THEME_COOKIE,
@@ -42,7 +43,12 @@ const T = {
     en: 'Log in with Kakao to manage your profile.',
     es: 'Entra con Kakao para gestionar tu perfil.',
   },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
+  /* 로그인 문이 둘인 도메인(펜)용 — 어느 문인지 안 적는다 */
+  loginPromptAny: {
+    ko: '로그인 후 프로필을 관리할 수 있어요.',
+    en: 'Log in to manage your profile.',
+    es: 'Inicia sesión para gestionar tu perfil.',
+  },
   photo: { ko: '프로필 사진', en: 'Profile photo', es: 'Foto de perfil' },
   photoPick: { ko: '사진 고르기', en: 'Choose a photo', es: 'Elegir foto' },
   photoChange: { ko: '사진 바꾸기', en: 'Change photo', es: 'Cambiar foto' },
@@ -73,7 +79,13 @@ const T = {
     en: 'Leave it empty to use your Kakao nickname ({name}).',
     es: 'Déjalo vacío para usar tu apodo de Kakao ({name}).',
   },
+  nicknameHintGoogle: {
+    ko: '비워두고 저장하면 Google 계정 이름({name})을 사용해요.',
+    en: 'Leave it empty to use your Google account name ({name}).',
+    es: 'Déjalo vacío para usar el nombre de tu cuenta de Google ({name}).',
+  },
   kakaoNamePrefix: { ko: '카카오: {name}', en: 'Kakao: {name}', es: 'Kakao: {name}' },
+  googleNamePrefix: { ko: 'Google: {name}', en: 'Google: {name}', es: 'Google: {name}' },
   nameEn: { ko: '영어 이름', en: 'English name', es: 'Nombre en inglés' },
   nameEnPh: { ko: 'English name', en: 'English name', es: 'English name' },
   nameEnSaved: { ko: '영어 이름을 저장했어요.', en: 'English name saved.', es: 'Nombre en inglés guardado.' },
@@ -252,17 +264,6 @@ const T = {
   },
 };
 
-function KakaoIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 3C6.48 3 2 6.54 2 10.9c0 2.8 1.86 5.26 4.66 6.66l-.95 3.52c-.08.31.27.56.54.38l4.19-2.78c.51.06 1.03.1 1.56.1 5.52 0 10-3.54 10-7.88C22 6.54 17.52 3 12 3z"
-      />
-    </svg>
-  );
-}
-
 /** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx) */
 export interface ProfileInitial {
   subs: string[];
@@ -369,6 +370,7 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
 
   const region = useRegion();
   const otherSite = REGIONS[otherRegion(region)].siteUrl;
+  const loginMsg = useLoginMsg();
   const t = useT();
   const locale = useLocale();
   const genderLabel = (g: string) => (g === 'male' ? t(T.male) : g === 'female' ? t(T.female) : '');
@@ -563,12 +565,9 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
         <div className="card">
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>
-              {t(T.loginPrompt)}
+              {t(loginMsg(T.loginPrompt, T.loginPromptAny))}
             </span>
-            <a className="kakao-btn" href="/api/auth/login">
-              <KakaoIcon />
-              {t(T.kakaoLogin)}
-            </a>
+            <LoginButtons />
           </div>
           {/* 로그인 전 언어 — 홈과 같은 단추 (app/lang-pick.tsx) */}
           <div style={{ marginTop: 14 }}>
@@ -669,7 +668,7 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
               </button>
             </div>
             <p style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, margin: '10px 2px 0' }}>
-              {t(T.nicknameHint, { name: kakaoName })}
+              {t(viewer.provider === 'google' ? T.nicknameHintGoogle : T.nicknameHint, { name: kakaoName })}
             </p>
           </div>
         ) : (
@@ -677,7 +676,7 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
             <span style={{ fontWeight: 600, fontSize: 17 }}>
               {user.name}
               <span style={{ color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 500, marginLeft: 10 }}>
-                {t(T.kakaoNamePrefix, { name: kakaoName })}
+                {t(viewer.provider === 'google' ? T.googleNamePrefix : T.kakaoNamePrefix, { name: kakaoName })}
               </span>
             </span>
             <button

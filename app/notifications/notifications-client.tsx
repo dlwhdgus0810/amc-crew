@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useT } from '../i18n';
+import { useLoginMsg } from '../login-buttons';
 import { pick } from '@/lib/i18n';
 import { FRIEND_KINDS, NOTIF, POST_KINDS, signupCategory } from '@/lib/notif-kinds';
 import { timeAgo } from '@/lib/datefmt';
@@ -25,6 +26,8 @@ const T = {
   loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
   title: { ko: '알림', en: 'Alerts', es: 'Avisos' },
   loginPrompt: { ko: '카카오 로그인 후 알림을 볼 수 있어요.', en: 'Log in with Kakao to see your alerts.', es: 'Entra con Kakao para ver tus avisos.' },
+  /* 로그인 문이 둘인 도메인(펜)용 */
+  loginPromptAny: { ko: '로그인 후 알림을 볼 수 있어요.', en: 'Log in to see your alerts.', es: 'Inicia sesión para ver tus avisos.' },
   empty: {
     ko: '아직 알림이 없어요. 홈에서 관심 있는 취미를 구독해보세요!',
     en: 'No alerts yet. Subscribe to a hobby on the home page!',
@@ -64,6 +67,7 @@ export default function NotificationsClient({ initial }: { initial: Notification
   const [trash, setTrash] = useState<Notification[] | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const router = useRouter();
+  const loginMsg = useLoginMsg();
   const t = useT();
   const locale = useLocale();
   const now = useNow();
@@ -134,7 +138,7 @@ export default function NotificationsClient({ initial }: { initial: Notification
     return (
       <>
         <h1>{t(T.title)}</h1>
-        <div className="card">{t(T.loginPrompt)}</div>
+        <div className="card">{t(loginMsg(T.loginPrompt, T.loginPromptAny))}</div>
       </>
     );
   }

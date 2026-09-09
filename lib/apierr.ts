@@ -6,7 +6,8 @@ import { getLocale } from './locale';
 
 /** 여러 라우트가 함께 쓰는 문구 */
 export const E = {
-  loginRequired: { ko: '카카오 로그인이 필요해요.', en: 'Please log in with Kakao.', es: 'Inicia sesión con Kakao.' },
+  // 어느 문인지 안 적는다 — 펜에는 구글 문도 있다 (API 문구라 지역을 모른다)
+  loginRequired: { ko: '로그인이 필요해요.', en: 'Please log in.', es: 'Inicia sesión.' },
   postNotFound: { ko: '포스트를 찾을 수 없어요.', en: 'Meetup not found.', es: 'Quedada no encontrada.' },
   notifNotFound: { ko: '알림을 찾을 수 없어요.', en: 'Alert not found.', es: 'Aviso no encontrado.' },
   badCategory: { ko: '올바르지 않은 카테고리입니다.', en: 'Unknown category.', es: 'Categoría desconocida.' },

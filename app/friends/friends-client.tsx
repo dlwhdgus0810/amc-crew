@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { FRIEND_PRESENCE } from '@/lib/flags';
 import { useT } from '../i18n';
+import { useLoginMsg } from '../login-buttons';
 import { useRefreshSession } from '../session';
 
 /**
@@ -22,6 +23,8 @@ const T = {
   },
   loading: { ko: '불러오는 중…', en: 'Loading…', es: 'Cargando…' },
   loginPrompt: { ko: '카카오 로그인 후 볼 수 있어요.', en: 'Log in with Kakao to see this.', es: 'Entra con Kakao para ver esto.' },
+  /* 로그인 문이 둘인 도메인(펜)용 */
+  loginPromptAny: { ko: '로그인 후 볼 수 있어요.', en: 'Log in to see this.', es: 'Inicia sesión para ver esto.' },
 
   online: { ko: '지금 접속 중', en: 'Online now', es: 'En línea ahora' },
   onlineNone: { ko: '지금 앱을 보고 있는 친구가 없어요.', en: 'No friends are in the app right now.', es: 'Ahora mismo no hay amigos en la app.' },
@@ -99,6 +102,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
   const [needLogin, setNeedLogin] = useState(initial.needLogin);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const loginMsg = useLoginMsg();
   const t = useT();
   const refresh = useRefreshSession();
 
@@ -155,7 +159,7 @@ export default function FriendsPage({ initial }: { initial: FriendsInitial }) {
     return (
       <>
         <h1>{t(T.title)}</h1>
-        <div className="card">{t(T.loginPrompt)}</div>
+        <div className="card">{t(loginMsg(T.loginPrompt, T.loginPromptAny))}</div>
       </>
     );
   }

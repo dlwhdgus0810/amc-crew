@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { cookies } from 'next/headers';
-import { getSessionUser, IMPERSONATOR_COOKIE, isAdmin, verifySessionToken } from './auth';
+import { getSessionUser, IMPERSONATOR_COOKIE, isAdmin, providerOf, type Provider, verifySessionToken } from './auth';
 import { resolveDisplayName } from './store';
 import { getLocale } from './locale';
 import { dbGetUser } from './db/users';
@@ -26,7 +26,10 @@ export interface Viewer {
   avatar: string | null;
   venmo: string | null;
   zelle: string | null;
+  /** 들어온 문의 이름 — 카카오 닉네임 또는 구글 계정 이름. 칸 이름은 옛날 것(kakao_name) */
   kakaoName: string;
+  /** 어느 문으로 들어왔나 — 「카카오 닉네임을 써요」 같은 문구를 고르는 데 쓴다 */
+  provider: Provider;
   birthday: string | null;
   gender: string | null;
   /** 생일이나 성별이 비어 있으면 온보딩(/welcome)으로 보낸다 */
@@ -54,6 +57,7 @@ const EMPTY: Viewer = {
   venmo: null,
   zelle: null,
   kakaoName: '',
+  provider: 'kakao',
   birthday: null,
   gender: null,
   needsOnboarding: false,
@@ -93,6 +97,7 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     venmo: row?.venmo ?? null,
     zelle: row?.zelle ?? null,
     kakaoName: row?.kakaoName || user.name,
+    provider: providerOf(user.id),
     birthday: row?.birthday ?? null,
     gender: row?.gender ?? null,
     needsOnboarding: !row?.birthday || !row?.gender,

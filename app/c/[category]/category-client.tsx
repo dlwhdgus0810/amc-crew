@@ -15,6 +15,7 @@ import {useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { DEFAULT_LOCATION_HINT, DEFAULT_LOCATION_LABEL, catDisplayName, getCategory, regionCategory } from '@/lib/categories';
 import { useAmcName, useRegion } from '@/app/region-context';
+import { useLoginMsg } from '@/app/login-buttons';
 import type { Region } from '@/lib/region';
 import PlaceLink from '@/app/place-link';
 import CatIcon from '@/app/cat-icon';
@@ -185,6 +186,9 @@ const T = {
   cast: { ko: '출연 {names}', en: 'Cast {names}', es: 'Reparto {names}' },
   loginToSubscribe: { ko: '카카오 로그인 후 구독할 수 있어요.', en: 'Log in with Kakao to subscribe.', es: 'Entra con Kakao para suscribirte.' },
   loginToJoin: { ko: '카카오 로그인 후 참가할 수 있어요.', en: 'Log in with Kakao to join.', es: 'Entra con Kakao para apuntarte.' },
+  /* 로그인 문이 둘인 도메인(펜)용 — 어느 문인지 안 적는다 */
+  loginToSubscribeAny: { ko: '로그인 후 구독할 수 있어요.', en: 'Log in to subscribe.', es: 'Inicia sesión para suscribirte.' },
+  loginToJoinAny: { ko: '로그인 후 참가할 수 있어요.', en: 'Log in to join.', es: 'Inicia sesión para apuntarte.' },
   proposedBy: { ko: '{name} 님이 제안한 카테고리예요.', en: 'Suggested by {name}.', es: 'Propuesta de {name}.' },
   createFailed: { ko: '모임 만들기 실패', en: 'Couldn’t create the meetup', es: 'No se pudo crear la quedada' },
   createdOnce: {
@@ -269,6 +273,7 @@ const T = {
   signupJoin: { ko: '참가신청', en: 'Count me in', es: 'Me apunto' },
   signupLeave: { ko: '신청 취소', en: 'Take me out', es: 'Quitarme' },
   signupLogin: { ko: '카카오 로그인하고 신청하기', en: 'Log in with Kakao to sign up', es: 'Entra con Kakao para apuntarte' },
+  signupLoginAny: { ko: '로그인하고 신청하기', en: 'Log in to sign up', es: 'Inicia sesión para apuntarte' },
   signupEmpty: { ko: '아직 신청한 사람이 없어요. 첫 번째가 되어보세요!', en: 'Nobody yet — be the first.', es: 'Aún nadie: sé el primero.' },
   signupWait: {
     ko: '{n}명만 더 모이면 다 같이 날짜를 정해요. 모이면 알림으로 알려드릴게요.',
@@ -418,6 +423,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
   const [subscribed, setSubscribed] = useState(initial.subscribed);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const loginMsg = useLoginMsg();
   const t = useT();
   const locale = useLocale();
   // 장소 예시·여행지 보기·제안한 사람은 동네마다 다르다 (lib/region.ts의 categoryHints)
@@ -703,7 +709,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
 
   async function toggleSub() {
     if (!user) {
-      setMsg({ type: 'err', text: t(T.loginToSubscribe) });
+      setMsg({ type: 'err', text: t(loginMsg(T.loginToSubscribe, T.loginToSubscribeAny)) });
       return;
     }
     const next = !subscribed;
@@ -765,7 +771,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
    */
   function onSignupButton() {
     if (!user) {
-      setMsg({ type: 'err', text: t(T.loginToSubscribe) });
+      setMsg({ type: 'err', text: t(loginMsg(T.loginToSubscribe, T.loginToSubscribeAny)) });
       return;
     }
     if (!signedUp && (category?.signup?.terms?.length ?? 0) > 0) {
@@ -777,7 +783,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
 
   async function toggleSignup() {
     if (!user) {
-      setMsg({ type: 'err', text: t(T.loginToSubscribe) });
+      setMsg({ type: 'err', text: t(loginMsg(T.loginToSubscribe, T.loginToSubscribeAny)) });
       return;
     }
     setTermsOpen(false);
@@ -953,7 +959,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
    */
   function onJoinButton(post: PostView) {
     if (!user) {
-      setMsg({ type: 'err', text: t(T.loginToJoin) });
+      setMsg({ type: 'err', text: t(loginMsg(T.loginToJoin, T.loginToJoinAny)) });
       return;
     }
     const joined = post.participants.some((p) => p.id === user.id);
@@ -966,7 +972,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
 
   async function join(post: PostView) {
     if (!user) {
-      setMsg({ type: 'err', text: t(T.loginToJoin) });
+      setMsg({ type: 'err', text: t(loginMsg(T.loginToJoin, T.loginToJoinAny)) });
       return;
     }
     setTermsOpen(false);
@@ -1200,7 +1206,7 @@ export default function CategoryClient({ slug, initial }: { slug: string; initia
             disabled={signupBusy || signupFull}
             onClick={onSignupButton}
           >
-            {!user ? t(T.signupLogin) : signedUp ? t(T.signupLeave) : signupFull ? t(T.signupFull) : t(T.signupJoin)}
+            {!user ? t(loginMsg(T.signupLogin, T.signupLoginAny)) : signedUp ? t(T.signupLeave) : signupFull ? t(T.signupFull) : t(T.signupJoin)}
           </button>
         </div>
       )}

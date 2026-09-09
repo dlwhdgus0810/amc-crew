@@ -3,13 +3,19 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { cookies } from 'next/headers';
 
 export interface SessionUser {
-  id: string; // 카카오 회원번호
-  name: string; // 카카오 닉네임
+  id: string; // 카카오 회원번호, 또는 구글이면 'google:<sub>' (lib/provider.ts)
+  name: string; // 카카오 닉네임, 또는 구글 계정 이름
 }
+
+/** 어느 문으로 들어온 계정인지 — 회원번호 앞말로 안다 */
+export { type Provider, providerOf, GOOGLE_ID_PREFIX } from './provider';
 
 export const SESSION_COOKIE = 'session';
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30일
 export const STATE_COOKIE = 'kakao_oauth_state';
+export const GOOGLE_STATE_COOKIE = 'google_oauth_state';
+/** PKCE code_verifier — 구글 로그인을 시작한 브라우저만 코드를 바꿀 수 있게 (app/api/auth/google) */
+export const GOOGLE_PKCE_COOKIE = 'google_pkce';
 export const LOGIN_NEXT_COOKIE = 'login_next';
 /** 테스트 계정으로 보는 동안 원래(관리자) 세션을 담아두는 곳 — 돌아갈 때 쓴다 */
 export const IMPERSONATOR_COOKIE = 'impersonator';

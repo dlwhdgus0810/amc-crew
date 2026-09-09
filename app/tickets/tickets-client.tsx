@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
+import LoginButtons, { useLoginMsg } from '../login-buttons';
 import { useRefreshSession, useViewer } from '../session';
 import type { Msg } from '@/lib/i18n';
 
@@ -67,7 +68,12 @@ const T = {
     en: 'Log in with Kakao to file a ticket.',
     es: 'Entra con Kakao para enviar una sugerencia.',
   },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
+  /* 로그인 문이 둘인 도메인(펜)용 — 어느 문인지 안 적는다 */
+  loginPromptAny: {
+    ko: '로그인 후 건의를 남길 수 있어요.',
+    en: 'Log in to file a ticket.',
+    es: 'Inicia sesión para enviar una sugerencia.',
+  },
   kind: { ko: '어떤 건의인가요?', en: 'What kind of ticket?', es: '¿De qué tipo?' },
   summary: { ko: '한 줄 요약', en: 'One-line summary', es: 'Resumen en una línea' },
   summaryCheer: { ko: '쪽지', en: 'Your note', es: 'Tu recado' },
@@ -109,17 +115,6 @@ const T = {
   home: { ko: '홈으로 →', en: 'Go home →', es: 'Ir al inicio →' },
 };
 
-function KakaoIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 3C6.48 3 2 6.54 2 10.9c0 2.8 1.86 5.26 4.66 6.66l-.95 3.52c-.08.31.27.56.54.38l4.19-2.78c.51.06 1.03.1 1.56.1 5.52 0 10-3.54 10-7.88C22 6.54 17.52 3 12 3z"
-      />
-    </svg>
-  );
-}
-
 /** 서버가 페이지를 그리면서 미리 읽어 둔 것 (page.tsx) */
 export interface TicketsInitial {
   mine: Ticket[];
@@ -135,6 +130,7 @@ export default function TicketsPage({ initial }: { initial: TicketsInitial }) {
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const loginMsg = useLoginMsg();
   const t = useT();
 
   /** 목록은 서버가 읽어 준다 — 새로 내면 서버 렌더를 다시 돌린다 */
@@ -185,11 +181,10 @@ export default function TicketsPage({ initial }: { initial: TicketsInitial }) {
       {!loggedIn ? (
         <div className="card">
           <div className="field-row" style={{ justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>{t(T.loginPrompt)}</span>
-            <a className="kakao-btn" href="/api/auth/login?next=/tickets">
-              <KakaoIcon />
-              {t(T.kakaoLogin)}
-            </a>
+            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>
+              {t(loginMsg(T.loginPrompt, T.loginPromptAny))}
+            </span>
+            <LoginButtons next="/tickets" />
           </div>
         </div>
       ) : (

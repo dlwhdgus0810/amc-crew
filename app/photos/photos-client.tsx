@@ -5,6 +5,7 @@ import { catDisplayName, getCategory } from '@/lib/categories';
 import { whenLabelShort } from '@/lib/datefmt';
 import { buildTimeline, timelineOrder } from '@/lib/photo-timeline';
 import { useLocale, useT } from '../i18n';
+import { useLoginMsg } from '../login-buttons';
 import { usePosterZoom, type Zoomed } from '../poster-zoom';
 import PhotoTimelineView from '../photo-timeline-view';
 
@@ -28,6 +29,12 @@ const T = {
     ko: '카카오 로그인 후 다녀온 모임의 사진을 볼 수 있어요.',
     en: 'Log in with Kakao to see photos from your meetups.',
     es: 'Entra con Kakao para ver las fotos de tus quedadas.',
+  },
+  /* 로그인 문이 둘인 도메인(펜)용 */
+  loginPromptAny: {
+    ko: '로그인 후 다녀온 모임의 사진을 볼 수 있어요.',
+    en: 'Log in to see photos from your meetups.',
+    es: 'Inicia sesión para ver las fotos de tus quedadas.',
   },
   empty: {
     ko: '아직 사진이 없어요. 다녀온 모임에서 한 장 올려보세요.',
@@ -73,6 +80,7 @@ export interface PhotoWallGroupView {
 }
 
 export default function PhotosClient({ initial }: { initial: { groups: PhotoWallGroupView[] } | null }) {
+  const loginMsg = useLoginMsg();
   const t = useT();
   const locale = useLocale();
   const zoom = usePosterZoom();
@@ -81,7 +89,7 @@ export default function PhotosClient({ initial }: { initial: { groups: PhotoWall
     return (
       <>
         <h1>{t(T.title)}</h1>
-        <div className="card">{t(T.loginPrompt)}</div>
+        <div className="card">{t(loginMsg(T.loginPrompt, T.loginPromptAny))}</div>
       </>
     );
   }

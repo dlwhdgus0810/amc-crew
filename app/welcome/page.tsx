@@ -22,6 +22,11 @@ const T = {
     en: 'Leave it empty to use your Kakao nickname ({name}).',
     es: 'Déjalo vacío para usar tu apodo de Kakao ({name}).',
   },
+  nicknameHintGoogle: {
+    ko: '비워두면 Google 계정 이름({name})을 그대로 써요.',
+    en: 'Leave it empty to use your Google account name ({name}).',
+    es: 'Déjalo vacío para usar el nombre de tu cuenta de Google ({name}).',
+  },
   birthday: { ko: '생년월일', en: 'Date of birth', es: 'Fecha de nacimiento' },
   gender: { ko: '성별', en: 'Gender', es: 'Género' },
   male: { ko: '남성', en: 'Male', es: 'Hombre' },
@@ -145,7 +150,7 @@ export default function WelcomePage() {
             onChange={(e) => setNickname(e.target.value)}
           />
           <p className="subtitle" style={{ marginTop: 6, fontSize: 13 }}>
-            {t(T.nicknameHint, { name: kakaoName })}
+            {t(viewer.provider === 'google' ? T.nicknameHintGoogle : T.nicknameHint, { name: kakaoName })}
           </p>
         </div>
 

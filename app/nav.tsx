@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRefreshSession, useViewer } from './session';
 import { useT } from './i18n';
 import { useCardTheme } from './card-theme-context';
+import { useLoginProviders } from './region-context';
 import { themeDeco } from '@/lib/card-theme';
 import { ProfileIcon } from './profile-icon';
 
@@ -177,6 +178,11 @@ export default function NavLinks() {
   const { loggedIn, name, avatar, deco, unread, pathname } = useSession();
   const showKeepNew = useKeepNew();
   const t = useT();
+  /*
+   * 로그아웃 상태의 프로필 탭. 문이 하나(캔자스)면 예전처럼 한 번에 카카오로 보내고,
+   * 둘 이상(펜)이면 두 단추가 있는 프로필 화면으로 보낸다 — 여기서 하나를 골라 줄 수 없다.
+   */
+  const loginHref = useLoginProviders().length > 1 ? '/profile' : '/api/auth/login';
 
   return (
     <nav className="tabbar">
@@ -227,7 +233,7 @@ export default function NavLinks() {
             {unread > 0 && <span className="tab-dot" aria-hidden="true" />}
           </Link>
         ) : (
-          <a href="/api/auth/login">
+          <a href={loginHref}>
             <span className="t-ava">·</span>
             <span>{t(T.profile)}</span>
           </a>

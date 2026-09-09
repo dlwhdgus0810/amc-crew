@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
+import LoginButtons, { useLoginMsg } from '../login-buttons';
 import { useRefreshSession, useViewer } from '../session';
 import type { Msg } from '@/lib/i18n';
 
@@ -39,7 +40,12 @@ const T = {
     en: 'Log in with Kakao to suggest a new hobby category.',
     es: 'Entra con Kakao para proponer una categoría nueva.',
   },
-  kakaoLogin: { ko: '카카오 로그인', en: 'Log in with Kakao', es: 'Entrar con Kakao' },
+  /* 로그인 문이 둘인 도메인(펜)용 — 어느 문인지 안 적는다 */
+  loginPromptAny: {
+    ko: '로그인 후 새 취미 카테고리를 제안할 수 있어요.',
+    en: 'Log in to suggest a new hobby category.',
+    es: 'Inicia sesión para proponer una categoría nueva.',
+  },
   intro: {
     ko: '하고 싶은 취미가 목록에 없나요? 이름·색·부제목을 정해서 제안해주세요. 검토 후 추가해드릴게요.',
     en: 'Missing a hobby? Pick a name, colour and subtitle — we’ll review and add it.',
@@ -99,6 +105,7 @@ export default function SuggestPage({ initial }: { initial: SuggestInitial }) {
   const [requests, setRequests] = useState<CategoryRequest[]>(initial.requests);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const loginMsg = useLoginMsg();
   const t = useT();
 
   const [name, setName] = useState('');
@@ -143,10 +150,8 @@ export default function SuggestPage({ initial }: { initial: SuggestInitial }) {
     return (
       <>
         <h1>{t(T.title)}</h1>
-        <p className="subtitle">{t(T.loginPrompt)}</p>
-        <a className="kakao-btn" href="/api/auth/login?next=/suggest">
-          {t(T.kakaoLogin)}
-        </a>
+        <p className="subtitle">{t(loginMsg(T.loginPrompt, T.loginPromptAny))}</p>
+        <LoginButtons next="/suggest" />
       </>
     );
   }

@@ -1,4 +1,5 @@
 import type { Msg } from './i18n';
+import type { Provider } from './provider';
 
 /**
  * 지역 — 같은 앱·같은 DB 위에서 **도메인으로** 갈라 보는 동네들.
@@ -56,6 +57,11 @@ export interface RegionConfig {
   categoryHints: Partial<Record<string, CategoryHintOverride>>;
   /** 이 시각 이후의 새 소식만 보여준다. ''이면 전부 — 캔자스 이야기가 펜에 안 뜨게 */
   changelogSince: string;
+  /**
+   * 이 도메인이 여는 로그인 문. 계정은 하나라 어느 문으로 들어오든 같은 users 행이다.
+   * 키(env)가 없으면 서버가 목록에서 뺀다 (lib/google-oauth.ts의 enabledLoginProviders).
+   */
+  loginProviders: Provider[];
 }
 
 const trimSlash = (v: string | undefined) => v?.replace(/\/+$/, '') || null;
@@ -79,6 +85,7 @@ export const REGIONS: Record<Region, RegionConfig> = {
     /* 비어 있다 — lib/categories.ts에 적힌 값이 곧 캔자스 값이다 */
     categoryHints: {},
     changelogSince: '',
+    loginProviders: ['kakao'],
   },
   penn: {
     id: 'penn',
@@ -175,6 +182,8 @@ export const REGIONS: Record<Region, RegionConfig> = {
     },
     /* 문을 여는 날 — 그 전의 소식은 캔자스 이야기다 */
     changelogSince: '2026-09-08T00:00',
+    /* 카톡 없는 사람도 받는다 — 구글 문은 펜에만 */
+    loginProviders: ['kakao', 'google'],
   },
 };
 

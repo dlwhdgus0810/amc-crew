@@ -40,6 +40,8 @@
 
 로컬에서는 호스트로 지역을 알 수 없어서 `region` 쿠키(`kansas`/`penn`)로 고릅니다. 실제 도메인에선 이 쿠키를 무시합니다.
 
+어느 지역이 어떤 로그인 문을 여는지도 `lib/region.ts`의 `loginProviders`입니다 (캔자스 카카오, 펜 카카오·구글 — 아래 "Google 로그인 설정").
+
 ## 배포하기 (Vercel + Upstash)
 
 1. **GitHub에 푸시**
@@ -73,6 +75,7 @@
    - `KAKAO_REST_API_KEY` — 카카오 로그인용 REST API 키 (아래 "카카오 로그인 설정" 참고)
    - (선택) `KAKAO_CLIENT_SECRET` — 카카오 앱에서 Client Secret을 활성화한 경우
    - `AUTH_SECRET` — 세션 쿠키 서명용 비밀 키 (`openssl rand -base64 32` 등으로 생성)
+   - (펜만) `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — 구글 로그인 (아래 "Google 로그인 설정" 참고)
    - (선택) `AMC_VENDOR_KEY`, `AMC_THEATRE_ID` — 아래 "AMC API 연동" 참고
 
 5. **Redeploy** 후 나온 URL을 친구들한테 공유하면 끝!
@@ -89,6 +92,32 @@
 4. **제품 설정 → 카카오 로그인 → 동의항목** 에서 **닉네임(profile_nickname)** 을 필수 동의로 설정
 5. **앱 설정 → 앱 키** 의 **REST API 키**를 `KAKAO_REST_API_KEY` 환경변수에 입력
 6. (권장) **제품 설정 → 카카오 로그인 → 보안** 에서 Client Secret 활성화 후 `KAKAO_CLIENT_SECRET`에 입력
+
+## Google 로그인 설정 (펜)
+
+펜(pennkorean.com)에는 카톡이 없는 사람도 오므로 구글 문을 하나 더 뒀습니다. **어느 지역이
+어떤 문을 여는지는 `lib/region.ts`의 `loginProviders`가 정합니다** — 캔자스는 카카오만이고,
+캔자스 호스트에서 `/api/auth/google/*`를 열면 404입니다.
+
+계정은 하나의 `users` 표 그대로입니다. 구글 회원은 회원번호가 `google:<sub>`이고(카카오 번호와
+안 겹치게), 구글 계정 이름이 `kakao_name` 칸에 들어갑니다(칸 이름은 옛날 것). 카카오는
+이메일을 안 줘서 두 계정을 자동으로 잇지는 못합니다 — 같은 사람이 카카오·구글로 둘이 될 수
+있습니다. 구글로 가입한 사람이 kansaskorean.com을 열면 그냥 로그아웃 화면입니다(쿠키는 호스트별).
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → **APIs & Services → OAuth consent screen**:
+   External, 앱 이름 「Penn Korean」, 지원 이메일. 범위는 `openid`, `userinfo.email`, `userinfo.profile`
+   (민감 범위가 아니라 구글 심사가 없습니다). **Publish**를 눌러 공개 상태로 — Testing에 두면
+   테스트 계정 100명 제한에 토큰이 7일마다 만료됩니다.
+2. **Credentials → Create credentials → OAuth client ID → Web application**
+   - Authorized JavaScript origins: `https://www.pennkorean.com`, `https://pennkorean.com`, `http://localhost:3000`
+   - Authorized redirect URIs: `https://www.pennkorean.com/api/auth/google/callback`,
+     `https://pennkorean.com/api/auth/google/callback`, `http://localhost:3000/api/auth/google/callback`
+   - 글자 하나까지 같아야 합니다(와일드카드 없음 — Vercel 미리보기 주소는 안 됩니다)
+3. Vercel 환경변수 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. 서버 전용이라 재빌드 없이 다음 요청부터
+   단추가 뜹니다. 키가 없으면 펜에서도 구글 단추가 안 뜹니다.
+
+카톡 인앱 브라우저에서는 구글 단추가 안 보입니다 — 구글이 웹뷰 안의 로그인을 막아서
+(`disallowed_useragent`), 「브라우저에서 열어주세요」 안내만 뜹니다.
 
 ## 예정 / 지난 모임 기준
 

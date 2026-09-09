@@ -45,6 +45,7 @@ const T = {
   joinTermsOk: { ko: '확인했어요, 참가할게요', en: 'Got it — count me in', es: 'Entendido, me apunto' },
   full: { ko: '마감', en: 'Full', es: 'Completo' },
   loginAndJoin: { ko: '카카오 로그인하고 참가하기', en: 'Log in with Kakao to join', es: 'Entra con Kakao para apuntarte' },
+  loginAndJoinGoogle: { ko: 'Google로 로그인하고 참가하기', en: 'Sign in with Google to join', es: 'Entra con Google para apuntarte' },
   shareLink: { ko: '링크 공유', en: 'Share link', es: 'Compartir enlace' },
   gcal: { ko: 'Google 캘린더', en: 'Google Calendar', es: 'Google Calendar' },
   ics: { ko: '캘린더 파일(.ics)', en: 'Calendar file (.ics)', es: 'Archivo de calendario (.ics)' },
@@ -64,21 +65,11 @@ import ReviewPanel, { type ReviewItem } from '../../review-panel';
 import TermsPopup from '../../terms-popup';
 import { siteUrl } from '@/lib/site';
 import { useRefreshSession, useViewer } from '../../session';
+import LoginButtons from '../../login-buttons';
 
 interface SessionUser {
   id: string;
   name: string;
-}
-
-function KakaoIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 3C6.48 3 2 6.54 2 10.9c0 2.8 1.86 5.26 4.66 6.66l-.95 3.52c-.08.31.27.56.54.38l4.19-2.78c.51.06 1.03.1 1.56.1 5.52 0 10-3.54 10-7.88C22 6.54 17.52 3 12 3z"
-      />
-    </svg>
-  );
 }
 
 /* 캘린더로 보내는 두 아이콘 — 탭바와 같은 규격(24 격자, 굵기 1.8, 둥근 끝) */
@@ -231,7 +222,6 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
   const full = post.capacity != null && post.participantCount >= post.capacity;
   // 브라우저 시간대가 아니라 서버(앱 시간대) 판정을 쓴다 — 다른 지역에서 열어도 같은 결과
   const past = post.isPast;
-  const loginNext = `/api/auth/login?next=${encodeURIComponent(`/p/${id}`)}`;
 
   // Google 캘린더 추가 링크 (ctz로 모임 시간대 고정 — 그 모임의 지역 시간대다)
   // 캘린더 제목에는 이모지 없는 이름을 쓴다 (.ics 쪽이 이모지를 앞에 따로 붙인다)
@@ -381,10 +371,11 @@ export default function PostClient({ id, initial }: { id: string; initial: PostI
               </button>
             )
           ) : (
-            <a className="kakao-btn" href={loginNext}>
-              <KakaoIcon />
-              {t(T.loginAndJoin)}
-            </a>
+            <LoginButtons
+              next={encodeURIComponent(`/p/${id}`)}
+              kakaoLabel={T.loginAndJoin}
+              googleLabel={T.loginAndJoinGoogle}
+            />
           )}
           <button className="secondary" onClick={copyLink}>{t(T.shareLink)}</button>
           {/*

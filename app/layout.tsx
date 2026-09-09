@@ -40,6 +40,7 @@ import { HTML_LANG, pick } from '@/lib/i18n';
 import { getRegion } from '@/lib/region-server';
 import { REGIONS } from '@/lib/region';
 import { theatreName } from '@/lib/amc';
+import { enabledLoginProviders } from '@/lib/google-oauth';
 import { RegionProvider } from './region-context';
 
 /*
@@ -330,7 +331,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }
         />
         <I18nProvider locale={locale}>
-          <RegionProvider value={{ region, amcName: theatreName(region) }}>
+          <RegionProvider value={{ region, amcName: theatreName(region), loginProviders: enabledLoginProviders(region) }}>
           <CardThemeProvider value={cardTheme}>
           <SessionProvider value={viewer}>
           <ServiceWorkerRegistrar />
