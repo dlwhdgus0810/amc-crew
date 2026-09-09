@@ -27,6 +27,7 @@ import {
 import { CATEGORIES, getCategory } from '@/lib/categories';
 import { useT } from './i18n';
 import CategoryCard from './category-card';
+import LangPick from './lang-pick';
 import SortableCategoryCard from './sortable-card';
 import useNextMeetups, { type NextMeetupsSeed } from './use-next-meetups';
 import { useRefreshSession, useViewer } from './session';
@@ -349,10 +350,14 @@ export default function HubPage({ initial, only }: { initial: HomeInitial; only?
             </Link>
           </>
         ) : (
-          <a className="kakao-btn" href="/api/auth/login">
-            <KakaoIcon />
-            {t(T.kakaoLogin)}
-          </a>
+          <>
+            <a className="kakao-btn" href="/api/auth/login">
+              <KakaoIcon />
+              {t(T.kakaoLogin)}
+            </a>
+            {/* 로그인 전에도 언어를 고를 수 있어야 한다 — 이 단추가 무슨 뜻인지부터 읽혀야 누른다 */}
+            <LangPick />
+          </>
         )}
       </div>
 

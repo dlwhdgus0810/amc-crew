@@ -3348,3 +3348,6 @@ body:has(.sky-scope.night) .tabbar a.active {
   font-weight: 500;
   color: var(--text-dim);
 }
+
+/* ── 로그인 전 언어 고르기 (app/lang-pick.tsx) — 단추 줄이 로그인 단추 옆에 앉을 만큼만 작게 ── */
+.lang-pick .seg { min-height: 34px; padding: 0 12px; font-size: 13px; }

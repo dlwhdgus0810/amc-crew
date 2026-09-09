@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useViewer } from '../session';
 import { useLocale } from '../i18n';
+import { setLocaleCookie } from '../lang-pick';
 import { LOCALES, LOCALE_NAMES, Locale, Msg, pick } from '@/lib/i18n';
 
 const T = {
@@ -51,9 +52,18 @@ export default function WelcomePage() {
    * 언어는 저장하기 전에도 이 화면에 바로 반영한다.
    * 고르자마자 서버에 넣고 새로고침하면 적어둔 생년월일이 날아가므로,
    * 화면은 여기서 바꾸고 서버에는 「시작하기」에서 나머지와 함께 보낸다.
+   *
+   * 다만 탭바·상단 바는 서버가 쿠키를 보고 그린다. 그래서 고르는 순간 쿠키에도 적고
+   * router.refresh()로 서버 쪽만 다시 그린다 — 이 화면의 입력값은 그대로 남는다.
+   * 로그인 전 홈에서 고른 언어(app/lang-pick.tsx)도 같은 쿠키라 여기 첫 값이 된다.
    */
   const initialLocale = useLocale();
   const [locale, setLocale] = useState<Locale>(initialLocale);
+  function pickLocale(next: Locale) {
+    setLocale(next);
+    setLocaleCookie(next);
+    router.refresh();
+  }
   const t = (msg: Msg, vars?: Record<string, string | number>) => pick(locale, msg, vars);
 
   /*
@@ -61,11 +71,19 @@ export default function WelcomePage() {
    * 물어보고 답을 기다리는 동안 빈 화면을 보여주지 않는다.
    */
   const viewer = useViewer();
+  /*
+   * 폼은 **처음 한 번만** 채운다. 언어를 고르면 router.refresh()로 서버가 세션을 다시
+   * 읽어 viewer가 새 객체로 오는데, 그때마다 여기서 다시 채우면 적어 둔 닉네임·생일이
+   * 빈 값으로 돌아간다 (실제로 그랬다). 되돌아갈지는 매번 보고, 값은 한 번만 넣는다.
+   */
+  const seeded = useRef(false);
   useEffect(() => {
     if (!viewer.user || !viewer.needsOnboarding) {
       router.replace(nextPath());
       return;
     }
+    if (seeded.current) return;
+    seeded.current = true;
     setKakaoName(viewer.kakaoName || viewer.user.name);
     setNickname(viewer.nickname ?? '');
     setBirthday(viewer.birthday ?? '');
@@ -110,7 +128,7 @@ export default function WelcomePage() {
           <div className="field-label">{t(T.language)}</div>
           <div className="seg-group">
             {LOCALES.map((l) => (
-              <button key={l} className={`seg ${locale === l ? 'on' : ''}`} onClick={() => setLocale(l)}>
+              <button key={l} className={`seg ${locale === l ? 'on' : ''}`} onClick={() => pickLocale(l)}>
                 {LOCALE_NAMES[l]}
               </button>
             ))}

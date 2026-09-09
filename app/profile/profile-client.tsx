@@ -13,6 +13,7 @@ import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n';
 import { formatZelle } from '@/lib/money';
 import { COIN } from '@/lib/shop';
 import PushToggle from '../push-toggle';
+import LangPick from '../lang-pick';
 import CoinIcon from '../coin-icon';
 import {
   CARD_THEME_COOKIE,
@@ -568,6 +569,10 @@ export default function ProfilePage({ initial }: { initial: ProfileInitial }) {
               <KakaoIcon />
               {t(T.kakaoLogin)}
             </a>
+          </div>
+          {/* 로그인 전 언어 — 홈과 같은 단추 (app/lang-pick.tsx) */}
+          <div style={{ marginTop: 14 }}>
+            <LangPick />
           </div>
         </div>
       </>
