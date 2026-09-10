@@ -2,6 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { getDb } from './index';
 import { hiddenCategories } from './schema';
 import type { Region } from '../region';
+import { CATEGORIES, openIn } from '../categories';
 
 /**
  * 관리자가 목록에서 내려 둔 카테고리.
@@ -10,8 +11,8 @@ import type { Region } from '../region';
  * 빠질 뿐이다. 그래서 안에 들어 있던 모임과 명단도 그대로 남는다.
  */
 
-/** 그 지역에서 내려 둔 것 — 지역마다 따로 내린다 */
-export async function hiddenSlugs(region: Region): Promise<string[]> {
+/** 관리자가 DB에 내려 둔 것만 */
+async function storedSlugs(region: Region): Promise<string[]> {
   const db = await getDb();
   const rows = await db
     .select({ category: hiddenCategories.category })
@@ -20,10 +21,20 @@ export async function hiddenSlugs(region: Region): Promise<string[]> {
   return rows.map((r) => r.category);
 }
 
+/**
+ * 그 지역에서 내려 둔 것 — 지역마다 따로 내린다.
+ * 다른 지역 전용 카테고리(Category.regions)도 여기 섞는다 — 목록을 거르는 곳이 전부 이걸 본다.
+ */
+export async function hiddenSlugs(region: Region): Promise<string[]> {
+  const locked = CATEGORIES.filter((c) => !openIn(c.slug, region)).map((c) => c.slug);
+  return [...new Set([...(await storedSlugs(region)), ...locked])];
+}
+
 /** 통째로 맞바꾼다 — 켜고 끈 결과를 그대로 저장하는 화면이라 하나씩 더하고 빼지 않는다 */
 export async function setHiddenSlugs(region: Region, slugs: string[]): Promise<void> {
   const db = await getDb();
-  const now = await hiddenSlugs(region);
+  slugs = slugs.filter((s) => openIn(s, region));
+  const now = await storedSlugs(region);
   const add = slugs.filter((s) => !now.includes(s));
   const drop = now.filter((s) => !slugs.includes(s));
   if (drop.length > 0) {

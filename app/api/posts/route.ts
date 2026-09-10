@@ -10,7 +10,7 @@ import { exifFromBody, originalPathAllowed, pathAllowed, thumbPathAllowed } from
 import { addPhoto } from '@/lib/db/photos';
 import { friendIds } from '@/lib/db/friends';
 import { createRecurringRule } from '@/lib/db/recurring';
-import { getCategory, POST_CATEGORY_SLUGS } from '@/lib/categories';
+import { getCategory, openIn, POST_CATEGORY_SLUGS } from '@/lib/categories';
 import { sanitizeTitleMeta } from '@/lib/tmdb';
 import { isPastSlot } from '@/lib/dates';
 import { siteUrl } from '@/lib/site';
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   const description = typeof body?.description === 'string' ? body.description.trim() : '';
   const rawCapacity = body?.capacity;
 
-  if (!POST_CATEGORY_SLUGS.includes(category)) {
+  if (!POST_CATEGORY_SLUGS.includes(category) || !openIn(category, region)) {
     return await errJson(E.badCategory, 400);
   }
   if (!noDate && (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {

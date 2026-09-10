@@ -5,7 +5,7 @@ import SkySundown from '@/app/sky-sundown';
 import { pick } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 import { asc } from 'drizzle-orm';
-import { getCategory } from '@/lib/categories';
+import { getCategory, openIn } from '@/lib/categories';
 import { getViewer } from '@/lib/session';
 
 import { getDb } from '@/lib/db/index';
@@ -91,7 +91,7 @@ async function CategoryData({ slug }: { slug: string }) {
 export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
   const cat = getCategory(category);
-  if (!cat || cat.kind !== 'posts') notFound();
+  if (!cat || cat.kind !== 'posts' || !openIn(cat.slug, await getRegion())) notFound();
   // 이름·라벨은 클라이언트가 현재 언어로 직접 고른다
   const body = (
     <Suspense fallback={<PostCardsSkeleton n={3} label={pick(await getLocale(), LOADING)} />}>

@@ -73,6 +73,13 @@ export interface Category {
   /** 이 카테고리를 제안한 사람 — 카테고리 화면에 이름을 적어 준다 */
   proposedBy?: string;
   /**
+   * 이 지역에서만 연다. 없으면 모든 지역.
+   *
+   * 다른 지역에서는 관리자가 내린 것처럼 목록에서 빠지고(lib/db/hidden.ts), 주소로 들어와도
+   * 없는 카테고리이며, 모임 만들기·구독도 받지 않는다.
+   */
+  regions?: Region[];
+  /**
    * 「사람이 먼저, 모임은 그다음」인 카테고리.
    *
    * 이걸 켜면 카테고리 화면에 **참가신청 명단**이 생긴다. 번개로 시작하기 어려운 종목을
@@ -525,6 +532,27 @@ export const CATEGORIES: Category[] = [
     },
   },
   /*
+   * 배구 — 펜에서만 연다 (regions). 루민 님이 제안했다.
+   * 노란 바탕이라 여행처럼 진한 글씨를 쓴다.
+   */
+  {
+    slug: 'volleyball',
+    emoji: '🏐',
+    en: 'VOLLEYBALL',
+    color: '#F5EC00',
+    fg: '#1E241F',
+    kind: 'posts',
+    regions: ['penn'],
+    name: { ko: '배구', en: 'Volleyball', es: 'Voleibol' },
+    description: {
+      ko: '가끔은 배구 한 판이 필요하죠',
+      en: 'Sometimes you need a volleyball break.',
+      es: 'A veces hace falta un descanso de vóley.',
+    },
+    locationHint: { ko: '예: FDR Park', en: 'e.g. FDR Park', es: 'p. ej. FDR Park' },
+    proposedBy: '루민',
+  },
+  /*
    * 일식 하루짜리 카드. 끝나면 관리자 화면에서 목록에 내린다 (지우지 않는다 —
    * 그날 찍은 사진과 댓글은 그대로 남는다).
    *
@@ -711,6 +739,12 @@ export const POST_CATEGORY_SLUGS = CATEGORIES.filter((c) => c.kind === 'posts').
 
 export function getCategory(slug: string): Category | undefined {
   return CATEGORIES.find((c) => c.slug === slug);
+}
+
+/** 그 지역에서 열리는 카테고리인지 (Category.regions) */
+export function openIn(slug: string, region: Region): boolean {
+  const r = getCategory(slug)?.regions;
+  return !r || r.includes(region);
 }
 
 /**
