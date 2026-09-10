@@ -50,7 +50,9 @@ export async function sendNews(
   path: string,
   at: string | undefined,
   /** 공개 주소를 못 정했을 때 쓸 요청 주소 */
-  originFallback: string
+  originFallback: string,
+  /** 이 지역 사람에게만 (ChangelogEntry.regions) — 없으면 모두 */
+  regions?: Region[]
 ): Promise<NewsSendResult> {
   const db = await getDb();
   const rows = await db
@@ -67,6 +69,7 @@ export async function sendNews(
   for (const r of rows) {
     const locale = toLocale(r.locale);
     const region: Region = isRegion(r.homeRegion) ? r.homeRegion : 'kansas';
+    if (regions && !regions.includes(region)) continue;
     const key = `${locale}|${region}`;
     if (!groups.has(key)) groups.set(key, { locale, region, ids: [] });
     groups.get(key)!.ids.push(r.id);

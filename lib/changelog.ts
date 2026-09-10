@@ -27,10 +27,29 @@ export interface ChangelogEntry {
    * 뒤에 소식이 더 쌓여도 묻히면 안 되는 큰 기능에만 쓴다 — 하나만 붙일 것.
    */
   pin?: boolean;
+  /** 이 지역에만 띄운다 (없으면 모든 지역) — 목록, 홈 카드, 알림 발송 모두 */
+  regions?: Region[];
 }
 
 /** 적을 때는 최신이 맨 위 (화면 순서는 아래 CHANGELOG가 정한다) */
 const ENTRIES: ChangelogEntry[] = [
+  /* 배구는 펜에만 있는 카테고리라 소식도 펜에만 (lib/categories.ts의 regions) */
+  {
+    at: '2026-09-10T12:00',
+    notable: true,
+    regions: ['penn'],
+    title: { ko: '배구 카테고리가 생겼어요', en: 'Volleyball is a category now' },
+    items: [
+      {
+        ko: '루민 님이 제안한 카테고리예요. 둘러보기에서 피클볼 다음에 있어요.',
+        en: 'Suggested by 루민. You’ll find it right after Pickleball in Browse.',
+      },
+      {
+        ko: '가끔은 배구 한 판이 필요하죠. 코트를 잡았으면 모임을 열어 주세요.',
+        en: 'Sometimes you need a volleyball break. Got a court? Open a meetup.',
+      },
+    ],
+  },
   /*
    * notable을 안 붙인다 — 홈 카드는 바둑판 항목이 계속 갖는다.
    * latestNotable()이 「가장 최근 notable」을 고르므로, 여기 붙이면 그쪽에서 뺏어 온다.
@@ -1643,7 +1662,7 @@ export const CHANGELOG: ChangelogEntry[] = [...ENTRIES].sort(
  */
 export function changelogFor(region: Region): ChangelogEntry[] {
   const since = REGIONS[region].changelogSince;
-  return since ? CHANGELOG.filter((e) => e.at >= since) : CHANGELOG;
+  return CHANGELOG.filter((e) => (!since || e.at >= since) && (!e.regions || e.regions.includes(region)));
 }
 
 /** 홈 카드에 띄울 소식 — 고정한 게 있으면 그것부터 (없으면 가장 최근 notable) */

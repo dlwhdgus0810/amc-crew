@@ -47,6 +47,6 @@ export async function POST(req: NextRequest) {
     return await errJson(E.badRequest, 400);
   }
   // 주소는 받는 사람의 동네 도메인으로 sendNews가 만든다 — 여기서는 경로와 요청 주소만
-  const result = await sendNews(latest.title, '/whats-new', latest.at, req.nextUrl.origin);
+  const result = await sendNews(latest.title, '/whats-new', latest.at, req.nextUrl.origin, latest.regions);
   return NextResponse.json({ ok: true, ...result });
 }
